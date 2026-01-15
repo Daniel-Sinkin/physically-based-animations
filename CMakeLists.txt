@@ -1,10 +1,8 @@
-# CMakeLists.txt
 cmake_minimum_required(VERSION 3.20)
 project(pba_viewer LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include(FetchContent)
@@ -55,8 +53,22 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(glm)
 
-add_executable(app src/main.cpp)
+add_executable(app
+  src/app/main.cpp
+  src/pba/types.hpp
+)
+
+target_include_directories(app PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
 target_link_libraries(app PRIVATE imgui_lib glfw glad glm::glm)
+
+add_custom_command(TARGET app POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+          ${CMAKE_CURRENT_SOURCE_DIR}/assets
+          $<TARGET_FILE_DIR:app>/assets
+)
 
 if(APPLE)
   target_link_libraries(app PRIVATE "-framework OpenGL")

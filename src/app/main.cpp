@@ -19,7 +19,7 @@
 #include "backends/imgui_impl_opengl3.h"
 #include "imgui.h"
 
-#include "types.hpp"
+#include "pba/types.hpp"
 
 // GLM
 #include <glm/glm.hpp>
@@ -79,7 +79,6 @@ struct OrbitCamera {
     glm::vec3 pivot{0, 0, 0};
     f32 distance = 8.0f;
 
-    // yaw around +Z, pitch up/down (radians)
     f32 yaw = glm::radians(45.0f);
     f32 pitch = glm::radians(25.0f);
 
