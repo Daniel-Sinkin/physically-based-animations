@@ -7,6 +7,7 @@
 #include <expected>
 #include <optional>
 #include <print>
+#include <stdlib.h>
 #include <string>
 #include <vector>
 
@@ -469,10 +470,6 @@ static void render_imgui_windows(OrbitCamera &cam, std::vector<Object> &objects,
             o.transform.scale.x = std::max(o.transform.scale.x, 0.001f);
             o.transform.scale.y = std::max(o.transform.scale.y, 0.001f);
             o.transform.scale.z = std::max(o.transform.scale.z, 0.001f);
-
-            if (ImGui::Button("Deselect")) {
-                selected_index = std::nullopt;
-            }
         } else {
             ImGui::Text("No object selected.");
             ImGui::Text("Left-click objects to select.");
@@ -812,92 +809,121 @@ void main() {
         glClearColor(bg.r(), bg.g(), bg.b(), bg.a());
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-        { // Draw Grid
-            glDepthMask(GL_FALSE);
-            grid_prog.bind();
+        { // Render
+            const glm::mat4 V = camera.view_matrix();
+            const glm::mat4 P = camera.proj_matrix(aspect);
 
-            set_uniform_mat4(grid_prog.id, "uView", V);
-            set_uniform_mat4(grid_prog.id, "uProj", P);
-            set_uniform_float(grid_prog.id, "uFogStart", g_render_settings.grid.fog_start);
-            set_uniform_float(grid_prog.id, "uFogEnd", g_render_settings.grid.fog_end);
-            set_uniform_float(grid_prog.id, "uMinorAlpha", g_render_settings.grid.minor_alpha);
-            set_uniform_float(grid_prog.id, "uAxisAlpha", g_render_settings.grid.axis_alpha);
+            auto bg = g_render_settings.background_color;
+            glClearColor(bg.r(), bg.g(), bg.b(), bg.a());
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+            { // Grid
+                glDepthMask(GL_FALSE);
 
-            grid_mesh.vao.bind();
-            glDrawArrays(GL_LINES, 0, grid_mesh.vertex_count);
-            VAO::unbind();
+                grid_prog.bind();
+                set_uniform_mat4(grid_prog.id, "uView", V);
+                set_uniform_mat4(grid_prog.id, "uProj", P);
+                set_uniform_float(grid_prog.id, "uFogStart", g_render_settings.grid.fog_start);
+                set_uniform_float(grid_prog.id, "uFogEnd", g_render_settings.grid.fog_end);
+                set_uniform_float(grid_prog.id, "uMinorAlpha", g_render_settings.grid.minor_alpha);
+                set_uniform_float(grid_prog.id, "uAxisAlpha", g_render_settings.grid.axis_alpha);
 
-            glDepthMask(GL_TRUE);
-        }
-
-        {
-            obj_prog.bind();
-            set_uniform_mat4(obj_prog.id, "uView", V);
-            set_uniform_mat4(obj_prog.id, "uProj", P);
-            set_uniform_vec3(obj_prog.id, "uCameraPos", camera.position());
-            set_uniform_float(obj_prog.id, "uTime", static_cast<float>(glfwGetTime()));
-
-            cube_mesh.vao.bind();
-            glStencilMask(0xFF);
-            glStencilFunc(GL_ALWAYS, 0, 0xFF);
-
-            for (usize i = 0; i < objects.size(); ++i) {
-                const Object &o = objects[i];
-                const glm::mat4 M = o.transform.model_matrix();
-
-                set_uniform_mat4(obj_prog.id, "uModel", M);
-                set_uniform_vec3(obj_prog.id, "uColor", o.color);
-
-                bool is_selected = selected_index.has_value() && (*selected_index == i);
-                if (is_selected) {
-                    glStencilFunc(GL_ALWAYS, 1, 0xFF);
-                    glStencilMask(0xFF);
-                } else {
-                    glStencilMask(0x00);
-                }
-                set_uniform_bool(obj_prog.id, "uSelected", is_selected);
-
-                glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
-            }
-            if (selected_index.has_value()) {
-                const Object &o = objects[*selected_index];
-
-                glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-                glStencilMask(0x00);
-                glDisable(GL_DEPTH_TEST);
-
-                glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-                glDisable(GL_CULL_FACE);
-                glLineWidth(2.0f);
-
-                outline_prog.bind();
-
-                glm::mat4 M = o.transform.model_matrix();
-                const f32 outline_scale = 1.04f;
-                M = glm::scale(M, glm::vec3(outline_scale));
-
-                set_uniform_mat4(outline_prog.id, "uModel", M);
-                set_uniform_mat4(outline_prog.id, "uView", V);
-                set_uniform_mat4(outline_prog.id, "uProj", P);
-                glm::vec3 outline_color{1.0f, 0.55f, 0.0f};
-                set_uniform_vec3(
-                    outline_prog.id,
-                    "uColor",
-                    outline_color);
-
-                cube_mesh.vao.bind();
-                glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
+                grid_mesh.vao.bind();
+                glDrawArrays(GL_LINES, 0, grid_mesh.vertex_count);
                 VAO::unbind();
 
-                glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-                glEnable(GL_DEPTH_TEST);
-                glStencilMask(0xFF);
-                glStencilFunc(GL_ALWAYS, 0, 0xFF);
+                glDepthMask(GL_TRUE);
             }
 
-            VAO::unbind();
-        }
+            { // Objects
+                glEnable(GL_DEPTH_TEST);
+                glDepthFunc(GL_LESS);
 
+                // Do NOT touch stencil during normal object draw
+                glStencilMask(0x00);
+                glStencilFunc(GL_ALWAYS, 0, 0xFF);
+
+                obj_prog.bind();
+                set_uniform_mat4(obj_prog.id, "uView", V);
+                set_uniform_mat4(obj_prog.id, "uProj", P);
+                set_uniform_vec3(obj_prog.id, "uCameraPos", camera.position());
+                set_uniform_float(obj_prog.id, "uTime", static_cast<float>(glfwGetTime()));
+
+                cube_mesh.vao.bind();
+                for (usize i = 0; i < objects.size(); ++i) {
+                    const Object &o = objects[i];
+                    const glm::mat4 M = o.transform.model_matrix();
+
+                    set_uniform_mat4(obj_prog.id, "uModel", M);
+                    set_uniform_vec3(obj_prog.id, "uColor", o.color);
+
+                    glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
+                }
+                VAO::unbind();
+            }
+
+            { // Outline Stencil, 2 Pass
+                if (selected_index.has_value()) {
+                    const Object &o = objects[*selected_index];
+                    const glm::mat4 M = o.transform.model_matrix();
+
+                    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+                    glDepthMask(GL_FALSE);
+                    glDisable(GL_DEPTH_TEST);
+
+                    glStencilMask(0xFF);
+                    glStencilFunc(GL_ALWAYS, 1, 0xFF);
+                    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+
+                    obj_prog.bind();
+                    set_uniform_mat4(obj_prog.id, "uView", V);
+                    set_uniform_mat4(obj_prog.id, "uProj", P);
+                    set_uniform_mat4(obj_prog.id, "uModel", M);
+
+                    cube_mesh.vao.bind();
+                    glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
+                    VAO::unbind();
+
+                    // Restore
+                    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+                    glDepthMask(GL_TRUE);
+                    glEnable(GL_DEPTH_TEST);
+                    glDepthFunc(GL_LESS);
+                }
+
+                if (selected_index.has_value()) {
+                    const Object &o = objects[*selected_index];
+
+                    glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+                    glStencilMask(0x00);
+
+                    glDisable(GL_DEPTH_TEST);
+
+                    glDisable(GL_CULL_FACE);
+
+                    outline_prog.bind();
+
+                    const glm::mat4 M = o.transform.model_matrix();
+                    const glm::mat4 M_outline = M * glm::scale(glm::mat4(1.0f), glm::vec3(1.04f));
+
+                    set_uniform_mat4(outline_prog.id, "uModel", M_outline);
+                    set_uniform_mat4(outline_prog.id, "uView", V);
+                    set_uniform_mat4(outline_prog.id, "uProj", P);
+                    set_uniform_vec3(outline_prog.id, "uColor", glm::vec3(1.0f, 0.55f, 0.0f));
+
+                    cube_mesh.vao.bind();
+                    glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
+                    VAO::unbind();
+
+                    glEnable(GL_DEPTH_TEST);
+                    glDepthFunc(GL_LESS);
+
+                    glStencilMask(0xFF);
+                    glStencilFunc(GL_ALWAYS, 0, 0xFF);
+                    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+                }
+            }
+
+        }
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         glfwSwapBuffers(window);
     }
@@ -911,5 +937,4 @@ void main() {
 
     glfwDestroyWindow(window);
     glfwTerminate();
-    return 0;
 }
