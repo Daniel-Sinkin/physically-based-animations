@@ -53,9 +53,16 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(glm)
 
+file(GLOB_RECURSE PBA_SOURCES
+  CONFIGURE_DEPENDS
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/pba/*.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/pba/*.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/pba/*.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/pba/*.cc
+)
 add_executable(app
   src/app/main.cpp
-  src/pba/types.hpp
+  ${PBA_SOURCES}
 )
 
 target_include_directories(app PRIVATE
