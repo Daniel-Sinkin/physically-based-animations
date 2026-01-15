@@ -506,14 +506,16 @@ static bool intersect_unit_cube_obb(
         return tmin <= tmax;
     };
 
-    if (!slab(oL.x, dL.x, bmin.x, bmax.x))
+    if (!slab(oL.x, dL.x, bmin.x, bmax.x)) {
         return false;
-    if (!slab(oL.y, dL.y, bmin.y, bmax.y))
+    }
+    if (!slab(oL.y, dL.y, bmin.y, bmax.y)) {
         return false;
-    if (!slab(oL.z, dL.z, bmin.z, bmax.z))
+    }
+    if (!slab(oL.z, dL.z, bmin.z, bmax.z)) {
         return false;
+    }
 
-    // pick nearest positive local t
     f32 tL = (tmin > 0.0f) ? tmin : ((tmax > 0.0f) ? tmax : -1.0f);
     if (tL <= 0.0f)
         return false;
@@ -521,7 +523,6 @@ static bool intersect_unit_cube_obb(
     const glm::vec3 hitL = oL + tL * dL;
     const glm::vec3 hitW = glm::vec3(model * glm::vec4(hitL, 1.0f));
 
-    // Convert to world-ray parameter (dir is normalized)
     const f32 tW = glm::dot(hitW - ray_world.origin, ray_world.dir);
     if (tW <= 0.0f)
         return false;
@@ -529,7 +530,6 @@ static bool intersect_unit_cube_obb(
     t_world_out = tW;
     return true;
 }
-
 } // namespace ds_pba
 
 int main() {
