@@ -5,17 +5,15 @@
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
 
-#include "imgui.h"
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
+#include "imgui.h"
 
-static void glfw_error_callback(int error, const char* description)
-{
+static void glfw_error_callback(int error, const char *description) {
     std::fprintf(stderr, "GLFW Error %d: %s\n", error, description);
 }
 
-int main()
-{
+int main() {
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit())
         return 1;
@@ -26,9 +24,13 @@ int main()
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
 
-    GLFWwindow* window = glfwCreateWindow(1280, 720, "GLFW + ImGui + glad (OpenGL 3.2 core)", nullptr, nullptr);
-    if (!window)
-    {
+    GLFWwindow *window = glfwCreateWindow(
+        1600,
+        900,
+        "Physically Based Animations",
+        nullptr,
+        nullptr);
+    if (!window) {
         glfwTerminate();
         return 1;
     }
@@ -36,43 +38,42 @@ int main()
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);
 
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-    {
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         std::fprintf(stderr, "Failed to initialize glad.\n");
         glfwDestroyWindow(window);
         glfwTerminate();
         return 1;
     }
 
-    // ---- ImGui setup ----
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGui::StyleColorsDark();
 
-    // GLSL for OpenGL 3.2 core
-    const char* glsl_version = "#version 150";
-    if (!ImGui_ImplGlfw_InitForOpenGL(window, true))
+    const char *glsl_version = "#version 150";
+    if (!ImGui_ImplGlfw_InitForOpenGL(window, true)) {
         return 1;
-    if (!ImGui_ImplOpenGL3_Init(glsl_version))
+    }
+    if (!ImGui_ImplOpenGL3_Init(glsl_version)) {
         return 1;
+    }
 
     bool show_demo_window = true;
 
-    while (!glfwWindowShouldClose(window))
-    {
+    while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        if (show_demo_window)
+        if (show_demo_window) {
             ImGui::ShowDemoWindow(&show_demo_window);
+        }
 
         ImGui::Begin("Info");
-        ImGui::Text("OpenGL vendor:   %s", reinterpret_cast<const char*>(glGetString(GL_VENDOR)));
-        ImGui::Text("OpenGL renderer: %s", reinterpret_cast<const char*>(glGetString(GL_RENDERER)));
-        ImGui::Text("OpenGL version:  %s", reinterpret_cast<const char*>(glGetString(GL_VERSION)));
+        ImGui::Text("OpenGL vendor:   %s", reinterpret_cast<const char *>(glGetString(GL_VENDOR)));
+        ImGui::Text("OpenGL renderer: %s", reinterpret_cast<const char *>(glGetString(GL_RENDERER)));
+        ImGui::Text("OpenGL version:  %s", reinterpret_cast<const char *>(glGetString(GL_VERSION)));
         ImGui::Checkbox("Show ImGui demo window", &show_demo_window);
         ImGui::End();
 
@@ -96,5 +97,4 @@ int main()
 
     glfwDestroyWindow(window);
     glfwTerminate();
-    return 0;
 }
