@@ -1,3 +1,4 @@
+# CMakeLists.txt
 cmake_minimum_required(VERSION 3.20)
 project(pba_viewer LANGUAGES C CXX)
 
@@ -41,16 +42,21 @@ add_library(imgui_lib STATIC
   ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
   ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
 )
-
 target_include_directories(imgui_lib PUBLIC
   ${imgui_SOURCE_DIR}
   ${imgui_SOURCE_DIR}/backends
 )
-
 target_link_libraries(imgui_lib PUBLIC glfw glad)
 
+FetchContent_Declare(
+  glm
+  GIT_REPOSITORY https://github.com/g-truc/glm.git
+  GIT_TAG        1.0.3
+)
+FetchContent_MakeAvailable(glm)
+
 add_executable(app src/main.cpp)
-target_link_libraries(app PRIVATE imgui_lib glfw glad)
+target_link_libraries(app PRIVATE imgui_lib glfw glad glm::glm)
 
 if(APPLE)
   target_link_libraries(app PRIVATE "-framework OpenGL")
