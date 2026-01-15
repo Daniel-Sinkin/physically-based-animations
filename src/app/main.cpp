@@ -5,8 +5,10 @@
 #include <cstdio>
 #include <cstdlib>
 #include <expected>
+#include <fstream>
 #include <optional>
 #include <print>
+#include <sstream>
 #include <stdlib.h>
 #include <string>
 #include <vector>
@@ -168,8 +170,6 @@ static Ray ray_from_mouse(
     return r;
 }
 
-// ---------------- GL Helpers ----------------
-
 struct GLMesh {
     VAO vao{};
     VBO vbo{};
@@ -195,9 +195,9 @@ static GLuint compile_shader(GLenum type, const char *src) {
     return s;
 }
 
-static ShaderProgram create_program(const char *vs_src, const char *fs_src) {
-    GLuint vs = compile_shader(GL_VERTEX_SHADER, vs_src);
-    GLuint fs = compile_shader(GL_FRAGMENT_SHADER, fs_src);
+static ShaderProgram create_program(const std::string& vert_src, const std::string& frag_src) {
+    GLuint vs = compile_shader(GL_VERTEX_SHADER, vert_src.c_str());
+    GLuint fs = compile_shader(GL_FRAGMENT_SHADER, frag_src.c_str());
     if (vs == 0 || fs == 0) {
         if (vs) {
             glDeleteShader(vs);
@@ -230,6 +230,56 @@ static ShaderProgram create_program(const char *vs_src, const char *fs_src) {
     return prog;
 }
 
+
+enum class ShaderLoadError {
+    FileNotFound,
+    IOError,
+    EmptyFile
+};
+static std::expected<std::string, ShaderLoadError>
+read_text_file(const std::string &path) {
+    std::ifstream file(path, std::ios::in);
+    if (!file.is_open()) {
+        return std::unexpected(ShaderLoadError::FileNotFound);
+    }
+
+    std::ostringstream ss;
+    ss << file.rdbuf();
+
+    if (file.fail() && !file.eof()) {
+        return std::unexpected(ShaderLoadError::IOError);
+    }
+
+    std::string contents = ss.str();
+    if (contents.empty()) {
+        return std::unexpected(ShaderLoadError::EmptyFile);
+    }
+
+    return contents;
+}
+static std::expected<std::string, ShaderLoadError>
+load_shader_sources(const std::string &shader_name) {
+    const std::string base = "assets/shaders/" + shader_name;
+    auto shader = read_text_file(base);
+    if (!shader) {
+        return std::unexpected(shader.error());
+    }
+    return std::move(*shader);
+}
+
+static std::expected<ShaderProgram, ShaderLoadError> create_program_from_file(std::string shader_name) {
+    // Requires shader_name.vert and shader_name.frag to both exist
+    auto res_frag = load_shader_sources(shader_name + ".frag");
+    if (!res_frag) {
+        return std::unexpected(res_frag.error());
+    }
+    auto res_vert = load_shader_sources(shader_name + ".vert");
+    if (!res_vert) {
+        return std::unexpected(res_vert.error());
+    }
+    return {create_program(*res_vert, *res_frag)};
+}
+
 static inline void set_uniform_mat4(GLuint program, const char *name, const glm::mat4 &m) {
     GLint loc = glGetUniformLocation(program, name);
     if (loc >= 0)
@@ -253,8 +303,6 @@ static inline void set_uniform_bool(GLuint program, const char *name, bool v) {
     if (loc >= 0)
         glUniform1i(loc, v ? 1 : 0);
 }
-
-// ---------------- Mesh Creation ----------------
 
 static GLMesh create_cube_mesh() {
     struct V {
@@ -385,8 +433,6 @@ static GLMesh create_grid_mesh(const RenderSettings::GridSettings &gs) {
     VAO::unbind();
     return mesh;
 }
-
-// ---------------- GLFW Setup ----------------
 
 enum class SetupGLFWError {
     InitFailed,
@@ -545,7 +591,6 @@ int main() {
     }
     GLFWwindow *window = *window_res;
 
-    // Use 330 for layout(location=...) and modern GLSL
     const char *glsl_version = "#version 330";
 
     if (!ImGui_ImplGlfw_InitForOpenGL(window, true)) {
@@ -566,107 +611,26 @@ int main() {
     glEnable(GL_STENCIL_TEST);
     glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
-    const char *grid_vs = R"(#version 330 core
-layout(location=0) in vec3 aPos;
-layout(location=1) in vec4 aColor;
+    auto grid_prog_res = create_program_from_file("grid");
+    if(!grid_prog_res) {
+        std::println(stderr, "Failed to load 'grid' shaders, got error code: {}", static_cast<int>(grid_prog_res.error()));
+        return EXIT_FAILURE;
+    }
+    ShaderProgram grid_prog = *grid_prog_res;
 
-uniform mat4 uView;
-uniform mat4 uProj;
+    auto obj_prog_res = create_program_from_file("object");
+    if(!obj_prog_res) {
+        std::println(stderr, "Failed to load 'object' shaders, got error code: {}", static_cast<int>(obj_prog_res.error()));
+        return EXIT_FAILURE;
+    }
+    ShaderProgram obj_prog = *obj_prog_res;
 
-out vec4 vColor;
-out vec3 vWorldPos;
-
-void main() {
-    vColor = aColor;
-    vWorldPos = aPos; // grid in world space
-    gl_Position = uProj * uView * vec4(aPos, 1.0);
-}
-)";
-
-    const char *grid_fs = R"(#version 330 core
-in vec4 vColor;
-in vec3 vWorldPos;
-
-uniform float uFogStart;
-uniform float uFogEnd;
-
-out vec4 FragColor;
-
-void main() {
-    float d = length(vWorldPos.xy);
-    float t = clamp((d - uFogStart) / max(1e-6, (uFogEnd - uFogStart)), 0.0, 1.0);
-    float fog = 1.0 - t;
-
-    float alpha = vColor.a * fog;
-    FragColor = vec4(vColor.rgb, alpha);
-}
-)";
-
-    const char *obj_vs = R"(#version 330 core
-layout(location=0) in vec3 aPos;
-layout(location=1) in vec3 aNormal;
-
-uniform mat4 uModel;
-uniform mat4 uView;
-uniform mat4 uProj;
-
-out vec3 vWorldPos;
-out vec3 vNormal;
-
-void main() {
-    vec4 world = uModel * vec4(aPos, 1.0);
-    vWorldPos = world.xyz;
-
-    mat3 normalMat = transpose(inverse(mat3(uModel)));
-    vNormal = normalize(normalMat * aNormal);
-
-    gl_Position = uProj * uView * world;
-}
-)";
-
-    const char *obj_fs = R"(#version 330 core
-in vec3 vWorldPos;
-in vec3 vNormal;
-
-uniform vec3 uColor;
-uniform vec3 uCameraPos;
-uniform float uTime;
-
-out vec4 FragColor;
-
-void main() {
-    vec3 N = normalize(vNormal);
-    vec3 L = normalize(vec3(0.35, 0.55, 0.75));
-    float diff = max(dot(N, L), 0.0);
-
-    vec3 base = uColor * (0.20 + 0.80 * diff);
-
-    FragColor = vec4(base, 1.0);
-}
-)";
-    const char *outline_vs = R"(#version 330 core
-layout(location=0) in vec3 aPos;
-
-uniform mat4 uModel;
-uniform mat4 uView;
-uniform mat4 uProj;
-
-void main() {
-    gl_Position = uProj * uView * uModel * vec4(aPos, 1.0);
-}
-)";
-
-    const char *outline_fs = R"(#version 330 core
-uniform vec3 uColor;
-out vec4 FragColor;
-
-void main() {
-    FragColor = vec4(uColor, 1.0);
-}
-)";
-    ShaderProgram grid_prog = create_program(grid_vs, grid_fs);
-    ShaderProgram obj_prog = create_program(obj_vs, obj_fs);
-    ShaderProgram outline_prog = create_program(outline_vs, outline_fs);
+    auto outline_prog_res = create_program_from_file("outline");
+    if(!outline_prog_res) {
+        std::println(stderr, "Failed to load 'outline' shaders, got error code: {}", static_cast<int>(outline_prog_res.error()));
+        return EXIT_FAILURE;
+    }
+    ShaderProgram outline_prog = *outline_prog_res;
 
     if (!grid_prog.valid() || !obj_prog.valid() || !outline_prog.valid()) {
         std::println(stderr, "Failed to create shader programs");
@@ -921,7 +885,6 @@ void main() {
                     glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
                 }
             }
-
         }
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         glfwSwapBuffers(window);
