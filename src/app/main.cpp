@@ -38,44 +38,15 @@ struct RenderSettings {
     ColorRGBAf background_color{0.255f, 0.255f, 0.255f, 1.0f};
 
     struct GridSettings {
-        int half_extent_lines = 30; // lines from [-N..N]
+        int n_lines_per_side = 30;
         f32 spacing = 1.0f;
-        f32 fog_start = 12.0f; // start fading
-        f32 fog_end = 30.0f;   // fully faded
+        f32 fog_start = 12.0f;
+        f32 fog_end = 30.0f;
         f32 minor_alpha = 0.35f;
         f32 axis_alpha = 0.95f;
     } grid{};
 };
-
 static RenderSettings g_render_settings{};
-
-struct Transform {
-    glm::vec3 position{0.0f, 0.0f, 0.0f};
-    glm::vec3 rotation_deg{0.0f, 0.0f, 0.0f}; // x,y,z degrees
-    glm::vec3 scale{1.0f, 1.0f, 1.0f};
-
-    [[nodiscard]] glm::mat4 model_matrix() const {
-        glm::mat4 M(1.0f);
-        M = glm::translate(M, position);
-        // Match previous behavior: Rz * Ry * Rx
-        M = glm::rotate(M, glm::radians(rotation_deg.z), glm::vec3(0, 0, 1));
-        M = glm::rotate(M, glm::radians(rotation_deg.y), glm::vec3(0, 1, 0));
-        M = glm::rotate(M, glm::radians(rotation_deg.x), glm::vec3(1, 0, 0));
-        M = glm::scale(M, scale);
-        return M;
-    }
-};
-
-struct Object {
-    std::string name;
-    Transform transform{};
-    glm::vec3 color{0.8f, 0.8f, 0.8f};
-};
-
-struct Ray {
-    glm::vec3 origin{};
-    glm::vec3 dir{}; // normalized
-};
 
 struct OrbitCamera {
     glm::vec3 pivot{0, 0, 0};
@@ -89,14 +60,14 @@ struct OrbitCamera {
     f32 z_far = 250.0f;
 
     [[nodiscard]] glm::vec3 position() const {
-        const f32 cp = std::cos(pitch);
-        const f32 sp = std::sin(pitch);
-        const f32 cy = std::cos(yaw);
-        const f32 sy = std::sin(yaw);
+        const f32 cos_pitch = std::cos(pitch);
+        const f32 sin_pitch = std::sin(pitch);
+        const f32 cos_yaw = std::cos(yaw);
+        const f32 sin_yaw = std::sin(yaw);
         const glm::vec3 offset{
-            distance * cp * cy,
-            distance * cp * sy,
-            distance * sp};
+            distance * cos_pitch * cos_yaw,
+            distance * cos_pitch * sin_yaw,
+            distance * sin_pitch};
         return pivot + offset;
     }
 
@@ -134,27 +105,31 @@ static inline bool intersect_sphere(const Ray &ray, const glm::vec3 &center, f32
 
 static Ray ray_from_mouse(
     GLFWwindow *window,
-    f64 mx_window,
-    f64 my_window,
-    const glm::mat4 &V,
-    const glm::mat4 &P) {
-    // Handle HiDPI: cursor is in window coords; NDC should use framebuffer coords.
-    int ww = 1, wh = 1;
-    int fbw = 1, fbh = 1;
-    glfwGetWindowSize(window, &ww, &wh);
-    glfwGetFramebufferSize(window, &fbw, &fbh);
+    f64 mouse_x,
+    f64 mouse_y,
+    const glm::mat4 &camera_view_matrix,
+    const glm::mat4 &camera_proj_matrix) {
+    // Use Framebuffer coords for NDC, makes a difference for retina displays
+    int window_width = 1, window_height = 1;
+    int framebuffer_width = 1, framebuffer_height = 1;
+    glfwGetWindowSize(window, &window_width, &window_height);
+    glfwGetFramebufferSize(window, &framebuffer_width, &framebuffer_height);
 
-    const f32 sx = (ww > 0) ? (static_cast<f32>(fbw) / static_cast<f32>(ww)) : 1.0f;
-    const f32 sy = (wh > 0) ? (static_cast<f32>(fbh) / static_cast<f32>(wh)) : 1.0f;
+    float window_width_f = static_cast<f32>(window_width);
+    float window_height_f = static_cast<f32>(window_height);
+    float framebuffer_width_f = static_cast<f32>(framebuffer_width);
+    float framebuffer_height_f = static_cast<f32>(framebuffer_height);
 
-    const f32 mx = static_cast<f32>(mx_window) * sx;
-    const f32 my = static_cast<f32>(my_window) * sy;
+    const f32 sx = (window_width_f > 0) ? (framebuffer_width_f / window_width_f) : 1.0f;
+    const f32 sy = (window_height_f > 0) ? (framebuffer_height_f / window_height_f) : 1.0f;
 
-    // NDC: x,y in [-1,1], OpenGL z in [-1,1]
-    const f32 x_ndc = (fbw > 0) ? (2.0f * mx / static_cast<f32>(fbw) - 1.0f) : 0.0f;
-    const f32 y_ndc = (fbh > 0) ? (1.0f - 2.0f * my / static_cast<f32>(fbh)) : 0.0f;
+    const f32 mx = static_cast<f32>(mouse_x) * sx;
+    const f32 my = static_cast<f32>(mouse_y) * sy;
 
-    const glm::mat4 invPV = glm::inverse(P * V);
+    const f32 x_ndc = (framebuffer_width_f > 0) ? (2.0f * mx / framebuffer_width_f - 1.0f) : 0.0f;
+    const f32 y_ndc = (framebuffer_height_f > 0) ? (1.0f - 2.0f * my / framebuffer_height_f) : 0.0f;
+
+    const glm::mat4 invPV = glm::inverse(camera_proj_matrix * camera_view_matrix);
 
     glm::vec4 near_ndc(x_ndc, y_ndc, -1.0f, 1.0f);
     glm::vec4 far_ndc(x_ndc, y_ndc, 1.0f, 1.0f);
@@ -164,17 +139,11 @@ static Ray ray_from_mouse(
     near_w /= near_w.w;
     far_w /= far_w.w;
 
-    Ray r{};
-    r.origin = glm::vec3(near_w);
-    r.dir = glm::normalize(glm::vec3(far_w - near_w));
-    return r;
+    return Ray{
+        .origin = glm::vec3(near_w),
+        .dir    = glm::normalize(glm::vec3(far_w - near_w))
+    };
 }
-
-struct GLMesh {
-    VAO vao{};
-    VBO vbo{};
-    GLsizei vertex_count{};
-};
 
 static GLuint compile_shader(GLenum type, const char *src) {
     GLuint s = glCreateShader(type);
@@ -195,7 +164,7 @@ static GLuint compile_shader(GLenum type, const char *src) {
     return s;
 }
 
-static ShaderProgram create_program(const std::string& vert_src, const std::string& frag_src) {
+static ShaderProgram create_program(const std::string &vert_src, const std::string &frag_src) {
     GLuint vs = compile_shader(GL_VERTEX_SHADER, vert_src.c_str());
     GLuint fs = compile_shader(GL_FRAGMENT_SHADER, frag_src.c_str());
     if (vs == 0 || fs == 0) {
@@ -229,7 +198,6 @@ static ShaderProgram create_program(const std::string& vert_src, const std::stri
     }
     return prog;
 }
-
 
 enum class ShaderLoadError {
     FileNotFound,
@@ -381,7 +349,7 @@ static GLMesh create_grid_mesh(const RenderSettings::GridSettings &gs) {
         f32 r, g, b, a;
     };
 
-    const int N = std::max(1, gs.half_extent_lines);
+    const int N = std::max(1, gs.n_lines_per_side);
     const f32 E = static_cast<f32>(N) * gs.spacing;
 
     std::vector<V> verts;
@@ -531,7 +499,7 @@ static bool intersect_unit_cube_obb(
     const glm::mat4 invM = glm::inverse(model);
 
     const glm::vec3 oL = glm::vec3(invM * glm::vec4(ray_world.origin, 1.0f));
-    const glm::vec3 dL = glm::vec3(invM * glm::vec4(ray_world.dir, 0.0f)); // keep paramization
+    const glm::vec3 dL = glm::vec3(invM * glm::vec4(ray_world.dir, 0.0f));
 
     const glm::vec3 bmin(-0.5f), bmax(0.5f);
 
@@ -544,8 +512,9 @@ static bool intersect_unit_cube_obb(
         }
         f32 t1 = (mn - o) / d;
         f32 t2 = (mx - o) / d;
-        if (t1 > t2)
+        if (t1 > t2) {
             std::swap(t1, t2);
+        }
         tmin = std::max(tmin, t1);
         tmax = std::min(tmax, t2);
         return tmin <= tmax;
@@ -612,21 +581,21 @@ int main() {
     glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
     auto grid_prog_res = create_program_from_file("grid");
-    if(!grid_prog_res) {
+    if (!grid_prog_res) {
         std::println(stderr, "Failed to load 'grid' shaders, got error code: {}", static_cast<int>(grid_prog_res.error()));
         return EXIT_FAILURE;
     }
     ShaderProgram grid_prog = *grid_prog_res;
 
     auto obj_prog_res = create_program_from_file("object");
-    if(!obj_prog_res) {
+    if (!obj_prog_res) {
         std::println(stderr, "Failed to load 'object' shaders, got error code: {}", static_cast<int>(obj_prog_res.error()));
         return EXIT_FAILURE;
     }
     ShaderProgram obj_prog = *obj_prog_res;
 
     auto outline_prog_res = create_program_from_file("outline");
-    if(!outline_prog_res) {
+    if (!outline_prog_res) {
         std::println(stderr, "Failed to load 'outline' shaders, got error code: {}", static_cast<int>(outline_prog_res.error()));
         return EXIT_FAILURE;
     }
@@ -640,18 +609,18 @@ int main() {
     GLMesh cube_mesh = create_cube_mesh();
     GLMesh grid_mesh = create_grid_mesh(g_render_settings.grid);
 
-    std::vector<Object> objects;
-    objects.push_back(Object{
+    std::vector<Object> cube_objects;
+    cube_objects.push_back(Object{
         .name = "Cube A",
         .transform = Transform{.position = {2.0f, 1.0f, 0.5f}, .rotation_deg = {0, 0, 0}, .scale = {1, 1, 1}},
         .color = {0.85f, 0.35f, 0.25f},
     });
-    objects.push_back(Object{
+    cube_objects.push_back(Object{
         .name = "Cube B",
         .transform = Transform{.position = {-1.5f, 2.5f, 0.5f}, .rotation_deg = {0, 0, 25}, .scale = {1, 1, 1}},
         .color = {0.25f, 0.55f, 0.90f},
     });
-    objects.push_back(Object{
+    cube_objects.push_back(Object{
         .name = "Cube C",
         .transform = Transform{.position = {-2.5f, -1.5f, 0.75f}, .rotation_deg = {15, 0, 0}, .scale = {1.5f, 1.0f, 1.5f}},
         .color = {0.30f, 0.85f, 0.45f},
@@ -705,7 +674,7 @@ int main() {
         if (!imgui_wants_mouse) {
             const f32 wheel = io.MouseWheel;
             if (wheel != 0.0f) {
-                constexpr f32 zoom_speed = 0.12f; // tweak
+                constexpr f32 zoom_speed = 0.12f;
                 camera.distance *= std::exp(-wheel * zoom_speed);
                 camera.distance = std::clamp(camera.distance, 0.75f, 200.0f);
             }
@@ -729,16 +698,16 @@ int main() {
             glfwGetFramebufferSize(window, &fbw, &fbh);
             const f32 aspect = (fbh > 0) ? (static_cast<f32>(fbw) / static_cast<f32>(fbh)) : 1.0f;
 
-            const glm::mat4 V = camera.view_matrix();
-            const glm::mat4 P = camera.proj_matrix(aspect);
+            const glm::mat4 camera_view_matrix = camera.view_matrix();
+            const glm::mat4 camera_proj_matrix = camera.proj_matrix(aspect);
 
-            const Ray ray = ray_from_mouse(window, mouse_x, mouse_y, V, P);
+            const Ray ray = ray_from_mouse(window, mouse_x, mouse_y, camera_view_matrix, camera_proj_matrix);
 
             std::optional<usize> best_idx{};
             f32 best_t = 1e30f;
 
-            for (usize i = 0; i < objects.size(); ++i) {
-                const Object &o = objects[i];
+            for (usize i = 0; i < cube_objects.size(); ++i) {
+                const Object &o = cube_objects[i];
                 const glm::mat4 M = o.transform.model_matrix();
 
                 f32 tW = 0.0f;
@@ -749,7 +718,6 @@ int main() {
                     }
                 }
             }
-
             selected_index = best_idx;
         }
 
@@ -758,12 +726,12 @@ int main() {
         prev_mx = mouse_x;
         prev_my = mouse_y;
 
-        render_imgui_windows(camera, objects, selected_index);
+        render_imgui_windows(camera, cube_objects, selected_index);
         ImGui::Render();
 
-        int fbw = 1, fbh = 1;
-        glfwGetFramebufferSize(window, &fbw, &fbh);
-        const f32 aspect = (fbh > 0) ? (static_cast<f32>(fbw) / static_cast<f32>(fbh)) : 1.0f;
+        int frame_buffer_width = 1, frame_buffer_height = 1;
+        glfwGetFramebufferSize(window, &frame_buffer_width, &frame_buffer_height);
+        const f32 aspect = (frame_buffer_height > 0) ? (static_cast<f32>(frame_buffer_width) / static_cast<f32>(frame_buffer_height)) : 1.0f;
 
         const glm::mat4 V = camera.view_matrix();
         const glm::mat4 P = camera.proj_matrix(aspect);
@@ -801,7 +769,6 @@ int main() {
                 glEnable(GL_DEPTH_TEST);
                 glDepthFunc(GL_LESS);
 
-                // Do NOT touch stencil during normal object draw
                 glStencilMask(0x00);
                 glStencilFunc(GL_ALWAYS, 0, 0xFF);
 
@@ -812,8 +779,8 @@ int main() {
                 set_uniform_float(obj_prog.id, "uTime", static_cast<float>(glfwGetTime()));
 
                 cube_mesh.vao.bind();
-                for (usize i = 0; i < objects.size(); ++i) {
-                    const Object &o = objects[i];
+                for (usize i = 0; i < cube_objects.size(); ++i) {
+                    const Object &o = cube_objects[i];
                     const glm::mat4 M = o.transform.model_matrix();
 
                     set_uniform_mat4(obj_prog.id, "uModel", M);
@@ -824,9 +791,10 @@ int main() {
                 VAO::unbind();
             }
 
-            { // Outline Stencil, 2 Pass
-                if (selected_index.has_value()) {
-                    const Object &o = objects[*selected_index];
+            // Outline Stencil
+            if (selected_index.has_value()) {
+                { // First Pass
+                    const Object &o = cube_objects[*selected_index];
                     const glm::mat4 M = o.transform.model_matrix();
 
                     glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
@@ -846,15 +814,14 @@ int main() {
                     glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
                     VAO::unbind();
 
-                    // Restore
                     glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
                     glDepthMask(GL_TRUE);
                     glEnable(GL_DEPTH_TEST);
                     glDepthFunc(GL_LESS);
                 }
 
-                if (selected_index.has_value()) {
-                    const Object &o = objects[*selected_index];
+                { // Second pass
+                    const Object &o = cube_objects[*selected_index];
 
                     glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
                     glStencilMask(0x00);
