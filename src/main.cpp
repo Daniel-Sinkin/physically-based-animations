@@ -1,5 +1,7 @@
+// main.cpp
 #include <cstdio>
 #include <cstdlib>
+#include <print>
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -10,7 +12,7 @@
 #include "imgui.h"
 
 static void glfw_error_callback(int error, const char *description) {
-    std::fprintf(stderr, "GLFW Error %d: %s\n", error, description);
+    std::println(stderr, "GLFW Error {}: {}", error, description);
 }
 
 int main() {
@@ -18,9 +20,8 @@ int main() {
     if (!glfwInit())
         return 1;
 
-    // macOS OpenGL: 3.2 Core Profile is the safe baseline
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
 
