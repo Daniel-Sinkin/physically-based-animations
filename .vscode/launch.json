@@ -1,0 +1,16 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Launch app (CMake Debug)",
+        "type": "lldb",
+        "request": "launch",
+        "program": "${workspaceFolder}/build/app",
+        "args": [],
+        "cwd": "${workspaceFolder}",
+        "stopOnEntry": false,
+        "environment": [],
+        "preLaunchTask": "CMake: build (Debug)"
+      }
+    ]
+  }
