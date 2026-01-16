@@ -77,6 +77,84 @@ Ray ray_from_mouse(
     };
 }
 
+Ray ray_from_mouse_in_rect(
+    GLFWwindow* window,
+    f64 mouse_x,
+    f64 mouse_y,
+    int rect_x,
+    int rect_y,
+    int rect_w,
+    int rect_h,
+    const glm::mat4& camera_view_matrix,
+    const glm::mat4& camera_proj_matrix) {
+
+    int fbw = 1, fbh = 1;
+    glfwGetFramebufferSize(window, &fbw, &fbh);
+
+    int win_w = 1, win_h = 1;
+    glfwGetWindowSize(window, &win_w, &win_h);
+
+    const f32 sx = (win_w > 0) ? (static_cast<f32>(fbw) / static_cast<f32>(win_w)) : 1.0f;
+    const f32 sy = (win_h > 0) ? (static_cast<f32>(fbh) / static_cast<f32>(win_h)) : 1.0f;
+
+    const f32 mx_fb = static_cast<f32>(mouse_x) * sx;
+    const f32 my_fb = static_cast<f32>(mouse_y) * sy;
+
+    const f32 lx = mx_fb - static_cast<f32>(rect_x);
+    const f32 ly = my_fb - static_cast<f32>(fbh - (rect_y + rect_h));
+
+    const f32 x_ndc = (rect_w > 0) ? (2.0f * lx / static_cast<f32>(rect_w) - 1.0f) : 0.0f;
+    const f32 y_ndc = (rect_h > 0) ? (1.0f - 2.0f * ly / static_cast<f32>(rect_h)) : 0.0f;
+
+    const glm::mat4 invPV = glm::inverse(camera_proj_matrix * camera_view_matrix);
+
+    glm::vec4 near_ndc(x_ndc, y_ndc, -1.0f, 1.0f);
+    glm::vec4 far_ndc(x_ndc, y_ndc, 1.0f, 1.0f);
+
+    glm::vec4 near_w = invPV * near_ndc;
+    glm::vec4 far_w  = invPV * far_ndc;
+    near_w /= near_w.w;
+    far_w  /= far_w.w;
+
+    return Ray{
+        .origin = glm::vec3(near_w),
+        .dir    = glm::normalize(glm::vec3(far_w - near_w)),
+    };
+}
+
+Ray ray_from_imgui_rect(
+    const ImVec2 mouse_pos,
+    const ImVec2 rect_pos,
+    const ImVec2 rect_size,
+    const glm::mat4& camera_view_matrix,
+    const glm::mat4& camera_proj_matrix) {
+
+    const float lx = mouse_pos.x - rect_pos.x;
+    const float ly = mouse_pos.y - rect_pos.y;
+
+    const float w = std::max(1.0f, rect_size.x);
+    const float h = std::max(1.0f, rect_size.y);
+
+    // NDC in the viewport image (top-left origin)
+    const float x_ndc = 2.0f * (lx / w) - 1.0f;
+    const float y_ndc = 1.0f - 2.0f * (ly / h);
+
+    const glm::mat4 invPV = glm::inverse(camera_proj_matrix * camera_view_matrix);
+
+    glm::vec4 near_ndc(x_ndc, y_ndc, -1.0f, 1.0f);
+    glm::vec4 far_ndc(x_ndc, y_ndc,  1.0f, 1.0f);
+
+    glm::vec4 near_w = invPV * near_ndc;
+    glm::vec4 far_w  = invPV * far_ndc;
+    near_w /= near_w.w;
+    far_w  /= far_w.w;
+
+    return ds_pba::Ray{
+        .origin = glm::vec3(near_w),
+        .dir    = glm::normalize(glm::vec3(far_w - near_w)),
+    };
+}
+
 bool intersect_unit_cube_obb(
     const Ray &ray_world,
     const glm::mat4 &model,
