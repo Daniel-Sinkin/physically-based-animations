@@ -71,6 +71,32 @@ target_include_directories(app PRIVATE
 
 target_link_libraries(app PRIVATE imgui_lib glfw glad glm::glm)
 
+target_compile_options(app PRIVATE
+  -Wall
+  -Wextra
+  -Wpedantic
+
+  -Werror
+
+  -Wshadow
+  -Wconversion
+  -Wsign-conversion
+  -Wcast-qual
+  -Wcast-align
+  -Wformat=2
+  -Wundef
+  -Wnull-dereference
+  -Wnon-virtual-dtor
+  -Woverloaded-virtual
+
+  -Wold-style-cast
+  -Wzero-as-null-pointer-constant
+  -Wdouble-promotion
+  -Wimplicit-fallthrough
+
+  -Wreturn-type
+)
+
 add_custom_command(TARGET app POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_directory
           ${CMAKE_CURRENT_SOURCE_DIR}/assets
