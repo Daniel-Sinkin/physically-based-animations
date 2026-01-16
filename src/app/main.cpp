@@ -5,11 +5,12 @@
 #include "pba/interaction.hpp"
 #include "pba/mesh.hpp"
 #include "pba/render_settings.hpp"
-#include "pba/serialisation.hpp"
+#include "pba/scene_context.hpp"
 #include "pba/types.hpp"
 #include "pba/ui.hpp"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdlib>
 #include <optional>
@@ -19,8 +20,6 @@
 #include <stb_image.h>
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
-
-#include <nlohmann/json.hpp>
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -32,111 +31,66 @@
 
 namespace ds_pba {
 
-namespace fs = std::filesystem;
+[[nodiscard]] static RectInt compute_main_work_render_rect(GLFWwindow *window) {
+    ImGuiViewport *vp = ImGui::GetMainViewport();
+    const ImVec2 wp = vp->WorkPos;  // top-left in screen coords
+    const ImVec2 ws = vp->WorkSize; // size in screen coords
 
-[[maybe_unused]] static constexpr const char *k_scene_path = "scene.json";
+    int fbw = 1, fbh = 1;
+    glfwGetFramebufferSize(window, &fbw, &fbh);
 
-[[maybe_unused]] static bool
-save_scene_to_file(const SceneContext &scene, const fs::path &path) {
-    try {
-        nlohmann::json j = scene;
-        std::ofstream out(path, std::ios::binary | std::ios::trunc);
-        if (!out.is_open()) {
-            return false;
-        }
-        out << j.dump(4) << "\n";
-        return out.good();
-    } catch (...) {
-        return false;
-    }
+    int win_w = 1, win_h = 1;
+    glfwGetWindowSize(window, &win_w, &win_h);
+
+    const float sx = (win_w > 0) ? (static_cast<float>(fbw) / static_cast<float>(win_w)) : 1.0f;
+    const float sy = (win_h > 0) ? (static_cast<float>(fbh) / static_cast<float>(win_h)) : 1.0f;
+
+    // X is straightforward: screen-space left -> framebuffer-space left.
+    const int vx = static_cast<int>(std::lround(wp.x * sx));
+    const int vw = static_cast<int>(std::lround(ws.x * sx));
+
+    // Y: ImGui is top-left; OpenGL viewport is bottom-left.
+    // Compute (in screen space) how far WorkPos is from the viewport top, then flip to bottom.
+    const float vp_top = vp->Pos.y;
+    const float vp_h = vp->Size.y;
+
+    const float work_top = wp.y;
+    const float work_h = ws.y;
+
+    const float work_y_from_top = (work_top - vp_top);
+    const int vy = static_cast<int>(std::lround((vp_h - (work_y_from_top + work_h)) * sy));
+    const int vh = static_cast<int>(std::lround(work_h * sy));
+
+    RectInt r{};
+    r.x = std::clamp(vx, 0, std::max(0, fbw - 1));
+    r.y = std::clamp(vy, 0, std::max(0, fbh - 1));
+    r.width = std::clamp(vw, 1, fbw - r.x);
+    r.height = std::clamp(vh, 1, fbh - r.y);
+    return r;
 }
 
-[[maybe_unused]] static std::optional<SceneContext>
-load_scene_from_file(const fs::path &path) {
-    try {
-        std::ifstream in(path, std::ios::binary);
-        if (!in.is_open()) {
-            return std::nullopt;
-        }
-        nlohmann::json j;
-        in >> j;
-
-        SceneContext scene = j.get<SceneContext>();
-        return scene;
-    } catch (...) {
-        return std::nullopt;
-    }
-}
-
-struct SceneHotReloader {
-    fs::path path{};
-    fs::file_time_type last_write_time{};
-    bool initialized{false};
-
-    explicit SceneHotReloader(fs::path p)
-        : path(std::move(p)) {}
-
-    void init_if_exists() {
-        if (fs::exists(path)) {
-            last_write_time = fs::last_write_time(path);
-            initialized = true;
-        }
-    }
-
-    [[nodiscard]] bool changed() {
-        if (!fs::exists(path)) {
-            return false;
-        }
-        const fs::file_time_type cur = fs::last_write_time(path);
-        if (!initialized) {
-            last_write_time = cur;
-            initialized = true;
-            return false;
-        }
-        if (cur != last_write_time) {
-            last_write_time = cur;
-            return true;
-        }
-        return false;
-    }
-};
-
-[[maybe_unused]] static bool try_hot_reload_scene(SceneContext &scene_context, const fs::path &path) {
-    auto loaded = load_scene_from_file(path);
-    if (!loaded.has_value()) {
-        return false;
-    }
-
-    Camera current_cam = scene_context.camera;
-
-    scene_context = std::move(*loaded);
-
-    scene_context.camera = current_cam;
-
-    if (scene_context.selected_index && *scene_context.selected_index >= scene_context.cube_objects.size()) {
-        scene_context.selected_index = std::nullopt;
-    }
-
-    return true;
-}
 } // namespace ds_pba
 
 int main() {
     using namespace ds_pba;
 
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGui::StyleColorsDark();
-
     auto window_res = setup_glfw();
-    if (!window_res.has_value()) {
+    if (!window_res) {
         std::println(stderr, "Failed to setup glfw with error code: {}", static_cast<int>(window_res.error()));
         return EXIT_FAILURE;
     }
     GLFWwindow *window = *window_res;
 
-    const char *glsl_version = "#version 330";
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
 
+    ImGuiIO &io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+
+    apply_blender_style();
+
+    const char *glsl_version = "#version 330";
     if (!ImGui_ImplGlfw_InitForOpenGL(window, true)) {
         std::println(stderr, "ImGui_ImplGlfw_InitForOpenGL failed");
         return EXIT_FAILURE;
@@ -182,23 +136,22 @@ int main() {
     }
 
     GLMesh cube_mesh = create_cube_mesh();
-    // GLMesh grid_mesh = create_grid_mesh(g_render_settings.grid);
-    GLMesh grid_mesh = ds_pba::create_grid_mesh(
+    GLMesh grid_mesh = create_grid_mesh(
         g_render_settings.grid.n_lines_per_side,
         g_render_settings.grid.spacing,
         g_render_settings.grid.axis_alpha,
         g_render_settings.grid.minor_alpha);
 
+    // Scene init / load
     SceneContext scene_context{};
-
-    std::optional<SceneContext> loaded{};
-    if (ds_pba::fs::exists(ds_pba::k_scene_path)) {
-        loaded = ds_pba::load_scene_from_file(ds_pba::k_scene_path);
+    if (fs::exists(k_scene_path)) {
+        auto loaded = load_scene_from_file(k_scene_path);
+        if (loaded) {
+            scene_context = std::move(*loaded);
+        }
     }
 
-    if (loaded.has_value()) {
-        scene_context = std::move(*loaded);
-    } else {
+    if (scene_context.cube_objects.empty()) {
         scene_context.cube_objects.push_back(Object{
             .name = "Cube A",
             .transform = Transform{.position = {2.0f, 1.0f, 0.5f}, .rotation_deg = {0, 0, 0}, .scale = {1, 1, 1}},
@@ -217,23 +170,11 @@ int main() {
 
         scene_context.camera.pivot = {0, 0, 0};
         scene_context.camera.distance = 10.0f;
-
         scene_context.selected_index = std::nullopt;
     }
 
-    SceneHotReloader scene_reloader(ds_pba::k_scene_path);
+    SceneHotReloader scene_reloader(k_scene_path);
     scene_reloader.init_if_exists();
-
-    auto framebuffer_callback = [](GLFWwindow *, int width, int height) -> void {
-        glViewport(0, 0, width, height);
-    };
-    glfwSetFramebufferSizeCallback(window, framebuffer_callback);
-
-    {
-        int fbw = 0, fbh = 0;
-        glfwGetFramebufferSize(window, &fbw, &fbh);
-        glViewport(0, 0, fbw, fbh);
-    }
 
     bool prev_left = false;
     bool prev_middle = false;
@@ -245,24 +186,19 @@ int main() {
     auto last_scene_poll = std::chrono::steady_clock::now();
     constexpr auto scene_poll_interval = std::chrono::milliseconds(250);
 
-    ImGuiIO &io = ImGui::GetIO();
-    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
-
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 
-        {
+        { // Hot Reload
             const auto now = std::chrono::steady_clock::now();
             if (now - last_scene_poll >= scene_poll_interval) {
                 last_scene_poll = now;
 
                 if (scene_reloader.changed()) {
-                    const bool ok = ds_pba::try_hot_reload_scene(scene_context, ds_pba::k_scene_path);
+                    const bool ok = try_hot_reload_scene(scene_context, k_scene_path);
                     if (!ok) {
-                        std::println(stderr, "Hot-reload: failed to load {}", ds_pba::k_scene_path);
+                        std::println(stderr, "Hot-reload: failed to load {}", k_scene_path);
                     }
-
                     if (scene_context.selected_index && *scene_context.selected_index >= scene_context.cube_objects.size()) {
                         scene_context.selected_index = std::nullopt;
                     }
@@ -274,14 +210,20 @@ int main() {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
+        // Menu bar (must be before computing WorkPos/WorkSize-based render rect)
+        if (ImGui::BeginMainMenuBar()) {
+            render_menu_bar(scene_context, scene_reloader);
+        }
+
+        // Docking (passthrough central node so it doesn't paint an opaque background over the 3D view)
         ImGui::DockSpaceOverViewport(0, nullptr, ImGuiDockNodeFlags_PassthruCentralNode);
 
-        const bool imgui_wants_mouse = io.WantCaptureMouse;
+        // Compute render rect now that menu bar/docking are set up for the frame
+        const RectInt rr = compute_main_work_render_rect(window);
 
-        { // Handle Inputs
-            if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-                glfwSetWindowShouldClose(window, GLFW_TRUE);
-            }
+        // Basic input
+        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+            glfwSetWindowShouldClose(window, GLFW_TRUE);
         }
 
         f64 mouse_x = 0.0;
@@ -291,17 +233,40 @@ int main() {
         const bool left_down = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
         const bool middle_down = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS;
 
-        if (!imgui_wants_mouse) {
+        const auto mouse_in_view = [&]() -> bool {
+            int fbw = 1, fbh = 1;
+            glfwGetFramebufferSize(window, &fbw, &fbh);
+
+            int win_w = 1, win_h = 1;
+            glfwGetWindowSize(window, &win_w, &win_h);
+
+            const float sx = (win_w > 0) ? (static_cast<f32>(fbw) / static_cast<f32>(win_w)) : 1.0f;
+            const float sy = (win_h > 0) ? (static_cast<f32>(fbh) / static_cast<f32>(win_h)) : 1.0f;
+
+            const float mx_fb = static_cast<f32>(mouse_x) * sx;
+            const float my_fb = static_cast<f32>(mouse_y) * sy;
+            const float my_gl = static_cast<f32>(fbh) - my_fb;
+
+            return (mx_fb >= static_cast<f32>(rr.x) && mx_fb < static_cast<f32>(rr.x + rr.width) &&
+                    my_gl >= static_cast<f32>(rr.y) && my_gl < static_cast<f32>(rr.y + rr.height));
+        }();
+
+        const bool imgui_wants_mouse = io.WantCaptureMouse;
+
+        const f32 aspect = (rr.height > 0) ? (static_cast<f32>(rr.width) / static_cast<f32>(rr.height)) : 1.0f;
+        const glm::mat4 camera_view_matrix = scene_context.camera.view_matrix();
+        const glm::mat4 camera_proj_matrix = scene_context.camera.proj_matrix(aspect);
+
+        // Camera controls only when the mouse is over the 3D view and ImGui doesn't want it
+        if (!imgui_wants_mouse && mouse_in_view) {
             const f32 wheel = io.MouseWheel;
             if (wheel != 0.0f) {
                 constexpr f32 zoom_speed = 0.12f;
                 scene_context.camera.distance *= std::exp(-wheel * zoom_speed);
                 scene_context.camera.distance = std::clamp(scene_context.camera.distance, 0.75f, 200.0f);
             }
-        }
 
-        if (middle_down && !imgui_wants_mouse) {
-            if (prev_middle) {
+            if (middle_down && prev_middle) {
                 const f32 dx = static_cast<f32>(mouse_x - prev_mx);
                 const f32 dy = static_cast<f32>(mouse_y - prev_my);
 
@@ -312,34 +277,30 @@ int main() {
                 const f32 lim = glm::radians(89.0f);
                 scene_context.camera.pitch = std::clamp(scene_context.camera.pitch, -lim, lim);
             }
-        }
 
-        if (left_down && !prev_left && !imgui_wants_mouse) {
-            int fbw = 1, fbh = 1;
-            glfwGetFramebufferSize(window, &fbw, &fbh);
-            const f32 aspect = (fbh > 0) ? (static_cast<f32>(fbw) / static_cast<f32>(fbh)) : 1.0f;
+            if (left_down && !prev_left) {
+                const Ray ray = ray_from_mouse_in_rect(
+                    window, mouse_x, mouse_y,
+                    rr.x, rr.y, rr.width, rr.height,
+                    camera_view_matrix, camera_proj_matrix);
 
-            const glm::mat4 camera_view_matrix = scene_context.camera.view_matrix();
-            const glm::mat4 camera_proj_matrix = scene_context.camera.proj_matrix(aspect);
+                std::optional<usize> best_idx{};
+                f32 best_t = 1e30f;
 
-            const Ray ray = ray_from_mouse(window, mouse_x, mouse_y, camera_view_matrix, camera_proj_matrix);
+                for (usize i = 0; i < scene_context.cube_objects.size(); ++i) {
+                    const Object &o = scene_context.cube_objects[i];
+                    const glm::mat4 M = o.transform.model_matrix();
 
-            std::optional<usize> best_idx{};
-            f32 best_t = 1e30f;
-
-            for (usize i = 0; i < scene_context.cube_objects.size(); ++i) {
-                const Object &o = scene_context.cube_objects[i];
-                const glm::mat4 M = o.transform.model_matrix();
-
-                f32 tW = 0.0f;
-                if (intersect_unit_cube_obb(ray, M, tW)) {
-                    if (tW < best_t) {
-                        best_t = tW;
-                        best_idx = i;
+                    f32 tW = 0.0f;
+                    if (intersect_unit_cube_obb(ray, M, tW)) {
+                        if (tW < best_t) {
+                            best_t = tW;
+                            best_idx = i;
+                        }
                     }
                 }
+                scene_context.selected_index = best_idx;
             }
-            scene_context.selected_index = best_idx;
         }
 
         prev_left = left_down;
@@ -348,15 +309,12 @@ int main() {
         prev_my = mouse_y;
 
         render_imgui_windows(scene_context, frame_counter);
+
         ImGui::Render();
 
-        int frame_buffer_width = 1, frame_buffer_height = 1;
-        glfwGetFramebufferSize(window, &frame_buffer_width, &frame_buffer_height);
-        const f32 aspect =
-            (frame_buffer_height > 0) ? (static_cast<f32>(frame_buffer_width) / static_cast<f32>(frame_buffer_height)) : 1.0f;
-
-        const glm::mat4 camera_view_matrix = scene_context.camera.view_matrix();
-        const glm::mat4 camera_proj_matrix = scene_context.camera.proj_matrix(aspect);
+        glEnable(GL_SCISSOR_TEST);
+        glViewport(rr.x, rr.y, rr.width, rr.height);
+        glScissor(rr.x, rr.y, rr.width, rr.height);
 
         auto bg = g_render_settings.background_color;
         glClearColor(bg.r(), bg.g(), bg.b(), bg.a());
@@ -402,9 +360,9 @@ int main() {
             VAO::unbind();
         }
 
-        // Outline Stencil
+        // Outline stencil
         if (scene_context.selected_index.has_value()) {
-            { // First Pass (write stencil)
+            { // First pass (write stencil)
                 const Object &o = scene_context.cube_objects[*scene_context.selected_index];
                 const glm::mat4 M = o.transform.model_matrix();
 
@@ -463,34 +421,23 @@ int main() {
             }
         }
 
+        glDisable(GL_SCISSOR_TEST);
+
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
         if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
-            GLFWwindow* backup_current_context = glfwGetCurrentContext();
+            GLFWwindow *backup_current_context = glfwGetCurrentContext();
             ImGui::UpdatePlatformWindows();
             ImGui::RenderPlatformWindowsDefault();
             glfwMakeContextCurrent(backup_current_context);
         }
+
         glfwSwapBuffers(window);
-
-        if (false) {
-            if ((static_cast<int>(scene_context.cube_objects.size()) - 3) * 500 < frame_counter) {
-                f32 n_obj_f = static_cast<f32>(scene_context.cube_objects.size());
-                scene_context.cube_objects.push_back(Object{
-                    .name = "Cube Dynamic",
-                    .transform = Transform{
-                        .position = {0.0f, 0.0f, 0.5f + 1.0f * (n_obj_f - 3.0f)},
-                        .rotation_deg = {0.0f, 0.0f, 0.0f},
-                        .scale = {1.0f, 1.0f, 1.0f}},
-                    .color = {0.0f, 0.0f, 0.0f},
-                });
-            }
-        }
-
         ++frame_counter;
     }
 
-    if (!ds_pba::save_scene_to_file(scene_context, ds_pba::k_scene_path)) {
-        std::println(stderr, "Warning: failed to save scene to {}", ds_pba::k_scene_path);
+    if (!save_scene_to_file(scene_context, k_scene_path)) {
+        std::println(stderr, "Warning: failed to save scene to {}", k_scene_path);
     }
 
     glDeleteProgram(grid_prog.id);
