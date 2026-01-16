@@ -122,6 +122,39 @@ Ray ray_from_mouse_in_rect(
     };
 }
 
+Ray ray_from_imgui_rect(
+    const ImVec2 mouse_pos,
+    const ImVec2 rect_pos,
+    const ImVec2 rect_size,
+    const glm::mat4& camera_view_matrix,
+    const glm::mat4& camera_proj_matrix) {
+
+    const float lx = mouse_pos.x - rect_pos.x;
+    const float ly = mouse_pos.y - rect_pos.y;
+
+    const float w = std::max(1.0f, rect_size.x);
+    const float h = std::max(1.0f, rect_size.y);
+
+    // NDC in the viewport image (top-left origin)
+    const float x_ndc = 2.0f * (lx / w) - 1.0f;
+    const float y_ndc = 1.0f - 2.0f * (ly / h);
+
+    const glm::mat4 invPV = glm::inverse(camera_proj_matrix * camera_view_matrix);
+
+    glm::vec4 near_ndc(x_ndc, y_ndc, -1.0f, 1.0f);
+    glm::vec4 far_ndc(x_ndc, y_ndc,  1.0f, 1.0f);
+
+    glm::vec4 near_w = invPV * near_ndc;
+    glm::vec4 far_w  = invPV * far_ndc;
+    near_w /= near_w.w;
+    far_w  /= far_w.w;
+
+    return ds_pba::Ray{
+        .origin = glm::vec3(near_w),
+        .dir    = glm::normalize(glm::vec3(far_w - near_w)),
+    };
+}
+
 bool intersect_unit_cube_obb(
     const Ray &ray_world,
     const glm::mat4 &model,

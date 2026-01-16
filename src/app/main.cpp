@@ -29,48 +29,6 @@
 #include "backends/imgui_impl_opengl3.h"
 #include "imgui.h"
 
-namespace ds_pba {
-
-[[nodiscard]] static RectInt compute_main_work_render_rect(GLFWwindow *window) {
-    ImGuiViewport *vp = ImGui::GetMainViewport();
-    const ImVec2 wp = vp->WorkPos;  // top-left in screen coords
-    const ImVec2 ws = vp->WorkSize; // size in screen coords
-
-    int fbw = 1, fbh = 1;
-    glfwGetFramebufferSize(window, &fbw, &fbh);
-
-    int win_w = 1, win_h = 1;
-    glfwGetWindowSize(window, &win_w, &win_h);
-
-    const float sx = (win_w > 0) ? (static_cast<float>(fbw) / static_cast<float>(win_w)) : 1.0f;
-    const float sy = (win_h > 0) ? (static_cast<float>(fbh) / static_cast<float>(win_h)) : 1.0f;
-
-    // X is straightforward: screen-space left -> framebuffer-space left.
-    const int vx = static_cast<int>(std::lround(wp.x * sx));
-    const int vw = static_cast<int>(std::lround(ws.x * sx));
-
-    // Y: ImGui is top-left; OpenGL viewport is bottom-left.
-    // Compute (in screen space) how far WorkPos is from the viewport top, then flip to bottom.
-    const float vp_top = vp->Pos.y;
-    const float vp_h = vp->Size.y;
-
-    const float work_top = wp.y;
-    const float work_h = ws.y;
-
-    const float work_y_from_top = (work_top - vp_top);
-    const int vy = static_cast<int>(std::lround((vp_h - (work_y_from_top + work_h)) * sy));
-    const int vh = static_cast<int>(std::lround(work_h * sy));
-
-    RectInt r{};
-    r.x = std::clamp(vx, 0, std::max(0, fbw - 1));
-    r.y = std::clamp(vy, 0, std::max(0, fbh - 1));
-    r.width = std::clamp(vw, 1, fbw - r.x);
-    r.height = std::clamp(vh, 1, fbh - r.y);
-    return r;
-}
-
-} // namespace ds_pba
-
 int main() {
     using namespace ds_pba;
 
@@ -142,11 +100,10 @@ int main() {
         g_render_settings.grid.axis_alpha,
         g_render_settings.grid.minor_alpha);
 
-    // Scene init / load
     SceneContext scene_context{};
     if (fs::exists(k_scene_path)) {
         auto loaded = load_scene_from_file(k_scene_path);
-        if (loaded) {
+        if (loaded.has_value()) {
             scene_context = std::move(*loaded);
         }
     }
@@ -186,6 +143,16 @@ int main() {
     auto last_scene_poll = std::chrono::steady_clock::now();
     constexpr auto scene_poll_interval = std::chrono::milliseconds(250);
 
+    ViewportFBO viewport_fbo{};
+
+    RectInt rr{};
+    bool rr_valid = false;
+    bool viewport_image_hovered = false;
+
+    // Viewport image rect in ImGui screen coordinates (top-left origin).
+    ImVec2 viewport_img_pos{0.0f, 0.0f};
+    ImVec2 viewport_img_size{0.0f, 0.0f};
+
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 
@@ -210,55 +177,198 @@ int main() {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        // Menu bar (must be before computing WorkPos/WorkSize-based render rect)
         if (ImGui::BeginMainMenuBar()) {
             render_menu_bar(scene_context, scene_reloader);
         }
 
-        // Docking (passthrough central node so it doesn't paint an opaque background over the 3D view)
         ImGui::DockSpaceOverViewport(0, nullptr, ImGuiDockNodeFlags_PassthruCentralNode);
 
-        // Compute render rect now that menu bar/docking are set up for the frame
-        const RectInt rr = compute_main_work_render_rect(window);
+        rr_valid = false;
+        viewport_image_hovered = false;
 
-        // Basic input
-        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-            glfwSetWindowShouldClose(window, GLFW_TRUE);
-        }
+        { // Viewport window
+            ImGuiWindowFlags vp_flags =
+                ImGuiWindowFlags_NoScrollbar |
+                ImGuiWindowFlags_NoScrollWithMouse |
+                ImGuiWindowFlags_NoCollapse;
 
-        f64 mouse_x = 0.0;
-        f64 mouse_y = 0.0;
-        glfwGetCursorPos(window, &mouse_x, &mouse_y);
+            ImGui::Begin("Viewport", nullptr, vp_flags);
 
-        const bool left_down = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
-        const bool middle_down = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS;
+            const ImVec2 content_pos = ImGui::GetCursorScreenPos();
+            const ImVec2 content_size = ImGui::GetContentRegionAvail();
 
-        const auto mouse_in_view = [&]() -> bool {
+            viewport_img_pos = content_pos;
+            viewport_img_size = content_size;
+
             int fbw = 1, fbh = 1;
             glfwGetFramebufferSize(window, &fbw, &fbh);
 
             int win_w = 1, win_h = 1;
             glfwGetWindowSize(window, &win_w, &win_h);
 
-            const float sx = (win_w > 0) ? (static_cast<f32>(fbw) / static_cast<f32>(win_w)) : 1.0f;
-            const float sy = (win_h > 0) ? (static_cast<f32>(fbh) / static_cast<f32>(win_h)) : 1.0f;
+            const float sx = (win_w > 0) ? static_cast<float>(fbw) / static_cast<float>(win_w) : 1.0f;
+            const float sy = (win_h > 0) ? static_cast<float>(fbh) / static_cast<float>(win_h) : 1.0f;
 
-            const float mx_fb = static_cast<f32>(mouse_x) * sx;
-            const float my_fb = static_cast<f32>(mouse_y) * sy;
-            const float my_gl = static_cast<f32>(fbh) - my_fb;
+            // Framebuffer-space rect (OpenGL bottom-left origin). Used for sizing the FBO.
+            const int vx = static_cast<int>(std::lround(content_pos.x * sx));
+            const int vw = static_cast<int>(std::lround(content_size.x * sx));
+            const int vy = static_cast<int>(std::lround(static_cast<float>(fbh) - (content_pos.y + content_size.y) * sy));
+            const int vh = static_cast<int>(std::lround(content_size.y * sy));
 
-            return (mx_fb >= static_cast<f32>(rr.x) && mx_fb < static_cast<f32>(rr.x + rr.width) &&
-                    my_gl >= static_cast<f32>(rr.y) && my_gl < static_cast<f32>(rr.y + rr.height));
-        }();
+            rr.x = std::clamp(vx, 0, std::max(0, fbw - 1));
+            rr.y = std::clamp(vy, 0, std::max(0, fbh - 1));
+            rr.width = std::clamp(vw, 1, fbw - rr.x);
+            rr.height = std::clamp(vh, 1, fbh - rr.y);
 
-        const bool imgui_wants_mouse = io.WantCaptureMouse;
+            const int fbo_w = rr.width;
+            const int fbo_h = rr.height;
 
-        const f32 aspect = (rr.height > 0) ? (static_cast<f32>(rr.width) / static_cast<f32>(rr.height)) : 1.0f;
-        const glm::mat4 camera_view_matrix = scene_context.camera.view_matrix();
-        const glm::mat4 camera_proj_matrix = scene_context.camera.proj_matrix(aspect);
+            rr_valid = (fbo_w > 8 && fbo_h > 8) && viewport_fbo.ensure_size(fbo_w, fbo_h);
 
-        // Camera controls only when the mouse is over the 3D view and ImGui doesn't want it
-        if (!imgui_wants_mouse && mouse_in_view) {
+            if (rr_valid) {
+                // Render into FBO
+                glBindFramebuffer(GL_FRAMEBUFFER, viewport_fbo.fbo);
+                glViewport(0, 0, viewport_fbo.width, viewport_fbo.height);
+
+                auto bg = g_render_settings.background_color;
+                glClearColor(bg.r(), bg.g(), bg.b(), bg.a());
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+                const f32 aspect = static_cast<f32>(viewport_fbo.width) / static_cast<f32>(viewport_fbo.height);
+                const glm::mat4 camera_view_matrix = scene_context.camera.view_matrix();
+                const glm::mat4 camera_proj_matrix = scene_context.camera.proj_matrix(aspect);
+
+                { // Grid
+                    glDepthMask(GL_FALSE);
+
+                    grid_prog.bind();
+                    set_uniform_mat4(grid_prog.id, "uView", camera_view_matrix);
+                    set_uniform_mat4(grid_prog.id, "uProj", camera_proj_matrix);
+                    set_uniform_float(grid_prog.id, "uFogStart", g_render_settings.grid.fog_start);
+                    set_uniform_float(grid_prog.id, "uFogEnd", g_render_settings.grid.fog_end);
+
+                    grid_mesh.vao.bind();
+                    glDrawArrays(GL_LINES, 0, grid_mesh.vertex_count);
+                    VAO::unbind();
+
+                    glDepthMask(GL_TRUE);
+                }
+
+                { // Objects
+                    glEnable(GL_DEPTH_TEST);
+                    glDepthFunc(GL_LESS);
+
+                    glStencilMask(0x00);
+                    glStencilFunc(GL_ALWAYS, 0, 0xFF);
+
+                    obj_prog.bind();
+                    set_uniform_mat4(obj_prog.id, "uView", camera_view_matrix);
+                    set_uniform_mat4(obj_prog.id, "uProj", camera_proj_matrix);
+
+                    cube_mesh.vao.bind();
+                    for (usize i = 0; i < scene_context.cube_objects.size(); ++i) {
+                        const Object &o = scene_context.cube_objects[i];
+                        const glm::mat4 M = o.transform.model_matrix();
+
+                        set_uniform_mat4(obj_prog.id, "uModel", M);
+                        set_uniform_vec3(obj_prog.id, "uColor", o.color);
+
+                        glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
+                    }
+                    VAO::unbind();
+                }
+
+                // Outline via stencil (in FBO)
+                if (scene_context.selected_index.has_value() &&
+                    *scene_context.selected_index < scene_context.cube_objects.size()) {
+
+                    const Object &sel = scene_context.cube_objects[*scene_context.selected_index];
+                    const glm::mat4 M = sel.transform.model_matrix();
+
+                    { // Pass 1: write stencil
+                        glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+                        glDepthMask(GL_FALSE);
+                        glDisable(GL_DEPTH_TEST);
+
+                        glStencilMask(0xFF);
+                        glStencilFunc(GL_ALWAYS, 1, 0xFF);
+                        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+
+                        obj_prog.bind();
+                        set_uniform_mat4(obj_prog.id, "uView", camera_view_matrix);
+                        set_uniform_mat4(obj_prog.id, "uProj", camera_proj_matrix);
+                        set_uniform_mat4(obj_prog.id, "uModel", M);
+
+                        cube_mesh.vao.bind();
+                        glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
+                        VAO::unbind();
+
+                        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+                        glDepthMask(GL_TRUE);
+                        glEnable(GL_DEPTH_TEST);
+                        glDepthFunc(GL_LESS);
+                    }
+
+                    { // Pass 2: draw outline where stencil != 1
+                        glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+                        glStencilMask(0x00);
+
+                        glDisable(GL_DEPTH_TEST);
+                        glDisable(GL_CULL_FACE);
+
+                        outline_prog.bind();
+
+                        const glm::mat4 M_outline = M * glm::scale(glm::mat4(1.0f), glm::vec3(1.04f));
+
+                        set_uniform_mat4(outline_prog.id, "uModel", M_outline);
+                        set_uniform_mat4(outline_prog.id, "uView", camera_view_matrix);
+                        set_uniform_mat4(outline_prog.id, "uProj", camera_proj_matrix);
+                        set_uniform_vec3(outline_prog.id, "uColor", glm::vec3(1.0f, 0.55f, 0.0f));
+
+                        cube_mesh.vao.bind();
+                        glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
+                        VAO::unbind();
+
+                        glEnable(GL_DEPTH_TEST);
+                        glDepthFunc(GL_LESS);
+
+                        glStencilMask(0xFF);
+                        glStencilFunc(GL_ALWAYS, 0, 0xFF);
+                        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+                    }
+                }
+
+                glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+                // Present texture in ImGui (flip V)
+                ImGui::Image(
+                    viewport_fbo.imgui_texture_id(),
+                    content_size,
+                    ImVec2(0.0f, 1.0f),
+                    ImVec2(1.0f, 0.0f));
+
+                viewport_image_hovered = ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem);
+            } else {
+                ImGui::TextUnformatted("Viewport too small.");
+                viewport_image_hovered = false;
+            }
+
+            ImGui::End();
+        }
+
+        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+            glfwSetWindowShouldClose(window, GLFW_TRUE);
+        }
+
+        // Use ImGui mouse position (stable across multi-viewport)
+        const f64 mouse_x = static_cast<f64>(io.MousePos.x);
+        const f64 mouse_y = static_cast<f64>(io.MousePos.y);
+
+        const bool left_down = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
+        const bool middle_down = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS;
+
+        const bool allow_viewport_interaction = rr_valid && viewport_image_hovered;
+        if (allow_viewport_interaction) {
             const f32 wheel = io.MouseWheel;
             if (wheel != 0.0f) {
                 constexpr f32 zoom_speed = 0.12f;
@@ -279,10 +389,15 @@ int main() {
             }
 
             if (left_down && !prev_left) {
-                const Ray ray = ray_from_mouse_in_rect(
-                    window, mouse_x, mouse_y,
-                    rr.x, rr.y, rr.width, rr.height,
-                    camera_view_matrix, camera_proj_matrix);
+                const f32 aspect = static_cast<f32>(viewport_fbo.width) / static_cast<f32>(viewport_fbo.height);
+                const glm::mat4 V = scene_context.camera.view_matrix();
+                const glm::mat4 P = scene_context.camera.proj_matrix(aspect);
+
+                const Ray ray = ray_from_imgui_rect(
+                    ImVec2(static_cast<float>(mouse_x), static_cast<float>(mouse_y)),
+                    viewport_img_pos,
+                    viewport_img_size,
+                    V, P);
 
                 std::optional<usize> best_idx{};
                 f32 best_t = 1e30f;
@@ -312,117 +427,6 @@ int main() {
 
         ImGui::Render();
 
-        glEnable(GL_SCISSOR_TEST);
-        glViewport(rr.x, rr.y, rr.width, rr.height);
-        glScissor(rr.x, rr.y, rr.width, rr.height);
-
-        auto bg = g_render_settings.background_color;
-        glClearColor(bg.r(), bg.g(), bg.b(), bg.a());
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
-        { // Grid
-            glDepthMask(GL_FALSE);
-
-            grid_prog.bind();
-            set_uniform_mat4(grid_prog.id, "uView", camera_view_matrix);
-            set_uniform_mat4(grid_prog.id, "uProj", camera_proj_matrix);
-            set_uniform_float(grid_prog.id, "uFogStart", g_render_settings.grid.fog_start);
-            set_uniform_float(grid_prog.id, "uFogEnd", g_render_settings.grid.fog_end);
-
-            grid_mesh.vao.bind();
-            glDrawArrays(GL_LINES, 0, grid_mesh.vertex_count);
-            VAO::unbind();
-
-            glDepthMask(GL_TRUE);
-        }
-
-        { // Objects
-            glEnable(GL_DEPTH_TEST);
-            glDepthFunc(GL_LESS);
-
-            glStencilMask(0x00);
-            glStencilFunc(GL_ALWAYS, 0, 0xFF);
-
-            obj_prog.bind();
-            set_uniform_mat4(obj_prog.id, "uView", camera_view_matrix);
-            set_uniform_mat4(obj_prog.id, "uProj", camera_proj_matrix);
-
-            cube_mesh.vao.bind();
-            for (usize i = 0; i < scene_context.cube_objects.size(); ++i) {
-                const Object &o = scene_context.cube_objects[i];
-                const glm::mat4 M = o.transform.model_matrix();
-
-                set_uniform_mat4(obj_prog.id, "uModel", M);
-                set_uniform_vec3(obj_prog.id, "uColor", o.color);
-
-                glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
-            }
-            VAO::unbind();
-        }
-
-        // Outline stencil
-        if (scene_context.selected_index.has_value()) {
-            { // First pass (write stencil)
-                const Object &o = scene_context.cube_objects[*scene_context.selected_index];
-                const glm::mat4 M = o.transform.model_matrix();
-
-                glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-                glDepthMask(GL_FALSE);
-                glDisable(GL_DEPTH_TEST);
-
-                glStencilMask(0xFF);
-                glStencilFunc(GL_ALWAYS, 1, 0xFF);
-                glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-
-                obj_prog.bind();
-                set_uniform_mat4(obj_prog.id, "uView", camera_view_matrix);
-                set_uniform_mat4(obj_prog.id, "uProj", camera_proj_matrix);
-                set_uniform_mat4(obj_prog.id, "uModel", M);
-
-                cube_mesh.vao.bind();
-                glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
-                VAO::unbind();
-
-                glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-                glDepthMask(GL_TRUE);
-                glEnable(GL_DEPTH_TEST);
-                glDepthFunc(GL_LESS);
-            }
-
-            { // Second pass (draw outline where stencil != 1)
-                const Object &o = scene_context.cube_objects[*scene_context.selected_index];
-
-                glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-                glStencilMask(0x00);
-
-                glDisable(GL_DEPTH_TEST);
-                glDisable(GL_CULL_FACE);
-
-                outline_prog.bind();
-
-                const glm::mat4 M = o.transform.model_matrix();
-                const glm::mat4 M_outline = M * glm::scale(glm::mat4(1.0f), glm::vec3(1.04f));
-
-                set_uniform_mat4(outline_prog.id, "uModel", M_outline);
-                set_uniform_mat4(outline_prog.id, "uView", camera_view_matrix);
-                set_uniform_mat4(outline_prog.id, "uProj", camera_proj_matrix);
-                set_uniform_vec3(outline_prog.id, "uColor", glm::vec3(1.0f, 0.55f, 0.0f));
-
-                cube_mesh.vao.bind();
-                glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
-                VAO::unbind();
-
-                glEnable(GL_DEPTH_TEST);
-                glDepthFunc(GL_LESS);
-
-                glStencilMask(0xFF);
-                glStencilFunc(GL_ALWAYS, 0, 0xFF);
-                glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-            }
-        }
-
-        glDisable(GL_SCISSOR_TEST);
-
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
@@ -440,6 +444,8 @@ int main() {
         std::println(stderr, "Warning: failed to save scene to {}", k_scene_path);
     }
 
+    viewport_fbo.destroy();
+
     glDeleteProgram(grid_prog.id);
     glDeleteProgram(obj_prog.id);
     glDeleteProgram(outline_prog.id);
@@ -450,6 +456,4 @@ int main() {
 
     glfwDestroyWindow(window);
     glfwTerminate();
-
-    return EXIT_SUCCESS;
 }

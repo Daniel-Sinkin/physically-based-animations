@@ -15,18 +15,20 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <utility>
 
+#include "imgui.h"
+
 namespace ds_pba {
 using usize = std::size_t;
 
 using i64 = std::int64_t;
 using i32 = std::int32_t;
 using i16 = std::int16_t;
-using i8  = std::int8_t;
+using i8 = std::int8_t;
 
 using u64 = std::uint64_t;
 using u32 = std::uint32_t;
 using u16 = std::uint16_t;
-using u8  = std::uint8_t;
+using u8 = std::uint8_t;
 
 #if defined(__cpp_lib_stdfloat) && __cpp_lib_stdfloat >= 202207L
 using f32 = std::float32_t;
@@ -42,13 +44,13 @@ static_assert(sizeof(f64) == 8);
 // triggering any conversion errors; see for example docs of glVertexAttribPointer
 struct GLPtr final {
     // Offset 0 (start of buffer).
-    static constexpr const void* offset0() noexcept {
-        return static_cast<const void*>(nullptr);
+    static constexpr const void *offset0() noexcept {
+        return static_cast<const void *>(nullptr);
     }
 
     // Offset 'bytes' into the currently bound buffer.
-    static constexpr const void* offset(std::size_t bytes) noexcept {
-        return reinterpret_cast<const void*>(static_cast<std::uintptr_t>(bytes));
+    static constexpr const void *offset(std::size_t bytes) noexcept {
+        return reinterpret_cast<const void *>(static_cast<std::uintptr_t>(bytes));
     }
 };
 
@@ -99,9 +101,8 @@ struct ShaderProgram {
     static void unbind() noexcept { glUseProgram(0); }
 };
 
-
 enum class ShaderType : GLenum {
-    Vertex   = GL_VERTEX_SHADER,
+    Vertex = GL_VERTEX_SHADER,
     Fragment = GL_FRAGMENT_SHADER,
     Geometry = GL_GEOMETRY_SHADER,
     TessCtrl = GL_TESS_CONTROL_SHADER,
@@ -118,14 +119,14 @@ struct Shader {
 
     [[nodiscard]] static constexpr bool is_valid_type(ShaderType t) noexcept {
         switch (t) {
-            case ShaderType::Vertex:
-            case ShaderType::Fragment:
-            case ShaderType::Geometry:
-            case ShaderType::TessCtrl:
-            case ShaderType::TessEval:
-                return true;
-            default:
-                return false;
+        case ShaderType::Vertex:
+        case ShaderType::Fragment:
+        case ShaderType::Geometry:
+        case ShaderType::TessCtrl:
+        case ShaderType::TessEval:
+            return true;
+        default:
+            return false;
         }
         std::unreachable();
     }
@@ -138,15 +139,15 @@ struct Shader {
         return s;
     }
 
-    void compile(const std::string& source) const noexcept {
+    void compile(const std::string &source) const noexcept {
         assert(valid() && "Attempting to compile invalid Shader (id == 0)");
-        const char* src = source.data();
+        const char *src = source.data();
         const GLint len = static_cast<GLint>(source.size());
         glShaderSource(id, 1, &src, &len);
         glCompileShader(id);
     }
 
-    static Shader create_and_compile(ShaderType shader_type, const std::string& source) noexcept {
+    static Shader create_and_compile(ShaderType shader_type, const std::string &source) noexcept {
         Shader shader = Shader::create(shader_type);
         shader.compile(source);
         return shader;
@@ -214,9 +215,82 @@ struct Ray {
     }
 };
 
-using Clock     = std::chrono::steady_clock;
+struct ViewportFBO {
+    GLuint fbo = 0;
+    GLuint color_tex = 0;
+    GLuint depth_rbo = 0;
+    int width = 0;
+    int height = 0;
+
+    void destroy() noexcept {
+        if (depth_rbo) {
+            glDeleteRenderbuffers(1, &depth_rbo);
+            depth_rbo = 0;
+        }
+        if (color_tex) {
+            glDeleteTextures(1, &color_tex);
+            color_tex = 0;
+        }
+        if (fbo) {
+            glDeleteFramebuffers(1, &fbo);
+            fbo = 0;
+        }
+        width = 0;
+        height = 0;
+    }
+
+    bool ensure_size(int w, int h) noexcept {
+        w = std::max(1, w);
+        h = std::max(1, h);
+
+        if (w == width && h == height && fbo && color_tex && depth_rbo) {
+            return true;
+        }
+
+        destroy();
+
+        width = w;
+        height = h;
+
+        glGenFramebuffers(1, &fbo);
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+        // Color texture
+        glGenTextures(1, &color_tex);
+        glBindTexture(GL_TEXTURE_2D, color_tex);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+        // GL_RGBA8 is fine for UI viewport
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, color_tex, 0);
+
+        // Depth+stencil renderbuffer
+        glGenRenderbuffers(1, &depth_rbo);
+        glBindRenderbuffer(GL_RENDERBUFFER, depth_rbo);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, depth_rbo);
+
+        const GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+
+        // Cleanup bindings
+        glBindRenderbuffer(GL_RENDERBUFFER, 0);
+        glBindTexture(GL_TEXTURE_2D, 0);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        return status == GL_FRAMEBUFFER_COMPLETE;
+    }
+
+    [[nodiscard]] ImTextureID imgui_texture_id() const noexcept {
+        return static_cast<ImTextureID>(static_cast<std::uintptr_t>(color_tex));
+    }
+};
+
+using Clock = std::chrono::steady_clock;
 using TimePoint = Clock::time_point;
-using Duration  = std::chrono::duration<f64>;
+using Duration = std::chrono::duration<f64>;
 
 template <typename T>
 struct Rect {

@@ -33,7 +33,7 @@ bool SceneHotReloader::changed() {
     return false;
 }
 
-bool save_scene_to_file(const SceneContext& scene, const fs::path& path) {
+bool save_scene_to_file(const SceneContext &scene, const fs::path &path) {
     try {
         nlohmann::json j = scene;
         std::ofstream out(path, std::ios::binary | std::ios::trunc);
@@ -47,7 +47,7 @@ bool save_scene_to_file(const SceneContext& scene, const fs::path& path) {
     }
 }
 
-std::optional<SceneContext> load_scene_from_file(const fs::path& path) {
+std::optional<SceneContext> load_scene_from_file(const fs::path &path) {
     try {
         std::ifstream in(path, std::ios::binary);
         if (!in.is_open()) {
@@ -63,7 +63,7 @@ std::optional<SceneContext> load_scene_from_file(const fs::path& path) {
     }
 }
 
-bool try_hot_reload_scene(SceneContext& scene_context, const fs::path& path) {
+bool try_hot_reload_scene(SceneContext &scene_context, const fs::path &path) {
     auto loaded = load_scene_from_file(path);
     if (!loaded) {
         return false;

@@ -10,11 +10,11 @@ struct RenderSettings {
 
     struct GridSettings {
         int n_lines_per_side = 30;
-        f32 spacing          = 1.0f;
-        f32 fog_start        = 12.0f;
-        f32 fog_end          = 30.0f;
-        f32 minor_alpha      = 0.35f;
-        f32 axis_alpha       = 0.95f;
+        f32 spacing = 1.0f;
+        f32 fog_start = 12.0f;
+        f32 fog_end = 30.0f;
+        f32 minor_alpha = 0.35f;
+        f32 axis_alpha = 0.95f;
     } grid{};
 };
 
