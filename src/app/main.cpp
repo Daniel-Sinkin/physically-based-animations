@@ -1,20 +1,25 @@
 // pba/main.cpp
-#include "pba/glfw_setup.hpp"
-#include "pba/mesh.hpp"
 #include "pba/camera.hpp"
-#include "pba/interaction.hpp"
-#include "pba/render_settings.hpp"
-#include "pba/ui.hpp"
 #include "pba/gl.hpp"
+#include "pba/glfw_setup.hpp"
+#include "pba/interaction.hpp"
 #include "pba/mesh.hpp"
 #include "pba/render_settings.hpp"
+#include "pba/types.hpp"
+#include "pba/ui.hpp"
 
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <optional>
 #include <print>
-#include <vector>
+
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+#define TINYOBJLOADER_IMPLEMENTATION
+#include <tiny_obj_loader.h>
+
+#include <nlohmann/json.hpp>
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -24,6 +29,10 @@
 #include "backends/imgui_impl_opengl3.h"
 #include "imgui.h"
 
+
+namespace ds_pba {
+
+}
 
 int main() {
     using namespace ds_pba;
@@ -93,18 +102,18 @@ int main() {
         g_render_settings.grid.axis_alpha,
         g_render_settings.grid.minor_alpha);
 
-    std::vector<Object> cube_objects;
-    cube_objects.push_back(Object{
+    SceneContext scene_context{};
+    scene_context.cube_objects.push_back(Object{
         .name = "Cube A",
         .transform = Transform{.position = {2.0f, 1.0f, 0.5f}, .rotation_deg = {0, 0, 0}, .scale = {1, 1, 1}},
         .color = {0.85f, 0.35f, 0.25f},
     });
-    cube_objects.push_back(Object{
+    scene_context.cube_objects.push_back(Object{
         .name = "Cube B",
         .transform = Transform{.position = {-1.5f, 2.5f, 0.5f}, .rotation_deg = {0, 0, 25}, .scale = {1, 1, 1}},
         .color = {0.25f, 0.55f, 0.90f},
     });
-    cube_objects.push_back(Object{
+    scene_context.cube_objects.push_back(Object{
         .name = "Cube C",
         .transform = Transform{.position = {-2.5f, -1.5f, 0.75f}, .rotation_deg = {15, 0, 0}, .scale = {1.5f, 1.0f, 1.5f}},
         .color = {0.30f, 0.85f, 0.45f},
@@ -112,9 +121,8 @@ int main() {
 
     std::optional<usize> selected_index = std::nullopt;
 
-    Camera camera{};
-    camera.pivot = {0, 0, 0};
-    camera.distance = 10.0f;
+    scene_context.camera.pivot = {0, 0, 0};
+    scene_context.camera.distance = 10.0f;
 
     auto framebuffer_callback = [](GLFWwindow *, int width, int height) -> void {
         glViewport(0, 0, width, height);
@@ -131,6 +139,8 @@ int main() {
     bool prev_middle = false;
     f64 prev_mx = 0.0;
     f64 prev_my = 0.0;
+
+    int frame_counter = 0;
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
@@ -159,8 +169,8 @@ int main() {
             const f32 wheel = io.MouseWheel;
             if (wheel != 0.0f) {
                 constexpr f32 zoom_speed = 0.12f;
-                camera.distance *= std::exp(-wheel * zoom_speed);
-                camera.distance = std::clamp(camera.distance, 0.75f, 200.0f);
+                scene_context.camera.distance *= std::exp(-wheel * zoom_speed);
+                scene_context.camera.distance = std::clamp(scene_context.camera.distance, 0.75f, 200.0f);
             }
         }
 
@@ -170,11 +180,11 @@ int main() {
                 const f32 dy = static_cast<f32>(mouse_y - prev_my);
 
                 constexpr f32 sensitivity = 0.0050f;
-                camera.yaw += -dx * sensitivity;
-                camera.pitch += dy * sensitivity;
+                scene_context.camera.yaw += -dx * sensitivity;
+                scene_context.camera.pitch += dy * sensitivity;
 
                 const f32 lim = glm::radians(89.0f);
-                camera.pitch = std::clamp(camera.pitch, -lim, lim);
+                scene_context.camera.pitch = std::clamp(scene_context.camera.pitch, -lim, lim);
             }
         }
 
@@ -183,16 +193,16 @@ int main() {
             glfwGetFramebufferSize(window, &fbw, &fbh);
             const f32 aspect = (fbh > 0) ? (static_cast<f32>(fbw) / static_cast<f32>(fbh)) : 1.0f;
 
-            const glm::mat4 camera_view_matrix = camera.view_matrix();
-            const glm::mat4 camera_proj_matrix = camera.proj_matrix(aspect);
+            const glm::mat4 camera_view_matrix = scene_context.camera.view_matrix();
+            const glm::mat4 camera_proj_matrix = scene_context.camera.proj_matrix(aspect);
 
             const Ray ray = ray_from_mouse(window, mouse_x, mouse_y, camera_view_matrix, camera_proj_matrix);
 
             std::optional<usize> best_idx{};
             f32 best_t = 1e30f;
 
-            for (usize i = 0; i < cube_objects.size(); ++i) {
-                const Object &o = cube_objects[i];
+            for (usize i = 0; i < scene_context.cube_objects.size(); ++i) {
+                const Object &o = scene_context.cube_objects[i];
                 const glm::mat4 M = o.transform.model_matrix();
 
                 f32 tW = 0.0f;
@@ -211,7 +221,7 @@ int main() {
         prev_mx = mouse_x;
         prev_my = mouse_y;
 
-        render_imgui_windows(camera, cube_objects, selected_index);
+        render_imgui_windows(scene_context, selected_index, frame_counter);
         ImGui::Render();
 
         int frame_buffer_width = 1, frame_buffer_height = 1;
@@ -219,8 +229,8 @@ int main() {
         const f32 aspect =
             (frame_buffer_height > 0) ? (static_cast<f32>(frame_buffer_width) / static_cast<f32>(frame_buffer_height)) : 1.0f;
 
-        const glm::mat4 V = camera.view_matrix();
-        const glm::mat4 P = camera.proj_matrix(aspect);
+        const glm::mat4 camera_view_matrix = scene_context.camera.view_matrix();
+        const glm::mat4 camera_proj_matrix = scene_context.camera.proj_matrix(aspect);
 
         auto bg = g_render_settings.background_color;
         glClearColor(bg.r(), bg.g(), bg.b(), bg.a());
@@ -230,8 +240,8 @@ int main() {
             glDepthMask(GL_FALSE);
 
             grid_prog.bind();
-            set_uniform_mat4(grid_prog.id, "uView", V);
-            set_uniform_mat4(grid_prog.id, "uProj", P);
+            set_uniform_mat4(grid_prog.id, "uView", camera_view_matrix);
+            set_uniform_mat4(grid_prog.id, "uProj", camera_proj_matrix);
             set_uniform_float(grid_prog.id, "uFogStart", g_render_settings.grid.fog_start);
             set_uniform_float(grid_prog.id, "uFogEnd", g_render_settings.grid.fog_end);
             set_uniform_float(grid_prog.id, "uMinorAlpha", g_render_settings.grid.minor_alpha);
@@ -252,14 +262,14 @@ int main() {
             glStencilFunc(GL_ALWAYS, 0, 0xFF);
 
             obj_prog.bind();
-            set_uniform_mat4(obj_prog.id, "uView", V);
-            set_uniform_mat4(obj_prog.id, "uProj", P);
-            set_uniform_vec3(obj_prog.id, "uCameraPos", camera.position());
+            set_uniform_mat4(obj_prog.id, "uView", camera_view_matrix);
+            set_uniform_mat4(obj_prog.id, "uProj", camera_proj_matrix);
+            set_uniform_vec3(obj_prog.id, "uCameraPos", scene_context.camera.position());
             set_uniform_float(obj_prog.id, "uTime", static_cast<float>(glfwGetTime()));
 
             cube_mesh.vao.bind();
-            for (usize i = 0; i < cube_objects.size(); ++i) {
-                const Object &o = cube_objects[i];
+            for (usize i = 0; i < scene_context.cube_objects.size(); ++i) {
+                const Object &o = scene_context.cube_objects[i];
                 const glm::mat4 M = o.transform.model_matrix();
 
                 set_uniform_mat4(obj_prog.id, "uModel", M);
@@ -273,7 +283,7 @@ int main() {
         // Outline Stencil
         if (selected_index.has_value()) {
             { // First Pass (write stencil)
-                const Object &o = cube_objects[*selected_index];
+                const Object &o = scene_context.cube_objects[*selected_index];
                 const glm::mat4 M = o.transform.model_matrix();
 
                 glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
@@ -285,8 +295,8 @@ int main() {
                 glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
                 obj_prog.bind();
-                set_uniform_mat4(obj_prog.id, "uView", V);
-                set_uniform_mat4(obj_prog.id, "uProj", P);
+                set_uniform_mat4(obj_prog.id, "uView", camera_view_matrix);
+                set_uniform_mat4(obj_prog.id, "uProj", camera_proj_matrix);
                 set_uniform_mat4(obj_prog.id, "uModel", M);
 
                 cube_mesh.vao.bind();
@@ -300,7 +310,7 @@ int main() {
             }
 
             { // Second pass (draw outline where stencil != 1)
-                const Object &o = cube_objects[*selected_index];
+                const Object &o = scene_context.cube_objects[*selected_index];
 
                 glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
                 glStencilMask(0x00);
@@ -314,8 +324,8 @@ int main() {
                 const glm::mat4 M_outline = M * glm::scale(glm::mat4(1.0f), glm::vec3(1.04f));
 
                 set_uniform_mat4(outline_prog.id, "uModel", M_outline);
-                set_uniform_mat4(outline_prog.id, "uView", V);
-                set_uniform_mat4(outline_prog.id, "uProj", P);
+                set_uniform_mat4(outline_prog.id, "uView", camera_view_matrix);
+                set_uniform_mat4(outline_prog.id, "uProj", camera_proj_matrix);
                 set_uniform_vec3(outline_prog.id, "uColor", glm::vec3(1.0f, 0.55f, 0.0f));
 
                 cube_mesh.vao.bind();
@@ -333,6 +343,20 @@ int main() {
 
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         glfwSwapBuffers(window);
+
+        if ((static_cast<int>(scene_context.cube_objects.size()) - 3) * 500 < frame_counter) {
+            f32 n_obj_f = static_cast<f32>(scene_context.cube_objects.size());
+            scene_context.cube_objects.push_back(Object{
+                .name = "Cube Dynamic",
+                .transform = Transform{
+                    .position = {0.0f, 0.0f, 0.5f + 1.0f * (n_obj_f - 3.0f)},
+                    .rotation_deg = {0.0f, 0.0f, 0.0f},
+                    .scale = {1.0f, 1.0f, 1.0f}},
+                .color = {0.0f, 0.0f, 0.0f},
+            });
+        }
+
+        ++frame_counter;
     }
 
     glDeleteProgram(grid_prog.id);

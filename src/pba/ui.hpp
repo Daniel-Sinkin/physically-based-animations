@@ -2,13 +2,12 @@
 #pragma once
 
 #include <optional>
-#include <vector>
 
-#include "camera.hpp"
 #include "types.hpp"
+#include "scene_context.hpp"
 
 namespace ds_pba {
 
-void render_imgui_windows(Camera &cam, std::vector<Object> &objects, std::optional<usize> &selected_index);
+void render_imgui_windows(SceneContext& ctx, std::optional<usize> &selected_index, int frame_counter);
 
 } // namespace ds_pba

@@ -2,14 +2,18 @@
 #include "ui.hpp"
 
 #include <algorithm>
+#include <string>
 
+#include "camera.hpp"
 #include "imgui.h"
 #include "render_settings.hpp"
-#include "camera.hpp"
+#include "scene_context.hpp"
 
 namespace ds_pba {
 
-void render_imgui_windows(Camera &cam, std::vector<Object> &objects, std::optional<usize> &selected_index) {
+void render_imgui_windows(SceneContext &ctx, std::optional<usize> &selected_index, int frame_counter) {
+    auto &cam = ctx.camera;
+
     {
         ImGui::Begin("Info");
         const auto gl_string = [](GLenum name) -> const char * {
@@ -27,6 +31,8 @@ void render_imgui_windows(Camera &cam, std::vector<Object> &objects, std::option
         ImGui::Text("  pitch(deg):%.2f", static_cast<double>(glm::degrees(cam.pitch)));
         ImGui::Text("  pivot:     (%.2f, %.2f, %.2f)", static_cast<double>(cam.pivot.x), static_cast<double>(cam.pivot.y), static_cast<double>(cam.pivot.z));
         ImGui::End();
+
+        ImGui::Text("Frame Counter: %d", frame_counter);
     }
 
     {
@@ -43,8 +49,8 @@ void render_imgui_windows(Camera &cam, std::vector<Object> &objects, std::option
 
     {
         ImGui::Begin("Object Inspector");
-        if (selected_index.has_value() && *selected_index < objects.size()) {
-            Object &o = objects[*selected_index];
+        if (selected_index.has_value() && *selected_index < ctx.cube_objects.size()) {
+            Object &o = ctx.cube_objects[*selected_index];
             ImGui::Text("Selected: %s", o.name.c_str());
             ImGui::Separator();
 
@@ -61,6 +67,24 @@ void render_imgui_windows(Camera &cam, std::vector<Object> &objects, std::option
             ImGui::Text("Left-click objects to select.");
             ImGui::Text("Middle-mouse drag to orbit.");
         }
+        ImGui::End();
+    }
+
+    {
+        ImGui::Begin("Scene Inspector");
+        ImGui::Text("There are %zu objects in the scene", ctx.cube_objects.size());
+        for (usize i = 0; i < ctx.cube_objects.size(); ++i) {
+            const Object& o = ctx.cube_objects[i];
+
+            const bool is_selected = selected_index.has_value() && (*selected_index == i);
+
+            std::string label = std::to_string(i) + " - " + o.name + "##" + std::to_string(i);
+
+            if (ImGui::Selectable(label.c_str(), is_selected)) {
+                selected_index = i;
+            }
+        }
+
         ImGui::End();
     }
 }
