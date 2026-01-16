@@ -5,7 +5,7 @@
 
 #include "camera.hpp"
 #include "scene_context.hpp"
-#include "types.hpp"
+#include "pba/types.hpp" // IWYU pragma: keep
 
 namespace nlohmann {
 // Hack to alleviate ADL issues, see https://en.cppreference.com/w/cpp/language/adl.html

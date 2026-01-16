@@ -1,7 +1,7 @@
 // pba/gl.hpp
 #pragma once
 
-#include "types.hpp"
+#include "pba/types.hpp" // IWYU pragma: keep
 
 #include <expected>
 #include <optional>

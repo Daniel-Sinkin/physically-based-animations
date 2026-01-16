@@ -1,7 +1,7 @@
 // pba/picking.hpp
 #pragma once
 
-#include "types.hpp"
+#include "pba/types.hpp" // IWYU pragma: keep
 
 struct GLFWwindow;
 
@@ -30,9 +30,9 @@ Ray ray_from_mouse_in_rect(
     const glm::mat4 &camera_proj_matrix);
 
 Ray ray_from_imgui_rect(
-    const ImVec2 mouse_pos,
-    const ImVec2 rect_pos,
-    const ImVec2 rect_size,
+    const glm::vec2 &mouse_pos,
+    const glm::vec2 &rect_pos,
+    const glm::vec2 &rect_size,
     const glm::mat4 &camera_view_matrix,
     const glm::mat4 &camera_proj_matrix);
 

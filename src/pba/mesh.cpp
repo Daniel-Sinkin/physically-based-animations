@@ -1,6 +1,6 @@
 // pba/mesh.cpp
 #include "mesh.hpp"
-#include "types.hpp"
+#include "pba/types.hpp" // IWYU pragma: keep
 
 #include <algorithm>
 #include <array>

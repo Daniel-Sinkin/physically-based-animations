@@ -1,5 +1,6 @@
 // pba/picking.cpp
 #include "interaction.hpp"
+#include "pba/types.hpp" // IWYU pragma: keep
 
 #include <algorithm>
 #include <cmath>
@@ -78,15 +79,15 @@ Ray ray_from_mouse(
 }
 
 Ray ray_from_mouse_in_rect(
-    GLFWwindow* window,
+    GLFWwindow *window,
     f64 mouse_x,
     f64 mouse_y,
     int rect_x,
     int rect_y,
     int rect_w,
     int rect_h,
-    const glm::mat4& camera_view_matrix,
-    const glm::mat4& camera_proj_matrix) {
+    const glm::mat4 &camera_view_matrix,
+    const glm::mat4 &camera_proj_matrix) {
 
     int fbw = 1, fbh = 1;
     glfwGetFramebufferSize(window, &fbw, &fbh);
@@ -112,22 +113,22 @@ Ray ray_from_mouse_in_rect(
     glm::vec4 far_ndc(x_ndc, y_ndc, 1.0f, 1.0f);
 
     glm::vec4 near_w = invPV * near_ndc;
-    glm::vec4 far_w  = invPV * far_ndc;
+    glm::vec4 far_w = invPV * far_ndc;
     near_w /= near_w.w;
-    far_w  /= far_w.w;
+    far_w /= far_w.w;
 
     return Ray{
         .origin = glm::vec3(near_w),
-        .dir    = glm::normalize(glm::vec3(far_w - near_w)),
+        .dir = glm::normalize(glm::vec3(far_w - near_w)),
     };
 }
 
 Ray ray_from_imgui_rect(
-    const ImVec2 mouse_pos,
-    const ImVec2 rect_pos,
-    const ImVec2 rect_size,
-    const glm::mat4& camera_view_matrix,
-    const glm::mat4& camera_proj_matrix) {
+    const glm::vec2 &mouse_pos,
+    const glm::vec2 &rect_pos,
+    const glm::vec2 &rect_size,
+    const glm::mat4 &camera_view_matrix,
+    const glm::mat4 &camera_proj_matrix) {
 
     const float lx = mouse_pos.x - rect_pos.x;
     const float ly = mouse_pos.y - rect_pos.y;
@@ -135,23 +136,22 @@ Ray ray_from_imgui_rect(
     const float w = std::max(1.0f, rect_size.x);
     const float h = std::max(1.0f, rect_size.y);
 
-    // NDC in the viewport image (top-left origin)
     const float x_ndc = 2.0f * (lx / w) - 1.0f;
     const float y_ndc = 1.0f - 2.0f * (ly / h);
 
     const glm::mat4 invPV = glm::inverse(camera_proj_matrix * camera_view_matrix);
 
     glm::vec4 near_ndc(x_ndc, y_ndc, -1.0f, 1.0f);
-    glm::vec4 far_ndc(x_ndc, y_ndc,  1.0f, 1.0f);
+    glm::vec4 far_ndc(x_ndc, y_ndc, 1.0f, 1.0f);
 
     glm::vec4 near_w = invPV * near_ndc;
-    glm::vec4 far_w  = invPV * far_ndc;
+    glm::vec4 far_w = invPV * far_ndc;
     near_w /= near_w.w;
-    far_w  /= far_w.w;
+    far_w /= far_w.w;
 
     return ds_pba::Ray{
         .origin = glm::vec3(near_w),
-        .dir    = glm::normalize(glm::vec3(far_w - near_w)),
+        .dir = glm::normalize(glm::vec3(far_w - near_w)),
     };
 }
 

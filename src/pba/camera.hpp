@@ -1,7 +1,7 @@
 // pba/camera.hpp
 #pragma once
 
-#include "types.hpp"
+#include "pba/types.hpp" // IWYU pragma: keep
 
 namespace ds_pba {
 

@@ -2,7 +2,7 @@
 #pragma once
 
 #include "camera.hpp"
-#include "types.hpp"
+#include "pba/types.hpp" // IWYU pragma: keep
 
 #include <filesystem>
 #include <optional>

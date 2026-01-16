@@ -1,4 +1,5 @@
 // pba/main.cpp
+#include "glm/fwd.hpp"
 #include "pba/camera.hpp"
 #include "pba/gl.hpp"
 #include "pba/glfw_setup.hpp"
@@ -8,6 +9,7 @@
 #include "pba/scene_context.hpp"
 #include "pba/types.hpp"
 #include "pba/ui.hpp"
+#include "pba/viewport_fbo.hpp"
 
 #include <algorithm>
 #include <chrono>
@@ -133,10 +135,10 @@ int main() {
     SceneHotReloader scene_reloader(k_scene_path);
     scene_reloader.init_if_exists();
 
-    bool prev_left = false;
-    bool prev_middle = false;
-    f64 prev_mx = 0.0;
-    f64 prev_my = 0.0;
+    bool prev_left{false};
+    bool prev_middle{false};
+    f64 prev_mx{0.0};
+    f64 prev_my{0.0};
 
     int frame_counter = 0;
 
@@ -145,13 +147,12 @@ int main() {
 
     ViewportFBO viewport_fbo{};
 
-    RectInt rr{};
-    bool rr_valid = false;
-    bool viewport_image_hovered = false;
+    RectInt viewport_fb_rect{};
+    bool viewport_fb_rect_valid{false};
+    bool viewport_image_hovered{false};
 
-    // Viewport image rect in ImGui screen coordinates (top-left origin).
-    ImVec2 viewport_img_pos{0.0f, 0.0f};
-    ImVec2 viewport_img_size{0.0f, 0.0f};
+    glm::vec2 viewport_img_pos{0.0f, 0.0f};
+    glm::vec2 viewport_img_size{0.0f, 0.0f};
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
@@ -183,7 +184,7 @@ int main() {
 
         ImGui::DockSpaceOverViewport(0, nullptr, ImGuiDockNodeFlags_PassthruCentralNode);
 
-        rr_valid = false;
+        viewport_fb_rect_valid = false;
         viewport_image_hovered = false;
 
         { // Viewport window
@@ -196,37 +197,45 @@ int main() {
 
             const ImVec2 content_pos = ImGui::GetCursorScreenPos();
             const ImVec2 content_size = ImGui::GetContentRegionAvail();
+            { // Filling viewport_fb_rect
+                viewport_img_pos = glm::vec2{content_pos.x, content_pos.y};
+                viewport_img_size = glm::vec2{content_size.x, content_size.y};
 
-            viewport_img_pos = content_pos;
-            viewport_img_size = content_size;
+                int fbw = 1, fbh = 1;
+                glfwGetFramebufferSize(window, &fbw, &fbh);
 
-            int fbw = 1, fbh = 1;
-            glfwGetFramebufferSize(window, &fbw, &fbh);
+                int win_w = 1, win_h = 1;
+                glfwGetWindowSize(window, &win_w, &win_h);
 
-            int win_w = 1, win_h = 1;
-            glfwGetWindowSize(window, &win_w, &win_h);
+                const f32 win_w_f = static_cast<f32>(win_w);
+                const f32 win_h_f = static_cast<f32>(win_h);
+                const f32 fbw_f = static_cast<f32>(fbw);
+                const f32 fbh_f = static_cast<f32>(fbh);
 
-            const float sx = (win_w > 0) ? static_cast<float>(fbw) / static_cast<float>(win_w) : 1.0f;
-            const float sy = (win_h > 0) ? static_cast<float>(fbh) / static_cast<float>(win_h) : 1.0f;
+                const f32 scale_x = (win_w_f > 0.0f) ? fbw_f / win_w_f : 1.0f;
+                const f32 scale_y = (win_h_f > 0.0f) ? fbh_f / win_h_f : 1.0f;
+                const f32 left_px = viewport_img_pos.x * scale_x;
+                const f32 width_px = viewport_img_size.x * scale_x;
+                const f32 height_px = viewport_img_size.y * scale_y;
+                const f32 bottom_px = fbh_f - (viewport_img_pos.y + viewport_img_size.y) * scale_y;
 
-            // Framebuffer-space rect (OpenGL bottom-left origin). Used for sizing the FBO.
-            const int vx = static_cast<int>(std::lround(content_pos.x * sx));
-            const int vw = static_cast<int>(std::lround(content_size.x * sx));
-            const int vy = static_cast<int>(std::lround(static_cast<float>(fbh) - (content_pos.y + content_size.y) * sy));
-            const int vh = static_cast<int>(std::lround(content_size.y * sy));
+                const int vx = static_cast<int>(std::lround(left_px));
+                const int vw = static_cast<int>(std::lround(width_px));
+                const int vy = static_cast<int>(std::lround(bottom_px));
+                const int vh = static_cast<int>(std::lround(height_px));
 
-            rr.x = std::clamp(vx, 0, std::max(0, fbw - 1));
-            rr.y = std::clamp(vy, 0, std::max(0, fbh - 1));
-            rr.width = std::clamp(vw, 1, fbw - rr.x);
-            rr.height = std::clamp(vh, 1, fbh - rr.y);
+                viewport_fb_rect.x = std::clamp(vx, 0, std::max(0, fbw - 1));
+                viewport_fb_rect.y = std::clamp(vy, 0, std::max(0, fbh - 1));
+                viewport_fb_rect.width = std::clamp(vw, 1, fbw - viewport_fb_rect.x);
+                viewport_fb_rect.height = std::clamp(vh, 1, fbh - viewport_fb_rect.y);
+            }
 
-            const int fbo_w = rr.width;
-            const int fbo_h = rr.height;
+            const int fbo_w = viewport_fb_rect.width;
+            const int fbo_h = viewport_fb_rect.height;
 
-            rr_valid = (fbo_w > 8 && fbo_h > 8) && viewport_fbo.ensure_size(fbo_w, fbo_h);
+            viewport_fb_rect_valid = (fbo_w > 8 && fbo_h > 8) && viewport_fbo.ensure_size(fbo_w, fbo_h);
 
-            if (rr_valid) {
-                // Render into FBO
+            if (viewport_fb_rect_valid) {
                 glBindFramebuffer(GL_FRAMEBUFFER, viewport_fbo.fbo);
                 glViewport(0, 0, viewport_fbo.width, viewport_fbo.height);
 
@@ -367,7 +376,7 @@ int main() {
         const bool left_down = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
         const bool middle_down = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS;
 
-        const bool allow_viewport_interaction = rr_valid && viewport_image_hovered;
+        const bool allow_viewport_interaction = viewport_fb_rect_valid && viewport_image_hovered;
         if (allow_viewport_interaction) {
             const f32 wheel = io.MouseWheel;
             if (wheel != 0.0f) {
@@ -390,14 +399,16 @@ int main() {
 
             if (left_down && !prev_left) {
                 const f32 aspect = static_cast<f32>(viewport_fbo.width) / static_cast<f32>(viewport_fbo.height);
-                const glm::mat4 V = scene_context.camera.view_matrix();
-                const glm::mat4 P = scene_context.camera.proj_matrix(aspect);
+                const glm::mat4 camera_view_matrix = scene_context.camera.view_matrix();
+                const glm::mat4 camera_proj_matrix = scene_context.camera.proj_matrix(aspect);
+
+                glm::vec2 mouse_pos = glm::vec2{static_cast<f32>(mouse_x), static_cast<f32>(mouse_y)};
 
                 const Ray ray = ray_from_imgui_rect(
-                    ImVec2(static_cast<float>(mouse_x), static_cast<float>(mouse_y)),
+                    mouse_pos,
                     viewport_img_pos,
                     viewport_img_size,
-                    V, P);
+                    camera_view_matrix, camera_proj_matrix);
 
                 std::optional<usize> best_idx{};
                 f32 best_t = 1e30f;
