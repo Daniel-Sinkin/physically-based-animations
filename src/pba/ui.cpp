@@ -49,7 +49,7 @@ constexpr ImVec4 rgba_u32(u32 rgba) noexcept {
     return ImVec4(r, g, b, a);
 }
 
-void render_terminal_window() {
+void render_terminal_window(RenderContext &render_context) {
     TerminalState &t = terminal();
 
     ImGui::Begin("Terminal");
@@ -73,6 +73,32 @@ void render_terminal_window() {
     ImGuiInputTextFlags flags = ImGuiInputTextFlags_EnterReturnsTrue;
     if (ImGui::InputText("##terminal_input", t.input_buf.data(), t.input_buf.size(), flags)) {
         std::string cmd = t.input_buf.data();
+        if (cmd == "exit") {
+            render_context.deactivate();
+        } else if (cmd.starts_with("select ")) {
+            assert(cmd.size() >= 10 && "Expected: select \"...\"");
+            assert(cmd[7] == '"');
+
+            usize i = 8zu;
+            while (i < cmd.size() && cmd[i] != '"') {
+                ++i;
+            }
+            assert(i < cmd.size() && cmd[i] == '"' && "Failed to find closing \"");
+
+            std::string_view name{cmd};
+            name = name.substr(8, i - 8); // contents between the quotes
+
+            std::println("Selecting: {}", name);
+
+            auto& cube_objects = render_context.scene_context->cube_objects;
+            for(usize j = 0; j < cube_objects.size(); ++j) {
+                if(cube_objects[j].name == name) {
+                    render_context.scene_context->selected_index = j;
+                    break;
+                }
+            }
+        }
+
         if (!cmd.empty()) {
             t.add_line("> " + cmd);
             std::println("Terminal input: {}", cmd);
@@ -210,7 +236,9 @@ void apply_blender_style() {
     }
 }
 
-void render_imgui_windows( SceneContext &scene_context, ColorRGBAf& background_color, GridSettings& grid, int frame_counter) {
+void render_imgui_windows(RenderContext &render_context) {
+    assert(render_context.scene_context && "Scene Context of render context not set!");
+    auto &scene_context = *render_context.scene_context;
     auto &cam = scene_context.camera;
     {
         ImGui::Begin("Info");
@@ -232,13 +260,14 @@ void render_imgui_windows( SceneContext &scene_context, ColorRGBAf& background_c
         auto pivot_z_d = static_cast<double>(cam.pivot.z);
         ImGui::Text("  pivot:     (%.2f, %.2f, %.2f)", pivot_x_d, pivot_y_d, pivot_z_d);
         ImGui::Separator();
-        ImGui::Text("Frame Counter: %d", frame_counter);
+        ImGui::Text("Frame Counter: %d", render_context.frame_counter);
         ImGui::End();
     }
 
     {
+        auto &grid = render_context.grid;
         ImGui::Begin("Render");
-        ImGui::ColorEdit4("Background", background_color.data());
+        ImGui::ColorEdit4("Background", render_context.background_color.data());
         ImGui::Separator();
         ImGui::Text("Grid");
         ImGui::DragFloat("Fog start", &grid.fog_start, 0.25f, 0.0f, 1e6f);
@@ -305,10 +334,12 @@ void render_imgui_windows( SceneContext &scene_context, ColorRGBAf& background_c
 
         ImGui::End();
     }
-    render_terminal_window();
+    render_terminal_window(render_context);
 }
 
-void render_menu_bar(SceneContext &scene_context) {
+void render_menu_bar(RenderContext &render_context) {
+    assert(render_context.scene_context && "RenderContext has no SceneContext!");
+    SceneContext &scene_context = *render_context.scene_context;
     if (ImGui::BeginMenu("File")) {
         if (ImGui::MenuItem("Save Scene")) {
             const bool ok = ds_pba::save_scene_to_file(scene_context, ds_pba::k_scene_path);
@@ -349,7 +380,6 @@ void render_menu_bar(SceneContext &scene_context) {
         }
         ImGui::EndMenu();
     }
-
 }
 
 } // namespace ds_pba

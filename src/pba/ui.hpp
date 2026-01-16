@@ -1,7 +1,7 @@
 // pba/ui.hpp
 #pragma once
 
-#include "pba/scene_context.hpp"
+#include "pba/render_context.hpp"
 
 #include <string_view>
 
@@ -10,6 +10,6 @@ struct GridSettings;
 
 void apply_blender_style();
 void ui_log(std::string_view msg);
-void render_imgui_windows(SceneContext &scene_context, ColorRGBAf &background_color, GridSettings &grid, int frame_counter);
-void render_menu_bar(SceneContext &scene_context);
+void render_imgui_windows(RenderContext &render_context);
+void render_menu_bar(RenderContext &render_context);
 } // namespace ds_pba

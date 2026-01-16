@@ -19,7 +19,7 @@ void ds_pba::RenderContext::run() {
     using namespace ds_pba;
 
     ImGuiIO &io = ImGui::GetIO();
-    while (!glfwWindowShouldClose(window)) {
+    while (is_active()) {
         glfwPollEvents();
 
         { // Hot Reload
@@ -44,7 +44,7 @@ void ds_pba::RenderContext::run() {
         ImGui::NewFrame();
 
         if (ImGui::BeginMainMenuBar()) {
-            render_menu_bar(*scene_context);
+            render_menu_bar(*this);
             ImGui::EndMainMenuBar();
         }
 
@@ -299,7 +299,7 @@ void ds_pba::RenderContext::run() {
         prev_mx = mouse_x;
         prev_my = mouse_y;
 
-        render_imgui_windows(*scene_context, background_color, grid, frame_counter);
+        render_imgui_windows(*this);
 
         ImGui::Render();
 

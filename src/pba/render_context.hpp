@@ -8,7 +8,6 @@
 #include <chrono>
 #include <memory>
 
-
 namespace ds_pba {
 struct GridSettings {
     int n_lines_per_side = 30;
@@ -48,6 +47,8 @@ struct RenderContext {
 
     std::unique_ptr<SceneContext> scene_context{};
 
+    bool is_active_{true};
+
     GLMesh cube_mesh{};
     GLMesh grid_mesh{};
 
@@ -55,5 +56,11 @@ struct RenderContext {
 
     void run();
     bool setup();
+
+    bool is_active() const {
+        return (!glfwWindowShouldClose(window)) && is_active_;
+    }
+    void deactivate() noexcept { is_active_ = false; }
+    void activate() noexcept { is_active_ = true; }
 };
 } // namespace ds_pba
