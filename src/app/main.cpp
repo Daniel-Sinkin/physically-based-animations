@@ -28,77 +28,8 @@
 #include "backends/imgui_impl_opengl3.h"
 #include "imgui.h"
 
-int main() {
+ds_pba::SceneContext setup_scene() {
     using namespace ds_pba;
-
-    RenderContext render_context{};
-
-    auto window_res = setup_glfw();
-    if (!window_res) {
-        std::println(stderr, "Failed to setup glfw with error code: {}", static_cast<int>(window_res.error()));
-        return EXIT_FAILURE;
-    }
-    render_context.window = *window_res;
-
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGuiIO &io = ImGui::GetIO();
-    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
-    apply_blender_style();
-
-    const char *glsl_version = "#version 330";
-    if (!ImGui_ImplGlfw_InitForOpenGL(render_context.window, true)) {
-        std::println(stderr, "ImGui_ImplGlfw_InitForOpenGL failed");
-        return EXIT_FAILURE;
-    }
-    if (!ImGui_ImplOpenGL3_Init(glsl_version)) {
-        std::println(stderr, "ImGui_ImplOpenGL3_Init failed");
-        return EXIT_FAILURE;
-    }
-
-    glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LESS);
-
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    glEnable(GL_STENCIL_TEST);
-    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-
-    auto grid_prog_res = create_program_from_file("grid");
-    if (!grid_prog_res) {
-        std::println(stderr, "Failed to load 'grid' shaders, got error code: {}", static_cast<int>(grid_prog_res.error()));
-        return EXIT_FAILURE;
-    }
-    render_context.grid_prog = *grid_prog_res;
-
-    auto obj_prog_res = create_program_from_file("object");
-    if (!obj_prog_res) {
-        std::println(stderr, "Failed to load 'object' shaders, got error code: {}", static_cast<int>(obj_prog_res.error()));
-        return EXIT_FAILURE;
-    }
-    render_context.obj_prog = *obj_prog_res;
-
-    auto outline_prog_res = create_program_from_file("outline");
-    if (!outline_prog_res) {
-        std::println(stderr, "Failed to load 'outline' shaders, got error code: {}", static_cast<int>(outline_prog_res.error()));
-        return EXIT_FAILURE;
-    }
-    render_context.outline_prog = *outline_prog_res;
-
-    if (!render_context.grid_prog.valid() || !render_context.obj_prog.valid() || !render_context.outline_prog.valid()) {
-        std::println(stderr, "Failed to create shader programs");
-        return EXIT_FAILURE;
-    }
-
-    render_context.cube_mesh = create_cube_mesh();
-    render_context.grid_mesh = create_grid_mesh(
-        render_context.grid.n_lines_per_side,
-        render_context.grid.spacing,
-        render_context.grid.axis_alpha,
-        render_context.grid.minor_alpha);
-
     SceneContext scene_context;
     if (fs::exists(k_scene_path)) {
         auto loaded = load_scene_from_file(k_scene_path);
@@ -131,17 +62,22 @@ int main() {
 
     scene_context.reloader = std::make_unique<SceneHotReloader>(SceneHotReloader(k_scene_path));
     scene_context.reloader->init_if_exists();
+    return scene_context;
+}
 
-    render_context.scene_context = std::make_unique<SceneContext>(std::move(scene_context));
 
-    render_context.last_scene_poll = std::chrono::steady_clock::now();
+int main() {
+    using namespace ds_pba;
 
-    render_context.viewport_img_pos = {0.0f, 0.0f};
-    render_context.viewport_img_size = {0.0f, 0.0f};
+    RenderContext render_context{};
+    if(!render_context.setup()) {
+        return EXIT_FAILURE;
+    }
+    render_context.scene_context = std::make_unique<SceneContext>(setup_scene());
 
     render_context.run();
 
-    if (!save_scene_to_file(scene_context, k_scene_path)) {
+    if (!save_scene_to_file(*render_context.scene_context, k_scene_path)) {
         std::println(stderr, "Warning: failed to save scene to {}", k_scene_path);
     }
 

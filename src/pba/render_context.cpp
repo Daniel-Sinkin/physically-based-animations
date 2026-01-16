@@ -1,11 +1,17 @@
 // pba/scene_context->hpp
 #include "pba/render_context.hpp"
 #include "pba/gl.hpp"
-#include "pba/ui.hpp"
 #include "pba/interaction.hpp"
+#include "pba/mesh.hpp"
+#include "pba/ui.hpp"
 
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
+
+
+#define GLFW_INCLUDE_NONE
+#include <GLFW/glfw3.h>
+#include <glad/glad.h>
 
 void ds_pba::RenderContext::run() {
     assert(scene_context && "Scene Context not set for RenderContext");
@@ -309,4 +315,98 @@ void ds_pba::RenderContext::run() {
         glfwSwapBuffers(window);
         ++frame_counter;
     }
+}
+
+bool ds_pba::RenderContext::setup() {
+    using namespace ds_pba;
+
+    auto glfw_error_callback = [](int error, const char *description) {
+        std::println(stderr, "GLFW Error {}: {}", error, description);
+    };
+    glfwSetErrorCallback(glfw_error_callback);
+    if (!glfwInit()) {
+        return false;
+    }
+
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
+
+    window = glfwCreateWindow(1600, 900, "Physically Based Animations", nullptr, nullptr);
+    if (!window) {
+        return false;
+    }
+
+    glfwMakeContextCurrent(window);
+    glfwSwapInterval(1);
+
+    if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
+        glfwDestroyWindow(window);
+        glfwTerminate();
+        return false;
+    }
+
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO &io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+    apply_blender_style();
+
+    const char *glsl_version = "#version 330";
+    if (!ImGui_ImplGlfw_InitForOpenGL(window, true)) {
+        std::println(stderr, "ImGui_ImplGlfw_InitForOpenGL failed");
+        return false;
+    }
+    if (!ImGui_ImplOpenGL3_Init(glsl_version)) {
+        std::println(stderr, "ImGui_ImplOpenGL3_Init failed");
+        return false;
+    }
+
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    glEnable(GL_STENCIL_TEST);
+    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+
+    auto grid_prog_res = create_program_from_file("grid");
+    if (!grid_prog_res) {
+        std::println(stderr, "Failed to load 'grid' shaders, got error code: {}", static_cast<int>(grid_prog_res.error()));
+        return false;
+    }
+    grid_prog = *grid_prog_res;
+
+    auto obj_prog_res = create_program_from_file("object");
+    if (!obj_prog_res) {
+        std::println(stderr, "Failed to load 'object' shaders, got error code: {}", static_cast<int>(obj_prog_res.error()));
+        return false;
+    }
+    obj_prog = *obj_prog_res;
+
+    auto outline_prog_res = create_program_from_file("outline");
+    if (!outline_prog_res) {
+        std::println(stderr, "Failed to load 'outline' shaders, got error code: {}", static_cast<int>(outline_prog_res.error()));
+        return false;
+    }
+    outline_prog = *outline_prog_res;
+
+    if (!grid_prog.valid() || !obj_prog.valid() || !outline_prog.valid()) {
+        std::println(stderr, "Failed to create shader programs");
+        return false;
+    }
+
+    cube_mesh = create_cube_mesh();
+    grid_mesh = create_grid_mesh(
+        grid.n_lines_per_side,
+        grid.spacing,
+        grid.axis_alpha,
+        grid.minor_alpha);
+
+    last_scene_poll = std::chrono::steady_clock::now();
+
+    return true;
 }

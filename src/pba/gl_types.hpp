@@ -9,7 +9,7 @@
 
 namespace ds_pba {
 
-// OpenGL uses void* offsets; this wrapper avoids noisy casts in user code.
+// OpenGL uses void* offsets, helper to avoid having this casting workaround everywhere
 struct GLPtr final {
     static constexpr const void* offset0() noexcept {
         return static_cast<const void*>(nullptr);

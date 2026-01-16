@@ -8,7 +8,6 @@
 #include <chrono>
 #include <memory>
 
-struct GLFWwindow; 
 
 namespace ds_pba {
 struct GridSettings {
@@ -55,5 +54,6 @@ struct RenderContext {
     GridSettings grid{};
 
     void run();
+    bool setup();
 };
 } // namespace ds_pba
