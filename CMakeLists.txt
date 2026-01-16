@@ -53,6 +53,40 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(glm)
 
+
+FetchContent_Declare(
+  tinyobjloader
+  GIT_REPOSITORY https://github.com/tinyobjloader/tinyobjloader.git
+  GIT_TAG        release
+)
+FetchContent_MakeAvailable(tinyobjloader)
+
+add_library(tinyobjloader_hdr INTERFACE)
+target_include_directories(tinyobjloader_hdr SYSTEM INTERFACE
+  ${tinyobjloader_SOURCE_DIR}
+)
+
+FetchContent_Declare(
+  stb
+  GIT_REPOSITORY https://github.com/nothings/stb.git
+  GIT_TAG        master
+)
+FetchContent_MakeAvailable(stb)
+
+add_library(stb_image_hdr INTERFACE)
+target_include_directories(stb_image_hdr SYSTEM INTERFACE
+  ${stb_SOURCE_DIR}
+)
+
+# nlohmann/json
+FetchContent_Declare(
+  nlohmann_json
+  GIT_REPOSITORY https://github.com/nlohmann/json.git
+  GIT_TAG        v3.11.3
+)
+FetchContent_MakeAvailable(nlohmann_json)
+
+
 file(GLOB_RECURSE PBA_SOURCES
   CONFIGURE_DEPENDS
   ${CMAKE_CURRENT_SOURCE_DIR}/src/pba/*.hpp
@@ -60,6 +94,7 @@ file(GLOB_RECURSE PBA_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/src/pba/*.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/pba/*.cc
 )
+
 add_executable(app
   src/app/main.cpp
   ${PBA_SOURCES}
@@ -69,15 +104,22 @@ target_include_directories(app PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-target_link_libraries(app PRIVATE imgui_lib glfw glad glm::glm)
+target_link_libraries(app PRIVATE
+  imgui_lib
+  glfw
+  glad
+  glm::glm
+
+  tinyobjloader_hdr
+  stb_image_hdr
+  nlohmann_json::nlohmann_json
+)
 
 target_compile_options(app PRIVATE
   -Wall
   -Wextra
   -Wpedantic
-
   -Werror
-
   -Wshadow
   -Wconversion
   -Wsign-conversion
@@ -88,12 +130,10 @@ target_compile_options(app PRIVATE
   -Wnull-dereference
   -Wnon-virtual-dtor
   -Woverloaded-virtual
-
   -Wold-style-cast
   -Wzero-as-null-pointer-constant
   -Wdouble-promotion
   -Wimplicit-fallthrough
-
   -Wreturn-type
 )
 
