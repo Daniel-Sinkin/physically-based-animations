@@ -5,6 +5,7 @@
 #include "pba/interaction.hpp"
 #include "pba/mesh.hpp"
 #include "pba/render_settings.hpp"
+#include "pba/serialisation.hpp"
 #include "pba/types.hpp"
 #include "pba/ui.hpp"
 
@@ -29,10 +30,96 @@
 #include "backends/imgui_impl_opengl3.h"
 #include "imgui.h"
 
-
 namespace ds_pba {
 
+namespace fs = std::filesystem;
+
+[[maybe_unused]] static constexpr const char *k_scene_path = "scene.json";
+
+[[maybe_unused]] static bool
+save_scene_to_file(const SceneContext &scene, const fs::path &path) {
+    try {
+        nlohmann::json j = scene;
+        std::ofstream out(path, std::ios::binary | std::ios::trunc);
+        if (!out.is_open()) {
+            return false;
+        }
+        out << j.dump(4) << "\n";
+        return out.good();
+    } catch (...) {
+        return false;
+    }
 }
+
+[[maybe_unused]] static std::optional<SceneContext>
+load_scene_from_file(const fs::path &path) {
+    try {
+        std::ifstream in(path, std::ios::binary);
+        if (!in.is_open()) {
+            return std::nullopt;
+        }
+        nlohmann::json j;
+        in >> j;
+
+        SceneContext scene = j.get<SceneContext>();
+        return scene;
+    } catch (...) {
+        return std::nullopt;
+    }
+}
+
+struct SceneHotReloader {
+    fs::path path{};
+    fs::file_time_type last_write_time{};
+    bool initialized{false};
+
+    explicit SceneHotReloader(fs::path p)
+        : path(std::move(p)) {}
+
+    void init_if_exists() {
+        if (fs::exists(path)) {
+            last_write_time = fs::last_write_time(path);
+            initialized = true;
+        }
+    }
+
+    [[nodiscard]] bool changed() {
+        if (!fs::exists(path)) {
+            return false;
+        }
+        const fs::file_time_type cur = fs::last_write_time(path);
+        if (!initialized) {
+            last_write_time = cur;
+            initialized = true;
+            return false;
+        }
+        if (cur != last_write_time) {
+            last_write_time = cur;
+            return true;
+        }
+        return false;
+    }
+};
+
+[[maybe_unused]] static bool try_hot_reload_scene(SceneContext &scene_context, const fs::path &path) {
+    auto loaded = load_scene_from_file(path);
+    if (!loaded.has_value()) {
+        return false;
+    }
+
+    Camera current_cam = scene_context.camera;
+
+    scene_context = std::move(*loaded);
+
+    scene_context.camera = current_cam;
+
+    if (scene_context.selected_index && *scene_context.selected_index >= scene_context.cube_objects.size()) {
+        scene_context.selected_index = std::nullopt;
+    }
+
+    return true;
+}
+} // namespace ds_pba
 
 int main() {
     using namespace ds_pba;
@@ -103,26 +190,39 @@ int main() {
         g_render_settings.grid.minor_alpha);
 
     SceneContext scene_context{};
-    scene_context.cube_objects.push_back(Object{
-        .name = "Cube A",
-        .transform = Transform{.position = {2.0f, 1.0f, 0.5f}, .rotation_deg = {0, 0, 0}, .scale = {1, 1, 1}},
-        .color = {0.85f, 0.35f, 0.25f},
-    });
-    scene_context.cube_objects.push_back(Object{
-        .name = "Cube B",
-        .transform = Transform{.position = {-1.5f, 2.5f, 0.5f}, .rotation_deg = {0, 0, 25}, .scale = {1, 1, 1}},
-        .color = {0.25f, 0.55f, 0.90f},
-    });
-    scene_context.cube_objects.push_back(Object{
-        .name = "Cube C",
-        .transform = Transform{.position = {-2.5f, -1.5f, 0.75f}, .rotation_deg = {15, 0, 0}, .scale = {1.5f, 1.0f, 1.5f}},
-        .color = {0.30f, 0.85f, 0.45f},
-    });
 
-    std::optional<usize> selected_index = std::nullopt;
+    std::optional<SceneContext> loaded{};
+    if (ds_pba::fs::exists(ds_pba::k_scene_path)) {
+        loaded = ds_pba::load_scene_from_file(ds_pba::k_scene_path);
+    }
 
-    scene_context.camera.pivot = {0, 0, 0};
-    scene_context.camera.distance = 10.0f;
+    if (loaded.has_value()) {
+        scene_context = std::move(*loaded);
+    } else {
+        scene_context.cube_objects.push_back(Object{
+            .name = "Cube A",
+            .transform = Transform{.position = {2.0f, 1.0f, 0.5f}, .rotation_deg = {0, 0, 0}, .scale = {1, 1, 1}},
+            .color = {0.85f, 0.35f, 0.25f},
+        });
+        scene_context.cube_objects.push_back(Object{
+            .name = "Cube B",
+            .transform = Transform{.position = {-1.5f, 2.5f, 0.5f}, .rotation_deg = {0, 0, 25}, .scale = {1, 1, 1}},
+            .color = {0.25f, 0.55f, 0.90f},
+        });
+        scene_context.cube_objects.push_back(Object{
+            .name = "Cube C",
+            .transform = Transform{.position = {-2.5f, -1.5f, 0.75f}, .rotation_deg = {15, 0, 0}, .scale = {1.5f, 1.0f, 1.5f}},
+            .color = {0.30f, 0.85f, 0.45f},
+        });
+
+        scene_context.camera.pivot = {0, 0, 0};
+        scene_context.camera.distance = 10.0f;
+
+        scene_context.selected_index = std::nullopt;
+    }
+
+    SceneHotReloader scene_reloader(ds_pba::k_scene_path);
+    scene_reloader.init_if_exists();
 
     auto framebuffer_callback = [](GLFWwindow *, int width, int height) -> void {
         glViewport(0, 0, width, height);
@@ -142,8 +242,29 @@ int main() {
 
     int frame_counter = 0;
 
+    auto last_scene_poll = std::chrono::steady_clock::now();
+    constexpr auto scene_poll_interval = std::chrono::milliseconds(250);
+
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
+
+        {
+            const auto now = std::chrono::steady_clock::now();
+            if (now - last_scene_poll >= scene_poll_interval) {
+                last_scene_poll = now;
+
+                if (scene_reloader.changed()) {
+                    const bool ok = ds_pba::try_hot_reload_scene(scene_context, ds_pba::k_scene_path);
+                    if (!ok) {
+                        std::println(stderr, "Hot-reload: failed to load {}", ds_pba::k_scene_path);
+                    }
+
+                    if (scene_context.selected_index && *scene_context.selected_index >= scene_context.cube_objects.size()) {
+                        scene_context.selected_index = std::nullopt;
+                    }
+                }
+            }
+        }
 
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
@@ -213,7 +334,7 @@ int main() {
                     }
                 }
             }
-            selected_index = best_idx;
+            scene_context.selected_index = best_idx;
         }
 
         prev_left = left_down;
@@ -221,7 +342,7 @@ int main() {
         prev_mx = mouse_x;
         prev_my = mouse_y;
 
-        render_imgui_windows(scene_context, selected_index, frame_counter);
+        render_imgui_windows(scene_context, frame_counter);
         ImGui::Render();
 
         int frame_buffer_width = 1, frame_buffer_height = 1;
@@ -281,9 +402,9 @@ int main() {
         }
 
         // Outline Stencil
-        if (selected_index.has_value()) {
+        if (scene_context.selected_index.has_value()) {
             { // First Pass (write stencil)
-                const Object &o = scene_context.cube_objects[*selected_index];
+                const Object &o = scene_context.cube_objects[*scene_context.selected_index];
                 const glm::mat4 M = o.transform.model_matrix();
 
                 glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
@@ -310,7 +431,7 @@ int main() {
             }
 
             { // Second pass (draw outline where stencil != 1)
-                const Object &o = scene_context.cube_objects[*selected_index];
+                const Object &o = scene_context.cube_objects[*scene_context.selected_index];
 
                 glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
                 glStencilMask(0x00);
@@ -344,19 +465,25 @@ int main() {
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         glfwSwapBuffers(window);
 
-        if ((static_cast<int>(scene_context.cube_objects.size()) - 3) * 500 < frame_counter) {
-            f32 n_obj_f = static_cast<f32>(scene_context.cube_objects.size());
-            scene_context.cube_objects.push_back(Object{
-                .name = "Cube Dynamic",
-                .transform = Transform{
-                    .position = {0.0f, 0.0f, 0.5f + 1.0f * (n_obj_f - 3.0f)},
-                    .rotation_deg = {0.0f, 0.0f, 0.0f},
-                    .scale = {1.0f, 1.0f, 1.0f}},
-                .color = {0.0f, 0.0f, 0.0f},
-            });
+        if (false) {
+            if ((static_cast<int>(scene_context.cube_objects.size()) - 3) * 500 < frame_counter) {
+                f32 n_obj_f = static_cast<f32>(scene_context.cube_objects.size());
+                scene_context.cube_objects.push_back(Object{
+                    .name = "Cube Dynamic",
+                    .transform = Transform{
+                        .position = {0.0f, 0.0f, 0.5f + 1.0f * (n_obj_f - 3.0f)},
+                        .rotation_deg = {0.0f, 0.0f, 0.0f},
+                        .scale = {1.0f, 1.0f, 1.0f}},
+                    .color = {0.0f, 0.0f, 0.0f},
+                });
+            }
         }
 
         ++frame_counter;
+    }
+
+    if (!ds_pba::save_scene_to_file(scene_context, ds_pba::k_scene_path)) {
+        std::println(stderr, "Warning: failed to save scene to {}", ds_pba::k_scene_path);
     }
 
     glDeleteProgram(grid_prog.id);

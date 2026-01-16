@@ -11,8 +11,8 @@
 
 namespace ds_pba {
 
-void render_imgui_windows(SceneContext &ctx, std::optional<usize> &selected_index, int frame_counter) {
-    auto &cam = ctx.camera;
+void render_imgui_windows(SceneContext &scene_context, int frame_counter) {
+    auto &cam = scene_context.camera;
 
     {
         ImGui::Begin("Info");
@@ -49,8 +49,8 @@ void render_imgui_windows(SceneContext &ctx, std::optional<usize> &selected_inde
 
     {
         ImGui::Begin("Object Inspector");
-        if (selected_index.has_value() && *selected_index < ctx.cube_objects.size()) {
-            Object &o = ctx.cube_objects[*selected_index];
+        if (scene_context.selected_index.has_value() && *scene_context.selected_index < scene_context.cube_objects.size()) {
+            Object &o = scene_context.cube_objects[*scene_context.selected_index];
             ImGui::Text("Selected: %s", o.name.c_str());
             ImGui::Separator();
 
@@ -72,16 +72,16 @@ void render_imgui_windows(SceneContext &ctx, std::optional<usize> &selected_inde
 
     {
         ImGui::Begin("Scene Inspector");
-        ImGui::Text("There are %zu objects in the scene", ctx.cube_objects.size());
-        for (usize i = 0; i < ctx.cube_objects.size(); ++i) {
-            const Object& o = ctx.cube_objects[i];
+        ImGui::Text("There are %zu objects in the scene", scene_context.cube_objects.size());
+        for (usize i = 0; i < scene_context.cube_objects.size(); ++i) {
+            const Object& o = scene_context.cube_objects[i];
 
-            const bool is_selected = selected_index.has_value() && (*selected_index == i);
+            const bool is_selected = scene_context.selected_index.has_value() && (*scene_context.selected_index == i);
 
             std::string label = std::to_string(i) + " - " + o.name + "##" + std::to_string(i);
 
             if (ImGui::Selectable(label.c_str(), is_selected)) {
-                selected_index = i;
+                scene_context.selected_index = i;
             }
         }
 

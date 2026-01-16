@@ -8,6 +8,6 @@
 
 namespace ds_pba {
 
-void render_imgui_windows(SceneContext& ctx, std::optional<usize> &selected_index, int frame_counter);
+void render_imgui_windows(SceneContext& ctx, int frame_counter);
 
 } // namespace ds_pba
