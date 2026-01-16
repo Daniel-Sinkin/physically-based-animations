@@ -5,21 +5,12 @@
 #include "pba/types.hpp" // IWYU pragma: keep
 
 #include <filesystem>
+#include <memory>
 #include <optional>
 #include <vector>
 
 namespace ds_pba {
-
-struct SceneContext {
-    Camera camera{};
-    std::vector<Object> cube_objects{};
-    std::optional<usize> selected_index{};
-};
-
 namespace fs = std::filesystem;
-
-inline constexpr const char* k_scene_path = "scene.json";
-
 struct SceneHotReloader {
     fs::path path{};
     fs::file_time_type last_write_time{};
@@ -30,6 +21,17 @@ struct SceneHotReloader {
     void init_if_exists();
     [[nodiscard]] bool changed();
 };
+
+struct SceneContext {
+    Camera camera{};
+    std::vector<Object> cube_objects{};
+    std::optional<usize> selected_index{};
+    std::unique_ptr<SceneHotReloader> reloader;
+};
+
+
+inline constexpr const char* k_scene_path = "scene.json";
+
 
 [[nodiscard]] bool save_scene_to_file(const SceneContext& scene, const fs::path& path);
 [[nodiscard]] std::optional<SceneContext> load_scene_from_file(const fs::path& path);

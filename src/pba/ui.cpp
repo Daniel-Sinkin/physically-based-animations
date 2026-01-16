@@ -10,13 +10,11 @@
 
 #include "camera.hpp"
 #include "imgui.h"
-#include "render_settings.hpp"
+#include "render_context.hpp"
 #include "scene_context.hpp"
 
 namespace ds_pba {
-
 namespace {
-
 struct TerminalState {
     std::vector<std::string> lines{};
     std::array<char, 512> input_buf{};
@@ -212,7 +210,7 @@ void apply_blender_style() {
     }
 }
 
-void render_imgui_windows(SceneContext &scene_context, int frame_counter) {
+void render_imgui_windows( SceneContext &scene_context, ColorRGBAf& background_color, GridSettings& grid, int frame_counter) {
     auto &cam = scene_context.camera;
     {
         ImGui::Begin("Info");
@@ -240,13 +238,13 @@ void render_imgui_windows(SceneContext &scene_context, int frame_counter) {
 
     {
         ImGui::Begin("Render");
-        ImGui::ColorEdit4("Background", g_render_settings.background_color.data());
+        ImGui::ColorEdit4("Background", background_color.data());
         ImGui::Separator();
         ImGui::Text("Grid");
-        ImGui::DragFloat("Fog start", &g_render_settings.grid.fog_start, 0.25f, 0.0f, 1e6f);
-        ImGui::DragFloat("Fog end", &g_render_settings.grid.fog_end, 0.25f, 0.0f, 1e6f);
-        ImGui::DragFloat("Minor alpha", &g_render_settings.grid.minor_alpha, 0.01f, 0.0f, 1.0f);
-        ImGui::DragFloat("Axis alpha", &g_render_settings.grid.axis_alpha, 0.01f, 0.0f, 1.0f);
+        ImGui::DragFloat("Fog start", &grid.fog_start, 0.25f, 0.0f, 1e6f);
+        ImGui::DragFloat("Fog end", &grid.fog_end, 0.25f, 0.0f, 1e6f);
+        ImGui::DragFloat("Minor alpha", &grid.minor_alpha, 0.01f, 0.0f, 1.0f);
+        ImGui::DragFloat("Axis alpha", &grid.axis_alpha, 0.01f, 0.0f, 1.0f);
         ImGui::End();
     }
 
@@ -310,14 +308,14 @@ void render_imgui_windows(SceneContext &scene_context, int frame_counter) {
     render_terminal_window();
 }
 
-void render_menu_bar(SceneContext& scene_context, SceneHotReloader& scene_reloader) {
+void render_menu_bar(SceneContext &scene_context) {
     if (ImGui::BeginMenu("File")) {
         if (ImGui::MenuItem("Save Scene")) {
             const bool ok = ds_pba::save_scene_to_file(scene_context, ds_pba::k_scene_path);
             if (ok) {
                 ds_pba::ui_log("Saved scene.json");
                 // Optional: keep hot-reloader from immediately reloading what we just wrote.
-                scene_reloader.init_if_exists();
+                scene_context.reloader->init_if_exists();
             } else {
                 ds_pba::ui_log("ERROR: Failed to save scene.json");
             }
@@ -352,7 +350,6 @@ void render_menu_bar(SceneContext& scene_context, SceneHotReloader& scene_reload
         ImGui::EndMenu();
     }
 
-    ImGui::EndMainMenuBar();
 }
 
 } // namespace ds_pba

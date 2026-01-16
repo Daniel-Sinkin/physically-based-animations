@@ -1,6 +1,6 @@
 // pba/gl.cpp
 #include "gl.hpp"
-#include "pba/types.hpp"
+#include "pba/types.hpp" // IWYU pragma: keep
 
 #include <algorithm>
 #include <expected>

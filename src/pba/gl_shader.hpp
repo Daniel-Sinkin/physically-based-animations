@@ -6,7 +6,6 @@
 #include <algorithm>
 #include <cassert>
 #include <string>
-#include <utility>
 
 #include <glad/glad.h>
 
