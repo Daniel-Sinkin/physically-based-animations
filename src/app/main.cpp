@@ -370,8 +370,6 @@ int main() {
             set_uniform_mat4(grid_prog.id, "uProj", camera_proj_matrix);
             set_uniform_float(grid_prog.id, "uFogStart", g_render_settings.grid.fog_start);
             set_uniform_float(grid_prog.id, "uFogEnd", g_render_settings.grid.fog_end);
-            set_uniform_float(grid_prog.id, "uMinorAlpha", g_render_settings.grid.minor_alpha);
-            set_uniform_float(grid_prog.id, "uAxisAlpha", g_render_settings.grid.axis_alpha);
 
             grid_mesh.vao.bind();
             glDrawArrays(GL_LINES, 0, grid_mesh.vertex_count);
@@ -390,8 +388,6 @@ int main() {
             obj_prog.bind();
             set_uniform_mat4(obj_prog.id, "uView", camera_view_matrix);
             set_uniform_mat4(obj_prog.id, "uProj", camera_proj_matrix);
-            set_uniform_vec3(obj_prog.id, "uCameraPos", scene_context.camera.position());
-            set_uniform_float(obj_prog.id, "uTime", static_cast<float>(glfwGetTime()));
 
             cube_mesh.vao.bind();
             for (usize i = 0; i < scene_context.cube_objects.size(); ++i) {

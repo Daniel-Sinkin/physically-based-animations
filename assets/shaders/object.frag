@@ -3,8 +3,6 @@ in vec3 vWorldPos;
 in vec3 vNormal;
 
 uniform vec3 uColor;
-uniform vec3 uCameraPos;
-uniform float uTime;
 
 out vec4 FragColor;
 

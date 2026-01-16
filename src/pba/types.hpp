@@ -138,10 +138,18 @@ struct Shader {
         return s;
     }
 
-    void compile(const char *source) const noexcept {
+    void compile(const std::string& source) const noexcept {
         assert(valid() && "Attempting to compile invalid Shader (id == 0)");
-        glShaderSource(id, 1, &source, nullptr);
+        const char* src = source.data();
+        const GLint len = static_cast<GLint>(source.size());
+        glShaderSource(id, 1, &src, &len);
         glCompileShader(id);
+    }
+
+    static Shader create_and_compile(ShaderType shader_type, const std::string& source) noexcept {
+        Shader shader = Shader::create(shader_type);
+        shader.compile(source);
+        return shader;
     }
 
     [[nodiscard]] bool compiled_ok() const noexcept {

@@ -14,16 +14,15 @@ f32 max3(f32 a, f32 b, f32 c) {
 }
 
 bool intersect_sphere(const Ray &ray, const glm::vec3 &center, f32 radius, f32 &t_hit) {
-    // Ray-sphere intersection (nearest positive t)
     const glm::vec3 oc = ray.origin - center;
-    const f32 b        = 2.0f * glm::dot(oc, ray.dir);
-    const f32 c        = glm::dot(oc, oc) - radius * radius;
-    const f32 disc     = b * b - 4.0f * c;
+    const f32 b = 2.0f * glm::dot(oc, ray.dir);
+    const f32 c = glm::dot(oc, oc) - radius * radius;
+    const f32 disc = b * b - 4.0f * c;
     if (disc < 0.0f) {
         return false;
     }
 
-    const f32 s  = std::sqrt(disc);
+    const f32 s = std::sqrt(disc);
     const f32 t0 = (-b - s) * 0.5f;
     const f32 t1 = (-b + s) * 0.5f;
 
@@ -48,8 +47,8 @@ Ray ray_from_mouse(
     glfwGetWindowSize(window, &window_width, &window_height);
     glfwGetFramebufferSize(window, &framebuffer_width, &framebuffer_height);
 
-    float window_width_f      = static_cast<f32>(window_width);
-    float window_height_f     = static_cast<f32>(window_height);
+    float window_width_f = static_cast<f32>(window_width);
+    float window_height_f = static_cast<f32>(window_height);
     float framebuffer_width_f = static_cast<f32>(framebuffer_width);
     float framebuffer_height_f = static_cast<f32>(framebuffer_height);
 
@@ -68,13 +67,13 @@ Ray ray_from_mouse(
     glm::vec4 far_ndc(x_ndc, y_ndc, 1.0f, 1.0f);
 
     glm::vec4 near_w = invPV * near_ndc;
-    glm::vec4 far_w  = invPV * far_ndc;
+    glm::vec4 far_w = invPV * far_ndc;
     near_w /= near_w.w;
     far_w /= far_w.w;
 
     return Ray{
         .origin = glm::vec3(near_w),
-        .dir    = glm::normalize(glm::vec3(far_w - near_w)),
+        .dir = glm::normalize(glm::vec3(far_w - near_w)),
     };
 }
 

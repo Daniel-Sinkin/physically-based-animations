@@ -1,44 +1,28 @@
 // pba/gl.cpp
 #include "gl.hpp"
+#include "pba/types.hpp"
 
 #include <algorithm>
+#include <expected>
 #include <fstream>
+#include <optional>
 #include <print>
 #include <sstream>
 
 namespace ds_pba {
-
-GLuint compile_shader(GLenum type, const char *src) {
-    GLuint shader = glCreateShader(type);
-    glShaderSource(shader, 1, &src, nullptr);
-    glCompileShader(shader);
-
-    GLint ok = 0;
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &ok);
-    if (!ok) {
-        GLint log_len = 0;
-        glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &log_len);
-        std::string log(static_cast<usize>(std::max(1, log_len)), '\0');
-        glGetShaderInfoLog(shader, log_len, nullptr, log.data());
-        std::println(stderr, "Shader compile failed:\n{}", log);
-        glDeleteShader(shader);
-        return 0;
-    }
-    return shader;
-}
-
-
-ShaderProgram create_program(
+std::optional<ShaderProgram> create_program(
     const std::string &vert_src,
     const std::string &frag_src) {
 
-    GLuint vs = compile_shader(GL_VERTEX_SHADER, vert_src.c_str());
-    GLuint fs = compile_shader(GL_FRAGMENT_SHADER, frag_src.c_str());
-
-    if (vs == 0 || fs == 0) {
-        if (vs) glDeleteShader(vs);
-        if (fs) glDeleteShader(fs);
-        return ShaderProgram{0};
+    Shader vs = Shader::create_and_compile(ShaderType::Vertex, vert_src);
+    if(!vs.valid() || !vs.compiled_ok()) {
+        std::println(stderr, "Failed Vertex Shader Creation");
+        return std::nullopt;
+    }
+    Shader fs = Shader::create_and_compile(ShaderType::Fragment, frag_src);
+    if(!fs.valid() || !fs.compiled_ok()) {
+        std::println(stderr, "Failed Fragment Shader Creation");
+        return std::nullopt;
     }
 
     ShaderProgram prog{glCreateProgram()};
@@ -59,33 +43,34 @@ ShaderProgram create_program(
         std::println(stderr, "Program link failed:\n{}", log);
         glDeleteProgram(prog.id);
         prog.id = 0;
+        return std::nullopt;
     }
     return prog;
 }
 
-std::expected<std::string, ShaderLoadError>
+std::expected<std::string, ShaderCreateError>
 read_text_file(const std::string &path) {
     std::ifstream file(path, std::ios::in);
     if (!file.is_open()) {
-        return std::unexpected(ShaderLoadError::FileNotFound);
+        return std::unexpected(ShaderCreateError::FileNotFound);
     }
 
     std::ostringstream ss;
     ss << file.rdbuf();
 
     if (file.fail() && !file.eof()) {
-        return std::unexpected(ShaderLoadError::IOError);
+        return std::unexpected(ShaderCreateError::IOError);
     }
 
     std::string contents = ss.str();
     if (contents.empty()) {
-        return std::unexpected(ShaderLoadError::EmptyFile);
+        return std::unexpected(ShaderCreateError::EmptyFile);
     }
 
     return contents;
 }
 
-std::expected<std::string, ShaderLoadError>
+std::expected<std::string, ShaderCreateError>
 load_shader_sources(const std::string &shader_name) {
     const std::string path = "assets/shaders/" + shader_name;
     auto shader = read_text_file(path);
@@ -95,7 +80,7 @@ load_shader_sources(const std::string &shader_name) {
     return std::move(*shader);
 }
 
-std::expected<ShaderProgram, ShaderLoadError>
+std::expected<ShaderProgram, ShaderCreateError>
 create_program_from_file(std::string shader_name) {
     auto frag = load_shader_sources(shader_name + ".frag");
     if (!frag) {
@@ -107,7 +92,11 @@ create_program_from_file(std::string shader_name) {
         return std::unexpected(vert.error());
     }
 
-    return create_program(*vert, *frag);
+    auto out = create_program(*vert, *frag);
+    if(!out.has_value()) {
+        return std::unexpected(ShaderCreateError::CompilationError);
+    }
+    return *out;
 }
 
 } // namespace ds_pba
