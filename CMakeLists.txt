@@ -27,7 +27,7 @@ target_include_directories(glad PUBLIC
 FetchContent_Declare(
   imgui
   GIT_REPOSITORY https://github.com/ocornut/imgui.git
-  GIT_TAG        v1.90.9
+  GIT_TAG        docking
 )
 FetchContent_MakeAvailable(imgui)
 
@@ -78,7 +78,6 @@ target_include_directories(stb_image_hdr SYSTEM INTERFACE
   ${stb_SOURCE_DIR}
 )
 
-# nlohmann/json
 FetchContent_Declare(
   nlohmann_json
   GIT_REPOSITORY https://github.com/nlohmann/json.git

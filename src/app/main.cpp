@@ -245,6 +245,10 @@ int main() {
     auto last_scene_poll = std::chrono::steady_clock::now();
     constexpr auto scene_poll_interval = std::chrono::milliseconds(250);
 
+    ImGuiIO &io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 
@@ -270,7 +274,8 @@ int main() {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        const ImGuiIO &io = ImGui::GetIO();
+        ImGui::DockSpaceOverViewport(0, nullptr, ImGuiDockNodeFlags_PassthruCentralNode);
+
         const bool imgui_wants_mouse = io.WantCaptureMouse;
 
         { // Handle Inputs
@@ -463,6 +468,12 @@ int main() {
         }
 
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+            GLFWwindow* backup_current_context = glfwGetCurrentContext();
+            ImGui::UpdatePlatformWindows();
+            ImGui::RenderPlatformWindowsDefault();
+            glfwMakeContextCurrent(backup_current_context);
+        }
         glfwSwapBuffers(window);
 
         if (false) {

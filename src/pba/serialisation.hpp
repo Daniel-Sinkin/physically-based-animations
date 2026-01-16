@@ -12,7 +12,7 @@ namespace nlohmann {
 // The problem is that the overloads MUST look in the library namespace (e.g. glm) instead of ours,
 // so they miss our implementation
 template <>
-struct adl_serialiser<glm::vec3> {
+struct adl_serializer<glm::vec3> {
     static void to_json(json& j, const glm::vec3& v) {
         j = json{{"x", v.x}, {"y", v.y}, {"z", v.z}};
     }
