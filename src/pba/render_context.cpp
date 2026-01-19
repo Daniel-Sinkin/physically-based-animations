@@ -8,7 +8,6 @@
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
 
-
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
@@ -333,9 +332,43 @@ bool ds_pba::RenderContext::setup() {
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
 
+    // No focus on startup
+    glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
+
     window = glfwCreateWindow(1600, 900, "Physically Based Animations", nullptr, nullptr);
     if (!window) {
         return false;
+    }
+    { // Place on 2nd monitor with correct sizing for mixed-DPI
+        int monitor_count{0};
+        GLFWmonitor **monitors = glfwGetMonitors(&monitor_count);
+
+        if (monitor_count >= 2) {
+            GLFWmonitor *monitor{monitors[1]};
+
+            int mx{0}, my{0};
+            glfwGetMonitorPos(monitor, &mx, &my);
+
+            const GLFWvidmode *mode{glfwGetVideoMode(monitor)};
+
+            const int desired_fb_w = 2400;
+            const int desired_fb_h = 1350;
+
+            float sx = 1.0f, sy = 1.0f;
+            glfwGetMonitorContentScale(monitor, &sx, &sy);
+
+            const int ww = std::max(1, static_cast<int>(std::lround(desired_fb_w / sx)));
+            const int wh = std::max(1, static_cast<int>(std::lround(desired_fb_h / sy)));
+
+            glfwSetWindowSize(window, ww, wh);
+
+            const int wx = mx + (mode->width - ww) / 2;
+            const int wy = my + (mode->height - wh) / 2;
+
+            glfwSetWindowPos(window, wx, wy);
+
+            std::println("Monitor scale: sx={}, sy={}; window size points: {}x{}", sx, sy, ww, wh);
+        }
     }
 
     glfwMakeContextCurrent(window);

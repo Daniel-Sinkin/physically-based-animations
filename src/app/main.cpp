@@ -1,19 +1,11 @@
 // pba/main.cpp
 #include "glm/fwd.hpp"
 #include "pba/camera.hpp"
-#include "pba/gl.hpp"
-#include "pba/glfw_setup.hpp"
-#include "pba/interaction.hpp"
-#include "pba/mesh.hpp"
+#include "pba/render_context.hpp"
 #include "pba/scene_context.hpp"
 #include "pba/types.hpp" // IWYU pragma: keep
-#include "pba/ui.hpp"
 #include "pba/viewport_fbo.hpp"
-#include "pba/render_context.hpp"
 
-#include <algorithm>
-#include <chrono>
-#include <cmath>
 #include <cstdlib>
 #include <memory>
 #include <optional>
@@ -54,6 +46,16 @@ ds_pba::SceneContext setup_scene() {
             .transform = Transform{.position = {-2.5f, -1.5f, 0.75f}, .rotation_deg = {15, 0, 0}, .scale = {1.5f, 1.0f, 1.5f}},
             .color = {0.30f, 0.85f, 0.45f},
         });
+        scene_context.cube_objects.push_back(Object{
+            .name = "Cube D",
+            .transform = Transform{.position = {-0.5f, -1.5f, 0.75f}, .rotation_deg = {15, 0, 0}, .scale = {1.5f, 1.0f, 1.5f}},
+            .color = {0.30f, 0.85f, 0.45f},
+        });
+        scene_context.cube_objects.push_back(Object{
+            .name = "Cube E",
+            .transform = Transform{.position = {-4.5f, -1.5f, 0.75f}, .rotation_deg = {15, 0, 0}, .scale = {1.5f, 1.0f, 1.5f}},
+            .color = {1.0f, 0.85f, 0.45f},
+        });
 
         scene_context.camera.pivot = {0, 0, 0};
         scene_context.camera.distance = 10.0f;
@@ -65,21 +67,21 @@ ds_pba::SceneContext setup_scene() {
     return scene_context;
 }
 
-
 int main() {
     using namespace ds_pba;
 
+    std::println("Hello, World!");
+    std::println("Hello, World2!");
+    std::println("Hello, World2!");
+    std::println("Hello, World3!");
+
     RenderContext render_context{};
-    if(!render_context.setup()) {
+    if (!render_context.setup()) {
         return EXIT_FAILURE;
     }
     render_context.scene_context = std::make_unique<SceneContext>(setup_scene());
 
     render_context.run();
-
-    if (!save_scene_to_file(*render_context.scene_context, k_scene_path)) {
-        std::println(stderr, "Warning: failed to save scene to {}", k_scene_path);
-    }
 
     render_context.viewport_fbo.destroy();
 

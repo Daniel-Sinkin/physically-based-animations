@@ -10,8 +10,8 @@ namespace ds_pba {
 
 GLMesh create_cube_mesh() {
     struct V {
-        f32 px, py, pz;
-        f32 nx, ny, nz;
+        f32 px, py, pz; // points
+        f32 nx, ny, nz; // normals
     };
 
     static constexpr std::array<V, 36> verts = {
@@ -69,7 +69,7 @@ GLMesh create_cube_mesh() {
     glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts.data(), GL_STATIC_DRAW);
 
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(V),GLPtr::offset0());
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(V), GLPtr::offset0());
 
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(V), GLPtr::offset(3 * sizeof(f32)));
