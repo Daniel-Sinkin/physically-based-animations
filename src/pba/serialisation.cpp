@@ -2,13 +2,14 @@
 #include "serialisation.hpp"
 
 #include <optional>
+#include <utility>
 #include <vector>
 
 namespace ds_pba {
 
 using json = nlohmann::json;
 
-void to_json(json& j, const Transform& t) {
+void to_json(json &j, const Transform &t) {
     j = json{
         {"position", t.position},
         {"rotation_deg", t.rotation_deg},
@@ -16,13 +17,13 @@ void to_json(json& j, const Transform& t) {
     };
 }
 
-void from_json(const json& j, Transform& t) {
+void from_json(const json &j, Transform &t) {
     j.at("position").get_to(t.position);
     j.at("rotation_deg").get_to(t.rotation_deg);
     j.at("scale").get_to(t.scale);
 }
 
-void to_json(json& j, const Object& o) {
+void to_json(json &j, const Object &o) {
     j = json{
         {"name", o.name},
         {"transform", o.transform},
@@ -30,13 +31,13 @@ void to_json(json& j, const Object& o) {
     };
 }
 
-void from_json(const json& j, Object& o) {
+void from_json(const json &j, Object &o) {
     j.at("name").get_to(o.name);
     j.at("transform").get_to(o.transform);
     j.at("color").get_to(o.color);
 }
 
-void to_json(json& j, const Camera& c) {
+void to_json(json &j, const Camera &c) {
     j = json{
         {"pivot", c.pivot},
         {"distance", c.distance},
@@ -48,7 +49,7 @@ void to_json(json& j, const Camera& c) {
     };
 }
 
-void from_json(const json& j, Camera& c) {
+void from_json(const json &j, Camera &c) {
     j.at("pivot").get_to(c.pivot);
     j.at("distance").get_to(c.distance);
     j.at("yaw").get_to(c.yaw);
@@ -58,7 +59,7 @@ void from_json(const json& j, Camera& c) {
     j.at("z_far").get_to(c.z_far);
 }
 
-void to_json(json& j, const SceneContext& s) {
+void to_json(json &j, const SceneContext &s) {
     j = json{
         {"camera", s.camera},
         {"cube_objects", s.cube_objects},
@@ -66,7 +67,7 @@ void to_json(json& j, const SceneContext& s) {
     };
 }
 
-void from_json(const json& j, SceneContext& s) {
+void from_json(const json &j, SceneContext &s) {
     j.at("camera").get_to(s.camera);
     j.at("cube_objects").get_to(s.cube_objects);
 
@@ -75,6 +76,7 @@ void from_json(const json& j, SceneContext& s) {
         s.selected_index = std::nullopt;
     } else {
         s.selected_index = it->get<usize>();
+        std::unreachable();
     }
 
     if (s.selected_index && *s.selected_index >= s.cube_objects.size()) {

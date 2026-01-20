@@ -75,7 +75,9 @@ bool try_hot_reload_scene(SceneContext &scene_context, const fs::path &path) {
 
     if (scene_context.selected_index &&
         *scene_context.selected_index >= scene_context.cube_objects.size()) {
+        assert(scene_context.selected_type);
         scene_context.selected_index = std::nullopt;
+        scene_context.selected_type = std::nullopt;
     }
     return true;
 }

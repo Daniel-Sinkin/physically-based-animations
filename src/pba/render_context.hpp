@@ -50,6 +50,7 @@ struct RenderContext {
     bool is_active_{true};
 
     GLMesh cube_mesh{};
+    GLMesh sphere_mesh{};
     GLMesh grid_mesh{};
 
     GridSettings grid{};

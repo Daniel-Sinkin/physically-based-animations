@@ -1,12 +1,14 @@
-// pba/scene_context->hpp
+// pba/scene_context.hpp
 #include "pba/render_context.hpp"
 #include "pba/gl.hpp"
 #include "pba/interaction.hpp"
 #include "pba/mesh.hpp"
+#include "pba/scene_types.hpp"
 #include "pba/ui.hpp"
 
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
+#include <print>
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -139,25 +141,70 @@ void ds_pba::RenderContext::run() {
                     set_uniform_mat4(obj_prog.id, "uView", camera_view_matrix);
                     set_uniform_mat4(obj_prog.id, "uProj", camera_proj_matrix);
 
-                    cube_mesh.vao.bind();
-                    for (usize i = 0; i < scene_context->cube_objects.size(); ++i) {
-                        const Object &o = scene_context->cube_objects[i];
-                        const glm::mat4 M = o.transform.model_matrix();
+                    { // Cubes
+                        cube_mesh.vao.bind();
+                        for (usize i = 0; i < scene_context->cube_objects.size(); ++i) {
+                            const Object &o = scene_context->cube_objects[i];
+                            const glm::mat4 M = o.transform.model_matrix();
 
-                        set_uniform_mat4(obj_prog.id, "uModel", M);
-                        set_uniform_vec3(obj_prog.id, "uColor", o.color);
+                            set_uniform_mat4(obj_prog.id, "uModel", M);
+                            set_uniform_vec3(obj_prog.id, "uColor", o.color);
 
-                        glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
+                            glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
+                        }
+                        VAO::unbind();
                     }
-                    VAO::unbind();
+
+                    { // Spheres
+                        sphere_mesh.vao.bind();
+                        for (usize i = 0; i < scene_context->sphere_objects.size(); ++i) {
+                            const Object &o = scene_context->sphere_objects[i];
+                            const glm::mat4 M = o.transform.model_matrix();
+
+                            set_uniform_mat4(obj_prog.id, "uModel", M);
+                            set_uniform_vec3(obj_prog.id, "uColor", o.color);
+
+                            glDrawArrays(GL_TRIANGLES, 0, sphere_mesh.vertex_count);
+                        }
+                        VAO::unbind();
+                    }
                 }
 
                 // Outline via stencil (in FBO)
                 if (scene_context->selected_index.has_value() &&
                     *scene_context->selected_index < scene_context->cube_objects.size()) {
 
-                    const Object &sel = scene_context->cube_objects[*scene_context->selected_index];
+                    assert(scene_context->selected_type.has_value());
+
+                    auto type = *scene_context->selected_type;
+                    auto idx = *scene_context->selected_index;
+
+                    auto selector = [&](ObjectType type, usize idx) -> const Object & {
+                        switch (type) {
+                        case ds_pba::ObjectType::Cube: {
+                            return scene_context->cube_objects[idx];
+                        }
+                        case ds_pba::ObjectType::Sphere: {
+                            return scene_context->sphere_objects[idx];
+                        }
+                        }
+                    };
+                    const Object &sel = selector(type, idx);
+
                     const glm::mat4 M = sel.transform.model_matrix();
+
+                    auto instantiate_selection_type = [&]() -> void {
+                        switch (type) {
+                        case ds_pba::ObjectType::Cube: {
+                            cube_mesh.instantiate_once();
+                            break;
+                        }
+                        case ds_pba::ObjectType::Sphere: {
+                            sphere_mesh.instantiate_once();
+                            break;
+                        }
+                        }
+                    };
 
                     { // Pass 1: write stencil
                         glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
@@ -173,9 +220,7 @@ void ds_pba::RenderContext::run() {
                         set_uniform_mat4(obj_prog.id, "uProj", camera_proj_matrix);
                         set_uniform_mat4(obj_prog.id, "uModel", M);
 
-                        cube_mesh.vao.bind();
-                        glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
-                        VAO::unbind();
+                        instantiate_selection_type();
 
                         glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
                         glDepthMask(GL_TRUE);
@@ -198,9 +243,7 @@ void ds_pba::RenderContext::run() {
                         set_uniform_mat4(outline_prog.id, "uProj", camera_proj_matrix);
                         set_uniform_vec3(outline_prog.id, "uColor", glm::vec3(1.0f, 0.55f, 0.0f));
 
-                        cube_mesh.vao.bind();
-                        glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
-                        VAO::unbind();
+                        instantiate_selection_type();
 
                         glEnable(GL_DEPTH_TEST);
                         glDepthFunc(GL_LESS);
@@ -261,7 +304,7 @@ void ds_pba::RenderContext::run() {
                 scene_context->camera.pitch = std::clamp(scene_context->camera.pitch, -lim, lim);
             }
 
-            if (left_down && !prev_left) {
+            if (left_down && !prev_left) { // Selecting objects
                 const f32 aspect = static_cast<f32>(viewport_fbo.width) / static_cast<f32>(viewport_fbo.height);
                 const glm::mat4 camera_view_matrix = scene_context->camera.view_matrix();
                 const glm::mat4 camera_proj_matrix = scene_context->camera.proj_matrix(aspect);
@@ -275,21 +318,42 @@ void ds_pba::RenderContext::run() {
                     camera_view_matrix, camera_proj_matrix);
 
                 std::optional<usize> best_idx{};
-                f32 best_t = 1e30f;
+                std::optional<ObjectType> best_type{};
 
+                f32 best_t = 1e30f;
+                std::println("Checking Mouse Distance Cube");
                 for (usize i = 0; i < scene_context->cube_objects.size(); ++i) {
                     const Object &o = scene_context->cube_objects[i];
                     const glm::mat4 M = o.transform.model_matrix();
 
-                    f32 tW = 0.0f;
+                    f32 tW{0.0f};
                     if (intersect_unit_cube_obb(ray, M, tW)) {
+                        std::println("\t{}", tW);
                         if (tW < best_t) {
                             best_t = tW;
                             best_idx = i;
+                            best_type = ObjectType::Cube;
+                        }
+                    }
+                }
+
+                std::println("Checking Mouse Distance Sphere");
+                for (usize i{0zu}; i < scene_context->sphere_objects.size(); ++i) {
+                    const Object &o = scene_context->sphere_objects[i];
+                    [[maybe_unused]] const glm::mat4 M{o.transform.model_matrix()};
+
+                    f32 tW{0.0f};
+                    if (intersect_sphere(ray, {0.0, 0.0, 0.0}, 1.0, tW)) {
+                        std::println("\t{}", tW);
+                        if (tW < best_t) {
+                            best_t = tW;
+                            best_idx = i;
+                            best_type = ObjectType::Sphere;
                         }
                     }
                 }
                 scene_context->selected_index = best_idx;
+                scene_context->selected_type = best_type;
             }
         }
 
@@ -433,6 +497,7 @@ bool ds_pba::RenderContext::setup() {
     }
 
     cube_mesh = create_cube_mesh();
+    sphere_mesh = create_sphere_mesh(32, 24, 1.0f);
     grid_mesh = create_grid_mesh(
         grid.n_lines_per_side,
         grid.spacing,
