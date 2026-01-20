@@ -33,7 +33,8 @@ struct Transform
 enum class ObjectType
 {
     Cube,
-    Sphere
+    Sphere,
+    Hitmarker
 };
 struct Object
 {

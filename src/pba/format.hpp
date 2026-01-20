@@ -113,6 +113,9 @@ struct formatter<ds_pba::Raycast>
             case ds_pba::ObjectType::Sphere:
                 type_str = "Sphere";
                 break;
+            case ds_pba::ObjectType::Hitmarker:
+                type_str = "Hitmarker";
+                break;
         }
 
         return std::format_to(

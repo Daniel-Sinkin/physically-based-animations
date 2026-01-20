@@ -299,6 +299,9 @@ void render_imgui_windows(RenderContext& render_context)
                     case ObjectType::Sphere:
                         assert(idx < scene_context.sphere_objects.size());
                         return scene_context.sphere_objects[idx];
+                    case ObjectType::Hitmarker:
+                        assert(idx < scene_context.hitmarker_objects.size());
+                        return scene_context.hitmarker_objects[idx];
                 }
             };
             Object& o = selector(type, idx);
@@ -313,6 +316,11 @@ void render_imgui_windows(RenderContext& render_context)
                 case ds_pba::ObjectType::Sphere:
                     {
                         ImGui::Text("Selected : %d [Sphere]", o.id);
+                        break;
+                    }
+                case ds_pba::ObjectType::Hitmarker:
+                    {
+                        ImGui::Text("Selected : %d [Hitmarker]", o.id);
                         break;
                     }
             }
@@ -407,6 +415,35 @@ void render_imgui_windows(RenderContext& render_context)
                         }
                     }
                 }
+                if (!scene_context.hitmarker_objects.empty())
+                {
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn();
+                    ImGui::TextUnformatted("Hitmarkers");
+                    ImGui::Separator();
+
+                    for (usize i{0zu}; i < scene_context.hitmarker_objects.size(); ++i)
+                    {
+                        const Object& o = scene_context.hitmarker_objects[i];
+                        const bool is_selected =
+                            scene_context.selected_type == ObjectType::Hitmarker
+                            && scene_context.selected_index && *scene_context.selected_index == i;
+
+                        std::string label = std::format("{} [Hitmarker]##hitmarker_{}", o.id, i);
+
+                        ImGui::TableNextRow();
+                        ImGui::TableNextColumn();
+
+                        if (ImGui::Selectable(
+                                label.c_str(), is_selected, ImGuiSelectableFlags_SpanAllColumns
+                            ))
+                        {
+                            scene_context.selected_index = i;
+                            scene_context.selected_type = ObjectType::Hitmarker;
+                        }
+                    }
+                }
+
                 ImGui::EndTable();
             }
             ImGui::EndChild();

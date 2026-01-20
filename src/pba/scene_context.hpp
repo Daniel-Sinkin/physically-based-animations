@@ -16,6 +16,7 @@ struct SceneContext
     Camera camera{};
     std::vector<Object> cube_objects{};
     std::vector<Object> sphere_objects{};
+    std::vector<Object> hitmarker_objects{};
     std::optional<usize> selected_index{};
     std::optional<ObjectType> selected_type{};
     std::unordered_map<ObjectId, Object*> object_map{};

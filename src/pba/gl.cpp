@@ -10,7 +10,6 @@ namespace ds_pba
 std::optional<ShaderProgram>
 create_program(const std::string& vert_src, const std::string& frag_src)
 {
-
     Shader vs = Shader::create_and_compile(ShaderType::Vertex, vert_src);
     if (!vs.valid() || !vs.compiled_ok())
     {

@@ -1,4 +1,5 @@
 // pba/scene_context.hpp
+#include "pba/core_types.hpp"
 #include "pba/math_types.hpp"
 #include "pba/pch.hpp"  // IWYU pragma: keep
 //
@@ -9,7 +10,10 @@
 #include "pba/mesh.hpp"
 #include "pba/raycast.hpp"
 #include "pba/scene_context.hpp"
+#include "pba/scene_types.hpp"
 #include "pba/ui.hpp"
+
+#include <print>
 
 ds_pba::RenderContext::~RenderContext()
 {
@@ -162,6 +166,16 @@ void ds_pba::RenderContext::run()
 
                             glDrawArrays(GL_TRIANGLES, 0, sphere_mesh.vertex_count);
                         }
+                        for (usize i{0zu}; i < scene_context->hitmarker_objects.size(); ++i)
+                        {
+                            const Object& o = scene_context->hitmarker_objects[i];
+                            const glm::mat4 M = o.transform.model_matrix();
+
+                            set_uniform_mat4(obj_prog.id, "uModel", M);
+                            set_uniform_vec3(obj_prog.id, "uColor", o.color);
+
+                            glDrawArrays(GL_TRIANGLES, 0, sphere_mesh.vertex_count);
+                        }
                         VAO::unbind();
                     }
                 }
@@ -180,13 +194,11 @@ void ds_pba::RenderContext::run()
                         switch (type)
                         {
                             case ds_pba::ObjectType::Cube:
-                                {
-                                    return scene_context->cube_objects[idx];
-                                }
+                                return scene_context->cube_objects[idx];
                             case ds_pba::ObjectType::Sphere:
-                                {
-                                    return scene_context->sphere_objects[idx];
-                                }
+                                return scene_context->sphere_objects[idx];
+                            case ds_pba::ObjectType::Hitmarker:
+                                return scene_context->hitmarker_objects[idx];
                         }
                     };
                     const Object& sel = selector(type, idx);
@@ -203,6 +215,7 @@ void ds_pba::RenderContext::run()
                                     break;
                                 }
                             case ds_pba::ObjectType::Sphere:
+                            case ds_pba::ObjectType::Hitmarker:
                                 {
                                     sphere_mesh.instantiate_once();
                                     break;
@@ -239,7 +252,7 @@ void ds_pba::RenderContext::run()
                         glDisable(GL_DEPTH_TEST);
                         glDisable(GL_CULL_FACE);
 
-                        const glm::mat4 M_outline =
+                        const ModelMatrix M_outline =
                             M * glm::scale(glm::mat4(1.0f), glm::vec3(1.04f));
 
                         outline_prog.bind();
@@ -317,7 +330,9 @@ void ds_pba::RenderContext::run()
                 scene_context->camera.pitch = std::clamp(scene_context->camera.pitch, -lim, lim);
             }
 
-            if ((left_down && !prev_left) || (right_down && !prev_right))
+            bool selecting{left_down && !prev_left};
+            bool spawning{right_down && !prev_right};
+            if (selecting || spawning)
             {  // Selecting objects
                 const f32 aspect = viewport_fbo.aspect_ratio();
                 const glm::mat4 camera_view_matrix = scene_context->camera.view_matrix();
@@ -338,30 +353,78 @@ void ds_pba::RenderContext::run()
                 if (rc_res)
                 {
                     const Raycast rc = *rc_res;
-                    std::println("Got a hit with {}", rc);
-                    if (rc.object_type == ObjectType::Cube)
+                    if (selecting)
                     {
-                        for (usize i{0zu}; i < scene_context->cube_objects.size(); ++i)
+                        bool found{false};
+                        if (rc.object_type == ObjectType::Cube)
                         {
-                            const Object& obj = scene_context->cube_objects[i];
-                            if (obj.id == rc.object_id)
+                            for (usize i{0zu}; i < scene_context->cube_objects.size(); ++i)
                             {
-                                scene_context->selected_index = i;
-                                scene_context->selected_type = ObjectType::Cube;
+                                const Object& obj = scene_context->cube_objects[i];
+                                if (obj.id == rc.object_id)
+                                {
+                                    scene_context->selected_index = i;
+                                    scene_context->selected_type = ObjectType::Cube;
+                                    std::println();
+                                    ui_log(std::format("Selected Cube [id={}]", obj.id));
+                                    found = true;
+                                    break;
+                                }
                             }
                         }
+                        if (!found && rc.object_type == ObjectType::Sphere)
+                        {
+                            for (usize i{0zu}; i < scene_context->sphere_objects.size(); ++i)
+                            {
+                                const Object& obj = scene_context->sphere_objects[i];
+                                if (obj.id == rc.object_id)
+                                {
+                                    scene_context->selected_index = i;
+                                    scene_context->selected_type = ObjectType::Sphere;
+                                    ui_log(std::format("Selected Sphere [id={}]", obj.id));
+                                    found = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (!found && rc.object_type == ObjectType::Sphere)
+                        {
+                            for (usize i{0zu}; i < scene_context->hitmarker_objects.size(); ++i)
+                            {
+                                const Object& obj = scene_context->hitmarker_objects[i];
+                                if (obj.id == rc.object_id)
+                                {
+                                    scene_context->selected_index = i;
+                                    scene_context->selected_type = ObjectType::Sphere;
+                                    ui_log(std::format("Selected Hitmarker [id={}]", obj.id));
+                                    found = true;
+                                    break;
+                                }
+                            }
+                        }
+                        assert(found);
                     }
-                    else if (rc.object_type == ObjectType::Sphere)
+                    if (spawning)
                     {
-                        for (usize i{0zu}; i < scene_context->sphere_objects.size(); ++i)
-                        {
-                            const Object& obj = scene_context->sphere_objects[i];
-                            if (obj.id == rc.object_id)
-                            {
-                                scene_context->selected_index = i;
-                                scene_context->selected_type = ObjectType::Sphere;
+                        ui_log(
+                            std::format(
+                                "Hit Object [id={}] at {} [distance from camera {:.2f}]",
+                                rc.object_id,
+                                rc.hit,
+                                rc.t
+                            )
+                        );
+                        scene_context->hitmarker_objects.push_back(
+                            Object{
+                                .id = next_object_id(),
+                                .type = ObjectType::Sphere,
+                                .transform = {.position = rc.hit, .scale = {0.05f, 0.05f, 0.05f}},
+                                .color = {1.0f, 1.0f, 1.0f},
                             }
-                        }
+                        );
+                        std::println(
+                            "Latest Hitmarker ID {}", scene_context->hitmarker_objects.back().id
+                        );
                     }
                 }
             }
