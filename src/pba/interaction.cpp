@@ -5,48 +5,13 @@
 
 #include <algorithm>
 #include <cmath>
+#include <optional>
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
 namespace ds_pba
 {
-
-f32 max3(f32 a, f32 b, f32 c)
-{
-    return std::max(a, std::max(b, c));
-}
-
-bool intersect_sphere(const Ray& ray, const glm::vec3& center, f32 radius, glm::mat4 M, f32& t_hit)
-{
-
-    const glm::mat4 invM = glm::inverse(model);
-
-    const glm::vec3 oL = glm::vec3(invM * glm::vec4(ray.origin, 1.0f));
-    const glm::vec3 dL = glm::vec3(invM * glm::vec4(ray.dir, 0.0f));
-
-    const glm::vec3 oc = ray.origin - center;
-    const f32 b = 2.0f * glm::dot(oc, ray.dir);
-    const f32 c = glm::dot(oc, oc) - radius * radius;
-    const f32 disc = b * b - 4.0f * c;
-    if (disc < 0.0f)
-    {
-        return false;
-    }
-
-    const f32 s = std::sqrt(disc);
-    const f32 t0 = (-b - s) * 0.5f;
-    const f32 t1 = (-b + s) * 0.5f;
-
-    const f32 t = (t0 > 0.0f) ? t0 : ((t1 > 0.0f) ? t1 : -1.0f);
-    if (t <= 0.0f)
-    {
-        return false;
-    }
-
-    t_hit = t;
-    return true;
-}
 
 Ray ray_from_mouse(
     GLFWwindow* window,
@@ -56,7 +21,6 @@ Ray ray_from_mouse(
     const glm::mat4& camera_proj_matrix
 )
 {
-    // Use Framebuffer coords for NDC, makes a difference for retina displays
     int window_width = 1, window_height = 1;
     int framebuffer_width = 1, framebuffer_height = 1;
     glfwGetWindowSize(window, &window_width, &window_height);
@@ -173,7 +137,51 @@ Ray ray_from_imgui_rect(
     };
 }
 
-bool intersect_unit_cube_obb(const Ray& ray_world, const glm::mat4& model, f32& t_world_out)
+/// But this is a pretty result, but a reference can be found here:
+/// https://pbr-book.org/4ed/Shapes/Spheres
+std::optional<f32> intersect_ray_sphere(const Ray& ray, const glm::mat4& model)
+{
+    const glm::mat4 invM = glm::inverse(model);
+
+    const glm::vec3 oL = glm::vec3(invM * glm::vec4(ray.origin, 1.0f));
+    glm::vec3 dL = glm::vec3(invM * glm::vec4(ray.dir, 0.0f));
+    dL = glm::normalize(dL);
+
+    const f32 a = glm::dot(dL, dL);
+    const f32 b = 2.0f * glm::dot(oL, dL);
+    const f32 c = glm::dot(oL, oL) - 1.0f;
+
+    const f32 disc = b * b - 4.0f * a * c;
+    if (disc < 0.0f)
+    {
+        return false;
+    }
+
+    const f32 s = std::sqrt(disc);
+    const f32 inv2a = 0.5f / a;
+    const f32 t0 = (-b - s) * inv2a;
+    const f32 t1 = (-b + s) * inv2a;
+
+    const f32 tL = (t0 > 0.0f) ? t0 : ((t1 > 0.0f) ? t1 : -1.0f);
+    if (tL <= 0.0f)
+    {
+        return false;
+    }
+
+    const glm::vec3 hitL = oL + tL * dL;
+    const glm::vec3 hitW = glm::vec3(model * glm::vec4(hitL, 1.0f));
+
+    const f32 tW = glm::dot(hitW - ray.origin, ray.dir);
+    if (tW <= 0.0f)
+    {
+        return false;
+    }
+    return tW;
+}
+
+/// Using the Slab method, see for example
+/// https://www.pbr-book.org/4ed/Shapes/Basic_Shape_Interface
+std::optional<f32> intersect_ray_cube(const Ray& ray_world, const glm::mat4& model)
 {
     const glm::mat4 invM = glm::inverse(model);
 
@@ -204,21 +212,21 @@ bool intersect_unit_cube_obb(const Ray& ray_world, const glm::mat4& model, f32& 
 
     if (!slab(oL.x, dL.x, bmin.x, bmax.x))
     {
-        return false;
+        return std::nullopt;
     }
     if (!slab(oL.y, dL.y, bmin.y, bmax.y))
     {
-        return false;
+        return std::nullopt;
     }
     if (!slab(oL.z, dL.z, bmin.z, bmax.z))
     {
-        return false;
+        return std::nullopt;
     }
 
     f32 tL = (tmin > 0.0f) ? tmin : ((tmax > 0.0f) ? tmax : -1.0f);
     if (tL <= 0.0f)
     {
-        return false;
+        return std::nullopt;
     }
 
     const glm::vec3 hitL = oL + tL * dL;
@@ -227,11 +235,10 @@ bool intersect_unit_cube_obb(const Ray& ray_world, const glm::mat4& model, f32& 
     const f32 tW = glm::dot(hitW - ray_world.origin, ray_world.dir);
     if (tW <= 0.0f)
     {
-        return false;
+        return std::nullopt;
     }
 
-    t_world_out = tW;
-    return true;
+    return tW;
 }
 
 }  // namespace ds_pba

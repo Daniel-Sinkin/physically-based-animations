@@ -364,33 +364,27 @@ void ds_pba::RenderContext::run()
                     const glm::mat4 M = o.transform.model_matrix();
 
                     f32 tW{0.0f};
-                    if (intersect_unit_cube_obb(ray, M, tW))
+                    auto res = intersect_ray_cube(ray, M);
+                    if (res && (*res < best_t))
                     {
-                        std::println("\t{}", tW);
-                        if (tW < best_t)
-                        {
-                            best_t = tW;
-                            best_idx = i;
-                            best_type = ObjectType::Cube;
-                        }
+                        best_t = tW;
+                        best_idx = i;
+                        best_type = ObjectType::Cube;
                     }
                 }
 
                 for (usize i{0zu}; i < scene_context->sphere_objects.size(); ++i)
                 {
                     const Object& o = scene_context->sphere_objects[i];
-                    [[maybe_unused]] const glm::mat4 M{o.transform.model_matrix()};
+                    const glm::mat4 M{o.transform.model_matrix()};
 
                     f32 tW{0.0f};
-                    if (intersect_sphere(ray, M, 1.0, tW))
+                    auto res = intersect_ray_cube(ray, M);
+                    if (res && (*res < best_t))
                     {
-                        std::println("\t{}", tW);
-                        if (tW < best_t)
-                        {
-                            best_t = tW;
-                            best_idx = i;
-                            best_type = ObjectType::Sphere;
-                        }
+                        best_t = tW;
+                        best_idx = i;
+                        best_type = ObjectType::Sphere;
                     }
                 }
                 scene_context->selected_index = best_idx;
@@ -475,8 +469,6 @@ bool ds_pba::RenderContext::setup()
             const int wy = my + (mode->height - wh) / 2;
 
             glfwSetWindowPos(window, wx, wy);
-
-            std::println("Monitor scale: sx={}, sy={}; window size points: {}x{}", sx, sy, ww, wh);
         }
     }
 

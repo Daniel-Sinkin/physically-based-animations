@@ -129,11 +129,6 @@ int main()
 {
     using namespace ds_pba;
 
-    std::println("Hello, World!");
-    std::println("Hello, World2!");
-    std::println("Hello, World2!");
-    std::println("Hello, World3!");
-
     RenderContext render_context{};
     if (!render_context.setup())
     {
