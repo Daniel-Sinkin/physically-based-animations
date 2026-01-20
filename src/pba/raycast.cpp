@@ -1,9 +1,11 @@
-// pba/interaction.cpp
+// pba/raycast.cpp
 
-#include "pba/interaction.hpp"
+#include "pba/raycast.hpp"
 
-#include "pba/pch.hpp"    // IWYU pragma: keep
-#include "pba/types.hpp"  // IWYU pragma: keep
+#include "pba/pch.hpp"  // IWYU pragma: keep
+#include "pba/scene_context.hpp"
+#include "pba/types.hpp"         // IWYU pragma: keep
+#include "pba/viewport_fbo.hpp"  // IWYU pragma: keep
 
 #include <algorithm>
 #include <cmath>
@@ -11,6 +13,64 @@
 
 namespace ds_pba
 {
+std::optional<Raycast> raycast(const SceneContext& scene_context, const Ray& ray)
+{
+    f32 best_t = 1e30f;
+
+    std::optional<usize> best_idx{};
+    std::optional<u32> best_object_id{};
+    std::optional<ObjectType> best_type{};
+
+    for (usize i{0zu}; i < scene_context.cube_objects.size(); ++i)
+    {
+        const Object& o = scene_context.cube_objects[i];
+        const glm::mat4 M = o.transform.model_matrix();
+
+        if (auto res = intersect_ray_cube(ray, M))
+        {
+            const f32 t = *res;
+            if (t < best_t)
+            {
+                best_t = t;
+                best_idx = i;
+                best_type = ObjectType::Cube;
+                best_object_id = o.id;
+            }
+        }
+    }
+    for (usize i{0zu}; i < scene_context.sphere_objects.size(); ++i)
+    {
+        const Object& o = scene_context.sphere_objects[i];
+        const glm::mat4 M{o.transform.model_matrix()};
+
+        if (auto res = intersect_ray_sphere(ray, M))
+        {
+            const f32 t = *res;
+            if (t < best_t)
+            {
+                best_t = t;
+                best_idx = i;
+                best_type = ObjectType::Sphere;
+                best_object_id = o.id;
+            }
+        }
+    }
+
+    if (!best_idx)
+    {
+        return std::nullopt;
+    }
+    assert(best_t);
+    assert(best_type);
+
+    return Raycast{
+        .ray = ray,
+        .hit = ray.origin + best_t * ray.dir,
+        .t = best_t,
+        .object_id = *best_object_id,
+        .object_type = *best_type
+    };
+}
 
 Ray ray_from_mouse(
     GLFWwindow* window,
@@ -82,13 +142,12 @@ Ray ray_from_imgui_rect(
     near_w /= near_w.w;
     far_w /= far_w.w;
 
-    return ds_pba::Ray{
+    return Ray{
         .origin = glm::vec3(near_w),
         .dir = glm::normalize(glm::vec3(far_w - near_w)),
     };
 }
 
-/// But this is a pretty result, but a reference can be found here:
 /// https://pbr-book.org/4ed/Shapes/Spheres
 std::optional<f32> intersect_ray_sphere(const Ray& ray, const glm::mat4& model)
 {

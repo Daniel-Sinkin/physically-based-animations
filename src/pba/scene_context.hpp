@@ -24,20 +24,4 @@ struct SceneContext
     std::optional<ObjectType> selected_type{};
 };
 
-struct Raycast
-{
-    Ray ray;
-    glm::vec3 hit;
-    f32 t;
-    ObjectId object_id;
-};
-/*
-std::optional<Raycast> raycast(const SceneContext& context, const Ray& ray)
-{
-    (void) context;
-    (void) ray;
-    return std::nullopt;
-}
-*/
-
 }  // namespace ds_pba

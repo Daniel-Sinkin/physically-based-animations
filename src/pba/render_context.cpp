@@ -6,9 +6,9 @@
 #include "backends/imgui_impl_opengl3.h"
 #include "pba/core_types.hpp"
 #include "pba/gl.hpp"
-#include "pba/interaction.hpp"
 #include "pba/mesh.hpp"
 #include "pba/pch.hpp"
+#include "pba/raycast.hpp"
 #include "pba/scene_types.hpp"
 #include "pba/ui.hpp"
 
@@ -320,7 +320,7 @@ void ds_pba::RenderContext::run()
                 glm::vec2 mouse_pos =
                     glm::vec2{static_cast<f32>(mouse_x), static_cast<f32>(mouse_y)};
 
-                const Ray ray = ray_from_imgui_rect(
+                const Ray mouse_ray = ray_from_imgui_rect(
                     mouse_pos,
                     viewport_img_pos,
                     viewport_img_size,
@@ -328,64 +328,35 @@ void ds_pba::RenderContext::run()
                     camera_proj_matrix
                 );
 
-                f32 best_t = 1e30f;
-                std::optional<usize> best_idx{};
-                std::optional<ObjectType> best_type{};
-                for (usize i = 0; i < scene_context->cube_objects.size(); ++i)
+                auto rc_res = raycast(*scene_context, mouse_ray);
+                if (rc_res)
                 {
-                    const Object& o = scene_context->cube_objects[i];
-                    const glm::mat4 M = o.transform.model_matrix();
-
-                    if (auto res = intersect_ray_cube(ray, M))
+                    const Raycast rc = *rc_res;
+                    std::println("Got a hit with {}", rc);
+                    if (rc.object_type == ObjectType::Cube)
                     {
-                        const f32 t = *res;
-                        if (t < best_t)
+                        for (usize i{0zu}; i < scene_context->cube_objects.size(); ++i)
                         {
-                            best_t = t;
-                            best_idx = i;
-                            best_type = ObjectType::Cube;
+                            const Object& obj = scene_context->cube_objects[i];
+                            if (obj.id == rc.object_id)
+                            {
+                                scene_context->selected_index = i;
+                                scene_context->selected_type = ObjectType::Cube;
+                            }
                         }
                     }
-                }
-
-                for (usize i{0zu}; i < scene_context->sphere_objects.size(); ++i)
-                {
-                    const Object& o = scene_context->sphere_objects[i];
-                    const glm::mat4 M{o.transform.model_matrix()};
-
-                    if (auto res = intersect_ray_sphere(ray, M))
+                    else if (rc.object_type == ObjectType::Sphere)
                     {
-                        const f32 t = *res;
-                        if (t < best_t)
+                        for (usize i{0zu}; i < scene_context->sphere_objects.size(); ++i)
                         {
-                            best_t = t;
-                            best_idx = i;
-                            best_type = ObjectType::Sphere;
+                            const Object& obj = scene_context->sphere_objects[i];
+                            if (obj.id == rc.object_id)
+                            {
+                                scene_context->selected_index = i;
+                                scene_context->selected_type = ObjectType::Sphere;
+                            }
                         }
                     }
-                }
-                if (left_down && !prev_left)
-                {
-                    scene_context->selected_index = best_idx;
-                    scene_context->selected_type = best_type;
-                }
-                if (right_down && !prev_right)
-                {
-                    if (auto res = intersect_ray_ground(ray))
-                    {
-                        const f32 t = *res;
-                        best_t = std::min(best_t, t);
-                    }
-                    auto impact = ray.origin + best_t * ray.dir;
-                    scene_context->sphere_objects.push_back(
-                        Object{
-                            .id = next_object_id(),
-                            .type = ObjectType::Sphere,
-                            .transform = {.position = impact, .scale = {0.05f, 0.05f, 0.05f}},
-                            .color = {0.7f, 0.3f, 0.3f},
-                        }
-                    );
-                    ui_log(std::format("Raycast hit something! {}", impact));
                 }
             }
         }

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "pba/raycast.hpp"
+
 #include <format>
 #include <glm/glm.hpp>
 #include <string_view>
@@ -72,5 +74,56 @@ struct formatter<glm::mat4>
         return out;
     }
 };
+template <>
+struct formatter<ds_pba::Ray>
+{
+    formatter<float> float_fmt;
 
+    constexpr auto parse(format_parse_context& ctx)
+    {
+        return float_fmt.parse(ctx);
+    }
+
+    template <class FormatContext>
+    auto format(const ds_pba::Ray& r, FormatContext& ctx) const
+    {
+        return std::format_to(ctx.out(), "Ray{{origin={}, dir={}}}", r.origin, r.dir);
+    }
+};
+
+template <>
+struct formatter<ds_pba::Raycast>
+{
+    formatter<float> float_fmt;
+
+    constexpr auto parse(format_parse_context& ctx)
+    {
+        return float_fmt.parse(ctx);
+    }
+
+    template <class FormatContext>
+    auto format(const ds_pba::Raycast& rc, FormatContext& ctx) const
+    {
+        const char* type_str = "";
+        switch (rc.object_type)
+        {
+            case ds_pba::ObjectType::Cube:
+                type_str = "Cube";
+                break;
+            case ds_pba::ObjectType::Sphere:
+                type_str = "Sphere";
+                break;
+        }
+
+        return std::format_to(
+            ctx.out(),
+            "Raycast{{ray={}, hit={}, t={}, object_id={}, object_type={}}}",
+            rc.ray,
+            rc.hit,
+            rc.t,
+            rc.object_id,
+            type_str
+        );
+    }
+};
 }  // namespace std
