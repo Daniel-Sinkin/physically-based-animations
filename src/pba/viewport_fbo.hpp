@@ -1,12 +1,12 @@
 // pba/viewport_fbo.hpp
 #pragma once
 
-#include "imgui.h"
-#include "pba/types.hpp"  // IWYU pragma: keephpp"
+#include "pba/core_types.hpp"
 
 #include <algorithm>
 #include <cstdint>
 #include <glad/glad.h>
+#include <imgui.h>
 
 namespace ds_pba
 {

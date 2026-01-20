@@ -1,13 +1,11 @@
 // pba/ui.hpp
 #pragma once
 
-#include "pba/render_context.hpp"
-
 #include <string_view>
 
 namespace ds_pba
 {
-struct GridSettings;
+struct RenderContext;
 
 void apply_blender_style();
 void ui_log(std::string_view msg);

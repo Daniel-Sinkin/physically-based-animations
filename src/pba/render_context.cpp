@@ -1,18 +1,25 @@
 // pba/scene_context.hpp
+#include "pba/math_types.hpp"
+#include "pba/pch.hpp"  // IWYU pragma: keep
+//
 #include "pba/render_context.hpp"
-
-#include "GLFW/glfw3.h"
-#include "backends/imgui_impl_glfw.h"
-#include "backends/imgui_impl_opengl3.h"
-#include "pba/core_types.hpp"
+//
+#include "pba/format.hpp"
 #include "pba/gl.hpp"
 #include "pba/mesh.hpp"
-#include "pba/pch.hpp"
 #include "pba/raycast.hpp"
-#include "pba/scene_types.hpp"
+#include "pba/scene_context.hpp"
 #include "pba/ui.hpp"
 
-#include <print>
+ds_pba::RenderContext::~RenderContext()
+{
+    shutdown();
+}
+
+bool ds_pba::RenderContext::is_active() const
+{
+    return (window != nullptr) && (!glfwWindowShouldClose(window)) && is_active_;
+}
 
 void ds_pba::RenderContext::run()
 {
@@ -97,10 +104,9 @@ void ds_pba::RenderContext::run()
                 glClearColor(bg.r(), bg.g(), bg.b(), bg.a());
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-                const f32 aspect =
-                    static_cast<f32>(viewport_fbo.width) / static_cast<f32>(viewport_fbo.height);
-                const glm::mat4 camera_view_matrix = scene_context->camera.view_matrix();
-                const glm::mat4 camera_proj_matrix = scene_context->camera.proj_matrix(aspect);
+                const f32 aspect = viewport_fbo.aspect_ratio();
+                const auto camera_view_matrix = scene_context->camera.view_matrix();
+                const auto camera_proj_matrix = scene_context->camera.proj_matrix(aspect);
 
                 {  // Grid
                     glDepthMask(GL_FALSE);
@@ -530,4 +536,20 @@ bool ds_pba::RenderContext::setup()
     last_scene_poll = std::chrono::steady_clock::now();
 
     return true;
+}
+
+void ds_pba::RenderContext::shutdown()
+{
+    viewport_fbo.destroy();
+
+    glDeleteProgram(grid_prog.id);
+    glDeleteProgram(obj_prog.id);
+    glDeleteProgram(outline_prog.id);
+
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+
+    glfwDestroyWindow(window);
+    glfwTerminate();
 }

@@ -1,15 +1,10 @@
 // pba/raycast.cpp
-
-#include "pba/raycast.hpp"
-
+#include "pba/math_types.hpp"
 #include "pba/pch.hpp"  // IWYU pragma: keep
+//
+#include "pba/raycast.hpp"
+//
 #include "pba/scene_context.hpp"
-#include "pba/types.hpp"         // IWYU pragma: keep
-#include "pba/viewport_fbo.hpp"  // IWYU pragma: keep
-
-#include <algorithm>
-#include <cmath>
-#include <optional>
 
 namespace ds_pba
 {
@@ -24,7 +19,7 @@ std::optional<Raycast> raycast(const SceneContext& scene_context, const Ray& ray
     for (usize i{0zu}; i < scene_context.cube_objects.size(); ++i)
     {
         const Object& o = scene_context.cube_objects[i];
-        const glm::mat4 M = o.transform.model_matrix();
+        const auto M = o.transform.model_matrix();
 
         if (auto res = intersect_ray_cube(ray, M))
         {
@@ -41,7 +36,7 @@ std::optional<Raycast> raycast(const SceneContext& scene_context, const Ray& ray
     for (usize i{0zu}; i < scene_context.sphere_objects.size(); ++i)
     {
         const Object& o = scene_context.sphere_objects[i];
-        const glm::mat4 M{o.transform.model_matrix()};
+        const ModelMatrix M{o.transform.model_matrix()};
 
         if (auto res = intersect_ray_sphere(ray, M))
         {
@@ -76,8 +71,8 @@ Ray ray_from_mouse(
     GLFWwindow* window,
     f64 mouse_x,
     f64 mouse_y,
-    const glm::mat4& camera_view_matrix,
-    const glm::mat4& camera_proj_matrix
+    const ViewMatrix& camera_view_matrix,
+    const ProjMatrix& camera_proj_matrix
 )
 {
     int window_width = 1, window_height = 1;
@@ -119,8 +114,8 @@ Ray ray_from_imgui_rect(
     const glm::vec2& mouse_pos,
     const glm::vec2& rect_pos,
     const glm::vec2& rect_size,
-    const glm::mat4& camera_view_matrix,
-    const glm::mat4& camera_proj_matrix
+    const ViewMatrix& camera_view_matrix,
+    const ProjMatrix& camera_proj_matrix
 )
 {
     const float lx = mouse_pos.x - rect_pos.x;
@@ -149,7 +144,7 @@ Ray ray_from_imgui_rect(
 }
 
 /// https://pbr-book.org/4ed/Shapes/Spheres
-std::optional<f32> intersect_ray_sphere(const Ray& ray, const glm::mat4& model)
+std::optional<f32> intersect_ray_sphere(const Ray& ray, const ModelMatrix& model)
 {
     const glm::mat4 invM = glm::inverse(model);
 
@@ -206,7 +201,7 @@ std::optional<f32> intersect_ray_ground(const Ray& ray)
 
 /// Using the Slab method, see for example
 /// https://www.pbr-book.org/4ed/Shapes/Basic_Shape_Interface
-std::optional<f32> intersect_ray_cube(const Ray& ray_world, const glm::mat4& model)
+std::optional<f32> intersect_ray_cube(const Ray& ray_world, const ModelMatrix& model)
 {
     const glm::mat4 invM = glm::inverse(model);
 

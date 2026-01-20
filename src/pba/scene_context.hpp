@@ -1,20 +1,16 @@
 // pba/scene_context.hpp
 #pragma once
 
-#include "camera.hpp"
-#include "glm/fwd.hpp"
+#include "pba/camera.hpp"
+#include "pba/core_types.hpp"
 #include "pba/scene_types.hpp"
-#include "pba/types.hpp"  // IWYU pragma: keep
 
-#include <filesystem>
-#include <memory>
 #include <optional>
+#include <unordered_map>
 #include <vector>
 
 namespace ds_pba
 {
-namespace fs = std::filesystem;
-
 struct SceneContext
 {
     Camera camera{};
@@ -22,6 +18,9 @@ struct SceneContext
     std::vector<Object> sphere_objects{};
     std::optional<usize> selected_index{};
     std::optional<ObjectType> selected_type{};
+    std::unordered_map<ObjectId, Object*> object_map{};
+
+    void setup();
 };
 
 }  // namespace ds_pba

@@ -1,7 +1,9 @@
 // pba/camera.cpp
-#include "camera.hpp"
-
-#include <cmath>
+#include "pba/math_types.hpp"
+#include "pba/pch.hpp"  // IWYU pragma: keep
+//
+#include "pba/camera.hpp"
+//
 
 namespace ds_pba
 {
@@ -22,12 +24,12 @@ glm::vec3 Camera::position() const
     return pivot + offset;
 }
 
-glm::mat4 Camera::view_matrix() const
+ViewMatrix Camera::view_matrix() const
 {
     return glm::lookAt(position(), pivot, glm::vec3(0, 0, 1));
 }
 
-glm::mat4 Camera::proj_matrix(f32 aspect) const
+ProjMatrix Camera::proj_matrix(f32 aspect) const
 {
     return glm::perspective(fov_y, aspect, z_near, z_far);
 }

@@ -1,12 +1,8 @@
 // pba/mesh.cpp
-#include "mesh.hpp"
-
-#include "pba/types.hpp"  // IWYU pragma: keep
-
-#include <algorithm>
-#include <array>
-#include <numbers>
-#include <vector>
+#include "pba/pch.hpp"  // IWYU pragma: keep
+//
+#include "pba/mesh.hpp"
+//
 
 namespace ds_pba
 {

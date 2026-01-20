@@ -1,19 +1,10 @@
 // pba/ui.cpp
-#include "ui.hpp"
-
-#include "camera.hpp"
-#include "imgui.h"
-#include "pba/scene_types.hpp"
-#include "render_context.hpp"
-#include "scene_context.hpp"
-
-#include <algorithm>
-#include <array>
-#include <chrono>
-#include <print>
-#include <string>
-#include <string_view>
-#include <vector>
+#include "pba/pch.hpp"  // IWYU pragma: keep
+//
+#include "pba/ui.hpp"
+//
+#include "pba/render_context.hpp"
+#include "pba/scene_context.hpp"
 
 namespace ds_pba
 {

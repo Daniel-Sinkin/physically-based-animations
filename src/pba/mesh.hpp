@@ -1,7 +1,8 @@
 // pba/mesh.hpp
 #pragma once
 
-#include "pba/types.hpp"  // IWYU pragma: keep
+#include "pba/core_types.hpp"
+#include "pba/gl_types.hpp"
 
 namespace ds_pba
 {

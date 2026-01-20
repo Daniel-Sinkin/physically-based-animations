@@ -1,13 +1,16 @@
-// pba/scene_context->hpp
+// pba/render_context.hpp
 #pragma once
 
 #include "pba/core_types.hpp"
-#include "pba/scene_context.hpp"
-#include "pba/types.hpp"  // IWYU pragma: keep
+#include "pba/gl_types.hpp"
 #include "pba/viewport_fbo.hpp"
 
 #include <chrono>
 #include <memory>
+//
+#include <glm/vec2.hpp>
+
+struct GLFWwindow;
 
 namespace ds_pba
 {
@@ -24,8 +27,14 @@ struct GridSettings
 constexpr f32 zoom_speed = 0.12f;
 constexpr f32 sensitivity = 0.0050f;
 
+struct SceneContext;
+
 struct RenderContext
 {
+    ~RenderContext();
+
+    void shutdown();
+
     GLFWwindow* window{};
     ShaderProgram grid_prog{};
     ShaderProgram obj_prog{};
@@ -44,8 +53,8 @@ struct RenderContext
 
     int frame_counter{0};
 
-    TimePoint run_start = std::chrono::steady_clock::now();
-    TimePoint last_scene_poll = std::chrono::steady_clock::now();
+    TimePoint run_start = Clock::now();
+    TimePoint last_scene_poll = Clock::now();
     Duration scene_poll_interval = std::chrono::milliseconds(250);
 
     ViewportFBO viewport_fbo{};
@@ -67,10 +76,7 @@ struct RenderContext
     void run();
     bool setup();
 
-    bool is_active() const
-    {
-        return (!glfwWindowShouldClose(window)) && is_active_;
-    }
+    bool is_active() const;
     void deactivate() noexcept
     {
         is_active_ = false;

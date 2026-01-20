@@ -1,8 +1,10 @@
 // pba/gl.hpp
 #pragma once
 
-#include "pba/types.hpp"  // IWYU pragma: keep
+#include "pba/core_types.hpp"
+#include "pba/gl_types.hpp"
 
+#include <cassert>
 #include <expected>
 #include <glad/glad.h>
 #include <glm/glm.hpp>

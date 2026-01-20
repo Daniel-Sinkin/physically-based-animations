@@ -2,6 +2,7 @@
 #pragma once
 
 #include "pba/core_types.hpp"  // IWYU pragma: keep
+#include "pba/math_types.hpp"
 
 #include <cmath>
 #include <glm/glm.hpp>
@@ -13,13 +14,13 @@ namespace ds_pba
 
 struct Transform
 {
-    glm::vec3 position{0.0f, 0.0f, 0.0f};
-    glm::vec3 rotation_deg{0.0f, 0.0f, 0.0f};
-    glm::vec3 scale{1.0f, 1.0f, 1.0f};
+    Position3 position{0.0f, 0.0f, 0.0f};
+    EulerDeg3 rotation_deg{0.0f, 0.0f, 0.0f};
+    Direction3 scale{1.0f, 1.0f, 1.0f};
 
-    [[nodiscard]] glm::mat4 model_matrix() const
+    [[nodiscard]] ModelMatrix model_matrix() const
     {
-        glm::mat4 M(1.0f);
+        ModelMatrix M(1.0f);
         M = glm::translate(M, position);
         M = glm::rotate(M, glm::radians(rotation_deg.z), glm::vec3(0, 0, 1));
         M = glm::rotate(M, glm::radians(rotation_deg.y), glm::vec3(0, 1, 0));
