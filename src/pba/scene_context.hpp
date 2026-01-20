@@ -20,8 +20,6 @@ struct SceneContext
     std::optional<usize> selected_index{};
     std::optional<ObjectType> selected_type{};
     std::unordered_map<ObjectId, Object*> object_map{};
-
-    void setup();
 };
 
 }  // namespace ds_pba

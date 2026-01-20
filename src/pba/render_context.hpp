@@ -63,7 +63,7 @@ struct RenderContext
     bool viewport_fb_rect_valid{false};
     bool viewport_image_hovered{false};
 
-    std::unique_ptr<SceneContext> scene_context{};
+    SceneContext* scene_context{};
 
     bool is_active_{true};
 

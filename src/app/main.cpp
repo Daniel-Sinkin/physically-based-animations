@@ -1,16 +1,23 @@
 // pba/main.cpp
-#include "pba/pch.hpp"
+#include "pba/core_types.hpp"
+#include "pba/engine_context.hpp"
+#include "pba/math_types.hpp"
+#include "pba/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/render_context.hpp"
 #include "pba/scene_context.hpp"
 #include "pba/shutdown.hpp"
 
+#include <algorithm>
 #include <csignal>
+#include <memory>
 
 namespace
 {
 extern "C" void handle_term(int) noexcept
 {
+    // Gracefully shut down when terminal sends close request;
+    // this was implemented for proper watcher integration
     ds_pba::g_request_close.store(true, std::memory_order_relaxed);
 }
 }  // namespace
@@ -22,16 +29,11 @@ int main()
     std::signal(SIGTERM, handle_term);
     std::signal(SIGINT, handle_term);
 
-    RenderContext render_context{};
-    if (!render_context.setup())
+    EngineContext engine{};
+    if (!engine.setup())
     {
         return EXIT_FAILURE;
     }
 
-    auto scene = std::make_unique<SceneContext>();
-    scene->setup();
-    render_context.scene_context = std::move(scene);
-
-    render_context.run();
-    return EXIT_SUCCESS;
+    engine.run();
 }

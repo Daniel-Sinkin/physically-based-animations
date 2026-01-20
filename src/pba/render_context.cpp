@@ -1,4 +1,4 @@
-// pba/scene_context.hpp
+// pba/scene_context->hpp
 #include "pba/core_types.hpp"
 #include "pba/math_types.hpp"
 #include "pba/pch.hpp"  // IWYU pragma: keep
