@@ -1,18 +1,22 @@
 // pba/mesh.cpp
 #include "mesh.hpp"
-#include "pba/types.hpp" // IWYU pragma: keep
+
+#include "pba/types.hpp"  // IWYU pragma: keep
 
 #include <algorithm>
 #include <array>
 #include <numbers>
 #include <vector>
 
-namespace ds_pba {
+namespace ds_pba
+{
 
-GLMesh create_cube_mesh() {
-    struct V {
-        f32 px, py, pz; // points
-        f32 nx, ny, nz; // normals
+GLMesh create_cube_mesh()
+{
+    struct V
+    {
+        f32 px, py, pz;  // points
+        f32 nx, ny, nz;  // normals
     };
 
     static constexpr std::array<V, 36> verts = {
@@ -80,8 +84,10 @@ GLMesh create_cube_mesh() {
     return mesh;
 }
 
-GLMesh create_grid_mesh(int n_lines_per_side, f32 spacing, f32 axis_alpha, f32 minor_alpha) {
-    struct V {
+GLMesh create_grid_mesh(int n_lines_per_side, f32 spacing, f32 axis_alpha, f32 minor_alpha)
+{
+    struct V
+    {
         f32 px, py, pz;
         f32 r, g, b, a;
     };
@@ -92,27 +98,36 @@ GLMesh create_grid_mesh(int n_lines_per_side, f32 spacing, f32 axis_alpha, f32 m
     std::vector<V> verts;
     verts.reserve(static_cast<usize>((2 * N + 1) * 4));
 
-    auto push_line = [&](glm::vec3 a, glm::vec3 b, f32 r, f32 g, f32 bl, f32 al) {
+    auto push_line = [&](glm::vec3 a, glm::vec3 b, f32 r, f32 g, f32 bl, f32 al)
+    {
         verts.push_back(V{a.x, a.y, a.z, r, g, bl, al});
         verts.push_back(V{b.x, b.y, b.z, r, g, bl, al});
     };
 
     // x = const -> y axis parallels
-    for (int i = -N; i <= N; ++i) {
+    for (int i = -N; i <= N; ++i)
+    {
         f32 x = static_cast<f32>(i) * spacing;
-        if (i == 0) {
+        if (i == 0)
+        {
             push_line({x, -E, 0}, {x, E, 0}, 0.15f, 0.90f, 0.25f, axis_alpha);
-        } else {
+        }
+        else
+        {
             push_line({x, -E, 0}, {x, E, 0}, 0.65f, 0.68f, 0.72f, minor_alpha);
         }
     }
 
     // y = const -> x axis parallels
-    for (int i = -N; i <= N; ++i) {
+    for (int i = -N; i <= N; ++i)
+    {
         f32 y = static_cast<f32>(i) * spacing;
-        if (i == 0) {
+        if (i == 0)
+        {
             push_line({-E, y, 0}, {E, y, 0}, 0.90f, 0.20f, 0.18f, axis_alpha);
-        } else {
+        }
+        else
+        {
             push_line({-E, y, 0}, {E, y, 0}, 0.65f, 0.68f, 0.72f, minor_alpha);
         }
     }
@@ -124,7 +139,10 @@ GLMesh create_grid_mesh(int n_lines_per_side, f32 spacing, f32 axis_alpha, f32 m
 
     mesh.vao.bind();
     mesh.vbo.bind();
-    glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(verts.size() * sizeof(V)), verts.data(), GL_STATIC_DRAW);
+    glBufferData(
+        GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(verts.size() * sizeof(V)), verts.data(),
+        GL_STATIC_DRAW
+    );
 
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(V), GLPtr::offset0());
@@ -137,8 +155,10 @@ GLMesh create_grid_mesh(int n_lines_per_side, f32 spacing, f32 axis_alpha, f32 m
     return mesh;
 }
 
-GLMesh create_sphere_mesh(int n_lat, int n_lon, f32 radius) {
-    struct V {
+GLMesh create_sphere_mesh(int n_lat, int n_lon, f32 radius)
+{
+    struct V
+    {
         f32 px, py, pz;
         f32 nx, ny, nz;
     };
@@ -152,16 +172,16 @@ GLMesh create_sphere_mesh(int n_lat, int n_lon, f32 radius) {
     std::vector<V> verts;
     verts.reserve(static_cast<usize>(lon) * 6zu * static_cast<usize>(lat));
 
-    auto push = [&](const glm::vec3 &p, const glm::vec3 &n) {
-        verts.push_back(V{p.x, p.y, p.z, n.x, n.y, n.z});
-    };
+    auto push = [&](const glm::vec3& p, const glm::vec3& n)
+    { verts.push_back(V{p.x, p.y, p.z, n.x, n.y, n.z}); };
 
     const glm::vec3 n_top{0.0f, 0.0f, 1.0f};
     const glm::vec3 n_bot{0.0f, 0.0f, -1.0f};
     const glm::vec3 p_top = radius * n_top;
     const glm::vec3 p_bot = radius * n_bot;
 
-    auto unit = [&](f32 theta, f32 phi) -> glm::vec3 {
+    auto unit = [&](f32 theta, f32 phi) -> glm::vec3
+    {
         const f32 st = std::sin(theta);
         const f32 ct = std::cos(theta);
         const f32 sp = std::sin(phi);
@@ -171,7 +191,8 @@ GLMesh create_sphere_mesh(int n_lat, int n_lon, f32 radius) {
 
     {
         const f32 theta1 = k_pi / static_cast<f32>(lat);
-        for (int j = 0; j < lon; ++j) {
+        for (int j = 0; j < lon; ++j)
+        {
             const f32 phi0 = (static_cast<f32>(j) / static_cast<f32>(lon)) * k_two_pi;
             const f32 phi1 = (static_cast<f32>(j + 1) / static_cast<f32>(lon)) * k_two_pi;
 
@@ -187,11 +208,13 @@ GLMesh create_sphere_mesh(int n_lat, int n_lon, f32 radius) {
         }
     }
 
-    for (int i = 1; i <= lat - 2; ++i) {
+    for (int i = 1; i <= lat - 2; ++i)
+    {
         const f32 theta0 = (static_cast<f32>(i) / static_cast<f32>(lat)) * k_pi;
         const f32 theta1 = (static_cast<f32>(i + 1) / static_cast<f32>(lat)) * k_pi;
 
-        for (int j = 0; j < lon; ++j) {
+        for (int j = 0; j < lon; ++j)
+        {
             const f32 phi0 = (static_cast<f32>(j) / static_cast<f32>(lon)) * k_two_pi;
             const f32 phi1 = (static_cast<f32>(j + 1) / static_cast<f32>(lon)) * k_two_pi;
 
@@ -217,7 +240,8 @@ GLMesh create_sphere_mesh(int n_lat, int n_lon, f32 radius) {
 
     {
         const f32 theta0 = (static_cast<f32>(lat - 1) / static_cast<f32>(lat)) * k_pi;
-        for (int j = 0; j < lon; ++j) {
+        for (int j = 0; j < lon; ++j)
+        {
             const f32 phi0 = (static_cast<f32>(j) / static_cast<f32>(lon)) * k_two_pi;
             const f32 phi1 = (static_cast<f32>(j + 1) / static_cast<f32>(lon)) * k_two_pi;
 
@@ -240,7 +264,10 @@ GLMesh create_sphere_mesh(int n_lat, int n_lon, f32 radius) {
 
     mesh.vao.bind();
     mesh.vbo.bind();
-    glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(verts.size() * sizeof(V)), verts.data(), GL_STATIC_DRAW);
+    glBufferData(
+        GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(verts.size() * sizeof(V)), verts.data(),
+        GL_STATIC_DRAW
+    );
 
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(V), GLPtr::offset0());
@@ -253,4 +280,4 @@ GLMesh create_sphere_mesh(int n_lat, int n_lon, f32 radius) {
     return mesh;
 }
 
-} // namespace ds_pba
+}  // namespace ds_pba

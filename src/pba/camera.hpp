@@ -1,11 +1,13 @@
 // pba/camera.hpp
 #pragma once
 
-#include "pba/types.hpp" // IWYU pragma: keep
+#include "pba/types.hpp"  // IWYU pragma: keep
 
-namespace ds_pba {
+namespace ds_pba
+{
 
-struct Camera {
+struct Camera
+{
     glm::vec3 pivot{0.0f, 0.0f, 0.0f};
     f32 distance = 8.0f;
 
@@ -21,4 +23,4 @@ struct Camera {
     [[nodiscard]] glm::mat4 proj_matrix(f32 aspect) const;
 };
 
-} // namespace ds_pba
+}  // namespace ds_pba

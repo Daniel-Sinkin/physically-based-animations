@@ -1,6 +1,7 @@
 // pba/picking.cpp
 #include "interaction.hpp"
-#include "pba/types.hpp" // IWYU pragma: keep
+
+#include "pba/types.hpp"  // IWYU pragma: keep
 
 #include <algorithm>
 #include <cmath>
@@ -8,18 +9,28 @@
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
-namespace ds_pba {
+namespace ds_pba
+{
 
-f32 max3(f32 a, f32 b, f32 c) {
+f32 max3(f32 a, f32 b, f32 c)
+{
     return std::max(a, std::max(b, c));
 }
 
-bool intersect_sphere(const Ray &ray, const glm::vec3 &center, f32 radius, f32 &t_hit) {
+bool intersect_sphere(const Ray& ray, const glm::vec3& center, f32 radius, glm::mat4 M, f32& t_hit)
+{
+
+    const glm::mat4 invM = glm::inverse(model);
+
+    const glm::vec3 oL = glm::vec3(invM * glm::vec4(ray.origin, 1.0f));
+    const glm::vec3 dL = glm::vec3(invM * glm::vec4(ray.dir, 0.0f));
+
     const glm::vec3 oc = ray.origin - center;
     const f32 b = 2.0f * glm::dot(oc, ray.dir);
     const f32 c = glm::dot(oc, oc) - radius * radius;
     const f32 disc = b * b - 4.0f * c;
-    if (disc < 0.0f) {
+    if (disc < 0.0f)
+    {
         return false;
     }
 
@@ -28,7 +39,8 @@ bool intersect_sphere(const Ray &ray, const glm::vec3 &center, f32 radius, f32 &
     const f32 t1 = (-b + s) * 0.5f;
 
     const f32 t = (t0 > 0.0f) ? t0 : ((t1 > 0.0f) ? t1 : -1.0f);
-    if (t <= 0.0f) {
+    if (t <= 0.0f)
+    {
         return false;
     }
 
@@ -37,11 +49,10 @@ bool intersect_sphere(const Ray &ray, const glm::vec3 &center, f32 radius, f32 &
 }
 
 Ray ray_from_mouse(
-    GLFWwindow *window,
-    f64 mouse_x,
-    f64 mouse_y,
-    const glm::mat4 &camera_view_matrix,
-    const glm::mat4 &camera_proj_matrix) {
+    GLFWwindow* window, f64 mouse_x, f64 mouse_y, const glm::mat4& camera_view_matrix,
+    const glm::mat4& camera_proj_matrix
+)
+{
     // Use Framebuffer coords for NDC, makes a difference for retina displays
     int window_width = 1, window_height = 1;
     int framebuffer_width = 1, framebuffer_height = 1;
@@ -79,15 +90,10 @@ Ray ray_from_mouse(
 }
 
 Ray ray_from_mouse_in_rect(
-    GLFWwindow *window,
-    f64 mouse_x,
-    f64 mouse_y,
-    int rect_x,
-    int rect_y,
-    int rect_w,
-    int rect_h,
-    const glm::mat4 &camera_view_matrix,
-    const glm::mat4 &camera_proj_matrix) {
+    GLFWwindow* window, f64 mouse_x, f64 mouse_y, int rect_x, int rect_y, int rect_w, int rect_h,
+    const glm::mat4& camera_view_matrix, const glm::mat4& camera_proj_matrix
+)
+{
 
     int fbw = 1, fbh = 1;
     glfwGetFramebufferSize(window, &fbw, &fbh);
@@ -124,11 +130,10 @@ Ray ray_from_mouse_in_rect(
 }
 
 Ray ray_from_imgui_rect(
-    const glm::vec2 &mouse_pos,
-    const glm::vec2 &rect_pos,
-    const glm::vec2 &rect_size,
-    const glm::mat4 &camera_view_matrix,
-    const glm::mat4 &camera_proj_matrix) {
+    const glm::vec2& mouse_pos, const glm::vec2& rect_pos, const glm::vec2& rect_size,
+    const glm::mat4& camera_view_matrix, const glm::mat4& camera_proj_matrix
+)
+{
 
     const float lx = mouse_pos.x - rect_pos.x;
     const float ly = mouse_pos.y - rect_pos.y;
@@ -155,10 +160,8 @@ Ray ray_from_imgui_rect(
     };
 }
 
-bool intersect_unit_cube_obb(
-    const Ray &ray_world,
-    const glm::mat4 &model,
-    f32 &t_world_out) {
+bool intersect_unit_cube_obb(const Ray& ray_world, const glm::mat4& model, f32& t_world_out)
+{
     const glm::mat4 invM = glm::inverse(model);
 
     const glm::vec3 oL = glm::vec3(invM * glm::vec4(ray_world.origin, 1.0f));
@@ -169,13 +172,16 @@ bool intersect_unit_cube_obb(
     f32 tmin = -1e30f;
     f32 tmax = 1e30f;
 
-    auto slab = [&](f32 o, f32 d, f32 mn, f32 mx) -> bool {
-        if (std::abs(d) < 1e-8f) {
+    auto slab = [&](f32 o, f32 d, f32 mn, f32 mx) -> bool
+    {
+        if (std::abs(d) < 1e-8f)
+        {
             return (o >= mn && o <= mx);
         }
         f32 t1 = (mn - o) / d;
         f32 t2 = (mx - o) / d;
-        if (t1 > t2) {
+        if (t1 > t2)
+        {
             std::swap(t1, t2);
         }
         tmin = std::max(tmin, t1);
@@ -183,18 +189,22 @@ bool intersect_unit_cube_obb(
         return tmin <= tmax;
     };
 
-    if (!slab(oL.x, dL.x, bmin.x, bmax.x)) {
+    if (!slab(oL.x, dL.x, bmin.x, bmax.x))
+    {
         return false;
     }
-    if (!slab(oL.y, dL.y, bmin.y, bmax.y)) {
+    if (!slab(oL.y, dL.y, bmin.y, bmax.y))
+    {
         return false;
     }
-    if (!slab(oL.z, dL.z, bmin.z, bmax.z)) {
+    if (!slab(oL.z, dL.z, bmin.z, bmax.z))
+    {
         return false;
     }
 
     f32 tL = (tmin > 0.0f) ? tmin : ((tmax > 0.0f) ? tmax : -1.0f);
-    if (tL <= 0.0f) {
+    if (tL <= 0.0f)
+    {
         return false;
     }
 
@@ -202,7 +212,8 @@ bool intersect_unit_cube_obb(
     const glm::vec3 hitW = glm::vec3(model * glm::vec4(hitL, 1.0f));
 
     const f32 tW = glm::dot(hitW - ray_world.origin, ray_world.dir);
-    if (tW <= 0.0f) {
+    if (tW <= 0.0f)
+    {
         return false;
     }
 
@@ -210,4 +221,4 @@ bool intersect_unit_cube_obb(
     return true;
 }
 
-} // namespace ds_pba
+}  // namespace ds_pba

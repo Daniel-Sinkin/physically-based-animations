@@ -7,7 +7,8 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace ds_pba {
+namespace ds_pba
+{
 
 using usize = std::size_t;
 
@@ -36,11 +37,14 @@ using TimePoint = Clock::time_point;
 using Duration = std::chrono::duration<f64>;
 
 template <typename T>
-struct Rect {
+struct Rect
+{
     T x{}, y{}, width{}, height{};
 
-    f32 aspect_ratio() const noexcept {
-        if (height == 0) {
+    f32 aspect_ratio() const noexcept
+    {
+        if (height == 0)
+        {
             return 1.0f;
         }
         return static_cast<f32>(width) / static_cast<f32>(height);
@@ -52,28 +56,61 @@ using RectF32 = Rect<f32>;
 using RectF64 = Rect<f64>;
 
 template <typename T>
-struct ColorRGBA {
+struct ColorRGBA
+{
     std::array<T, 4> v{};
 
     constexpr ColorRGBA() = default;
-    constexpr ColorRGBA(T r, T g, T b, T a) noexcept : v{r, g, b, a} {}
+    constexpr ColorRGBA(T r, T g, T b, T a) noexcept : v{r, g, b, a}
+    {
+    }
 
-    constexpr T *data() noexcept { return v.data(); }
-    constexpr const T *data() const noexcept { return v.data(); }
+    constexpr T* data() noexcept
+    {
+        return v.data();
+    }
+    constexpr const T* data() const noexcept
+    {
+        return v.data();
+    }
 
-    constexpr T &r() noexcept { return v[0]; }
-    constexpr T &g() noexcept { return v[1]; }
-    constexpr T &b() noexcept { return v[2]; }
-    constexpr T &a() noexcept { return v[3]; }
+    constexpr T& r() noexcept
+    {
+        return v[0];
+    }
+    constexpr T& g() noexcept
+    {
+        return v[1];
+    }
+    constexpr T& b() noexcept
+    {
+        return v[2];
+    }
+    constexpr T& a() noexcept
+    {
+        return v[3];
+    }
 
-    constexpr const T &r() const noexcept { return v[0]; }
-    constexpr const T &g() const noexcept { return v[1]; }
-    constexpr const T &b() const noexcept { return v[2]; }
-    constexpr const T &a() const noexcept { return v[3]; }
+    constexpr const T& r() const noexcept
+    {
+        return v[0];
+    }
+    constexpr const T& g() const noexcept
+    {
+        return v[1];
+    }
+    constexpr const T& b() const noexcept
+    {
+        return v[2];
+    }
+    constexpr const T& a() const noexcept
+    {
+        return v[3];
+    }
 };
 
 using ColorRGBA8 = ColorRGBA<u8>;
 using ColorRGBAf = ColorRGBA<f32>;
 using ColorRGBAd = ColorRGBA<f64>;
 
-} // namespace ds_pba
+}  // namespace ds_pba

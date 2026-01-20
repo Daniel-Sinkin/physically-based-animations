@@ -4,7 +4,7 @@
 #include "pba/render_context.hpp"
 #include "pba/scene_context.hpp"
 #include "pba/scene_types.hpp"
-#include "pba/types.hpp" // IWYU pragma: keep
+#include "pba/types.hpp"  // IWYU pragma: keep
 #include "pba/viewport_fbo.hpp"
 
 #include <cstdlib>
@@ -15,59 +15,105 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 #define TINYOBJLOADER_IMPLEMENTATION
-#include <tiny_obj_loader.h>
-
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
 #include "imgui.h"
 
-ds_pba::SceneContext setup_scene() {
+#include <tiny_obj_loader.h>
+
+ds_pba::SceneContext setup_scene()
+{
     using namespace ds_pba;
     SceneContext scene_context;
 
-    if (scene_context.cube_objects.empty()) {
-        scene_context.cube_objects.push_back(Object{
-            .type = ObjectType::Cube,
-            .name = "Cube A",
-            .transform = Transform{.position = {2.0f, 1.0f, 0.5f}, .rotation_deg = {0, 0, 0}, .scale = {1, 1, 1}},
-            .color = {0.85f, 0.35f, 0.25f},
-        });
-        scene_context.cube_objects.push_back(Object{
-            .type = ObjectType::Cube,
-            .name = "Cube B",
-            .transform = Transform{.position = {-1.5f, 2.5f, 0.5f}, .rotation_deg = {0, 0, 25}, .scale = {1, 1, 1}},
-            .color = {0.25f, 0.55f, 0.90f},
-        });
-        scene_context.cube_objects.push_back(Object{
-            .type = ObjectType::Cube,
-            .name = "Cube C",
-            .transform = Transform{.position = {-2.5f, -1.5f, 0.75f}, .rotation_deg = {15, 0, 0}, .scale = {1.5f, 1.0f, 1.5f}},
-            .color = {0.30f, 0.85f, 0.45f},
-        });
-        scene_context.cube_objects.push_back(Object{
-            .type = ObjectType::Cube,
-            .name = "Cube D",
-            .transform = Transform{.position = {-0.5f, -1.5f, 0.75f}, .rotation_deg = {15, 0, 0}, .scale = {1.5f, 1.0f, 1.5f}},
-            .color = {0.30f, 0.85f, 0.45f},
-        });
-        scene_context.cube_objects.push_back(Object{
-            .type = ObjectType::Cube,
-            .name = "Cube E",
-            .transform = Transform{.position = {-4.5f, -1.5f, 0.75f}, .rotation_deg = {15, 0, 0}, .scale = {1.5f, 1.0f, 1.5f}},
-            .color = {1.0f, 0.85f, 0.45f},
-        });
-        scene_context.cube_objects.push_back(Object{
-            .type = ObjectType::Cube,
-            .name = "Cube E",
-            .transform = Transform{.position = {-10.5f, -1.5f, 0.75f}, .rotation_deg = {15, 0, 0}, .scale = {1.5f, 1.0f, 1.5f}},
-            .color = {1.0f, 0.85f, 0.6f},
-        });
-        scene_context.sphere_objects.push_back(Object{
-            .type = ObjectType::Sphere,
-            .name = "Sphere A",
-            .transform = Transform{},
-            .color = {1.0f, 0.6f, 0.3f},
-        });
+    if (scene_context.cube_objects.empty())
+    {
+        scene_context.cube_objects.push_back(
+            Object{
+                .type = ObjectType::Cube,
+                .name = "Cube A",
+                .transform =
+                    Transform{
+                        .position = {2.0f, 1.0f, 0.5f},
+                        .rotation_deg = {0, 0, 0},
+                        .scale = {1, 1, 1}
+                    },
+                .color = {0.85f, 0.35f, 0.25f},
+            }
+        );
+        scene_context.cube_objects.push_back(
+            Object{
+                .type = ObjectType::Cube,
+                .name = "Cube B",
+                .transform =
+                    Transform{
+                        .position = {-1.5f, 2.5f, 0.5f},
+                        .rotation_deg = {0, 0, 25},
+                        .scale = {1, 1, 1}
+                    },
+                .color = {0.25f, 0.55f, 0.90f},
+            }
+        );
+        scene_context.cube_objects.push_back(
+            Object{
+                .type = ObjectType::Cube,
+                .name = "Cube C",
+                .transform =
+                    Transform{
+                        .position = {-2.5f, -1.5f, 0.75f},
+                        .rotation_deg = {15, 0, 0},
+                        .scale = {1.5f, 1.0f, 1.5f}
+                    },
+                .color = {0.30f, 0.85f, 0.45f},
+            }
+        );
+        scene_context.cube_objects.push_back(
+            Object{
+                .type = ObjectType::Cube,
+                .name = "Cube D",
+                .transform =
+                    Transform{
+                        .position = {-0.5f, -1.5f, 0.75f},
+                        .rotation_deg = {15, 0, 0},
+                        .scale = {1.5f, 1.0f, 1.5f}
+                    },
+                .color = {0.30f, 0.85f, 0.45f},
+            }
+        );
+        scene_context.cube_objects.push_back(
+            Object{
+                .type = ObjectType::Cube,
+                .name = "Cube E",
+                .transform =
+                    Transform{
+                        .position = {-4.5f, -1.5f, 0.75f},
+                        .rotation_deg = {15, 0, 0},
+                        .scale = {1.5f, 1.0f, 1.5f}
+                    },
+                .color = {1.0f, 0.85f, 0.45f},
+            }
+        );
+        scene_context.cube_objects.push_back(
+            Object{
+                .type = ObjectType::Cube,
+                .name = "Cube E",
+                .transform =
+                    Transform{
+                        .position = {-10.5f, -1.5f, 0.75f},
+                        .rotation_deg = {15, 0, 0},
+                        .scale = {1.5f, 1.0f, 1.5f}
+                    },
+                .color = {1.0f, 0.85f, 0.6f},
+            }
+        );
+        scene_context.sphere_objects.push_back(
+            Object{
+                .type = ObjectType::Sphere,
+                .name = "Sphere A",
+                .transform = Transform{},
+                .color = {1.0f, 0.6f, 0.3f},
+            }
+        );
         scene_context.camera.pivot = {0.0f, 0.0f, 0.0f};
         scene_context.camera.distance = 10.0f;
         scene_context.selected_index = std::nullopt;
@@ -79,7 +125,8 @@ ds_pba::SceneContext setup_scene() {
     return scene_context;
 }
 
-int main() {
+int main()
+{
     using namespace ds_pba;
 
     std::println("Hello, World!");
@@ -88,7 +135,8 @@ int main() {
     std::println("Hello, World3!");
 
     RenderContext render_context{};
-    if (!render_context.setup()) {
+    if (!render_context.setup())
+    {
         return EXIT_FAILURE;
     }
     render_context.scene_context = std::make_unique<SceneContext>(setup_scene());

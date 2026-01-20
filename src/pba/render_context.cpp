@@ -1,39 +1,47 @@
 // pba/scene_context.hpp
 #include "pba/render_context.hpp"
+
+#include "backends/imgui_impl_glfw.h"
+#include "backends/imgui_impl_opengl3.h"
 #include "pba/gl.hpp"
 #include "pba/interaction.hpp"
 #include "pba/mesh.hpp"
 #include "pba/scene_types.hpp"
 #include "pba/ui.hpp"
 
-#include "backends/imgui_impl_glfw.h"
-#include "backends/imgui_impl_opengl3.h"
 #include <print>
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
 
-void ds_pba::RenderContext::run() {
+void ds_pba::RenderContext::run()
+{
     assert(scene_context && "Scene Context not set for RenderContext");
 
     using namespace ds_pba;
 
-    ImGuiIO &io = ImGui::GetIO();
-    while (is_active()) {
+    ImGuiIO& io = ImGui::GetIO();
+    while (is_active())
+    {
         glfwPollEvents();
 
-        { // Hot Reload
+        {  // Hot Reload
             const auto now = std::chrono::steady_clock::now();
-            if (now - last_scene_poll >= scene_poll_interval) {
+            if (now - last_scene_poll >= scene_poll_interval)
+            {
                 last_scene_poll = now;
 
-                if (scene_context->reloader->changed()) {
+                if (scene_context->reloader->changed())
+                {
                     const bool ok = try_hot_reload_scene(*scene_context, k_scene_path);
-                    if (!ok) {
+                    if (!ok)
+                    {
                         std::println(stderr, "Hot-reload: failed to load {}", k_scene_path);
                     }
-                    if (scene_context->selected_index && *scene_context->selected_index >= scene_context->cube_objects.size()) {
+                    if (scene_context->selected_index
+                        && *scene_context->selected_index >= scene_context->cube_objects.size())
+                    {
                         scene_context->selected_index = std::nullopt;
                     }
                 }
@@ -44,7 +52,8 @@ void ds_pba::RenderContext::run() {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        if (ImGui::BeginMainMenuBar()) {
+        if (ImGui::BeginMainMenuBar())
+        {
             render_menu_bar(*this);
             ImGui::EndMainMenuBar();
         }
@@ -54,17 +63,16 @@ void ds_pba::RenderContext::run() {
         viewport_fb_rect_valid = false;
         viewport_image_hovered = false;
 
-        { // Viewport window
-            ImGuiWindowFlags vp_flags =
-                ImGuiWindowFlags_NoScrollbar |
-                ImGuiWindowFlags_NoScrollWithMouse |
-                ImGuiWindowFlags_NoCollapse;
+        {  // Viewport window
+            ImGuiWindowFlags vp_flags = ImGuiWindowFlags_NoScrollbar
+                                        | ImGuiWindowFlags_NoScrollWithMouse
+                                        | ImGuiWindowFlags_NoCollapse;
 
             ImGui::Begin("Viewport", nullptr, vp_flags);
 
             const ImVec2 content_pos = ImGui::GetCursorScreenPos();
             const ImVec2 content_size = ImGui::GetContentRegionAvail();
-            { // Filling viewport_fb_rect
+            {  // Filling viewport_fb_rect
                 viewport_img_pos = glm::vec2{content_pos.x, content_pos.y};
                 viewport_img_size = glm::vec2{content_size.x, content_size.y};
 
@@ -100,9 +108,11 @@ void ds_pba::RenderContext::run() {
             const int fbo_w = viewport_fb_rect.width;
             const int fbo_h = viewport_fb_rect.height;
 
-            viewport_fb_rect_valid = (fbo_w > 8 && fbo_h > 8) && viewport_fbo.ensure_size(fbo_w, fbo_h);
+            viewport_fb_rect_valid =
+                (fbo_w > 8 && fbo_h > 8) && viewport_fbo.ensure_size(fbo_w, fbo_h);
 
-            if (viewport_fb_rect_valid) {
+            if (viewport_fb_rect_valid)
+            {
                 glBindFramebuffer(GL_FRAMEBUFFER, viewport_fbo.fbo);
                 glViewport(0, 0, viewport_fbo.width, viewport_fbo.height);
 
@@ -110,11 +120,12 @@ void ds_pba::RenderContext::run() {
                 glClearColor(bg.r(), bg.g(), bg.b(), bg.a());
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-                const f32 aspect = static_cast<f32>(viewport_fbo.width) / static_cast<f32>(viewport_fbo.height);
+                const f32 aspect =
+                    static_cast<f32>(viewport_fbo.width) / static_cast<f32>(viewport_fbo.height);
                 const glm::mat4 camera_view_matrix = scene_context->camera.view_matrix();
                 const glm::mat4 camera_proj_matrix = scene_context->camera.proj_matrix(aspect);
 
-                { // Grid
+                {  // Grid
                     glDepthMask(GL_FALSE);
 
                     grid_prog.bind();
@@ -130,7 +141,7 @@ void ds_pba::RenderContext::run() {
                     glDepthMask(GL_TRUE);
                 }
 
-                { // Objects
+                {  // Objects
                     glEnable(GL_DEPTH_TEST);
                     glDepthFunc(GL_LESS);
 
@@ -141,10 +152,11 @@ void ds_pba::RenderContext::run() {
                     set_uniform_mat4(obj_prog.id, "uView", camera_view_matrix);
                     set_uniform_mat4(obj_prog.id, "uProj", camera_proj_matrix);
 
-                    { // Cubes
+                    {  // Cubes
                         cube_mesh.vao.bind();
-                        for (usize i = 0; i < scene_context->cube_objects.size(); ++i) {
-                            const Object &o = scene_context->cube_objects[i];
+                        for (usize i = 0; i < scene_context->cube_objects.size(); ++i)
+                        {
+                            const Object& o = scene_context->cube_objects[i];
                             const glm::mat4 M = o.transform.model_matrix();
 
                             set_uniform_mat4(obj_prog.id, "uModel", M);
@@ -155,10 +167,11 @@ void ds_pba::RenderContext::run() {
                         VAO::unbind();
                     }
 
-                    { // Spheres
+                    {  // Spheres
                         sphere_mesh.vao.bind();
-                        for (usize i = 0; i < scene_context->sphere_objects.size(); ++i) {
-                            const Object &o = scene_context->sphere_objects[i];
+                        for (usize i = 0; i < scene_context->sphere_objects.size(); ++i)
+                        {
+                            const Object& o = scene_context->sphere_objects[i];
                             const glm::mat4 M = o.transform.model_matrix();
 
                             set_uniform_mat4(obj_prog.id, "uModel", M);
@@ -171,42 +184,51 @@ void ds_pba::RenderContext::run() {
                 }
 
                 // Outline via stencil (in FBO)
-                if (scene_context->selected_index.has_value() &&
-                    *scene_context->selected_index < scene_context->cube_objects.size()) {
+                if (scene_context->selected_index.has_value()
+                    && *scene_context->selected_index < scene_context->cube_objects.size())
+                {
 
                     assert(scene_context->selected_type.has_value());
 
                     auto type = *scene_context->selected_type;
                     auto idx = *scene_context->selected_index;
 
-                    auto selector = [&](ObjectType type, usize idx) -> const Object & {
-                        switch (type) {
-                        case ds_pba::ObjectType::Cube: {
-                            return scene_context->cube_objects[idx];
-                        }
-                        case ds_pba::ObjectType::Sphere: {
-                            return scene_context->sphere_objects[idx];
-                        }
+                    auto selector = [&](ObjectType type, usize idx) -> const Object&
+                    {
+                        switch (type)
+                        {
+                            case ds_pba::ObjectType::Cube:
+                                {
+                                    return scene_context->cube_objects[idx];
+                                }
+                            case ds_pba::ObjectType::Sphere:
+                                {
+                                    return scene_context->sphere_objects[idx];
+                                }
                         }
                     };
-                    const Object &sel = selector(type, idx);
+                    const Object& sel = selector(type, idx);
 
                     const glm::mat4 M = sel.transform.model_matrix();
 
-                    auto instantiate_selection_type = [&]() -> void {
-                        switch (type) {
-                        case ds_pba::ObjectType::Cube: {
-                            cube_mesh.instantiate_once();
-                            break;
-                        }
-                        case ds_pba::ObjectType::Sphere: {
-                            sphere_mesh.instantiate_once();
-                            break;
-                        }
+                    auto instantiate_selection_type = [&]() -> void
+                    {
+                        switch (type)
+                        {
+                            case ds_pba::ObjectType::Cube:
+                                {
+                                    cube_mesh.instantiate_once();
+                                    break;
+                                }
+                            case ds_pba::ObjectType::Sphere:
+                                {
+                                    sphere_mesh.instantiate_once();
+                                    break;
+                                }
                         }
                     };
 
-                    { // Pass 1: write stencil
+                    {  // Pass 1: write stencil
                         glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
                         glDepthMask(GL_FALSE);
                         glDisable(GL_DEPTH_TEST);
@@ -228,14 +250,15 @@ void ds_pba::RenderContext::run() {
                         glDepthFunc(GL_LESS);
                     }
 
-                    { // Pass 2: draw outline where stencil != 1
+                    {  // Pass 2: draw outline where stencil != 1
                         glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
                         glStencilMask(0x00);
 
                         glDisable(GL_DEPTH_TEST);
                         glDisable(GL_CULL_FACE);
 
-                        const glm::mat4 M_outline = M * glm::scale(glm::mat4(1.0f), glm::vec3(1.04f));
+                        const glm::mat4 M_outline =
+                            M * glm::scale(glm::mat4(1.0f), glm::vec3(1.04f));
 
                         outline_prog.bind();
                         set_uniform_mat4(outline_prog.id, "uModel", M_outline);
@@ -258,13 +281,15 @@ void ds_pba::RenderContext::run() {
 
                 // Present texture in ImGui (flip V)
                 ImGui::Image(
-                    viewport_fbo.imgui_texture_id(),
-                    content_size,
-                    ImVec2(0.0f, 1.0f),
-                    ImVec2(1.0f, 0.0f));
+                    viewport_fbo.imgui_texture_id(), content_size, ImVec2(0.0f, 1.0f),
+                    ImVec2(1.0f, 0.0f)
+                );
 
-                viewport_image_hovered = ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem);
-            } else {
+                viewport_image_hovered =
+                    ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem);
+            }
+            else
+            {
                 ImGui::TextUnformatted("Viewport too small.");
                 viewport_image_hovered = false;
             }
@@ -272,7 +297,8 @@ void ds_pba::RenderContext::run() {
             ImGui::End();
         }
 
-        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        {
             glfwSetWindowShouldClose(window, GLFW_TRUE);
         }
 
@@ -284,15 +310,19 @@ void ds_pba::RenderContext::run() {
         const bool middle_down = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS;
 
         const bool allow_viewport_interaction = viewport_fb_rect_valid && viewport_image_hovered;
-        if (allow_viewport_interaction) {
+        if (allow_viewport_interaction)
+        {
             const f32 wheel = io.MouseWheel;
-            if (wheel != 0.0f) {
+            if (wheel != 0.0f)
+            {
                 constexpr f32 zoom_speed = 0.12f;
                 scene_context->camera.distance *= std::exp(-wheel * zoom_speed);
-                scene_context->camera.distance = std::clamp(scene_context->camera.distance, 0.75f, 200.0f);
+                scene_context->camera.distance =
+                    std::clamp(scene_context->camera.distance, 0.75f, 200.0f);
             }
 
-            if (middle_down && prev_middle) {
+            if (middle_down && prev_middle)
+            {
                 const f32 dx = static_cast<f32>(mouse_x - prev_mx);
                 const f32 dy = static_cast<f32>(mouse_y - prev_my);
 
@@ -304,32 +334,36 @@ void ds_pba::RenderContext::run() {
                 scene_context->camera.pitch = std::clamp(scene_context->camera.pitch, -lim, lim);
             }
 
-            if (left_down && !prev_left) { // Selecting objects
-                const f32 aspect = static_cast<f32>(viewport_fbo.width) / static_cast<f32>(viewport_fbo.height);
+            if (left_down && !prev_left)
+            {  // Selecting objects
+                const f32 aspect =
+                    static_cast<f32>(viewport_fbo.width) / static_cast<f32>(viewport_fbo.height);
                 const glm::mat4 camera_view_matrix = scene_context->camera.view_matrix();
                 const glm::mat4 camera_proj_matrix = scene_context->camera.proj_matrix(aspect);
 
-                glm::vec2 mouse_pos = glm::vec2{static_cast<f32>(mouse_x), static_cast<f32>(mouse_y)};
+                glm::vec2 mouse_pos =
+                    glm::vec2{static_cast<f32>(mouse_x), static_cast<f32>(mouse_y)};
 
                 const Ray ray = ray_from_imgui_rect(
-                    mouse_pos,
-                    viewport_img_pos,
-                    viewport_img_size,
-                    camera_view_matrix, camera_proj_matrix);
+                    mouse_pos, viewport_img_pos, viewport_img_size, camera_view_matrix,
+                    camera_proj_matrix
+                );
 
                 std::optional<usize> best_idx{};
                 std::optional<ObjectType> best_type{};
 
                 f32 best_t = 1e30f;
-                std::println("Checking Mouse Distance Cube");
-                for (usize i = 0; i < scene_context->cube_objects.size(); ++i) {
-                    const Object &o = scene_context->cube_objects[i];
+                for (usize i = 0; i < scene_context->cube_objects.size(); ++i)
+                {
+                    const Object& o = scene_context->cube_objects[i];
                     const glm::mat4 M = o.transform.model_matrix();
 
                     f32 tW{0.0f};
-                    if (intersect_unit_cube_obb(ray, M, tW)) {
+                    if (intersect_unit_cube_obb(ray, M, tW))
+                    {
                         std::println("\t{}", tW);
-                        if (tW < best_t) {
+                        if (tW < best_t)
+                        {
                             best_t = tW;
                             best_idx = i;
                             best_type = ObjectType::Cube;
@@ -337,15 +371,17 @@ void ds_pba::RenderContext::run() {
                     }
                 }
 
-                std::println("Checking Mouse Distance Sphere");
-                for (usize i{0zu}; i < scene_context->sphere_objects.size(); ++i) {
-                    const Object &o = scene_context->sphere_objects[i];
+                for (usize i{0zu}; i < scene_context->sphere_objects.size(); ++i)
+                {
+                    const Object& o = scene_context->sphere_objects[i];
                     [[maybe_unused]] const glm::mat4 M{o.transform.model_matrix()};
 
                     f32 tW{0.0f};
-                    if (intersect_sphere(ray, {0.0, 0.0, 0.0}, 1.0, tW)) {
+                    if (intersect_sphere(ray, M, 1.0, tW))
+                    {
                         std::println("\t{}", tW);
-                        if (tW < best_t) {
+                        if (tW < best_t)
+                        {
                             best_t = tW;
                             best_idx = i;
                             best_type = ObjectType::Sphere;
@@ -368,8 +404,9 @@ void ds_pba::RenderContext::run() {
 
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
-            GLFWwindow *backup_current_context = glfwGetCurrentContext();
+        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+        {
+            GLFWwindow* backup_current_context = glfwGetCurrentContext();
             ImGui::UpdatePlatformWindows();
             ImGui::RenderPlatformWindowsDefault();
             glfwMakeContextCurrent(backup_current_context);
@@ -380,14 +417,15 @@ void ds_pba::RenderContext::run() {
     }
 }
 
-bool ds_pba::RenderContext::setup() {
+bool ds_pba::RenderContext::setup()
+{
     using namespace ds_pba;
 
-    auto glfw_error_callback = [](int error, const char *description) {
-        std::println(stderr, "GLFW Error {}: {}", error, description);
-    };
+    auto glfw_error_callback = [](int error, const char* description)
+    { std::println(stderr, "GLFW Error {}: {}", error, description); };
     glfwSetErrorCallback(glfw_error_callback);
-    if (!glfwInit()) {
+    if (!glfwInit())
+    {
         return false;
     }
 
@@ -400,20 +438,22 @@ bool ds_pba::RenderContext::setup() {
     glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
 
     window = glfwCreateWindow(1600, 900, "Physically Based Animations", nullptr, nullptr);
-    if (!window) {
+    if (!window)
+    {
         return false;
     }
-    { // Place on 2nd monitor with correct sizing for mixed-DPI
+    {  // Place on 2nd monitor with correct sizing for mixed-DPI
         int monitor_count{0};
-        GLFWmonitor **monitors = glfwGetMonitors(&monitor_count);
+        GLFWmonitor** monitors = glfwGetMonitors(&monitor_count);
 
-        if (monitor_count >= 2) {
-            GLFWmonitor *monitor{monitors[1]};
+        if (monitor_count >= 2)
+        {
+            GLFWmonitor* monitor{monitors[1]};
 
             int mx{0}, my{0};
             glfwGetMonitorPos(monitor, &mx, &my);
 
-            const GLFWvidmode *mode{glfwGetVideoMode(monitor)};
+            const GLFWvidmode* mode{glfwGetVideoMode(monitor)};
 
             const int desired_fb_w = 2400;
             const int desired_fb_h = 1350;
@@ -438,7 +478,8 @@ bool ds_pba::RenderContext::setup() {
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);
 
-    if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
+    if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)))
+    {
         glfwDestroyWindow(window);
         glfwTerminate();
         return false;
@@ -446,17 +487,19 @@ bool ds_pba::RenderContext::setup() {
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    ImGuiIO &io = ImGui::GetIO();
+    ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
     apply_blender_style();
 
-    const char *glsl_version = "#version 330";
-    if (!ImGui_ImplGlfw_InitForOpenGL(window, true)) {
+    const char* glsl_version = "#version 330";
+    if (!ImGui_ImplGlfw_InitForOpenGL(window, true))
+    {
         std::println(stderr, "ImGui_ImplGlfw_InitForOpenGL failed");
         return false;
     }
-    if (!ImGui_ImplOpenGL3_Init(glsl_version)) {
+    if (!ImGui_ImplOpenGL3_Init(glsl_version))
+    {
         std::println(stderr, "ImGui_ImplOpenGL3_Init failed");
         return false;
     }
@@ -471,38 +514,48 @@ bool ds_pba::RenderContext::setup() {
     glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
     auto grid_prog_res = create_program_from_file("grid");
-    if (!grid_prog_res) {
-        std::println(stderr, "Failed to load 'grid' shaders, got error code: {}", static_cast<int>(grid_prog_res.error()));
+    if (!grid_prog_res)
+    {
+        std::println(
+            stderr, "Failed to load 'grid' shaders, got error code: {}",
+            static_cast<int>(grid_prog_res.error())
+        );
         return false;
     }
     grid_prog = *grid_prog_res;
 
     auto obj_prog_res = create_program_from_file("object");
-    if (!obj_prog_res) {
-        std::println(stderr, "Failed to load 'object' shaders, got error code: {}", static_cast<int>(obj_prog_res.error()));
+    if (!obj_prog_res)
+    {
+        std::println(
+            stderr, "Failed to load 'object' shaders, got error code: {}",
+            static_cast<int>(obj_prog_res.error())
+        );
         return false;
     }
     obj_prog = *obj_prog_res;
 
     auto outline_prog_res = create_program_from_file("outline");
-    if (!outline_prog_res) {
-        std::println(stderr, "Failed to load 'outline' shaders, got error code: {}", static_cast<int>(outline_prog_res.error()));
+    if (!outline_prog_res)
+    {
+        std::println(
+            stderr, "Failed to load 'outline' shaders, got error code: {}",
+            static_cast<int>(outline_prog_res.error())
+        );
         return false;
     }
     outline_prog = *outline_prog_res;
 
-    if (!grid_prog.valid() || !obj_prog.valid() || !outline_prog.valid()) {
+    if (!grid_prog.valid() || !obj_prog.valid() || !outline_prog.valid())
+    {
         std::println(stderr, "Failed to create shader programs");
         return false;
     }
 
     cube_mesh = create_cube_mesh();
     sphere_mesh = create_sphere_mesh(32, 24, 1.0f);
-    grid_mesh = create_grid_mesh(
-        grid.n_lines_per_side,
-        grid.spacing,
-        grid.axis_alpha,
-        grid.minor_alpha);
+    grid_mesh =
+        create_grid_mesh(grid.n_lines_per_side, grid.spacing, grid.axis_alpha, grid.minor_alpha);
 
     last_scene_poll = std::chrono::steady_clock::now();
 

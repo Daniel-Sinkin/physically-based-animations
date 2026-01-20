@@ -2,14 +2,16 @@
 #pragma once
 
 #include "pba/scene_context.hpp"
-#include "pba/types.hpp" // IWYU pragma: keep
+#include "pba/types.hpp"  // IWYU pragma: keep
 #include "pba/viewport_fbo.hpp"
 
 #include <chrono>
 #include <memory>
 
-namespace ds_pba {
-struct GridSettings {
+namespace ds_pba
+{
+struct GridSettings
+{
     int n_lines_per_side = 30;
     f32 spacing = 1.0f;
     f32 fog_start = 12.0f;
@@ -18,8 +20,9 @@ struct GridSettings {
     f32 axis_alpha = 0.95f;
 };
 
-struct RenderContext {
-    GLFWwindow *window{};
+struct RenderContext
+{
+    GLFWwindow* window{};
     ShaderProgram grid_prog{};
     ShaderProgram obj_prog{};
     ShaderProgram outline_prog{};
@@ -58,10 +61,17 @@ struct RenderContext {
     void run();
     bool setup();
 
-    bool is_active() const {
+    bool is_active() const
+    {
         return (!glfwWindowShouldClose(window)) && is_active_;
     }
-    void deactivate() noexcept { is_active_ = false; }
-    void activate() noexcept { is_active_ = true; }
+    void deactivate() noexcept
+    {
+        is_active_ = false;
+    }
+    void activate() noexcept
+    {
+        is_active_ = true;
+    }
 };
-} // namespace ds_pba
+}  // namespace ds_pba
