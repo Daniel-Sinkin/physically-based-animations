@@ -4,6 +4,7 @@
 //
 #include "pba/ui.hpp"
 //
+#include "pba/physics_context.hpp"
 #include "pba/render_context.hpp"
 #include "pba/scene_context.hpp"
 
@@ -227,7 +228,7 @@ void apply_blender_style()
     }
 }
 
-void render_imgui_windows(RenderContext& render_context)
+void render_imgui_windows(RenderContext& render_context, PhysicsContext& physics_context)
 {
     assert(render_context.scene_context && "Scene Context of render context not set!");
     auto& scene_context = *render_context.scene_context;
@@ -278,10 +279,6 @@ void render_imgui_windows(RenderContext& render_context)
         ImGui::DragFloat("Fog end", &grid.fog_end, 0.25f, 0.0f, 1e6f);
         ImGui::DragFloat("Minor alpha", &grid.minor_alpha, 0.01f, 0.0f, 1.0f);
         ImGui::DragFloat("Axis alpha", &grid.axis_alpha, 0.01f, 0.0f, 1.0f);
-        if (ImGui::Button("Clear Hitmarkers"))
-        {
-            render_context.scene_context->hitmarker_objects.clear();
-        }
         ImGui::End();
     }
 
@@ -311,6 +308,17 @@ void render_imgui_windows(RenderContext& render_context)
             };
             Object& o = selector(type, idx);
 
+            usize physics_index{0zu};
+            for (usize i{0zu}; i < physics_context.bodies.size(); ++i)
+            {
+                if (o.id == physics_context.bodies[i].id)
+                {
+                    physics_index = i;
+                    break;
+                }
+            }
+            const RigidBody& rb = physics_context.bodies[physics_index];
+
             switch (*scene_context.selected_type)
             {
                 case ds_pba::ObjectType::Cube:
@@ -336,6 +344,12 @@ void render_imgui_windows(RenderContext& render_context)
             ImGui::DragFloat3("Position", &o.transform.position.x, 0.01f);
             ImGui::DragFloat3("Rotation (deg)", &o.transform.rotation_deg.x, 0.25f);
             ImGui::DragFloat3("Scale", &o.transform.scale.x, 0.01f, 0.001f, 1000.0f);
+            ImGui::Text(
+                "Velocity (%.2f,%.2f,%.2f)",
+                static_cast<double>(rb.velocity.x),
+                static_cast<double>(rb.velocity.y),
+                static_cast<double>(rb.velocity.z)
+            );
 
             o.transform.scale.x = std::max(o.transform.scale.x, 0.001f);
             o.transform.scale.y = std::max(o.transform.scale.y, 0.001f);

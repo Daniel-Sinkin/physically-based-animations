@@ -5,10 +5,12 @@
 // not align with best practices
 
 #include <algorithm>    // IWYU pragma: keep
+#include <algorithm>    // IWYU pragma: keep
 #include <array>        // IWYU pragma: keep
 #include <cassert>      // IWYU pragma: keep
 #include <chrono>       // IWYU pragma: keep
 #include <cmath>        // IWYU pragma: keep
+#include <csignal>      // IWYU pragma: keep
 #include <cstddef>      // IWYU pragma: keep
 #include <cstdint>      // IWYU pragma: keep
 #include <cstdlib>      // IWYU pragma: keep
@@ -17,6 +19,7 @@
 #include <format>       // IWYU pragma: keep
 #include <fstream>      // IWYU pragma: keep
 #include <glad/glad.h>  // IWYU pragma: keep
+#include <memory>       // IWYU pragma: keep
 #include <memory>       // IWYU pragma: keep
 #include <numbers>      // IWYU pragma: keep
 #include <optional>     // IWYU pragma: keep

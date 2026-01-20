@@ -37,7 +37,7 @@ enum class ObjectType
     Hitmarker
 };
 struct Object
-{
+{  // Prolly should be a render type
     ObjectId id;
     ObjectType type;
     Transform transform{};

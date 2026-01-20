@@ -6,7 +6,7 @@ echo "===== $(date) ====="
 cmake --build build -j
 echo "===== RUN ====="
 
-./build/app &
+./build/main &
 app_pid=$!
 
 cleanup() {

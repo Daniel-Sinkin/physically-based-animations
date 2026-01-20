@@ -94,19 +94,19 @@ file(GLOB_RECURSE PBA_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/src/pba/*.cc
 )
 
-add_executable(app
+add_executable(main
   src/app/main.cpp
   ${PBA_SOURCES}
 )
 
-target_include_directories(app PRIVATE
+target_include_directories(main PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
-target_precompile_headers(app PRIVATE
+target_precompile_headers(main PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/src/pba/pch.hpp
 )
 
-target_link_libraries(app PRIVATE
+target_link_libraries(main PRIVATE
   imgui_lib
   glfw
   glad
@@ -117,7 +117,7 @@ target_link_libraries(app PRIVATE
   nlohmann_json::nlohmann_json
 )
 
-target_compile_options(app PRIVATE
+target_compile_options(main PRIVATE
   -Wall
   -Wextra
   -Wpedantic
@@ -140,10 +140,10 @@ target_compile_options(app PRIVATE
 )
 
 if(APPLE)
-  target_link_libraries(app PRIVATE "-framework OpenGL")
+  target_link_libraries(main PRIVATE "-framework OpenGL")
 endif()
 
-add_custom_command(TARGET app POST_BUILD
+add_custom_command(TARGET main POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_directory
           ${CMAKE_CURRENT_SOURCE_DIR}/assets
           ${CMAKE_CURRENT_BINARY_DIR}/assets

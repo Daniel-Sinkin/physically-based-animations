@@ -14,6 +14,9 @@ struct GLFWwindow;
 
 namespace ds_pba
 {
+struct SceneContext;
+struct PhysicsContext;
+
 struct GridSettings
 {
     int n_lines_per_side = 30;
@@ -64,6 +67,7 @@ struct RenderContext
     bool viewport_image_hovered{false};
 
     SceneContext* scene_context{};
+    PhysicsContext* physics_context{};  // Read Only for Debug
 
     bool is_active_{true};
 
@@ -73,7 +77,7 @@ struct RenderContext
 
     GridSettings grid{};
 
-    void run();
+    void step();
     bool setup();
 
     bool is_active() const;
