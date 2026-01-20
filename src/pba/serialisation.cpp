@@ -45,8 +45,13 @@ void from_json(const json& j, Object& o)
 void to_json(json& j, const Camera& c)
 {
     j = json{
-        {"pivot", c.pivot}, {"distance", c.distance}, {"yaw", c.yaw},     {"pitch", c.pitch},
-        {"fov_y", c.fov_y}, {"z_near", c.z_near},     {"z_far", c.z_far},
+        {"pivot", c.pivot},
+        {"distance", c.distance},
+        {"yaw", c.yaw},
+        {"pitch", c.pitch},
+        {"fov_y", c.fov_y},
+        {"z_near", c.z_near},
+        {"z_far", c.z_far},
     };
 }
 

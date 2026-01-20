@@ -76,3 +76,7 @@ IndentPPDirectives: AfterHash
 # ---- C++ specifics ----
 Cpp11BracedListStyle: true
 Standard: Latest
+
+# --- Disable Bin Packing ---
+BinPackParameters: false
+BinPackArguments: false

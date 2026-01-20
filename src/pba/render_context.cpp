@@ -281,7 +281,9 @@ void ds_pba::RenderContext::run()
 
                 // Present texture in ImGui (flip V)
                 ImGui::Image(
-                    viewport_fbo.imgui_texture_id(), content_size, ImVec2(0.0f, 1.0f),
+                    viewport_fbo.imgui_texture_id(),
+                    content_size,
+                    ImVec2(0.0f, 1.0f),
                     ImVec2(1.0f, 0.0f)
                 );
 
@@ -345,7 +347,10 @@ void ds_pba::RenderContext::run()
                     glm::vec2{static_cast<f32>(mouse_x), static_cast<f32>(mouse_y)};
 
                 const Ray ray = ray_from_imgui_rect(
-                    mouse_pos, viewport_img_pos, viewport_img_size, camera_view_matrix,
+                    mouse_pos,
+                    viewport_img_pos,
+                    viewport_img_size,
+                    camera_view_matrix,
                     camera_proj_matrix
                 );
 
@@ -517,7 +522,8 @@ bool ds_pba::RenderContext::setup()
     if (!grid_prog_res)
     {
         std::println(
-            stderr, "Failed to load 'grid' shaders, got error code: {}",
+            stderr,
+            "Failed to load 'grid' shaders, got error code: {}",
             static_cast<int>(grid_prog_res.error())
         );
         return false;
@@ -528,7 +534,8 @@ bool ds_pba::RenderContext::setup()
     if (!obj_prog_res)
     {
         std::println(
-            stderr, "Failed to load 'object' shaders, got error code: {}",
+            stderr,
+            "Failed to load 'object' shaders, got error code: {}",
             static_cast<int>(obj_prog_res.error())
         );
         return false;
@@ -539,7 +546,8 @@ bool ds_pba::RenderContext::setup()
     if (!outline_prog_res)
     {
         std::println(
-            stderr, "Failed to load 'outline' shaders, got error code: {}",
+            stderr,
+            "Failed to load 'outline' shaders, got error code: {}",
             static_cast<int>(outline_prog_res.error())
         );
         return false;

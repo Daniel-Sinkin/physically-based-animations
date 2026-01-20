@@ -49,7 +49,10 @@ bool intersect_sphere(const Ray& ray, const glm::vec3& center, f32 radius, glm::
 }
 
 Ray ray_from_mouse(
-    GLFWwindow* window, f64 mouse_x, f64 mouse_y, const glm::mat4& camera_view_matrix,
+    GLFWwindow* window,
+    f64 mouse_x,
+    f64 mouse_y,
+    const glm::mat4& camera_view_matrix,
     const glm::mat4& camera_proj_matrix
 )
 {
@@ -90,8 +93,15 @@ Ray ray_from_mouse(
 }
 
 Ray ray_from_mouse_in_rect(
-    GLFWwindow* window, f64 mouse_x, f64 mouse_y, int rect_x, int rect_y, int rect_w, int rect_h,
-    const glm::mat4& camera_view_matrix, const glm::mat4& camera_proj_matrix
+    GLFWwindow* window,
+    f64 mouse_x,
+    f64 mouse_y,
+    int rect_x,
+    int rect_y,
+    int rect_w,
+    int rect_h,
+    const glm::mat4& camera_view_matrix,
+    const glm::mat4& camera_proj_matrix
 )
 {
 
@@ -130,8 +140,11 @@ Ray ray_from_mouse_in_rect(
 }
 
 Ray ray_from_imgui_rect(
-    const glm::vec2& mouse_pos, const glm::vec2& rect_pos, const glm::vec2& rect_size,
-    const glm::mat4& camera_view_matrix, const glm::mat4& camera_proj_matrix
+    const glm::vec2& mouse_pos,
+    const glm::vec2& rect_pos,
+    const glm::vec2& rect_size,
+    const glm::mat4& camera_view_matrix,
+    const glm::mat4& camera_proj_matrix
 )
 {
 

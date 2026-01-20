@@ -140,7 +140,9 @@ GLMesh create_grid_mesh(int n_lines_per_side, f32 spacing, f32 axis_alpha, f32 m
     mesh.vao.bind();
     mesh.vbo.bind();
     glBufferData(
-        GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(verts.size() * sizeof(V)), verts.data(),
+        GL_ARRAY_BUFFER,
+        static_cast<GLsizeiptr>(verts.size() * sizeof(V)),
+        verts.data(),
         GL_STATIC_DRAW
     );
 
@@ -265,7 +267,9 @@ GLMesh create_sphere_mesh(int n_lat, int n_lon, f32 radius)
     mesh.vao.bind();
     mesh.vbo.bind();
     glBufferData(
-        GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(verts.size() * sizeof(V)), verts.data(),
+        GL_ARRAY_BUFFER,
+        static_cast<GLsizeiptr>(verts.size() * sizeof(V)),
+        verts.data(),
         GL_STATIC_DRAW
     );
 

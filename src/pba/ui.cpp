@@ -64,7 +64,9 @@ void render_terminal_window(RenderContext& render_context)
 
     const ImVec2 footer_size(0.0f, ImGui::GetFrameHeightWithSpacing());
     if (ImGui::BeginChild(
-            "##terminal_scroll", ImVec2(0.0f, -footer_size.y), true,
+            "##terminal_scroll",
+            ImVec2(0.0f, -footer_size.y),
+            true,
             ImGuiWindowFlags_HorizontalScrollbar
         ))
     {
