@@ -81,6 +81,7 @@ struct RenderContext
     {
         is_active_ = false;
     }
+    void request_close() noexcept;
     void activate() noexcept
     {
         is_active_ = true;

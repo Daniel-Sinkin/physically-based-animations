@@ -1,4 +1,5 @@
 // pba/mesh.cpp
+#include "pba/gl_types.hpp"
 #include "pba/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/mesh.hpp"
@@ -6,6 +7,30 @@
 
 namespace ds_pba
 {
+
+namespace
+{
+class ScopedBufferBinding
+{
+  public:
+    ScopedBufferBinding(GLMesh& mesh)
+    {
+        mesh.vao.bind();
+        mesh.vbo.bind();
+    }
+    ~ScopedBufferBinding()
+    {
+        VBO::unbind();
+        VAO::unbind();
+    }
+
+    ScopedBufferBinding(const ScopedBufferBinding&) = delete;
+    ScopedBufferBinding& operator=(const ScopedBufferBinding&) = delete;
+
+    ScopedBufferBinding(ScopedBufferBinding&&) = delete;
+    ScopedBufferBinding& operator=(ScopedBufferBinding&&) = delete;
+};
+}  // namespace
 
 GLMesh create_cube_mesh()
 {
@@ -15,68 +40,287 @@ GLMesh create_cube_mesh()
         f32 nx, ny, nz;  // normals
     };
 
+    // clang-format off
     static constexpr std::array<V, 36> verts = {
         // +Z
-        V{-0.5f, -0.5f, 0.5f, 0, 0, 1},
-        V{0.5f, -0.5f, 0.5f, 0, 0, 1},
-        V{0.5f, 0.5f, 0.5f, 0, 0, 1},
-        V{-0.5f, -0.5f, 0.5f, 0, 0, 1},
-        V{0.5f, 0.5f, 0.5f, 0, 0, 1},
-        V{-0.5f, 0.5f, 0.5f, 0, 0, 1},
+        V{-0.5f, -0.5f,  0.5f,  0,  0,  1},
+        V{ 0.5f, -0.5f,  0.5f,  0,  0,  1},
+        V{ 0.5f,  0.5f,  0.5f,  0,  0,  1},
+        V{-0.5f, -0.5f,  0.5f,  0,  0,  1},
+        V{ 0.5f,  0.5f,  0.5f,  0,  0,  1},
+        V{-0.5f,  0.5f,  0.5f,  0,  0,  1},
         // -Z
-        V{-0.5f, -0.5f, -0.5f, 0, 0, -1},
-        V{0.5f, 0.5f, -0.5f, 0, 0, -1},
-        V{0.5f, -0.5f, -0.5f, 0, 0, -1},
-        V{-0.5f, -0.5f, -0.5f, 0, 0, -1},
-        V{-0.5f, 0.5f, -0.5f, 0, 0, -1},
-        V{0.5f, 0.5f, -0.5f, 0, 0, -1},
+        V{-0.5f, -0.5f, -0.5f,  0,  0, -1},
+        V{ 0.5f,  0.5f, -0.5f,  0,  0, -1},
+        V{ 0.5f, -0.5f, -0.5f,  0,  0, -1},
+        V{-0.5f, -0.5f, -0.5f,  0,  0, -1},
+        V{-0.5f,  0.5f, -0.5f,  0,  0, -1},
+        V{ 0.5f,  0.5f, -0.5f,  0,  0, -1},
         // +X
-        V{0.5f, -0.5f, -0.5f, 1, 0, 0},
-        V{0.5f, 0.5f, -0.5f, 1, 0, 0},
-        V{0.5f, 0.5f, 0.5f, 1, 0, 0},
-        V{0.5f, -0.5f, -0.5f, 1, 0, 0},
-        V{0.5f, 0.5f, 0.5f, 1, 0, 0},
-        V{0.5f, -0.5f, 0.5f, 1, 0, 0},
+        V{ 0.5f, -0.5f, -0.5f,  1,  0,  0},
+        V{ 0.5f,  0.5f, -0.5f,  1,  0,  0},
+        V{ 0.5f,  0.5f,  0.5f,  1,  0,  0},
+        V{ 0.5f, -0.5f, -0.5f,  1,  0,  0},
+        V{ 0.5f,  0.5f,  0.5f,  1,  0,  0},
+        V{ 0.5f, -0.5f,  0.5f,  1,  0,  0},
         // -X
-        V{-0.5f, -0.5f, -0.5f, -1, 0, 0},
-        V{-0.5f, 0.5f, 0.5f, -1, 0, 0},
-        V{-0.5f, 0.5f, -0.5f, -1, 0, 0},
-        V{-0.5f, -0.5f, -0.5f, -1, 0, 0},
-        V{-0.5f, -0.5f, 0.5f, -1, 0, 0},
-        V{-0.5f, 0.5f, 0.5f, -1, 0, 0},
+        V{-0.5f, -0.5f, -0.5f, -1,  0,  0},
+        V{-0.5f,  0.5f,  0.5f, -1,  0,  0},
+        V{-0.5f,  0.5f, -0.5f, -1,  0,  0},
+        V{-0.5f, -0.5f, -0.5f, -1,  0,  0},
+        V{-0.5f, -0.5f,  0.5f, -1,  0,  0},
+        V{-0.5f,  0.5f,  0.5f, -1,  0,  0},
         // +Y
-        V{-0.5f, 0.5f, -0.5f, 0, 1, 0},
-        V{0.5f, 0.5f, 0.5f, 0, 1, 0},
-        V{0.5f, 0.5f, -0.5f, 0, 1, 0},
-        V{-0.5f, 0.5f, -0.5f, 0, 1, 0},
-        V{-0.5f, 0.5f, 0.5f, 0, 1, 0},
-        V{0.5f, 0.5f, 0.5f, 0, 1, 0},
+        V{-0.5f,  0.5f, -0.5f,  0,  1,  0},
+        V{ 0.5f,  0.5f,  0.5f,  0,  1,  0},
+        V{ 0.5f,  0.5f, -0.5f,  0,  1,  0},
+        V{-0.5f,  0.5f, -0.5f,  0,  1,  0},
+        V{-0.5f,  0.5f,  0.5f,  0,  1,  0},
+        V{ 0.5f,  0.5f,  0.5f,  0,  1,  0},
         // -Y
-        V{-0.5f, -0.5f, -0.5f, 0, -1, 0},
-        V{0.5f, -0.5f, -0.5f, 0, -1, 0},
-        V{0.5f, -0.5f, 0.5f, 0, -1, 0},
-        V{-0.5f, -0.5f, -0.5f, 0, -1, 0},
-        V{0.5f, -0.5f, 0.5f, 0, -1, 0},
-        V{-0.5f, -0.5f, 0.5f, 0, -1, 0},
+        V{-0.5f, -0.5f, -0.5f,  0, -1,  0},
+        V{ 0.5f, -0.5f, -0.5f,  0, -1,  0},
+        V{ 0.5f, -0.5f,  0.5f,  0, -1,  0},
+        V{-0.5f, -0.5f, -0.5f,  0, -1,  0},
+        V{ 0.5f, -0.5f,  0.5f,  0, -1,  0},
+        V{-0.5f, -0.5f,  0.5f,  0, -1,  0},
     };
+    // clang-format on
 
     GLMesh mesh{};
     glGenVertexArrays(1, mesh.vao.ptr());
     glGenBuffers(1, mesh.vbo.ptr());
     mesh.vertex_count = static_cast<GLsizei>(verts.size());
 
-    mesh.vao.bind();
-    mesh.vbo.bind();
-    glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts.data(), GL_STATIC_DRAW);
+    {
+        ScopedBufferBinding binding{mesh};
+        glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts.data(), GL_STATIC_DRAW);
 
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(V), GLPtr::offset0());
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(V), GLPtr::offset0());
 
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(V), GLPtr::offset(3 * sizeof(f32)));
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(V), GLPtr::offset(3 * sizeof(f32)));
+    }
+    return mesh;
+}
 
-    VBO::unbind();
-    VAO::unbind();
+GLMesh create_quad_mesh()
+{
+    struct V
+    {
+        f32 px, py, pz;  // points
+        f32 nx, ny, nz;  // normals
+    };
+
+    // clang-format off
+    static constexpr std::array<V, 6> verts = {
+        V{-0.5f, -0.5f,  0.0f,  0,  0,  1},
+        V{ 0.5f, -0.5f,  0.0f,  0,  0,  1},
+        V{ 0.5f,  0.5f,  0.0f,  0,  0,  1},
+        V{-0.5f, -0.5f,  0.0f,  0,  0,  1},
+        V{ 0.5f,  0.5f,  0.0f,  0,  0,  1},
+        V{-0.5f,  0.5f,  0.0f,  0,  0,  1},
+    };
+    // clang-format on
+
+    GLMesh mesh{};
+    glGenVertexArrays(1, mesh.vao.ptr());
+    glGenBuffers(1, mesh.vbo.ptr());
+    mesh.vertex_count = static_cast<GLsizei>(verts.size());
+
+    {
+        ScopedBufferBinding bind{mesh};
+        glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts.data(), GL_STATIC_DRAW);
+
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(V), GLPtr::offset0());
+
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(V), GLPtr::offset(3 * sizeof(f32)));
+    }
+    return mesh;
+}
+
+GLMesh create_pyramid_mesh()
+{
+    struct V
+    {
+        f32 px, py, pz;  // points
+        f32 nx, ny, nz;  // normals
+    };
+
+    // Square base pyramid:
+    //   base: z = -0.5
+    //   apex: z = +0.5
+    //
+    // 5 faces total: 4 side triangles + 1 base quad (2 triangles)
+
+    // clang-format off
+    static constexpr std::array<V, 18> verts = {
+        // Side faces
+        // -Y face
+        V{-0.5f, -0.5f, -0.5f,  0.0f, -0.89442719f,  0.44721360f},
+        V{ 0.5f, -0.5f, -0.5f,  0.0f, -0.89442719f,  0.44721360f},
+        V{ 0.0f,  0.0f,  0.5f,  0.0f, -0.89442719f,  0.44721360f},
+
+        // +X face
+        V{ 0.5f, -0.5f, -0.5f,  0.89442719f,  0.0f,  0.44721360f},
+        V{ 0.5f,  0.5f, -0.5f,  0.89442719f,  0.0f,  0.44721360f},
+        V{ 0.0f,  0.0f,  0.5f,  0.89442719f,  0.0f,  0.44721360f},
+
+        // +Y face
+        V{ 0.5f,  0.5f, -0.5f,  0.0f,  0.89442719f,  0.44721360f},
+        V{-0.5f,  0.5f, -0.5f,  0.0f,  0.89442719f,  0.44721360f},
+        V{ 0.0f,  0.0f,  0.5f,  0.0f,  0.89442719f,  0.44721360f},
+
+        // -X face
+        V{-0.5f,  0.5f, -0.5f, -0.89442719f,  0.0f,  0.44721360f},
+        V{-0.5f, -0.5f, -0.5f, -0.89442719f,  0.0f,  0.44721360f},
+        V{ 0.0f,  0.0f,  0.5f, -0.89442719f,  0.0f,  0.44721360f},
+
+        // Base face (normal -Z)
+        V{-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f},
+        V{ 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f},
+        V{ 0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f},
+
+        V{-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f},
+        V{-0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f},
+        V{ 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f},
+    };
+    // clang-format on
+
+    GLMesh mesh{};
+    glGenVertexArrays(1, mesh.vao.ptr());
+    glGenBuffers(1, mesh.vbo.ptr());
+    mesh.vertex_count = static_cast<GLsizei>(verts.size());
+
+    {
+        ScopedBufferBinding bind{mesh};
+        glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts.data(), GL_STATIC_DRAW);
+
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(V), GLPtr::offset0());
+
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(V), GLPtr::offset(3 * sizeof(f32)));
+    }
+    return mesh;
+}
+
+GLMesh create_cylinder_mesh(int n_segments, f32 radius, f32 height)
+{
+    struct V
+    {
+        f32 px, py, pz;  // points
+        f32 nx, ny, nz;  // normals
+    };
+
+    const int seg = std::max(3, n_segments);
+    const f32 r = radius;
+    const f32 hz = 0.5f * height;
+
+    std::vector<V> verts;
+    verts.reserve(static_cast<usize>(seg) * 12zu);
+
+    auto push = [&](const glm::vec3& p, const glm::vec3& n)
+    { verts.push_back(V{p.x, p.y, p.z, n.x, n.y, n.z}); };
+
+    static constexpr f32 k_two_pi = 2.0f * std::numbers::pi_v<f32>;
+
+    // Side surface (two triangles per segment)
+    for (int i = 0; i < seg; ++i)
+    {
+        const f32 a0 = (static_cast<f32>(i) / static_cast<f32>(seg)) * k_two_pi;
+        const f32 a1 = (static_cast<f32>(i + 1) / static_cast<f32>(seg)) * k_two_pi;
+
+        const f32 c0 = std::cos(a0);
+        const f32 s0 = std::sin(a0);
+        const f32 c1 = std::cos(a1);
+        const f32 s1 = std::sin(a1);
+
+        const glm::vec3 n0{c0, s0, 0.0f};
+        const glm::vec3 n1{c1, s1, 0.0f};
+
+        const glm::vec3 p00{r * c0, r * s0, -hz};  // bottom, angle a0
+        const glm::vec3 p01{r * c0, r * s0, hz};   // top,    angle a0
+        const glm::vec3 p10{r * c1, r * s1, -hz};  // bottom, angle a1
+        const glm::vec3 p11{r * c1, r * s1, hz};   // top,    angle a1
+
+        // CCW from outside
+        push(p00, n0);
+        push(p11, n1);
+        push(p01, n0);
+
+        push(p00, n0);
+        push(p10, n1);
+        push(p11, n1);
+    }
+
+    // Caps
+    const glm::vec3 n_top{0.0f, 0.0f, 1.0f};
+    const glm::vec3 n_bot{0.0f, 0.0f, -1.0f};
+    const glm::vec3 c_top{0.0f, 0.0f, hz};
+    const glm::vec3 c_bot{0.0f, 0.0f, -hz};
+
+    for (int i = 0; i < seg; ++i)
+    {
+        const f32 a0 = (static_cast<f32>(i) / static_cast<f32>(seg)) * k_two_pi;
+        const f32 a1 = (static_cast<f32>(i + 1) / static_cast<f32>(seg)) * k_two_pi;
+
+        const f32 c0 = std::cos(a0);
+        const f32 s0 = std::sin(a0);
+        const f32 c1 = std::cos(a1);
+        const f32 s1 = std::sin(a1);
+
+        const glm::vec3 p0{r * c0, r * s0, hz};
+        const glm::vec3 p1{r * c1, r * s1, hz};
+
+        // Top cap: CCW when viewed from +Z
+        push(c_top, n_top);
+        push(p0, n_top);
+        push(p1, n_top);
+    }
+
+    for (int i = 0; i < seg; ++i)
+    {
+        const f32 a0 = (static_cast<f32>(i) / static_cast<f32>(seg)) * k_two_pi;
+        const f32 a1 = (static_cast<f32>(i + 1) / static_cast<f32>(seg)) * k_two_pi;
+
+        const f32 c0 = std::cos(a0);
+        const f32 s0 = std::sin(a0);
+        const f32 c1 = std::cos(a1);
+        const f32 s1 = std::sin(a1);
+
+        const glm::vec3 p0{r * c0, r * s0, -hz};
+        const glm::vec3 p1{r * c1, r * s1, -hz};
+
+        // Bottom cap: CCW when viewed from -Z
+        push(c_bot, n_bot);
+        push(p1, n_bot);
+        push(p0, n_bot);
+    }
+
+    GLMesh mesh{};
+    glGenVertexArrays(1, mesh.vao.ptr());
+    glGenBuffers(1, mesh.vbo.ptr());
+    mesh.vertex_count = static_cast<GLsizei>(verts.size());
+
+    {
+        ScopedBufferBinding bind{mesh};
+        glBufferData(
+            GL_ARRAY_BUFFER,
+            static_cast<GLsizeiptr>(verts.size() * sizeof(V)),
+            verts.data(),
+            GL_STATIC_DRAW
+        );
+
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(V), GLPtr::offset0());
+
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(V), GLPtr::offset(3 * sizeof(f32)));
+    }
     return mesh;
 }
 
@@ -133,23 +377,21 @@ GLMesh create_grid_mesh(int n_lines_per_side, f32 spacing, f32 axis_alpha, f32 m
     glGenBuffers(1, mesh.vbo.ptr());
     mesh.vertex_count = static_cast<GLsizei>(verts.size());
 
-    mesh.vao.bind();
-    mesh.vbo.bind();
-    glBufferData(
-        GL_ARRAY_BUFFER,
-        static_cast<GLsizeiptr>(verts.size() * sizeof(V)),
-        verts.data(),
-        GL_STATIC_DRAW
-    );
+    {
+        ScopedBufferBinding bind{mesh};
+        glBufferData(
+            GL_ARRAY_BUFFER,
+            static_cast<GLsizeiptr>(verts.size() * sizeof(V)),
+            verts.data(),
+            GL_STATIC_DRAW
+        );
 
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(V), GLPtr::offset0());
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(V), GLPtr::offset0());
 
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(V), GLPtr::offset(3 * sizeof(f32)));
-
-    VBO::unbind();
-    VAO::unbind();
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(V), GLPtr::offset(3 * sizeof(f32)));
+    }
     return mesh;
 }
 
@@ -260,23 +502,21 @@ GLMesh create_sphere_mesh(int n_lat, int n_lon, f32 radius)
     glGenBuffers(1, mesh.vbo.ptr());
     mesh.vertex_count = static_cast<GLsizei>(verts.size());
 
-    mesh.vao.bind();
-    mesh.vbo.bind();
-    glBufferData(
-        GL_ARRAY_BUFFER,
-        static_cast<GLsizeiptr>(verts.size() * sizeof(V)),
-        verts.data(),
-        GL_STATIC_DRAW
-    );
+    {
+        ScopedBufferBinding bind{mesh};
+        glBufferData(
+            GL_ARRAY_BUFFER,
+            static_cast<GLsizeiptr>(verts.size() * sizeof(V)),
+            verts.data(),
+            GL_STATIC_DRAW
+        );
 
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(V), GLPtr::offset0());
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(V), GLPtr::offset0());
 
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(V), GLPtr::offset(3 * sizeof(f32)));
-
-    VBO::unbind();
-    VAO::unbind();
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(V), GLPtr::offset(3 * sizeof(f32)));
+    }
     return mesh;
 }
 

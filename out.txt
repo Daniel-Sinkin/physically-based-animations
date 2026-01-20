@@ -1,0 +1,139 @@
+===== Tue Jan 20 20:04:22 CET 2026 =====
+Change Dir: '/Users/danielsinkin/GitHub_private/physically-based-animations/build'
+
+Run Build Command(s): /opt/homebrew/bin/cmake -E env VERBOSE=1 /usr/bin/make -f Makefile -j
+/opt/homebrew/bin/cmake -P /Users/danielsinkin/GitHub_private/physically-based-animations/build/CMakeFiles/VerifyGlobs.cmake
+/opt/homebrew/bin/cmake -S/Users/danielsinkin/GitHub_private/physically-based-animations -B/Users/danielsinkin/GitHub_private/physically-based-animations/build --check-build-system CMakeFiles/Makefile.cmake 0
+/opt/homebrew/bin/cmake -E cmake_progress_start /Users/danielsinkin/GitHub_private/physically-based-animations/build/CMakeFiles /Users/danielsinkin/GitHub_private/physically-based-animations/build//CMakeFiles/progress.marks
+/Applications/Xcode.app/Contents/Developer/usr/bin/make  -f CMakeFiles/Makefile2 all
+/Applications/Xcode.app/Contents/Developer/usr/bin/make  -f CMakeFiles/glad.dir/build.make CMakeFiles/glad.dir/depend
+/Applications/Xcode.app/Contents/Developer/usr/bin/make  -f _deps/glfw-build/src/CMakeFiles/glfw.dir/build.make _deps/glfw-build/src/CMakeFiles/glfw.dir/depend
+/Applications/Xcode.app/Contents/Developer/usr/bin/make  -f _deps/glm-build/glm/CMakeFiles/glm.dir/build.make _deps/glm-build/glm/CMakeFiles/glm.dir/depend
+/Applications/Xcode.app/Contents/Developer/usr/bin/make  -f _deps/tinyobjloader-build/CMakeFiles/tinyobjloader.dir/build.make _deps/tinyobjloader-build/CMakeFiles/tinyobjloader.dir/depend
+cd /Users/danielsinkin/GitHub_private/physically-based-animations/build && /opt/homebrew/bin/cmake -E cmake_depends "Unix Makefiles" /Users/danielsinkin/GitHub_private/physically-based-animations /Users/danielsinkin/GitHub_private/physically-based-animations /Users/danielsinkin/GitHub_private/physically-based-animations/build /Users/danielsinkin/GitHub_private/physically-based-animations/build /Users/danielsinkin/GitHub_private/physically-based-animations/build/CMakeFiles/glad.dir/DependInfo.cmake "--color="
+cd /Users/danielsinkin/GitHub_private/physically-based-animations/build && /opt/homebrew/bin/cmake -E cmake_depends "Unix Makefiles" /Users/danielsinkin/GitHub_private/physically-based-animations /Users/danielsinkin/GitHub_private/physically-based-animations/build/_deps/glm-src/glm /Users/danielsinkin/GitHub_private/physically-based-animations/build /Users/danielsinkin/GitHub_private/physically-based-animations/build/_deps/glm-build/glm /Users/danielsinkin/GitHub_private/physically-based-animations/build/_deps/glm-build/glm/CMakeFiles/glm.dir/DependInfo.cmake "--color="
+cd /Users/danielsinkin/GitHub_private/physically-based-animations/build && /opt/homebrew/bin/cmake -E cmake_depends "Unix Makefiles" /Users/danielsinkin/GitHub_private/physically-based-animations /Users/danielsinkin/GitHub_private/physically-based-animations/build/_deps/tinyobjloader-src /Users/danielsinkin/GitHub_private/physically-based-animations/build /Users/danielsinkin/GitHub_private/physically-based-animations/build/_deps/tinyobjloader-build /Users/danielsinkin/GitHub_private/physically-based-animations/build/_deps/tinyobjloader-build/CMakeFiles/tinyobjloader.dir/DependInfo.cmake "--color="
+/Applications/Xcode.app/Contents/Developer/usr/bin/make  -f CMakeFiles/glad.dir/build.make CMakeFiles/glad.dir/build
+/Applications/Xcode.app/Contents/Developer/usr/bin/make  -f _deps/glm-build/glm/CMakeFiles/glm.dir/build.make _deps/glm-build/glm/CMakeFiles/glm.dir/build
+make[2]: Nothing to be done for `CMakeFiles/glad.dir/build'.
+/Applications/Xcode.app/Contents/Developer/usr/bin/make  -f _deps/tinyobjloader-build/CMakeFiles/tinyobjloader.dir/build.make _deps/tinyobjloader-build/CMakeFiles/tinyobjloader.dir/build
+make[2]: Nothing to be done for `_deps/glm-build/glm/CMakeFiles/glm.dir/build'.
+make[2]: Nothing to be done for `_deps/tinyobjloader-build/CMakeFiles/tinyobjloader.dir/build'.
+[  5%] Built target glad
+cd /Users/danielsinkin/GitHub_private/physically-based-animations/build && /opt/homebrew/bin/cmake -E cmake_depends "Unix Makefiles" /Users/danielsinkin/GitHub_private/physically-based-animations /Users/danielsinkin/GitHub_private/physically-based-animations/build/_deps/glfw-src/src /Users/danielsinkin/GitHub_private/physically-based-animations/build /Users/danielsinkin/GitHub_private/physically-based-animations/build/_deps/glfw-build/src /Users/danielsinkin/GitHub_private/physically-based-animations/build/_deps/glfw-build/src/CMakeFiles/glfw.dir/DependInfo.cmake "--color="
+[ 10%] Built target glm
+[ 15%] Built target tinyobjloader
+/Applications/Xcode.app/Contents/Developer/usr/bin/make  -f _deps/glfw-build/src/CMakeFiles/glfw.dir/build.make _deps/glfw-build/src/CMakeFiles/glfw.dir/build
+make[2]: Nothing to be done for `_deps/glfw-build/src/CMakeFiles/glfw.dir/build'.
+[ 55%] Built target glfw
+/Applications/Xcode.app/Contents/Developer/usr/bin/make  -f CMakeFiles/imgui_lib.dir/build.make CMakeFiles/imgui_lib.dir/depend
+cd /Users/danielsinkin/GitHub_private/physically-based-animations/build && /opt/homebrew/bin/cmake -E cmake_depends "Unix Makefiles" /Users/danielsinkin/GitHub_private/physically-based-animations /Users/danielsinkin/GitHub_private/physically-based-animations /Users/danielsinkin/GitHub_private/physically-based-animations/build /Users/danielsinkin/GitHub_private/physically-based-animations/build /Users/danielsinkin/GitHub_private/physically-based-animations/build/CMakeFiles/imgui_lib.dir/DependInfo.cmake "--color="
+/Applications/Xcode.app/Contents/Developer/usr/bin/make  -f CMakeFiles/imgui_lib.dir/build.make CMakeFiles/imgui_lib.dir/build
+make[2]: Nothing to be done for `CMakeFiles/imgui_lib.dir/build'.
+[ 75%] Built target imgui_lib
+/Applications/Xcode.app/Contents/Developer/usr/bin/make  -f CMakeFiles/app.dir/build.make CMakeFiles/app.dir/depend
+cd /Users/danielsinkin/GitHub_private/physically-based-animations/build && /opt/homebrew/bin/cmake -E cmake_depends "Unix Makefiles" /Users/danielsinkin/GitHub_private/physically-based-animations /Users/danielsinkin/GitHub_private/physically-based-animations /Users/danielsinkin/GitHub_private/physically-based-animations/build /Users/danielsinkin/GitHub_private/physically-based-animations/build /Users/danielsinkin/GitHub_private/physically-based-animations/build/CMakeFiles/app.dir/DependInfo.cmake "--color="
+Dependencies file "CMakeFiles/app.dir/src/app/main.cpp.o.d" is newer than depends file "/Users/danielsinkin/GitHub_private/physically-based-animations/build/CMakeFiles/app.dir/compiler_depend.internal".
+Dependencies file "CMakeFiles/app.dir/src/app/main.cpp.o.d" is newer than depends file "/Users/danielsinkin/GitHub_private/physically-based-animations/build/CMakeFiles/app.dir/compiler_depend.internal".
+Consolidate compiler generated dependencies of target app
+/Applications/Xcode.app/Contents/Developer/usr/bin/make  -f CMakeFiles/app.dir/build.make CMakeFiles/app.dir/build
+make[2]: Nothing to be done for `CMakeFiles/app.dir/build'.
+[100%] Built target app
+/opt/homebrew/bin/cmake -E cmake_progress_start /Users/danielsinkin/GitHub_private/physically-based-animations/build/CMakeFiles 0
+
+===== RUN =====
+===== Tue Jan 20 20:04:25 CET 2026 =====
+Change Dir: '/Users/danielsinkin/GitHub_private/physically-based-animations/build'
+
+Run Build Command(s): /opt/homebrew/bin/cmake -E env VERBOSE=1 /usr/bin/make -f Makefile -j
+/opt/homebrew/bin/cmake -P /Users/danielsinkin/GitHub_private/physically-based-animations/build/CMakeFiles/VerifyGlobs.cmake
+/opt/homebrew/bin/cmake -S/Users/danielsinkin/GitHub_private/physically-based-animations -B/Users/danielsinkin/GitHub_private/physically-based-animations/build --check-build-system CMakeFiles/Makefile.cmake 0
+/opt/homebrew/bin/cmake -E cmake_progress_start /Users/danielsinkin/GitHub_private/physically-based-animations/build/CMakeFiles /Users/danielsinkin/GitHub_private/physically-based-animations/build//CMakeFiles/progress.marks
+/Applications/Xcode.app/Contents/Developer/usr/bin/make  -f CMakeFiles/Makefile2 all
+/Applications/Xcode.app/Contents/Developer/usr/bin/make  -f CMakeFiles/glad.dir/build.make CMakeFiles/glad.dir/depend
+/Applications/Xcode.app/Contents/Developer/usr/bin/make  -f _deps/glfw-build/src/CMakeFiles/glfw.dir/build.make _deps/glfw-build/src/CMakeFiles/glfw.dir/depend
+/Applications/Xcode.app/Contents/Developer/usr/bin/make  -f _deps/glm-build/glm/CMakeFiles/glm.dir/build.make _deps/glm-build/glm/CMakeFiles/glm.dir/depend
+/Applications/Xcode.app/Contents/Developer/usr/bin/make  -f _deps/tinyobjloader-build/CMakeFiles/tinyobjloader.dir/build.make _deps/tinyobjloader-build/CMakeFiles/tinyobjloader.dir/depend
+cd /Users/danielsinkin/GitHub_private/physically-based-animations/build && /opt/homebrew/bin/cmake -E cmake_depends "Unix Makefiles" /Users/danielsinkin/GitHub_private/physically-based-animations /Users/danielsinkin/GitHub_private/physically-based-animations /Users/danielsinkin/GitHub_private/physically-based-animations/build /Users/danielsinkin/GitHub_private/physically-based-animations/build /Users/danielsinkin/GitHub_private/physically-based-animations/build/CMakeFiles/glad.dir/DependInfo.cmake "--color="
+cd /Users/danielsinkin/GitHub_private/physically-based-animations/build && /opt/homebrew/bin/cmake -E cmake_depends "Unix Makefiles" /Users/danielsinkin/GitHub_private/physically-based-animations /Users/danielsinkin/GitHub_private/physically-based-animations/build/_deps/glm-src/glm /Users/danielsinkin/GitHub_private/physically-based-animations/build /Users/danielsinkin/GitHub_private/physically-based-animations/build/_deps/glm-build/glm /Users/danielsinkin/GitHub_private/physically-based-animations/build/_deps/glm-build/glm/CMakeFiles/glm.dir/DependInfo.cmake "--color="
+cd /Users/danielsinkin/GitHub_private/physically-based-animations/build && /opt/homebrew/bin/cmake -E cmake_depends "Unix Makefiles" /Users/danielsinkin/GitHub_private/physically-based-animations /Users/danielsinkin/GitHub_private/physically-based-animations/build/_deps/tinyobjloader-src /Users/danielsinkin/GitHub_private/physically-based-animations/build /Users/danielsinkin/GitHub_private/physically-based-animations/build/_deps/tinyobjloader-build /Users/danielsinkin/GitHub_private/physically-based-animations/build/_deps/tinyobjloader-build/CMakeFiles/tinyobjloader.dir/DependInfo.cmake "--color="
+/Applications/Xcode.app/Contents/Developer/usr/bin/make  -f CMakeFiles/glad.dir/build.make CMakeFiles/glad.dir/build
+make[2]: Nothing to be done for `CMakeFiles/glad.dir/build'.
+/Applications/Xcode.app/Contents/Developer/usr/bin/make  -f _deps/glm-build/glm/CMakeFiles/glm.dir/build.make _deps/glm-build/glm/CMakeFiles/glm.dir/build
+/Applications/Xcode.app/Contents/Developer/usr/bin/make  -f _deps/tinyobjloader-build/CMakeFiles/tinyobjloader.dir/build.make _deps/tinyobjloader-build/CMakeFiles/tinyobjloader.dir/build
+make[2]: Nothing to be done for `_deps/glm-build/glm/CMakeFiles/glm.dir/build'.
+cd /Users/danielsinkin/GitHub_private/physically-based-animations/build && /opt/homebrew/bin/cmake -E cmake_depends "Unix Makefiles" /Users/danielsinkin/GitHub_private/physically-based-animations /Users/danielsinkin/GitHub_private/physically-based-animations/build/_deps/glfw-src/src /Users/danielsinkin/GitHub_private/physically-based-animations/build /Users/danielsinkin/GitHub_private/physically-based-animations/build/_deps/glfw-build/src /Users/danielsinkin/GitHub_private/physically-based-animations/build/_deps/glfw-build/src/CMakeFiles/glfw.dir/DependInfo.cmake "--color="
+make[2]: Nothing to be done for `_deps/tinyobjloader-build/CMakeFiles/tinyobjloader.dir/build'.
+[  5%] Built target glad
+[ 10%] Built target glm
+[ 15%] Built target tinyobjloader
+/Applications/Xcode.app/Contents/Developer/usr/bin/make  -f _deps/glfw-build/src/CMakeFiles/glfw.dir/build.make _deps/glfw-build/src/CMakeFiles/glfw.dir/build
+make[2]: Nothing to be done for `_deps/glfw-build/src/CMakeFiles/glfw.dir/build'.
+[ 55%] Built target glfw
+/Applications/Xcode.app/Contents/Developer/usr/bin/make  -f CMakeFiles/imgui_lib.dir/build.make CMakeFiles/imgui_lib.dir/depend
+cd /Users/danielsinkin/GitHub_private/physically-based-animations/build && /opt/homebrew/bin/cmake -E cmake_depends "Unix Makefiles" /Users/danielsinkin/GitHub_private/physically-based-animations /Users/danielsinkin/GitHub_private/physically-based-animations /Users/danielsinkin/GitHub_private/physically-based-animations/build /Users/danielsinkin/GitHub_private/physically-based-animations/build /Users/danielsinkin/GitHub_private/physically-based-animations/build/CMakeFiles/imgui_lib.dir/DependInfo.cmake "--color="
+/Applications/Xcode.app/Contents/Developer/usr/bin/make  -f CMakeFiles/imgui_lib.dir/build.make CMakeFiles/imgui_lib.dir/build
+make[2]: Nothing to be done for `CMakeFiles/imgui_lib.dir/build'.
+[ 75%] Built target imgui_lib
+/Applications/Xcode.app/Contents/Developer/usr/bin/make  -f CMakeFiles/app.dir/build.make CMakeFiles/app.dir/depend
+cd /Users/danielsinkin/GitHub_private/physically-based-animations/build && /opt/homebrew/bin/cmake -E cmake_depends "Unix Makefiles" /Users/danielsinkin/GitHub_private/physically-based-animations /Users/danielsinkin/GitHub_private/physically-based-animations /Users/danielsinkin/GitHub_private/physically-based-animations/build /Users/danielsinkin/GitHub_private/physically-based-animations/build /Users/danielsinkin/GitHub_private/physically-based-animations/build/CMakeFiles/app.dir/DependInfo.cmake "--color="
+/Applications/Xcode.app/Contents/Developer/usr/bin/make  -f CMakeFiles/app.dir/build.make CMakeFiles/app.dir/build
+[ 77%] Building CXX object CMakeFiles/app.dir/src/app/main.cpp.o
+/usr/bin/clang++  -I/Users/danielsinkin/GitHub_private/physically-based-animations/src -I/Users/danielsinkin/GitHub_private/physically-based-animations/build/_deps/imgui-src -I/Users/danielsinkin/GitHub_private/physically-based-animations/build/_deps/imgui-src/backends -I/Users/danielsinkin/GitHub_private/physically-based-animations/build/_deps/glfw-src/include -I/Users/danielsinkin/GitHub_private/physically-based-animations/extern/glad/include -I/Users/danielsinkin/GitHub_private/physically-based-animations/build/_deps/glm-src -I/Users/danielsinkin/GitHub_private/physically-based-animations/build/_deps/nlohmann_json-src/include -isystem /Users/danielsinkin/GitHub_private/physically-based-animations/build/_deps/tinyobjloader-src -isystem /Users/danielsinkin/GitHub_private/physically-based-animations/build/_deps/stb-src -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -g -std=gnu++2b -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -Wall -Wextra -Wpedantic -Werror -Wshadow -Wconversion -Wsign-conversion -Wcast-qual -Wcast-align -Wformat=2 -Wundef -Wnull-dereference -Wnon-virtual-dtor -Woverloaded-virtual -Wold-style-cast -Wzero-as-null-pointer-constant -Wdouble-promotion -Wimplicit-fallthrough -Wreturn-type -Winvalid-pch -Xclang -include-pch -Xclang /Users/danielsinkin/GitHub_private/physically-based-animations/build/CMakeFiles/app.dir/cmake_pch.hxx.pch -Xclang -include -Xclang /Users/danielsinkin/GitHub_private/physically-based-animations/build/CMakeFiles/app.dir/cmake_pch.hxx -MD -MT CMakeFiles/app.dir/src/app/main.cpp.o -MF CMakeFiles/app.dir/src/app/main.cpp.o.d -o CMakeFiles/app.dir/src/app/main.cpp.o -c /Users/danielsinkin/GitHub_private/physically-based-animations/src/app/main.cpp
+[ 80%] Linking CXX executable app
+/opt/homebrew/bin/cmake -E cmake_link_script CMakeFiles/app.dir/link.txt --verbose=1
+/usr/bin/clang++ -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -g -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/app.dir/src/app/main.cpp.o CMakeFiles/app.dir/src/pba/camera.cpp.o CMakeFiles/app.dir/src/pba/gl.cpp.o CMakeFiles/app.dir/src/pba/mesh.cpp.o CMakeFiles/app.dir/src/pba/raycast.cpp.o CMakeFiles/app.dir/src/pba/render_context.cpp.o CMakeFiles/app.dir/src/pba/scene_context.cpp.o CMakeFiles/app.dir/src/pba/ui.cpp.o -o app  libimgui_lib.a _deps/glfw-build/src/libglfw3.a libglad.a _deps/glm-build/glm/libglm.a -framework OpenGL -framework Cocoa -framework IOKit -framework CoreFoundation
+/opt/homebrew/bin/cmake -E copy_directory /Users/danielsinkin/GitHub_private/physically-based-animations/assets /Users/danielsinkin/GitHub_private/physically-based-animations/build/assets
+[100%] Built target app
+/opt/homebrew/bin/cmake -E cmake_progress_start /Users/danielsinkin/GitHub_private/physically-based-animations/build/CMakeFiles 0
+
+===== RUN =====
+===== Tue Jan 20 20:04:27 CET 2026 =====
+Change Dir: '/Users/danielsinkin/GitHub_private/physically-based-animations/build'
+
+Run Build Command(s): /opt/homebrew/bin/cmake -E env VERBOSE=1 /usr/bin/make -f Makefile -j
+/opt/homebrew/bin/cmake -P /Users/danielsinkin/GitHub_private/physically-based-animations/build/CMakeFiles/VerifyGlobs.cmake
+/opt/homebrew/bin/cmake -S/Users/danielsinkin/GitHub_private/physically-based-animations -B/Users/danielsinkin/GitHub_private/physically-based-animations/build --check-build-system CMakeFiles/Makefile.cmake 0
+/opt/homebrew/bin/cmake -E cmake_progress_start /Users/danielsinkin/GitHub_private/physically-based-animations/build/CMakeFiles /Users/danielsinkin/GitHub_private/physically-based-animations/build//CMakeFiles/progress.marks
+/Applications/Xcode.app/Contents/Developer/usr/bin/make  -f CMakeFiles/Makefile2 all
+/Applications/Xcode.app/Contents/Developer/usr/bin/make  -f CMakeFiles/glad.dir/build.make CMakeFiles/glad.dir/depend
+/Applications/Xcode.app/Contents/Developer/usr/bin/make  -f _deps/glfw-build/src/CMakeFiles/glfw.dir/build.make _deps/glfw-build/src/CMakeFiles/glfw.dir/depend
+/Applications/Xcode.app/Contents/Developer/usr/bin/make  -f _deps/glm-build/glm/CMakeFiles/glm.dir/build.make _deps/glm-build/glm/CMakeFiles/glm.dir/depend
+/Applications/Xcode.app/Contents/Developer/usr/bin/make  -f _deps/tinyobjloader-build/CMakeFiles/tinyobjloader.dir/build.make _deps/tinyobjloader-build/CMakeFiles/tinyobjloader.dir/depend
+cd /Users/danielsinkin/GitHub_private/physically-based-animations/build && /opt/homebrew/bin/cmake -E cmake_depends "Unix Makefiles" /Users/danielsinkin/GitHub_private/physically-based-animations /Users/danielsinkin/GitHub_private/physically-based-animations /Users/danielsinkin/GitHub_private/physically-based-animations/build /Users/danielsinkin/GitHub_private/physically-based-animations/build /Users/danielsinkin/GitHub_private/physically-based-animations/build/CMakeFiles/glad.dir/DependInfo.cmake "--color="
+cd /Users/danielsinkin/GitHub_private/physically-based-animations/build && /opt/homebrew/bin/cmake -E cmake_depends "Unix Makefiles" /Users/danielsinkin/GitHub_private/physically-based-animations /Users/danielsinkin/GitHub_private/physically-based-animations/build/_deps/tinyobjloader-src /Users/danielsinkin/GitHub_private/physically-based-animations/build /Users/danielsinkin/GitHub_private/physically-based-animations/build/_deps/tinyobjloader-build /Users/danielsinkin/GitHub_private/physically-based-animations/build/_deps/tinyobjloader-build/CMakeFiles/tinyobjloader.dir/DependInfo.cmake "--color="
+cd /Users/danielsinkin/GitHub_private/physically-based-animations/build && /opt/homebrew/bin/cmake -E cmake_depends "Unix Makefiles" /Users/danielsinkin/GitHub_private/physically-based-animations /Users/danielsinkin/GitHub_private/physically-based-animations/build/_deps/glm-src/glm /Users/danielsinkin/GitHub_private/physically-based-animations/build /Users/danielsinkin/GitHub_private/physically-based-animations/build/_deps/glm-build/glm /Users/danielsinkin/GitHub_private/physically-based-animations/build/_deps/glm-build/glm/CMakeFiles/glm.dir/DependInfo.cmake "--color="
+/Applications/Xcode.app/Contents/Developer/usr/bin/make  -f CMakeFiles/glad.dir/build.make CMakeFiles/glad.dir/build
+make[2]: Nothing to be done for `CMakeFiles/glad.dir/build'.
+/Applications/Xcode.app/Contents/Developer/usr/bin/make  -f _deps/glm-build/glm/CMakeFiles/glm.dir/build.make _deps/glm-build/glm/CMakeFiles/glm.dir/build
+/Applications/Xcode.app/Contents/Developer/usr/bin/make  -f _deps/tinyobjloader-build/CMakeFiles/tinyobjloader.dir/build.make _deps/tinyobjloader-build/CMakeFiles/tinyobjloader.dir/build
+make[2]: Nothing to be done for `_deps/glm-build/glm/CMakeFiles/glm.dir/build'.
+make[2]: Nothing to be done for `_deps/tinyobjloader-build/CMakeFiles/tinyobjloader.dir/build'.
+cd /Users/danielsinkin/GitHub_private/physically-based-animations/build && /opt/homebrew/bin/cmake -E cmake_depends "Unix Makefiles" /Users/danielsinkin/GitHub_private/physically-based-animations /Users/danielsinkin/GitHub_private/physically-based-animations/build/_deps/glfw-src/src /Users/danielsinkin/GitHub_private/physically-based-animations/build /Users/danielsinkin/GitHub_private/physically-based-animations/build/_deps/glfw-build/src /Users/danielsinkin/GitHub_private/physically-based-animations/build/_deps/glfw-build/src/CMakeFiles/glfw.dir/DependInfo.cmake "--color="
+[  5%] Built target glad
+[ 10%] Built target glm
+[ 15%] Built target tinyobjloader
+/Applications/Xcode.app/Contents/Developer/usr/bin/make  -f _deps/glfw-build/src/CMakeFiles/glfw.dir/build.make _deps/glfw-build/src/CMakeFiles/glfw.dir/build
+make[2]: Nothing to be done for `_deps/glfw-build/src/CMakeFiles/glfw.dir/build'.
+[ 55%] Built target glfw
+/Applications/Xcode.app/Contents/Developer/usr/bin/make  -f CMakeFiles/imgui_lib.dir/build.make CMakeFiles/imgui_lib.dir/depend
+cd /Users/danielsinkin/GitHub_private/physically-based-animations/build && /opt/homebrew/bin/cmake -E cmake_depends "Unix Makefiles" /Users/danielsinkin/GitHub_private/physically-based-animations /Users/danielsinkin/GitHub_private/physically-based-animations /Users/danielsinkin/GitHub_private/physically-based-animations/build /Users/danielsinkin/GitHub_private/physically-based-animations/build /Users/danielsinkin/GitHub_private/physically-based-animations/build/CMakeFiles/imgui_lib.dir/DependInfo.cmake "--color="
+/Applications/Xcode.app/Contents/Developer/usr/bin/make  -f CMakeFiles/imgui_lib.dir/build.make CMakeFiles/imgui_lib.dir/build
+make[2]: Nothing to be done for `CMakeFiles/imgui_lib.dir/build'.
+[ 75%] Built target imgui_lib
+/Applications/Xcode.app/Contents/Developer/usr/bin/make  -f CMakeFiles/app.dir/build.make CMakeFiles/app.dir/depend
+cd /Users/danielsinkin/GitHub_private/physically-based-animations/build && /opt/homebrew/bin/cmake -E cmake_depends "Unix Makefiles" /Users/danielsinkin/GitHub_private/physically-based-animations /Users/danielsinkin/GitHub_private/physically-based-animations /Users/danielsinkin/GitHub_private/physically-based-animations/build /Users/danielsinkin/GitHub_private/physically-based-animations/build /Users/danielsinkin/GitHub_private/physically-based-animations/build/CMakeFiles/app.dir/DependInfo.cmake "--color="
+Dependencies file "CMakeFiles/app.dir/src/app/main.cpp.o.d" is newer than depends file "/Users/danielsinkin/GitHub_private/physically-based-animations/build/CMakeFiles/app.dir/compiler_depend.internal".
+Dependencies file "CMakeFiles/app.dir/src/app/main.cpp.o.d" is newer than depends file "/Users/danielsinkin/GitHub_private/physically-based-animations/build/CMakeFiles/app.dir/compiler_depend.internal".
+Consolidate compiler generated dependencies of target app
+/Applications/Xcode.app/Contents/Developer/usr/bin/make  -f CMakeFiles/app.dir/build.make CMakeFiles/app.dir/build
+[ 77%] Building CXX object CMakeFiles/app.dir/src/app/main.cpp.o
+/usr/bin/clang++  -I/Users/danielsinkin/GitHub_private/physically-based-animations/src -I/Users/danielsinkin/GitHub_private/physically-based-animations/build/_deps/imgui-src -I/Users/danielsinkin/GitHub_private/physically-based-animations/build/_deps/imgui-src/backends -I/Users/danielsinkin/GitHub_private/physically-based-animations/build/_deps/glfw-src/include -I/Users/danielsinkin/GitHub_private/physically-based-animations/extern/glad/include -I/Users/danielsinkin/GitHub_private/physically-based-animations/build/_deps/glm-src -I/Users/danielsinkin/GitHub_private/physically-based-animations/build/_deps/nlohmann_json-src/include -isystem /Users/danielsinkin/GitHub_private/physically-based-animations/build/_deps/tinyobjloader-src -isystem /Users/danielsinkin/GitHub_private/physically-based-animations/build/_deps/stb-src -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -g -std=gnu++2b -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -Wall -Wextra -Wpedantic -Werror -Wshadow -Wconversion -Wsign-conversion -Wcast-qual -Wcast-align -Wformat=2 -Wundef -Wnull-dereference -Wnon-virtual-dtor -Woverloaded-virtual -Wold-style-cast -Wzero-as-null-pointer-constant -Wdouble-promotion -Wimplicit-fallthrough -Wreturn-type -Winvalid-pch -Xclang -include-pch -Xclang /Users/danielsinkin/GitHub_private/physically-based-animations/build/CMakeFiles/app.dir/cmake_pch.hxx.pch -Xclang -include -Xclang /Users/danielsinkin/GitHub_private/physically-based-animations/build/CMakeFiles/app.dir/cmake_pch.hxx -MD -MT CMakeFiles/app.dir/src/app/main.cpp.o -MF CMakeFiles/app.dir/src/app/main.cpp.o.d -o CMakeFiles/app.dir/src/app/main.cpp.o -c /Users/danielsinkin/GitHub_private/physically-based-animations/src/app/main.cpp
+[ 80%] Linking CXX executable app
+/opt/homebrew/bin/cmake -E cmake_link_script CMakeFiles/app.dir/link.txt --verbose=1
+/usr/bin/clang++ -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -g -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/app.dir/src/app/main.cpp.o CMakeFiles/app.dir/src/pba/camera.cpp.o CMakeFiles/app.dir/src/pba/gl.cpp.o CMakeFiles/app.dir/src/pba/mesh.cpp.o CMakeFiles/app.dir/src/pba/raycast.cpp.o CMakeFiles/app.dir/src/pba/render_context.cpp.o CMakeFiles/app.dir/src/pba/scene_context.cpp.o CMakeFiles/app.dir/src/pba/ui.cpp.o -o app  libimgui_lib.a _deps/glfw-build/src/libglfw3.a libglad.a _deps/glm-build/glm/libglm.a -framework OpenGL -framework Cocoa -framework IOKit -framework CoreFoundation
+/opt/homebrew/bin/cmake -E copy_directory /Users/danielsinkin/GitHub_private/physically-based-animations/assets /Users/danielsinkin/GitHub_private/physically-based-animations/build/assets
+[100%] Built target app
+/opt/homebrew/bin/cmake -E cmake_progress_start /Users/danielsinkin/GitHub_private/physically-based-animations/build/CMakeFiles 0
+
+===== RUN =====

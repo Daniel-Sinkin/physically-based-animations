@@ -11,6 +11,7 @@
 #include "pba/raycast.hpp"
 #include "pba/scene_context.hpp"
 #include "pba/scene_types.hpp"
+#include "pba/shutdown.hpp"
 #include "pba/ui.hpp"
 
 #include <print>
@@ -25,6 +26,15 @@ bool ds_pba::RenderContext::is_active() const
     return (window != nullptr) && (!glfwWindowShouldClose(window)) && is_active_;
 }
 
+void ds_pba::RenderContext::request_close() noexcept
+{
+    is_active_ = false;
+    if (window)
+    {
+        glfwSetWindowShouldClose(window, GLFW_TRUE);
+    }
+}
+
 void ds_pba::RenderContext::run()
 {
     assert(scene_context && "Scene Context not set for RenderContext");
@@ -34,6 +44,10 @@ void ds_pba::RenderContext::run()
     ImGuiIO& io = ImGui::GetIO();
     while (is_active())
     {
+        if (ds_pba::g_request_close.load(std::memory_order_relaxed))
+        {
+            request_close();
+        }
         glfwPollEvents();
 
         ImGui_ImplOpenGL3_NewFrame();
@@ -387,7 +401,7 @@ void ds_pba::RenderContext::run()
                                 }
                             }
                         }
-                        if (!found && rc.object_type == ObjectType::Sphere)
+                        if (!found && rc.object_type == ObjectType::Hitmarker)
                         {
                             for (usize i{0zu}; i < scene_context->hitmarker_objects.size(); ++i)
                             {

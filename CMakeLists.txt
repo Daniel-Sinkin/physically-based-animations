@@ -139,12 +139,6 @@ target_compile_options(app PRIVATE
   -Wreturn-type
 )
 
-add_custom_command(TARGET app POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy_directory
-          ${CMAKE_CURRENT_SOURCE_DIR}/assets
-          $<TARGET_FILE_DIR:app>/assets
-)
-
 if(APPLE)
   target_link_libraries(app PRIVATE "-framework OpenGL")
 endif()

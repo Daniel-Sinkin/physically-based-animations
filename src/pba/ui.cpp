@@ -1,4 +1,5 @@
 // pba/ui.cpp
+#include "imgui.h"
 #include "pba/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/ui.hpp"
@@ -277,6 +278,10 @@ void render_imgui_windows(RenderContext& render_context)
         ImGui::DragFloat("Fog end", &grid.fog_end, 0.25f, 0.0f, 1e6f);
         ImGui::DragFloat("Minor alpha", &grid.minor_alpha, 0.01f, 0.0f, 1.0f);
         ImGui::DragFloat("Axis alpha", &grid.axis_alpha, 0.01f, 0.0f, 1.0f);
+        if (ImGui::Button("Clear Hitmarkers"))
+        {
+            render_context.scene_context->hitmarker_objects.clear();
+        }
         ImGui::End();
     }
 
@@ -349,6 +354,12 @@ void render_imgui_windows(RenderContext& render_context)
         ImGui::Begin("Scene Inspector");
         const usize n_obj = scene_context.cube_objects.size() + scene_context.sphere_objects.size();
         ImGui::Text("There are %zu objects in the scene", n_obj);
+        if (!scene_context.hitmarker_objects.empty())
+        {
+            ImGui::Text(
+                "There are %zu hitmarkers in the scene", scene_context.hitmarker_objects.size()
+            );
+        }
         ImGui::Separator();
 
         const ImGuiTableFlags flags =
