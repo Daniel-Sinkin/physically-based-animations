@@ -120,8 +120,6 @@ ds_pba::SceneContext setup_scene()
         scene_context.selected_type = std::nullopt;
     }
 
-    scene_context.reloader = std::make_unique<SceneHotReloader>(SceneHotReloader(k_scene_path));
-    scene_context.reloader->init_if_exists();
     return scene_context;
 }
 

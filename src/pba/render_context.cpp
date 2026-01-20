@@ -6,14 +6,11 @@
 #include "pba/gl.hpp"
 #include "pba/interaction.hpp"
 #include "pba/mesh.hpp"
+#include "pba/pch.hpp"
 #include "pba/scene_types.hpp"
 #include "pba/ui.hpp"
 
 #include <print>
-
-#define GLFW_INCLUDE_NONE
-#include <GLFW/glfw3.h>
-#include <glad/glad.h>
 
 void ds_pba::RenderContext::run()
 {
@@ -25,28 +22,6 @@ void ds_pba::RenderContext::run()
     while (is_active())
     {
         glfwPollEvents();
-
-        {  // Hot Reload
-            const auto now = std::chrono::steady_clock::now();
-            if (now - last_scene_poll >= scene_poll_interval)
-            {
-                last_scene_poll = now;
-
-                if (scene_context->reloader->changed())
-                {
-                    const bool ok = try_hot_reload_scene(*scene_context, k_scene_path);
-                    if (!ok)
-                    {
-                        std::println(stderr, "Hot-reload: failed to load {}", k_scene_path);
-                    }
-                    if (scene_context->selected_index
-                        && *scene_context->selected_index >= scene_context->cube_objects.size())
-                    {
-                        scene_context->selected_index = std::nullopt;
-                    }
-                }
-            }
-        }
 
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
@@ -154,7 +129,7 @@ void ds_pba::RenderContext::run()
 
                     {  // Cubes
                         cube_mesh.vao.bind();
-                        for (usize i = 0; i < scene_context->cube_objects.size(); ++i)
+                        for (usize i{0zu}; i < scene_context->cube_objects.size(); ++i)
                         {
                             const Object& o = scene_context->cube_objects[i];
                             const glm::mat4 M = o.transform.model_matrix();
@@ -169,7 +144,7 @@ void ds_pba::RenderContext::run()
 
                     {  // Spheres
                         sphere_mesh.vao.bind();
-                        for (usize i = 0; i < scene_context->sphere_objects.size(); ++i)
+                        for (usize i{0zu}; i < scene_context->sphere_objects.size(); ++i)
                         {
                             const Object& o = scene_context->sphere_objects[i];
                             const glm::mat4 M = o.transform.model_matrix();
@@ -317,7 +292,6 @@ void ds_pba::RenderContext::run()
             const f32 wheel = io.MouseWheel;
             if (wheel != 0.0f)
             {
-                constexpr f32 zoom_speed = 0.12f;
                 scene_context->camera.distance *= std::exp(-wheel * zoom_speed);
                 scene_context->camera.distance =
                     std::clamp(scene_context->camera.distance, 0.75f, 200.0f);
@@ -328,7 +302,6 @@ void ds_pba::RenderContext::run()
                 const f32 dx = static_cast<f32>(mouse_x - prev_mx);
                 const f32 dy = static_cast<f32>(mouse_y - prev_my);
 
-                constexpr f32 sensitivity = 0.0050f;
                 scene_context->camera.yaw += -dx * sensitivity;
                 scene_context->camera.pitch += dy * sensitivity;
 
@@ -354,22 +327,23 @@ void ds_pba::RenderContext::run()
                     camera_proj_matrix
                 );
 
+                f32 best_t = 1e30f;
                 std::optional<usize> best_idx{};
                 std::optional<ObjectType> best_type{};
-
-                f32 best_t = 1e30f;
                 for (usize i = 0; i < scene_context->cube_objects.size(); ++i)
                 {
                     const Object& o = scene_context->cube_objects[i];
                     const glm::mat4 M = o.transform.model_matrix();
 
-                    f32 tW{0.0f};
-                    auto res = intersect_ray_cube(ray, M);
-                    if (res && (*res < best_t))
+                    if (auto res = intersect_ray_cube(ray, M))
                     {
-                        best_t = tW;
-                        best_idx = i;
-                        best_type = ObjectType::Cube;
+                        const f32 t = *res;
+                        if (t < best_t)
+                        {
+                            best_t = t;
+                            best_idx = i;
+                            best_type = ObjectType::Cube;
+                        }
                     }
                 }
 
@@ -378,13 +352,15 @@ void ds_pba::RenderContext::run()
                     const Object& o = scene_context->sphere_objects[i];
                     const glm::mat4 M{o.transform.model_matrix()};
 
-                    f32 tW{0.0f};
-                    auto res = intersect_ray_cube(ray, M);
-                    if (res && (*res < best_t))
+                    if (auto res = intersect_ray_sphere(ray, M))
                     {
-                        best_t = tW;
-                        best_idx = i;
-                        best_type = ObjectType::Sphere;
+                        const f32 t = *res;
+                        if (t < best_t)
+                        {
+                            best_t = t;
+                            best_idx = i;
+                            best_type = ObjectType::Sphere;
+                        }
                     }
                 }
                 scene_context->selected_index = best_idx;

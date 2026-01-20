@@ -459,8 +459,6 @@ void render_menu_bar(RenderContext& render_context)
             if (ok)
             {
                 ds_pba::ui_log("Saved scene.json");
-                // Optional: keep hot-reloader from immediately reloading what we just wrote.
-                scene_context.reloader->init_if_exists();
             }
             else
             {

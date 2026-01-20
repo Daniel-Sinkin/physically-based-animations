@@ -1,7 +1,7 @@
 // pba/scene_types.hpp
 #pragma once
 
-#include "pba/core_types.hpp"
+#include "pba/core_types.hpp"  // IWYU pragma: keep
 
 #include <cmath>
 #include <glm/glm.hpp>
@@ -48,7 +48,7 @@ struct Ray
     glm::vec3 dir{};
 
     [[nodiscard]] bool valid() const
-    {
+    {  // Has to be normalised
         return std::abs(glm::length(dir) - 1.0f) < 0.0001f;
     }
 };

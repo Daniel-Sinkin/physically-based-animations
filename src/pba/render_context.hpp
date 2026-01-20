@@ -20,6 +20,9 @@ struct GridSettings
     f32 axis_alpha = 0.95f;
 };
 
+constexpr f32 zoom_speed = 0.12f;
+constexpr f32 sensitivity = 0.0050f;
+
 struct RenderContext
 {
     GLFWwindow* window{};

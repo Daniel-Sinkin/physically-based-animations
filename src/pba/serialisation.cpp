@@ -2,8 +2,6 @@
 #include "serialisation.hpp"
 
 #include <optional>
-#include <utility>
-#include <vector>
 
 namespace ds_pba
 {
@@ -71,7 +69,6 @@ void to_json(json& j, const SceneContext& s)
     j = json{
         {"camera", s.camera},
         {"cube_objects", s.cube_objects},
-        {"selected_index", s.selected_index ? json(*s.selected_index) : json(nullptr)},
     };
 }
 
@@ -80,21 +77,7 @@ void from_json(const json& j, SceneContext& s)
     j.at("camera").get_to(s.camera);
     j.at("cube_objects").get_to(s.cube_objects);
 
-    auto it = j.find("selected_index");
-    if (it == j.end() || it->is_null())
-    {
-        s.selected_index = std::nullopt;
-    }
-    else
-    {
-        s.selected_index = it->get<usize>();
-        std::unreachable();
-    }
-
-    if (s.selected_index && *s.selected_index >= s.cube_objects.size())
-    {
-        s.selected_index = std::nullopt;
-    }
+    s.selected_index = std::nullopt;
 }
 
 }  // namespace ds_pba

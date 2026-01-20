@@ -11,9 +11,15 @@
 #include <cmath>        // IWYU pragma: keep
 #include <cstddef>      // IWYU pragma: keep
 #include <cstdint>      // IWYU pragma: keep
+#include <expected>     // IWYU pragma: keep
+#include <filesystem>   // IWYU pragma: keep
+#include <fstream>      // IWYU pragma: keep
 #include <glad/glad.h>  // IWYU pragma: keep
+#include <memory>       // IWYU pragma: keep
+#include <numbers>      // IWYU pragma: keep
 #include <optional>     // IWYU pragma: keep
 #include <print>        // IWYU pragma: keep
+#include <sstream>      // IWYU pragma: keep
 #include <string>       // IWYU pragma: keep
 #include <string_view>  // IWYU pragma: keep
 #include <utility>      // IWYU pragma: keep
@@ -22,7 +28,7 @@
 #ifndef GLFW_INCLUDE_NONE
 #    define GLFW_INCLUDE_NONE
 #endif
-#include <GLFW/glfw3.h>
+#include <GLFW/glfw3.h>                  // IWYU pragma: keep
 #include <glm/glm.hpp>                   // IWYU pragma: keep
 #include <glm/gtc/matrix_transform.hpp>  // IWYU pragma: keep
 #include <glm/gtc/type_ptr.hpp>          // IWYU pragma: keep
