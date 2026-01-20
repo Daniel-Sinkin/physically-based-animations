@@ -36,6 +36,14 @@ using Clock = std::chrono::steady_clock;
 using TimePoint = Clock::time_point;
 using Duration = std::chrono::duration<f64>;
 
+using ObjectId = u32;
+
+inline ObjectId next_object_id()
+{
+    static ObjectId counter{0u};
+    return counter++;
+}
+
 template <typename T>
 struct Rect
 {

@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <print>
 #include <string>
 #include <string_view>
@@ -93,35 +94,6 @@ void render_terminal_window(RenderContext& render_context)
         {
             render_context.deactivate();
         }
-        else if (cmd.starts_with("select "))
-        {
-            assert(cmd.size() >= 10 && "Expected: select \"...\"");
-            assert(cmd[7] == '"');
-
-            usize i = 8zu;
-            while (i < cmd.size() && cmd[i] != '"')
-            {
-                ++i;
-            }
-            assert(i < cmd.size() && cmd[i] == '"' && "Failed to find closing \"");
-
-            std::string_view name{cmd};
-            name = name.substr(8, i - 8);  // contents between the quotes
-
-            std::println("Selecting: {}", name);
-
-            auto& cube_objects = render_context.scene_context->cube_objects;
-            for (usize j = 0; j < cube_objects.size(); ++j)
-            {
-                if (cube_objects[j].name == name)
-                {
-                    render_context.scene_context->selected_index = j;
-                    render_context.scene_context->selected_type = ObjectType::Cube;
-                    break;
-                }
-            }
-        }
-
         if (!cmd.empty())
         {
             t.add_line("> " + cmd);
@@ -238,7 +210,6 @@ void apply_blender_style()
     c[ImGuiCol_TableRowBg] = table_row_bg;
     c[ImGuiCol_TableRowBgAlt] = table_row_bg_alt;
 
-    // Blender is pretty “flat”.
     style.WindowRounding = 0.0f;
     style.ChildRounding = 0.0f;
     style.PopupRounding = 2.0f;
@@ -288,7 +259,20 @@ void render_imgui_windows(RenderContext& render_context)
         auto pivot_z_d = static_cast<double>(cam.pivot.z);
         ImGui::Text("  pivot:     (%.2f, %.2f, %.2f)", pivot_x_d, pivot_y_d, pivot_z_d);
         ImGui::Separator();
+
         ImGui::Text("Frame Counter: %d", render_context.frame_counter);
+
+        const auto now = std::chrono::steady_clock::now();
+        const auto dur = now - render_context.run_start;
+
+        const double seconds = std::chrono::duration<double>(dur).count();
+
+        const double frame_counter_d = static_cast<double>(render_context.frame_counter);
+        const double fps = (seconds > 0.0) ? frame_counter_d / seconds : 0.0;
+
+        ImGui::Text("Total Runtime: %.2f s", seconds);
+        ImGui::Text("Average FPS: %.2f", fps);
+
         ImGui::End();
     }
 
@@ -307,10 +291,8 @@ void render_imgui_windows(RenderContext& render_context)
 
     {
         ImGui::Begin("Object Inspector");
-        if (scene_context.selected_index.has_value()
-            && *scene_context.selected_index < scene_context.cube_objects.size())
+        if (scene_context.selected_index.has_value())
         {
-
             assert(scene_context.selected_type);
 
             auto idx = *scene_context.selected_index;
@@ -334,12 +316,12 @@ void render_imgui_windows(RenderContext& render_context)
             {
                 case ds_pba::ObjectType::Cube:
                     {
-                        ImGui::Text("Selected : %s [Cube]", o.name.c_str());
+                        ImGui::Text("Selected : %d [Cube]", o.id);
                         break;
                     }
                 case ds_pba::ObjectType::Sphere:
                     {
-                        ImGui::Text("Selected : %s [Sphere]", o.name.c_str());
+                        ImGui::Text("Selected : %d [Sphere]", o.id);
                         break;
                     }
             }
@@ -366,82 +348,78 @@ void render_imgui_windows(RenderContext& render_context)
 
     {
         ImGui::Begin("Scene Inspector");
-        ImGui::Text("There are %zu cube objects in the scene", scene_context.cube_objects.size());
+        const usize n_obj = scene_context.cube_objects.size() + scene_context.sphere_objects.size();
+        ImGui::Text("There are %zu objects in the scene", n_obj);
         ImGui::Separator();
 
-        const float row_h = ImGui::GetTextLineHeightWithSpacing();
-        const float header_h = ImGui::GetFrameHeight();  // table header / padding
-        const float max_rows = 8.0f;                     // cap scrolling
+        const ImGuiTableFlags flags =
+            ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_ScrollY;
 
-        auto size_f = static_cast<f32>(scene_context.cube_objects.size());
-        const float cube_list_h = std::min(max_rows * row_h, header_h + row_h * size_f);
-
-        if (ImGui::BeginChild("##scene_list_child", ImVec2(0.0f, cube_list_h), true))
+        if (ImGui::BeginChild("##scene_list_child", ImVec2(0.0f, 0.0f), true))
         {
-            const ImGuiTableFlags flags =
-                ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_ScrollY;
-
             if (ImGui::BeginTable("##scene_list_table", 1, flags))
             {
-                for (usize i = 0; i < scene_context.cube_objects.size(); ++i)
+                if (!scene_context.cube_objects.empty())
                 {
-                    const Object& o = scene_context.cube_objects[i];
-                    const bool is_selected = scene_context.selected_type == ObjectType::Cube
-                                             && scene_context.selected_index
-                                             && *scene_context.selected_index == i;
-
-                    std::string label =
-                        std::to_string(i) + " - " + o.name + "##" + std::to_string(i);
-
                     ImGui::TableNextRow();
                     ImGui::TableNextColumn();
+                    ImGui::TextUnformatted("Cubes");
+                    ImGui::Separator();
 
-                    if (ImGui::Selectable(
-                            label.c_str(), is_selected, ImGuiSelectableFlags_SpanAllColumns
-                        ))
+                    for (usize i = 0; i < scene_context.cube_objects.size(); ++i)
                     {
-                        scene_context.selected_index = i;
-                        scene_context.selected_type = ObjectType::Cube;
+                        const Object& o = scene_context.cube_objects[i];
+                        const bool is_selected = scene_context.selected_type == ObjectType::Cube
+                                                 && scene_context.selected_index
+                                                 && *scene_context.selected_index == i;
+
+                        std::string label = std::format("{} [Cube]##cube_{}", o.id, i);
+
+                        ImGui::TableNextRow();
+                        ImGui::TableNextColumn();
+
+                        if (ImGui::Selectable(
+                                label.c_str(), is_selected, ImGuiSelectableFlags_SpanAllColumns
+                            ))
+                        {
+                            scene_context.selected_index = i;
+                            scene_context.selected_type = ObjectType::Cube;
+                        }
+                    }
+                }
+
+                if (!scene_context.sphere_objects.empty())
+                {
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn();
+                    ImGui::TextUnformatted("Spheres");
+                    ImGui::Separator();
+
+                    for (usize i = 0; i < scene_context.sphere_objects.size(); ++i)
+                    {
+                        const Object& o = scene_context.sphere_objects[i];
+                        const bool is_selected = scene_context.selected_type == ObjectType::Sphere
+                                                 && scene_context.selected_index
+                                                 && *scene_context.selected_index == i;
+
+                        std::string label = std::format("{} [Sphere]##sphere_{}", o.id, i);
+
+                        ImGui::TableNextRow();
+                        ImGui::TableNextColumn();
+
+                        if (ImGui::Selectable(
+                                label.c_str(), is_selected, ImGuiSelectableFlags_SpanAllColumns
+                            ))
+                        {
+                            scene_context.selected_index = i;
+                            scene_context.selected_type = ObjectType::Sphere;
+                        }
                     }
                 }
                 ImGui::EndTable();
             }
+            ImGui::EndChild();
         }
-        ImGui::EndChild();
-
-        if (ImGui::BeginChild("##scene_list_child2", ImVec2(0.0f, 0.0f), true))
-        {
-            const ImGuiTableFlags flags =
-                ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_ScrollY;
-
-            if (ImGui::BeginTable("##scene_list_table2", 1, flags))
-            {
-                for (usize i = 0; i < scene_context.sphere_objects.size(); ++i)
-                {
-                    const Object& o = scene_context.sphere_objects[i];
-                    const bool is_selected = scene_context.selected_type == ObjectType::Sphere
-                                             && scene_context.selected_index
-                                             && *scene_context.selected_index == i;
-
-                    std::string label =
-                        std::to_string(i) + " - " + o.name + "##" + std::to_string(i);
-
-                    ImGui::TableNextRow();
-                    ImGui::TableNextColumn();
-
-                    if (ImGui::Selectable(
-                            label.c_str(), is_selected, ImGuiSelectableFlags_SpanAllColumns
-                        ))
-                    {
-                        scene_context.selected_index = i;
-                        scene_context.selected_type = ObjectType::Sphere;
-                    }
-                }
-                ImGui::EndTable();
-            }
-        }
-        ImGui::EndChild();
-
         ImGui::End();
     }
     render_terminal_window(render_context);
@@ -450,42 +428,15 @@ void render_imgui_windows(RenderContext& render_context)
 void render_menu_bar(RenderContext& render_context)
 {
     assert(render_context.scene_context && "RenderContext has no SceneContext!");
-    SceneContext& scene_context = *render_context.scene_context;
     if (ImGui::BeginMenu("File"))
     {
         if (ImGui::MenuItem("Save Scene"))
         {
-            const bool ok = ds_pba::save_scene_to_file(scene_context, ds_pba::k_scene_path);
-            if (ok)
-            {
-                ds_pba::ui_log("Saved scene.json");
-            }
-            else
-            {
-                ds_pba::ui_log("ERROR: Failed to save scene.json");
-            }
+            ds_pba::ui_log("Save Scene (not implemented)");
         }
-
         if (ImGui::MenuItem("Load Scene"))
         {
-            auto loaded_scene = ds_pba::load_scene_from_file(ds_pba::k_scene_path);
-            if (loaded_scene.has_value())
-            {
-                scene_context = std::move(*loaded_scene);
-
-                if (scene_context.selected_index
-                    && *scene_context.selected_index >= scene_context.cube_objects.size())
-                {
-                    scene_context.selected_index = std::nullopt;
-                    scene_context.selected_type = std::nullopt;
-                }
-
-                ds_pba::ui_log("Loaded scene.json");
-            }
-            else
-            {
-                ds_pba::ui_log("ERROR: Failed to load scene.json");
-            }
+            ds_pba::ui_log("Load Scene (not implemented)");
         }
 
         ImGui::EndMenu();

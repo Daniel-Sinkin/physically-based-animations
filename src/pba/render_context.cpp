@@ -1,8 +1,10 @@
 // pba/scene_context.hpp
 #include "pba/render_context.hpp"
 
+#include "GLFW/glfw3.h"
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
+#include "pba/core_types.hpp"
 #include "pba/gl.hpp"
 #include "pba/interaction.hpp"
 #include "pba/mesh.hpp"
@@ -159,8 +161,7 @@ void ds_pba::RenderContext::run()
                 }
 
                 // Outline via stencil (in FBO)
-                if (scene_context->selected_index.has_value()
-                    && *scene_context->selected_index < scene_context->cube_objects.size())
+                if (scene_context->selected_index.has_value())
                 {
 
                     assert(scene_context->selected_type.has_value());
@@ -285,6 +286,7 @@ void ds_pba::RenderContext::run()
 
         const bool left_down = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
         const bool middle_down = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS;
+        const bool right_down = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
 
         const bool allow_viewport_interaction = viewport_fb_rect_valid && viewport_image_hovered;
         if (allow_viewport_interaction)
@@ -309,10 +311,9 @@ void ds_pba::RenderContext::run()
                 scene_context->camera.pitch = std::clamp(scene_context->camera.pitch, -lim, lim);
             }
 
-            if (left_down && !prev_left)
+            if ((left_down && !prev_left) || (right_down && !prev_right))
             {  // Selecting objects
-                const f32 aspect =
-                    static_cast<f32>(viewport_fbo.width) / static_cast<f32>(viewport_fbo.height);
+                const f32 aspect = viewport_fbo.aspect_ratio();
                 const glm::mat4 camera_view_matrix = scene_context->camera.view_matrix();
                 const glm::mat4 camera_proj_matrix = scene_context->camera.proj_matrix(aspect);
 
@@ -363,13 +364,35 @@ void ds_pba::RenderContext::run()
                         }
                     }
                 }
-                scene_context->selected_index = best_idx;
-                scene_context->selected_type = best_type;
+                if (left_down && !prev_left)
+                {
+                    scene_context->selected_index = best_idx;
+                    scene_context->selected_type = best_type;
+                }
+                if (right_down && !prev_right)
+                {
+                    if (auto res = intersect_ray_ground(ray))
+                    {
+                        const f32 t = *res;
+                        best_t = std::min(best_t, t);
+                    }
+                    auto impact = ray.origin + best_t * ray.dir;
+                    scene_context->sphere_objects.push_back(
+                        Object{
+                            .id = next_object_id(),
+                            .type = ObjectType::Sphere,
+                            .transform = {.position = impact, .scale = {0.05f, 0.05f, 0.05f}},
+                            .color = {0.7f, 0.3f, 0.3f},
+                        }
+                    );
+                    ui_log(std::format("Raycast hit something! {}", impact));
+                }
             }
         }
 
         prev_left = left_down;
         prev_middle = middle_down;
+        prev_right = right_down;
         prev_mx = mouse_x;
         prev_my = mouse_y;
 

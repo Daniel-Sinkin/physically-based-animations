@@ -36,8 +36,8 @@ enum class ObjectType
 };
 struct Object
 {
+    ObjectId id;
     ObjectType type;
-    std::string name;
     Transform transform{};
     glm::vec3 color{0.8f, 0.8f, 0.8f};
 };

@@ -1,6 +1,7 @@
 // pba/scene_context->hpp
 #pragma once
 
+#include "pba/core_types.hpp"
 #include "pba/scene_context.hpp"
 #include "pba/types.hpp"  // IWYU pragma: keep
 #include "pba/viewport_fbo.hpp"
@@ -37,11 +38,13 @@ struct RenderContext
 
     bool prev_left{false};
     bool prev_middle{false};
+    bool prev_right{false};
     f64 prev_mx{0.0};
     f64 prev_my{0.0};
 
-    int frame_counter = 0;
+    int frame_counter{0};
 
+    TimePoint run_start = std::chrono::steady_clock::now();
     TimePoint last_scene_poll = std::chrono::steady_clock::now();
     Duration scene_poll_interval = std::chrono::milliseconds(250);
 

@@ -2,6 +2,7 @@
 #pragma once
 
 #include "camera.hpp"
+#include "glm/fwd.hpp"
 #include "pba/scene_types.hpp"
 #include "pba/types.hpp"  // IWYU pragma: keep
 
@@ -23,8 +24,20 @@ struct SceneContext
     std::optional<ObjectType> selected_type{};
 };
 
-inline constexpr const char* k_scene_path = "scene.json";
+struct Raycast
+{
+    Ray ray;
+    glm::vec3 hit;
+    f32 t;
+    ObjectId object_id;
+};
+/*
+std::optional<Raycast> raycast(const SceneContext& context, const Ray& ray)
+{
+    (void) context;
+    (void) ray;
+    return std::nullopt;
+}
+*/
 
-[[nodiscard]] bool save_scene_to_file(const SceneContext& scene, const fs::path& path);
-[[nodiscard]] std::optional<SceneContext> load_scene_from_file(const fs::path& path);
 }  // namespace ds_pba

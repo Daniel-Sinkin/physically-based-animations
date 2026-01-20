@@ -25,5 +25,6 @@ Ray ray_from_imgui_rect(
 
 std::optional<f32> intersect_ray_cube(const Ray& ray, const glm::mat4& model);
 std::optional<f32> intersect_ray_sphere(const Ray& ray, const glm::mat4& model);
+std::optional<f32> intersect_ray_ground(const Ray& ray);
 
 }  // namespace ds_pba

@@ -1,6 +1,7 @@
 // pba/main.cpp
 #include "glm/fwd.hpp"
 #include "pba/camera.hpp"
+#include "pba/core_types.hpp"
 #include "pba/render_context.hpp"
 #include "pba/scene_context.hpp"
 #include "pba/scene_types.hpp"
@@ -30,8 +31,8 @@ ds_pba::SceneContext setup_scene()
     {
         scene_context.cube_objects.push_back(
             Object{
+                .id = next_object_id(),
                 .type = ObjectType::Cube,
-                .name = "Cube A",
                 .transform =
                     Transform{
                         .position = {2.0f, 1.0f, 0.5f},
@@ -43,8 +44,8 @@ ds_pba::SceneContext setup_scene()
         );
         scene_context.cube_objects.push_back(
             Object{
+                .id = next_object_id(),
                 .type = ObjectType::Cube,
-                .name = "Cube B",
                 .transform =
                     Transform{
                         .position = {-1.5f, 2.5f, 0.5f},
@@ -56,8 +57,8 @@ ds_pba::SceneContext setup_scene()
         );
         scene_context.cube_objects.push_back(
             Object{
+                .id = next_object_id(),
                 .type = ObjectType::Cube,
-                .name = "Cube C",
                 .transform =
                     Transform{
                         .position = {-2.5f, -1.5f, 0.75f},
@@ -69,8 +70,8 @@ ds_pba::SceneContext setup_scene()
         );
         scene_context.cube_objects.push_back(
             Object{
+                .id = next_object_id(),
                 .type = ObjectType::Cube,
-                .name = "Cube D",
                 .transform =
                     Transform{
                         .position = {-0.5f, -1.5f, 0.75f},
@@ -82,8 +83,8 @@ ds_pba::SceneContext setup_scene()
         );
         scene_context.cube_objects.push_back(
             Object{
+                .id = next_object_id(),
                 .type = ObjectType::Cube,
-                .name = "Cube E",
                 .transform =
                     Transform{
                         .position = {-4.5f, -1.5f, 0.75f},
@@ -95,8 +96,8 @@ ds_pba::SceneContext setup_scene()
         );
         scene_context.cube_objects.push_back(
             Object{
+                .id = next_object_id(),
                 .type = ObjectType::Cube,
-                .name = "Cube E",
                 .transform =
                     Transform{
                         .position = {-10.5f, -1.5f, 0.75f},
@@ -108,8 +109,8 @@ ds_pba::SceneContext setup_scene()
         );
         scene_context.sphere_objects.push_back(
             Object{
+                .id = next_object_id(),
                 .type = ObjectType::Sphere,
-                .name = "Sphere A",
                 .transform = Transform{},
                 .color = {1.0f, 0.6f, 0.3f},
             }

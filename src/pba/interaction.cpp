@@ -131,7 +131,7 @@ std::optional<f32> intersect_ray_sphere(const Ray& ray, const glm::mat4& model)
 }
 
 /// Solve ray.origin.z + t * ray.dir.z = 0 for t
-std::optional<f32> interset_ray_ground(const Ray& ray)
+std::optional<f32> intersect_ray_ground(const Ray& ray)
 {
     if (std::abs(ray.origin.z) < 1e-5f)
     {
