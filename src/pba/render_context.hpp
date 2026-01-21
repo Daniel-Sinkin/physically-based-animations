@@ -75,6 +75,7 @@ struct RenderContext
     GLMesh cube_mesh{};
     GLMesh sphere_mesh{};
     GLMesh grid_mesh{};
+    GLMesh marble_bust_mesh{};
 
     GridSettings grid{};
 

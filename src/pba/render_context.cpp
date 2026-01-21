@@ -1,4 +1,5 @@
 // pba/scene_context->hpp
+#include "glm/ext/matrix_float4x4.hpp"
 #include "pba/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/render_context.hpp"
@@ -6,6 +7,7 @@
 #include "pba/core_types.hpp"
 #include "pba/format.hpp"
 #include "pba/gl.hpp"
+#include "pba/gltf_mesh.hpp"
 #include "pba/math_types.hpp"
 #include "pba/mesh.hpp"
 #include "pba/raycast.hpp"
@@ -166,6 +168,7 @@ void ds_pba::RenderContext::step()
                     VAO::unbind();
                 }
 
+                if constexpr (false)
                 {  // Spheres
                     sphere_mesh.vao.bind();
                     for (usize i{0zu}; i < scene_context->sphere_objects.size(); ++i)
@@ -188,6 +191,19 @@ void ds_pba::RenderContext::step()
 
                         glDrawArrays(GL_TRIANGLES, 0, sphere_mesh.vertex_count);
                     }
+                    VAO::unbind();
+                }
+
+                {  // Marble Mesh
+                    marble_bust_mesh.vao.bind();
+                    const Object& o = scene_context->sphere_objects[0];
+                    const glm::mat4 M = o.transform.model_matrix();
+
+                    set_uniform_mat4(obj_prog.id, "uModel", M);
+                    set_uniform_vec3(obj_prog.id, "uColor", o.color);
+
+                    glDrawArrays(GL_TRIANGLES, 0, marble_bust_mesh.vertex_count);
+
                     VAO::unbind();
                 }
             }
@@ -601,6 +617,19 @@ bool ds_pba::RenderContext::setup()
     sphere_mesh = create_sphere_mesh(32, 24, 1.0f);
     grid_mesh =
         create_grid_mesh(grid.n_lines_per_side, grid.spacing, grid.axis_alpha, grid.minor_alpha);
+
+    {
+        auto mesh_res =
+            ds_pba::load_gltf_mesh("assets/models/marble_bust_01/marble_bust_01_4k.gltf");
+        if (!mesh_res)
+        {
+            std::println(
+                stderr, "Failed to load glTF mesh: {}", static_cast<int>(mesh_res.error())
+            );
+            return false;
+        }
+        marble_bust_mesh = *mesh_res;
+    }
 
     last_scene_poll = std::chrono::steady_clock::now();
 
