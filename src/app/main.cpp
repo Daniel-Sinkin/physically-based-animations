@@ -3,6 +3,7 @@
 //
 #include "pba/engine_context.hpp"
 #include "pba/shutdown.hpp"
+#include "pba/util/scope_timer.hpp"
 
 namespace
 {
@@ -16,6 +17,7 @@ extern "C" void handle_term(int) noexcept
 
 int main()
 {
+    ds_pba::util::ScopeTimer timer{"Total Runtime"};
     using namespace ds_pba;
 
     std::signal(SIGTERM, handle_term);

@@ -7,9 +7,7 @@
 namespace ds_pba::util
 {
 
-ScopeTimer::ScopeTimer(std::string_view label) noexcept
-    : label_(label)
-    , start_(Clock::now())
+ScopeTimer::ScopeTimer(std::string_view label) noexcept : label_(label), start_(Clock::now())
 {
 }
 
@@ -17,8 +15,17 @@ ScopeTimer::~ScopeTimer() noexcept
 {
     const auto end = Clock::now();
     const auto dt = end - start_;
-    const double ms = std::chrono::duration<double, std::milli>(dt).count();
-    std::println("{}: {:.3f} ms", label_, ms);
+
+    const double seconds = std::chrono::duration<double>(dt).count();
+    if (seconds >= 2.0)
+    {
+        std::println("{}: {:.2f} s", label_, seconds);
+    }
+    else
+    {
+        const double ms = seconds * 1000.0;
+        std::println("{}: {:.3f} ms", label_, ms);
+    }
 }
 
 }  // namespace ds_pba::util

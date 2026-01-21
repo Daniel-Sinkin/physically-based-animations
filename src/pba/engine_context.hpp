@@ -114,14 +114,6 @@ struct EngineContext
                     add_cube({px, py, pz});
                 }
             }
-
-            scene->sphere_objects.push_back(
-                Object{
-                    .id = next_object_id(),
-                    .type = ObjectType::Sphere,
-                    .transform = {.position{0.0f, 0.0f, 2.0f}}
-                }
-            );
         }
 
         {  // Setup Renderer

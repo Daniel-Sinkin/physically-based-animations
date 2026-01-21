@@ -405,9 +405,10 @@ void render_imgui_windows(EngineContext& engine_context)
                         ImGui::TableNextRow();
                         ImGui::TableNextColumn();
 
-                        if (ImGui::Selectable(
-                                label.c_str(), is_selected, ImGuiSelectableFlags_SpanAllColumns
-                            ))
+                        bool selectable{ImGui::Selectable(
+                            label.c_str(), is_selected, ImGuiSelectableFlags_SpanAllColumns
+                        )};
+                        if (selectable)
                         {
                             scene_context.selected_index = i;
                             scene_context.selected_type = ObjectType::Cube;
@@ -434,9 +435,10 @@ void render_imgui_windows(EngineContext& engine_context)
                         ImGui::TableNextRow();
                         ImGui::TableNextColumn();
 
-                        if (ImGui::Selectable(
-                                label.c_str(), is_selected, ImGuiSelectableFlags_SpanAllColumns
-                            ))
+                        bool selectable{ImGui::Selectable(
+                            label.c_str(), is_selected, ImGuiSelectableFlags_SpanAllColumns
+                        )};
+                        if (selectable)
                         {
                             scene_context.selected_index = i;
                             scene_context.selected_type = ObjectType::Sphere;
@@ -462,9 +464,10 @@ void render_imgui_windows(EngineContext& engine_context)
                         ImGui::TableNextRow();
                         ImGui::TableNextColumn();
 
-                        if (ImGui::Selectable(
-                                label.c_str(), is_selected, ImGuiSelectableFlags_SpanAllColumns
-                            ))
+                        bool selectable{ImGui::Selectable(
+                            label.c_str(), is_selected, ImGuiSelectableFlags_SpanAllColumns
+                        )};
+                        if (selectable)
                         {
                             scene_context.selected_index = i;
                             scene_context.selected_type = ObjectType::Hitmarker;

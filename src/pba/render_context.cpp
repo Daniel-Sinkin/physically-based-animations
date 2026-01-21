@@ -193,19 +193,6 @@ void ds_pba::RenderContext::step()
                     }
                     VAO::unbind();
                 }
-
-                {  // Marble Mesh
-                    marble_bust_mesh.vao.bind();
-                    const Object& o = scene_context->sphere_objects[0];
-                    const glm::mat4 M = o.transform.model_matrix();
-
-                    set_uniform_mat4(obj_prog.id, "uModel", M);
-                    set_uniform_vec3(obj_prog.id, "uColor", o.color);
-
-                    glDrawArrays(GL_TRIANGLES, 0, marble_bust_mesh.vertex_count);
-
-                    VAO::unbind();
-                }
             }
 
             // Outline via stencil (in FBO)

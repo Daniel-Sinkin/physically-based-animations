@@ -44,11 +44,30 @@ static bool
 load_gltf_any(tinygltf::Model& model, const std::string& path, std::string& err, std::string& warn)
 {
     tinygltf::TinyGLTF loader;
+    bool res{};
     if (path.ends_with(".glb"))
     {
-        return loader.LoadBinaryFromFile(&model, &err, &warn, path);
+        res = loader.LoadBinaryFromFile(&model, &err, &warn, path);
     }
-    return loader.LoadASCIIFromFile(&model, &err, &warn, path);
+    else
+    {
+        if (!path.ends_with(".gltf"))
+        {
+            std::println("[Warning] Loading file which does not end on glb of gltf: {}", path);
+        }
+        res = loader.LoadASCIIFromFile(&model, &err, &warn, path);
+    }
+    assert(!res == !err.empty() && "Got no result but also no error!");
+    if (!res)
+    {
+        std::println(stderr, "Got uncaught error {}", err);
+        return false;
+    }
+    if (!warn.empty())
+    {
+        std::println("[Warning] Got warning in gltf loading:\n{}", warn);
+    }
+    return true;
 }
 
 static const std::byte* accessor_data_begin(
@@ -308,7 +327,6 @@ std::expected<GLMesh, GltfLoadError> load_gltf_mesh(const std::string& path, Axi
 
     const usize vcount = static_cast<usize>(pos_acc.count);
 
-    // Optional normals
     bool has_normals = false;
     const std::byte* nrm_base = nullptr;
     std::size_t nrm_stride = 0;
