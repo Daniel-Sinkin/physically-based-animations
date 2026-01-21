@@ -15,8 +15,8 @@ namespace
 {
 struct V
 {
-    f32 px, py, pz;
-    f32 nx, ny, nz;
+    f32 px, py, pz;  // position
+    f32 nx, ny, nz;  // normals
 };
 
 class ScopedBufferBinding
@@ -40,36 +40,6 @@ class ScopedBufferBinding
     ScopedBufferBinding& operator=(ScopedBufferBinding&&) = delete;
 };
 
-static bool
-load_gltf_any(tinygltf::Model& model, const std::string& path, std::string& err, std::string& warn)
-{
-    tinygltf::TinyGLTF loader;
-    bool res{};
-    if (path.ends_with(".glb"))
-    {
-        res = loader.LoadBinaryFromFile(&model, &err, &warn, path);
-    }
-    else
-    {
-        if (!path.ends_with(".gltf"))
-        {
-            std::println("[Warning] Loading file which does not end on glb of gltf: {}", path);
-        }
-        res = loader.LoadASCIIFromFile(&model, &err, &warn, path);
-    }
-    assert(!res == !err.empty() && "Got no result but also no error!");
-    if (!res)
-    {
-        std::println(stderr, "Got uncaught error {}", err);
-        return false;
-    }
-    if (!warn.empty())
-    {
-        std::println("[Warning] Got warning in gltf loading:\n{}", warn);
-    }
-    return true;
-}
-
 static const std::byte* accessor_data_begin(
     const tinygltf::Model& model,
     const tinygltf::Accessor& accessor,
@@ -77,29 +47,30 @@ static const std::byte* accessor_data_begin(
 )
 {
     const tinygltf::Buffer& buf = model.buffers[static_cast<usize>(view.buffer)];
-    const std::size_t off = static_cast<std::size_t>(view.byteOffset + accessor.byteOffset);
+    const usize off = static_cast<usize>(view.byteOffset + accessor.byteOffset);
     return reinterpret_cast<const std::byte*>(buf.data.data() + off);
 }
 
-static std::size_t
+static usize
 accessor_stride_bytes(const tinygltf::Accessor& accessor, const tinygltf::BufferView& view)
 {
-    const std::size_t default_stride =
-        static_cast<std::size_t>(
+    const usize default_stride =
+        static_cast<usize>(
             tinygltf::GetComponentSizeInBytes(static_cast<u32>(accessor.componentType))
         )
-        * static_cast<std::size_t>(
-            tinygltf::GetNumComponentsInType(static_cast<u32>(accessor.type))
-        );
+        * static_cast<usize>(tinygltf::GetNumComponentsInType(static_cast<u32>(accessor.type)));
 
-    return (view.byteStride != 0) ? static_cast<std::size_t>(view.byteStride) : default_stride;
+    return (view.byteStride != 0) ? static_cast<usize>(view.byteStride) : default_stride;
 }
 
-static glm::vec3 read_vec3_f32_strided(const std::byte* base, std::size_t stride, usize i)
+static glm::vec3 read_vec3_f32_strided(const std::byte* base, usize stride, usize stride_offset)
 {
-    const std::byte* p = base + i * stride;
-    const float* f = reinterpret_cast<const float*>(p);
-    return glm::vec3{f[0], f[1], f[2]};
+    const std::byte* loc = base + stride_offset * stride;
+    f32 x{}, y{}, z{};
+    std::memcpy(&x, loc + 0, 4);
+    std::memcpy(&y, loc + 4, 4);
+    std::memcpy(&z, loc + 8, 4);
+    return glm::vec3{x, y, z};
 }
 
 static glm::vec3 safe_normalize(glm::vec3 v) noexcept
@@ -122,7 +93,7 @@ read_indices_u32(const tinygltf::Model& model, int accessor_index)
 {
     if (accessor_index < 0)
     {
-        return std::vector<u32>{};  // non-indexed primitive
+        return std::vector<u32>{};
     }
     if (accessor_index >= static_cast<int>(model.accessors.size()))
     {
@@ -174,17 +145,9 @@ read_indices_u32(const tinygltf::Model& model, int accessor_index)
     return out;
 }
 
-static std::expected<void, GltfLoadError> validate_vec3_f32(const tinygltf::Accessor& a)
+static bool validate_vec3_f32(const tinygltf::Accessor& a)
 {
-    if (a.type != TINYGLTF_TYPE_VEC3)
-    {
-        return std::unexpected(GltfLoadError::UnsupportedAccessorType);
-    }
-    if (a.componentType != TINYGLTF_COMPONENT_TYPE_FLOAT)
-    {
-        return std::unexpected(GltfLoadError::UnsupportedAccessorType);
-    }
-    return {};
+    return (a.type == TINYGLTF_TYPE_VEC3 && a.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
 }
 
 static glm::mat3 axis_fix_matrix(AxisFix fix) noexcept
@@ -270,10 +233,31 @@ std::expected<GLMesh, GltfLoadError> load_gltf_mesh(const std::string& path, Axi
     std::string err;
     std::string warn;
 
-    if (!load_gltf_any(model, path, err, warn))
-    {
-        std::println(stderr, "Failed to load model: {}", err);
-        return std::unexpected(GltfLoadError::ParseError);
+    {  // Load the file
+        tinygltf::TinyGLTF loader;
+        bool res{};
+        if (path.ends_with(".glb"))
+        {
+            res = loader.LoadBinaryFromFile(&model, &err, &warn, path);
+        }
+        else
+        {
+            if (!path.ends_with(".gltf"))
+            {
+                std::println("[Warning] Loading file which does not end on glb of gltf: {}", path);
+            }
+            res = loader.LoadASCIIFromFile(&model, &err, &warn, path);
+        }
+        assert(!res == !err.empty() && "Got no result but also no error!");
+        if (!res)
+        {
+            std::println(stderr, "Got uncaught error {}", err);
+            return std::unexpected(GltfLoadError::ParseError);
+        }
+        if (!warn.empty())
+        {
+            std::println("[Warning] Got warning in gltf loading:\n{}", warn);
+        }
     }
 
     if (model.meshes.empty())
@@ -291,7 +275,6 @@ std::expected<GLMesh, GltfLoadError> load_gltf_mesh(const std::string& path, Axi
 
     const tinygltf::Primitive& prim = mesh0.primitives[0];
 
-    // Default primitive mode is TRIANGLES if omitted; tinygltf may use -1.
     if (prim.mode != -1 && prim.mode != TINYGLTF_MODE_TRIANGLES)
     {
         return std::unexpected(GltfLoadError::UnsupportedPrimitive);
@@ -303,53 +286,87 @@ std::expected<GLMesh, GltfLoadError> load_gltf_mesh(const std::string& path, Axi
         return std::unexpected(GltfLoadError::MissingPosition);
     }
 
-    const int pos_accessor_index = it_pos->second;
-    if (pos_accessor_index < 0 || pos_accessor_index >= static_cast<int>(model.accessors.size()))
+    const int pos_idx_i = it_pos->second;
+    if (pos_idx_i < 0)
     {
-        std::println(stderr, "pos_accessor_index OOB");
+        std::println(stderr, "pos accessor must be positive");
+        return std::unexpected(GltfLoadError::ParseError);
+    }
+    const usize pos_idx = static_cast<usize>(pos_idx_i);
+    if (pos_idx >= model.accessors.size())
+    {
+        std::println(
+            stderr,
+            "Malformed Position Accessor, is {} but there are only {} accessors",
+            pos_idx,
+            model.accessors.size()
+        );
         return std::unexpected(GltfLoadError::ParseError);
     }
 
-    const tinygltf::Accessor& pos_acc = model.accessors[static_cast<usize>(pos_accessor_index)];
-    if (auto ok = validate_vec3_f32(pos_acc); !ok)
+    const tinygltf::Accessor& pos_accessor = model.accessors[pos_idx];
+    if (!validate_vec3_f32(pos_accessor))
     {
-        return std::unexpected(ok.error());
+        return std::unexpected(GltfLoadError::UnsupportedAccessorType);
     }
-    if (pos_acc.bufferView < 0 || pos_acc.bufferView >= static_cast<int>(model.bufferViews.size()))
+    int buffer_view_i{pos_accessor.bufferView};
+    if (buffer_view_i < 0)
     {
-        std::println(stderr, "bufferView OOB");
+        std::println(stderr, "bufferView must not be negative");
+        return std::unexpected(GltfLoadError::ParseError);
+    }
+    auto buffer_view = static_cast<usize>(buffer_view_i);
+    if (buffer_view >= model.bufferViews.size())
+    {
+        std::println(
+            stderr,
+            "bufferView OOB, has index {} but there are only {} bufferViews",
+            buffer_view,
+            model.bufferViews.size()
+        );
         return std::unexpected(GltfLoadError::ParseError);
     }
 
-    const tinygltf::BufferView& pos_bv = model.bufferViews[static_cast<usize>(pos_acc.bufferView)];
-    const std::byte* pos_base = accessor_data_begin(model, pos_acc, pos_bv);
-    const std::size_t pos_stride = accessor_stride_bytes(pos_acc, pos_bv);
+    const tinygltf::BufferView& pos_bv = model.bufferViews[buffer_view];
+    const std::byte* pos_base = accessor_data_begin(model, pos_accessor, pos_bv);
+    const usize pos_stride = accessor_stride_bytes(pos_accessor, pos_bv);
 
-    const usize vcount = static_cast<usize>(pos_acc.count);
+    const usize vertex_count = pos_accessor.count;
 
-    bool has_normals = false;
+    bool has_normals{false};
     const std::byte* nrm_base = nullptr;
-    std::size_t nrm_stride = 0;
+    usize nrm_stride = 0;
 
     if (auto it_n = prim.attributes.find("NORMAL"); it_n != prim.attributes.end())
     {
-        const int nrm_accessor_index = it_n->second;
-        if (nrm_accessor_index >= 0
-            && nrm_accessor_index < static_cast<int>(model.accessors.size()))
+        const int normal_idx_i = it_n->second;
+        if (normal_idx_i < 0)
         {
-            const tinygltf::Accessor& nrm_acc =
-                model.accessors[static_cast<usize>(nrm_accessor_index)];
-            if (auto ok = validate_vec3_f32(nrm_acc); ok)
+            std::println(stderr, "Malformed Normal Accessor, shouldn't be negative");
+            return std::unexpected(GltfLoadError::ParseError);
+        }
+        const auto normal_idx = static_cast<usize>(normal_idx_i);
+        if (normal_idx >= model.accessors.size())
+        {
+            std::println(
+                stderr,
+                "Malformed Normal Accessor, is {} but there are only {} accessors",
+                normal_idx,
+                model.accessors.size()
+            );
+            return std::unexpected(GltfLoadError::ParseError);
+        }
+        const tinygltf::Accessor& normal_accessor = model.accessors[normal_idx];
+        if (validate_vec3_f32(normal_accessor))
+        {
+            if (normal_accessor.count == pos_accessor.count && normal_accessor.bufferView >= 0
+                && normal_accessor.bufferView < static_cast<int>(model.bufferViews.size()))
             {
-                if (static_cast<usize>(nrm_acc.count) == vcount && nrm_acc.bufferView >= 0
-                    && nrm_acc.bufferView < static_cast<int>(model.bufferViews.size()))
-                {
-                    const tinygltf::BufferView& nrm_bv_local =
-                        model.bufferViews[static_cast<usize>(nrm_acc.bufferView)];
-                    nrm_base = accessor_data_begin(model, nrm_acc, nrm_bv_local);
-                    nrm_stride = accessor_stride_bytes(nrm_acc, nrm_bv_local);
-                    has_normals = true;
-                }
+                const tinygltf::BufferView& nrm_bv_local =
+                    model.bufferViews[static_cast<usize>(normal_accessor.bufferView)];
+                nrm_base = accessor_data_begin(model, normal_accessor, nrm_bv_local);
+                nrm_stride = accessor_stride_bytes(normal_accessor, nrm_bv_local);
+                has_normals = true;
             }
         }
     }
@@ -361,19 +378,19 @@ std::expected<GLMesh, GltfLoadError> load_gltf_mesh(const std::string& path, Axi
     }
     const std::vector<u32>& idx = *idx_res;
 
-    const glm::mat3 R = axis_fix_matrix(fix);
+    const glm::mat3 preprocessing = axis_fix_matrix(fix);
 
     auto read_pos = [&](u32 i) -> glm::vec3
     {
         const glm::vec3 p = read_vec3_f32_strided(pos_base, pos_stride, static_cast<usize>(i));
-        return R * p;
+        return preprocessing * p;
     };
 
     auto read_nrm = [&](u32 i) -> glm::vec3
     {
         const glm::vec3 n =
             safe_normalize(read_vec3_f32_strided(nrm_base, nrm_stride, static_cast<usize>(i)));
-        return safe_normalize(R * n);
+        return safe_normalize(preprocessing * n);
     };
 
     std::vector<V> verts;
@@ -393,43 +410,50 @@ std::expected<GLMesh, GltfLoadError> load_gltf_mesh(const std::string& path, Axi
             const u32 i1 = idx[t + 1];
             const u32 i2 = idx[t + 2];
 
-            if (i0 >= vcount || i1 >= vcount || i2 >= vcount)
+            if (i0 >= vertex_count || i1 >= vertex_count || i2 >= vertex_count)
             {
                 std::println("Invalid ij counts");
                 return std::unexpected(GltfLoadError::ParseError);
             }
 
-            const glm::vec3 p0 = read_pos(i0);
-            const glm::vec3 p1 = read_pos(i1);
-            const glm::vec3 p2 = read_pos(i2);
+            const glm::vec3 p0{read_pos(i0)};
+            const glm::vec3 p1{read_pos(i1)};
+            const glm::vec3 p2{read_pos(i2)};
 
-            const glm::vec3 fn = has_normals ? glm::vec3{} : face_normal(p0, p1, p2);
-
-            auto emit = [&](u32 i, const glm::vec3& p)
+            if (has_normals)
             {
-                const glm::vec3 n = has_normals ? read_nrm(i) : fn;
-                verts.push_back(V{p.x, p.y, p.z, n.x, n.y, n.z});
-            };
-
-            emit(i0, p0);
-            emit(i1, p1);
-            emit(i2, p2);
+                auto emit = [&](u32 i, const glm::vec3& p)
+                {
+                    const glm::vec3 n{read_nrm(i)};
+                    verts.emplace_back(p.x, p.y, p.z, n.x, n.y, n.z);
+                };
+                emit(i0, p0);
+                emit(i1, p1);
+                emit(i2, p2);
+            }
+            else
+            {
+                verts.emplace_back(p0.x, p0.y, p0.z);
+                verts.emplace_back(p1.x, p1.y, p1.z);
+                verts.emplace_back(p2.x, p2.y, p2.z);
+            }
         }
     }
     else
     {
-        if ((vcount % 3u) != 0u)
+        if ((vertex_count % 3u) != 0u)
         {
             return std::unexpected(GltfLoadError::UnsupportedPrimitive);
         }
 
-        verts.reserve(vcount);
+        verts.reserve(vertex_count);
 
-        for (usize t = 0; t < vcount; t += 3)
+        u32 vertex_idx{0};
+        while (vertex_idx < vertex_count)
         {
-            const u32 i0 = static_cast<u32>(t + 0);
-            const u32 i1 = static_cast<u32>(t + 1);
-            const u32 i2 = static_cast<u32>(t + 2);
+            const u32 i0{vertex_idx++};
+            const u32 i1{vertex_idx++};
+            const u32 i2{vertex_idx++};
 
             const glm::vec3 p0 = read_pos(i0);
             const glm::vec3 p1 = read_pos(i1);

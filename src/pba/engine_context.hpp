@@ -90,6 +90,7 @@ struct EngineContext
                 .inv_mass = k_static_mass,
             }
         );
+
         link_latest_objects(id);
     }
 
@@ -99,8 +100,8 @@ struct EngineContext
         {
             add_ground();
 
-            constexpr int n = 10;
-            constexpr f32 s = 1.10f;
+            constexpr int n{1};
+            constexpr f32 s{1.10f};
 
             for (int y = 0; y < n; ++y)
             {
@@ -114,6 +115,17 @@ struct EngineContext
                     add_cube({px, py, pz});
                 }
             }
+            scene->sphere_objects.push_back(
+                Object{
+                    .id = next_object_id(),
+                    .type = ObjectType::Sphere,
+                    .transform = {
+                        .position = {2.89f, 3.14f, 0.74f},
+                        .rotation_deg = {23.5f, 0.0f, -34.5f},
+                        .scale = {5.0f, 5.0f, 5.0f},
+                    }
+                }
+            );
         }
 
         {  // Setup Renderer

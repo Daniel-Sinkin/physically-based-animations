@@ -43,6 +43,11 @@ struct RenderContext
     ShaderProgram obj_prog{};
     ShaderProgram outline_prog{};
 
+    bool initialised_glfw{false};
+    bool window_created{false};
+    bool loaded_glad{false};
+    bool initialised_imgui{false};
+
     ColorRGBAf background_color{0.255f, 0.255f, 0.255f, 1.0f};
 
     glm::vec2 viewport_img_pos{};

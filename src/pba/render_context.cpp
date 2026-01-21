@@ -17,6 +17,10 @@
 #include "pba/ui.hpp"
 #include "pba/util/scope_timer.hpp"
 
+#include <json.hpp>
+#include <print>
+#include <utility>
+
 ds_pba::RenderContext::~RenderContext()
 {
     shutdown();
@@ -169,6 +173,7 @@ void ds_pba::RenderContext::step()
                     VAO::unbind();
                 }
 
+                if constexpr (false)
                 {  // Spheres
                     sphere_mesh.vao.bind();
                     for (usize i{0zu}; i < scene_context->sphere_objects.size(); ++i)
@@ -191,6 +196,17 @@ void ds_pba::RenderContext::step()
 
                         glDrawArrays(GL_TRIANGLES, 0, sphere_mesh.vertex_count);
                     }
+                    VAO::unbind();
+                }
+                {
+                    marble_bust_mesh.vao.bind();
+                    const Object& o = scene_context->sphere_objects[0];
+                    const glm::mat4 M = o.transform.model_matrix();
+
+                    set_uniform_mat4(obj_prog.id, "uModel", M);
+                    set_uniform_vec3(obj_prog.id, "uColor", o.color);
+
+                    glDrawArrays(GL_TRIANGLES, 0, marble_bust_mesh.vertex_count);
                     VAO::unbind();
                 }
             }
@@ -474,7 +490,7 @@ bool ds_pba::RenderContext::create_programs()
         std::println(
             stderr,
             "Failed to load 'grid' shaders, got error code: {}",
-            static_cast<int>(grid_prog_res.error())
+            std::to_underlying(grid_prog_res.error())
         );
         return false;
     }
@@ -526,7 +542,7 @@ bool ds_pba::RenderContext::create_meshes()
         if (!mesh_res)
         {
             std::println(
-                stderr, "Failed to load glTF mesh: {}", static_cast<int>(mesh_res.error())
+                stderr, "Failed to load glTF mesh: {}", std::to_underlying(mesh_res.error())
             );
             return false;
         }
@@ -541,11 +557,14 @@ bool ds_pba::RenderContext::setup()
 
     auto glfw_error_callback = [](int error, const char* description)
     { std::println(stderr, "GLFW Error {}: {}", error, description); };
+
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit())
     {
+        std::println(stderr, "Failed to init glfw");
         return false;
     }
+    initialised_glfw = true;
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
@@ -558,8 +577,10 @@ bool ds_pba::RenderContext::setup()
     window = glfwCreateWindow(1600, 900, "Physically Based Animations", nullptr, nullptr);
     if (!window)
     {
+        std::println(stderr, "Failed to create window");
         return false;
     }
+    window_created = true;
     {  // Place on 2nd monitor with correct sizing for mixed-DPI
         int monitor_count{0};
         GLFWmonitor** monitors = glfwGetMonitors(&monitor_count);
@@ -600,9 +621,12 @@ bool ds_pba::RenderContext::setup()
         glfwTerminate();
         return false;
     }
+    loaded_glad = true;
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
+    initialised_imgui = true;
+
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
@@ -644,16 +668,33 @@ bool ds_pba::RenderContext::setup()
 
 void ds_pba::RenderContext::shutdown()
 {
-    viewport_fbo.destroy();
+    if (loaded_glad)
+    {
+        viewport_fbo.destroy();
 
-    glDeleteProgram(grid_prog.id);
-    glDeleteProgram(obj_prog.id);
-    glDeleteProgram(outline_prog.id);
+        glDeleteProgram(grid_prog.id);
+        glDeleteProgram(obj_prog.id);
+        glDeleteProgram(outline_prog.id);
+    }
 
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
+    if (initialised_imgui)
+    {
+        ImGui_ImplOpenGL3_Shutdown();
+        ImGui_ImplGlfw_Shutdown();
+        ImGui::DestroyContext();
+        initialised_imgui = false;
+    }
 
-    glfwDestroyWindow(window);
-    glfwTerminate();
+    if (window_created && window)
+    {
+        glfwDestroyWindow(window);
+        window = nullptr;
+        window_created = false;
+    }
+
+    if (initialised_glfw)
+    {
+        glfwTerminate();
+        initialised_glfw = false;
+    }
 }
