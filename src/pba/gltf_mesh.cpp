@@ -4,6 +4,7 @@
 #include "pba/core_types.hpp"
 #include "pba/gl_types.hpp"
 #include "pba/pch.hpp"  // IWYU pragma: keep
+#include "pba/util/scope_timer.hpp"
 
 #include <print>
 #include <tiny_gltf.h>
@@ -166,10 +167,86 @@ static std::expected<void, GltfLoadError> validate_vec3_f32(const tinygltf::Acce
     }
     return {};
 }
+
+static glm::mat3 axis_fix_matrix(AxisFix fix) noexcept
+{
+    using AF = AxisFix;
+    using glm::mat3;
+    using glm::vec3;
+
+    const f32 c0 = 0.0f;
+    const f32 c1 = 1.0f;
+    const f32 cn = -1.0f;
+
+    const auto Rx90 = [&]() -> mat3
+    { return mat3(vec3(c1, c0, c0), vec3(c0, c0, c1), vec3(c0, cn, c0)); };
+    const auto Rx180 = [&]() -> mat3
+    { return mat3(vec3(c1, c0, c0), vec3(c0, cn, c0), vec3(c0, c0, cn)); };
+    const auto Rx270 = [&]() -> mat3
+    { return mat3(vec3(c1, c0, c0), vec3(c0, c0, cn), vec3(c0, c1, c0)); };
+
+    const auto Ry90 = [&]() -> mat3
+    { return mat3(vec3(c0, c0, cn), vec3(c0, c1, c0), vec3(c1, c0, c0)); };
+    const auto Ry180 = [&]() -> mat3
+    { return mat3(vec3(cn, c0, c0), vec3(c0, c1, c0), vec3(c0, c0, cn)); };
+    const auto Ry270 = [&]() -> mat3
+    { return mat3(vec3(c0, c0, c1), vec3(c0, c1, c0), vec3(cn, c0, c0)); };
+
+    const auto Rz90 = [&]() -> mat3
+    { return mat3(vec3(c0, c1, c0), vec3(cn, c0, c0), vec3(c0, c0, c1)); };
+    const auto Rz180 = [&]() -> mat3
+    { return mat3(vec3(cn, c0, c0), vec3(c0, cn, c0), vec3(c0, c0, c1)); };
+    const auto Rz270 = [&]() -> mat3
+    { return mat3(vec3(c0, cn, c0), vec3(c1, c0, c0), vec3(c0, c0, c1)); };
+
+    // clang-format off
+    switch (fix)
+    {
+        case AF::None:        return mat3(1.0f);
+
+        case AF::RotX90:      return Rx90();
+        case AF::RotX180:     return Rx180();
+        case AF::RotX270:     return Rx270();
+
+        case AF::RotY90:      return Ry90();
+        case AF::RotY180:     return Ry180();
+        case AF::RotY270:     return Ry270();
+
+        case AF::RotZ90:      return Rz90();
+        case AF::RotZ180:     return Rz180();
+        case AF::RotZ270:     return Rz270();
+
+        case AF::RotX90_Z90:   return Rz90()  * Rx90();
+        case AF::RotX90_Z180:  return Rz180() * Rx90();
+        case AF::RotX90_Z270:  return Rz270() * Rx90();
+
+        case AF::RotX180_Z90:  return Rz90()  * Rx180();
+        case AF::RotX180_Z270: return Rz270() * Rx180();
+
+        case AF::RotX270_Z90:  return Rz90()  * Rx270();
+        case AF::RotX270_Z180: return Rz180() * Rx270();
+        case AF::RotX270_Z270: return Rz270() * Rx270();
+
+        case AF::RotY90_Z180:  return Rz180() * Ry90();
+        case AF::RotY270_Z180: return Rz180() * Ry270();
+
+        case AF::RotZ90_X90:   return Rx90()  * Rz90();
+        case AF::RotZ90_X270:  return Rx270() * Rz90();
+        case AF::RotZ270_X90:  return Rx90()  * Rz270();
+        case AF::RotZ270_X270: return Rx270() * Rz270();
+
+        case AF::FlipX: return mat3(vec3(cn, c0, c0), vec3(c0, c1, c0), vec3(c0, c0, c1));
+        case AF::FlipY: return mat3(vec3(c1, c0, c0), vec3(c0, cn, c0), vec3(c0, c0, c1));
+        case AF::FlipZ: return mat3(vec3(c1, c0, c0), vec3(c0, c1, c0), vec3(c0, c0, cn));
+    }
+    // clang-format on
+}
+
 }  // namespace
 
-std::expected<GLMesh, GltfLoadError> load_gltf_mesh(const std::string& path)
+std::expected<GLMesh, GltfLoadError> load_gltf_mesh(const std::string& path, AxisFix fix)
 {
+    util::ScopeTimer timer{path};
     tinygltf::Model model;
     std::string err;
     std::string warn;
@@ -266,11 +343,20 @@ std::expected<GLMesh, GltfLoadError> load_gltf_mesh(const std::string& path)
     }
     const std::vector<u32>& idx = *idx_res;
 
+    const glm::mat3 R = axis_fix_matrix(fix);
+
     auto read_pos = [&](u32 i) -> glm::vec3
-    { return read_vec3_f32_strided(pos_base, pos_stride, static_cast<usize>(i)); };
+    {
+        const glm::vec3 p = read_vec3_f32_strided(pos_base, pos_stride, static_cast<usize>(i));
+        return R * p;
+    };
 
     auto read_nrm = [&](u32 i) -> glm::vec3
-    { return safe_normalize(read_vec3_f32_strided(nrm_base, nrm_stride, static_cast<usize>(i))); };
+    {
+        const glm::vec3 n =
+            safe_normalize(read_vec3_f32_strided(nrm_base, nrm_stride, static_cast<usize>(i)));
+        return safe_normalize(R * n);
+    };
 
     std::vector<V> verts;
 

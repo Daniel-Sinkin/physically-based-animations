@@ -15,6 +15,7 @@
 #include "pba/scene_types.hpp"
 #include "pba/shutdown.hpp"
 #include "pba/ui.hpp"
+#include "pba/util/scope_timer.hpp"
 
 ds_pba::RenderContext::~RenderContext()
 {
@@ -619,8 +620,10 @@ bool ds_pba::RenderContext::setup()
         create_grid_mesh(grid.n_lines_per_side, grid.spacing, grid.axis_alpha, grid.minor_alpha);
 
     {
-        auto mesh_res =
-            ds_pba::load_gltf_mesh("assets/models/marble_bust_01/marble_bust_01_4k.gltf");
+        util::ScopeTimer timer{"marble_loading"};
+        auto mesh_res = ds_pba::load_gltf_mesh(
+            "assets/models/marble_bust_01/marble_bust_01_4k.gltf", ds_pba::AxisFix::RotX90_Z180
+        );
         if (!mesh_res)
         {
             std::println(
