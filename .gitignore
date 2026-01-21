@@ -44,3 +44,5 @@ build/
 .cache/
 
 .DS_Store
+
+assets/models/
