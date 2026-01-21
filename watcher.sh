@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+
+# Automatic watcher that restarts the engine when a file inside of src gets saved
+
 set -euo pipefail
 cd "$(dirname "$0")"
 

@@ -54,6 +54,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(glm)
 
 
+
 FetchContent_Declare(
   tinyobjloader
   GIT_REPOSITORY https://github.com/tinyobjloader/tinyobjloader.git
@@ -85,6 +86,21 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(nlohmann_json)
 
+FetchContent_Declare(
+  tinygltf
+  GIT_REPOSITORY https://github.com/syoyo/tinygltf.git
+  GIT_TAG        v2.8.21
+)
+FetchContent_MakeAvailable(tinygltf)
+
+add_library(tinygltf_hdr INTERFACE)
+target_include_directories(tinygltf_hdr SYSTEM INTERFACE
+  ${tinygltf_SOURCE_DIR}
+)
+target_link_libraries(tinygltf_hdr INTERFACE
+  stb_image_hdr
+  nlohmann_json::nlohmann_json
+)
 
 file(GLOB_RECURSE PBA_SOURCES
   CONFIGURE_DEPENDS
@@ -113,6 +129,7 @@ target_link_libraries(main PRIVATE
   glm::glm
 
   tinyobjloader_hdr
+  tinygltf_hdr
   stb_image_hdr
   nlohmann_json::nlohmann_json
 )

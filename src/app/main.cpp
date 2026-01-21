@@ -1,11 +1,7 @@
 // pba/main.cpp
-#include "pba/core_types.hpp"
-#include "pba/engine_context.hpp"
-#include "pba/math_types.hpp"
 #include "pba/pch.hpp"  // IWYU pragma: keep
 //
-#include "pba/render_context.hpp"
-#include "pba/scene_context.hpp"
+#include "pba/engine_context.hpp"
 #include "pba/shutdown.hpp"
 
 namespace
