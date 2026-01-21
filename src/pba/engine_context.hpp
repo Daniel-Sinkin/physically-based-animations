@@ -25,6 +25,17 @@ struct EngineContext
 
     std::unordered_map<ObjectId, ObjectLink> obj_map{};
 
+    void link_latest_objects(ObjectId id)
+    {
+        obj_map.insert_or_assign(
+            id,
+            ObjectLink{
+                scene->cube_objects.size() - 1,
+                physics->bodies.size() - 1,
+            }
+        );
+    }
+
     // TODO: Add arbitrary transforms
     void add_cube(Position3 position)
     {
@@ -36,24 +47,57 @@ struct EngineContext
             RigidBody{
                 .id = id,
                 .collider =
-                    AABB{
-                        .min = position - Position3{0.5f, 0.5f, 0.5f},
-                        .max = position + Position3{0.5f, 0.5f, 0.5f}
-                    },
+                    AABB{.min = Position3{-0.5f, -0.5f, -0.5f}, .max = Position3{0.5f, 0.5f, 0.5f}},
                 .position = position,
                 .velocity = Direction3{0.0f, 0.0f, 0.0f},
                 .inv_mass = 1.0,
             }
         );
-        obj_map.insert_or_assign(
-            id, ObjectLink{scene->cube_objects.size() - 1, physics->bodies.size() - 1}
+        link_latest_objects(id);
+    }
+
+    void add_ground()
+    {
+        ObjectId id = next_object_id();
+
+        constexpr Position3 ground_center{0.0f, 0.0f, -0.5f};
+        constexpr Position3 half_extents{10.0f, 10.0f, 0.5f};
+
+        scene->cube_objects.push_back(
+            Object{
+                .id = id,
+                .type = ObjectType::Cube,
+                .transform =
+                    {
+                        .position = ground_center,
+                        .scale = half_extents * 2.0f,
+                    },
+                .color = {0.1f, 0.1f, 0.1f},
+            }
         );
+
+        physics->bodies.push_back(
+            RigidBody{
+                .id = id,
+                .collider =
+                    AABB{
+                        .min = -half_extents,
+                        .max = +half_extents,
+                    },
+                .position = ground_center,
+                .velocity = Direction3{0.0f, 0.0f, 0.0f},
+                .inv_mass = k_static_mass,
+            }
+        );
+        link_latest_objects(id);
     }
 
     bool setup()
     {
-        {  // Setup Scene and Physics
-            constexpr int n = 1;
+        {
+            add_ground();
+
+            constexpr int n = 10;
             constexpr f32 s = 1.10f;
 
             for (int y = 0; y < n; ++y)
@@ -73,6 +117,7 @@ struct EngineContext
         {  // Setup Renderer
             renderer->scene_context = scene.get();
             renderer->physics_context = physics.get();
+            renderer->engine_context = this;
             return renderer->setup();
         }
     }
@@ -83,11 +128,10 @@ struct EngineContext
         {
             // TODO: Sync renderer and physics time
             f32 physics_time = 0.0f;
-            f32 physics_dt = 0.001f;  // Fixed update steps for now
+            f32 physics_dt = 0.001f;
             while (physics_time < 0.008f)
             {
-                physics->apply_forces(physics_dt);
-                physics->update_positions(physics_dt);
+                physics->step(physics_dt);
                 physics_time += physics_dt;
             }
             for (const auto& [id, idxs] : obj_map)

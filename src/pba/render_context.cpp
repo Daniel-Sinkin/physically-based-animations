@@ -1,20 +1,18 @@
 // pba/scene_context->hpp
-#include "pba/core_types.hpp"
-#include "pba/math_types.hpp"
 #include "pba/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/render_context.hpp"
 //
+#include "pba/core_types.hpp"
 #include "pba/format.hpp"
 #include "pba/gl.hpp"
+#include "pba/math_types.hpp"
 #include "pba/mesh.hpp"
 #include "pba/raycast.hpp"
 #include "pba/scene_context.hpp"
 #include "pba/scene_types.hpp"
 #include "pba/shutdown.hpp"
 #include "pba/ui.hpp"
-
-#include <print>
 
 ds_pba::RenderContext::~RenderContext()
 {
@@ -163,7 +161,6 @@ void ds_pba::RenderContext::step()
 
                         set_uniform_mat4(obj_prog.id, "uModel", M);
                         set_uniform_vec3(obj_prog.id, "uColor", o.color);
-
                         glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
                     }
                     VAO::unbind();
@@ -446,7 +443,7 @@ void ds_pba::RenderContext::step()
     prev_mx = mouse_x;
     prev_my = mouse_y;
 
-    render_imgui_windows(*this, *physics_context);
+    render_imgui_windows(*engine_context);
 
     ImGui::Render();
 

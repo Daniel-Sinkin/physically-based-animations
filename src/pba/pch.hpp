@@ -1,10 +1,7 @@
 // pba/pch.hpp
 #pragma once
 
-// Precompiled header is supposed to speed up compilation, never used it before so this might
-// not align with best practices
-
-#include <algorithm>    // IWYU pragma: keep
+// Precompiled header
 #include <algorithm>    // IWYU pragma: keep
 #include <array>        // IWYU pragma: keep
 #include <cassert>      // IWYU pragma: keep
@@ -19,7 +16,6 @@
 #include <format>       // IWYU pragma: keep
 #include <fstream>      // IWYU pragma: keep
 #include <glad/glad.h>  // IWYU pragma: keep
-#include <memory>       // IWYU pragma: keep
 #include <memory>       // IWYU pragma: keep
 #include <numbers>      // IWYU pragma: keep
 #include <optional>     // IWYU pragma: keep

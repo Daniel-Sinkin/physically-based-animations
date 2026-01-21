@@ -8,10 +8,6 @@
 #include "pba/scene_context.hpp"
 #include "pba/shutdown.hpp"
 
-#include <algorithm>
-#include <csignal>
-#include <memory>
-
 namespace
 {
 extern "C" void handle_term(int) noexcept

@@ -4,9 +4,7 @@
 //
 #include "pba/ui.hpp"
 //
-#include "pba/physics_context.hpp"
-#include "pba/render_context.hpp"
-#include "pba/scene_context.hpp"
+#include "pba/engine_context.hpp"
 
 namespace ds_pba
 {
@@ -228,10 +226,15 @@ void apply_blender_style()
     }
 }
 
-void render_imgui_windows(RenderContext& render_context, PhysicsContext& physics_context)
+void render_imgui_windows(EngineContext& engine_context)
 {
+    assert(engine_context.physics);
+    assert(engine_context.renderer);
+    auto& physics_context = *engine_context.physics;
+    auto& render_context = *engine_context.renderer;
     assert(render_context.scene_context && "Scene Context of render context not set!");
     auto& scene_context = *render_context.scene_context;
+
     auto& cam = scene_context.camera;
     {
         ImGui::Begin("Info");
@@ -317,7 +320,7 @@ void render_imgui_windows(RenderContext& render_context, PhysicsContext& physics
                     break;
                 }
             }
-            const RigidBody& rb = physics_context.bodies[physics_index];
+            RigidBody& rb = physics_context.bodies[physics_index];
 
             switch (*scene_context.selected_type)
             {
@@ -341,9 +344,9 @@ void render_imgui_windows(RenderContext& render_context, PhysicsContext& physics
             ImGui::Separator();
 
             ImGui::ColorEdit3("Color", &o.color.x);
-            ImGui::DragFloat3("Position", &o.transform.position.x, 0.01f);
-            ImGui::DragFloat3("Rotation (deg)", &o.transform.rotation_deg.x, 0.25f);
-            ImGui::DragFloat3("Scale", &o.transform.scale.x, 0.01f, 0.001f, 1000.0f);
+            ImGui::DragFloat3("Position", &rb.position.x, 0.01f);
+            // ImGui::DragFloat3("Rotation (deg)", &o.transform.rotation_deg.x, 0.25f);
+            // ImGui::DragFloat3("Scale", &o.transform.scale.x, 0.01f, 0.001f, 1000.0f);
             ImGui::Text(
                 "Velocity (%.2f,%.2f,%.2f)",
                 static_cast<double>(rb.velocity.x),

@@ -6,7 +6,6 @@
 #include "pba/viewport_fbo.hpp"
 
 #include <chrono>
-#include <memory>
 //
 #include <glm/vec2.hpp>
 
@@ -16,6 +15,7 @@ namespace ds_pba
 {
 struct SceneContext;
 struct PhysicsContext;
+struct EngineContext;
 
 struct GridSettings
 {
@@ -67,7 +67,8 @@ struct RenderContext
     bool viewport_image_hovered{false};
 
     SceneContext* scene_context{};
-    PhysicsContext* physics_context{};  // Read Only for Debug
+    EngineContext* engine_context{};
+    PhysicsContext* physics_context{};
 
     bool is_active_{true};
 
