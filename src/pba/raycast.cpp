@@ -10,7 +10,7 @@ namespace ds_pba
 {
 std::optional<Raycast> raycast(const SceneContext& scene_context, const Ray& ray)
 {
-    f32 best_t = 1e30f;
+    f32 best_t{1e30f};
 
     std::optional<usize> best_idx{};
     std::optional<u32> best_object_id{};

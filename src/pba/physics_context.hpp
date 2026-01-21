@@ -164,7 +164,8 @@ struct PhysicsContext
             }
             body.position += body.velocity * delta_time;
 
-            if (body.position.length() > 200.0)
+            f32 r2 = glm::dot(body.position, body.position);
+            if (r2 > 200.0f * 200.0f)
             {
                 // TODO: Add bounding box culling, can't safely remove objects yet
                 // for now we just freeze it

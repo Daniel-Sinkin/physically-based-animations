@@ -311,7 +311,7 @@ void render_imgui_windows(EngineContext& engine_context)
             };
             Object& o = selector(type, idx);
 
-            usize physics_index{0zu};
+            std::optional<usize> physics_index{};
             for (usize i{0zu}; i < physics_context.bodies.size(); ++i)
             {
                 if (o.id == physics_context.bodies[i].id)
@@ -320,7 +320,6 @@ void render_imgui_windows(EngineContext& engine_context)
                     break;
                 }
             }
-            RigidBody& rb = physics_context.bodies[physics_index];
 
             switch (*scene_context.selected_type)
             {
@@ -344,15 +343,26 @@ void render_imgui_windows(EngineContext& engine_context)
             ImGui::Separator();
 
             ImGui::ColorEdit3("Color", &o.color.x);
-            ImGui::DragFloat3("Position", &rb.position.x, 0.01f);
-            // ImGui::DragFloat3("Rotation (deg)", &o.transform.rotation_deg.x, 0.25f);
-            // ImGui::DragFloat3("Scale", &o.transform.scale.x, 0.01f, 0.001f, 1000.0f);
-            ImGui::Text(
-                "Velocity (%.2f,%.2f,%.2f)",
-                static_cast<double>(rb.velocity.x),
-                static_cast<double>(rb.velocity.y),
-                static_cast<double>(rb.velocity.z)
-            );
+
+            if (physics_index)
+            {
+                RigidBody& rb = physics_context.bodies[*physics_index];
+                ImGui::DragFloat3("Position", &rb.position.x, 0.01f);
+                // ImGui::DragFloat3("Rotation (deg)", &o.transform.rotation_deg.x, 0.25f);
+                // ImGui::DragFloat3("Scale", &o.transform.scale.x, 0.01f, 0.001f, 1000.0f);
+                ImGui::Text(
+                    "Velocity (%.2f,%.2f,%.2f)",
+                    static_cast<double>(rb.velocity.x),
+                    static_cast<double>(rb.velocity.y),
+                    static_cast<double>(rb.velocity.z)
+                );
+            }
+            else
+            {  // Non-physical object
+                ImGui::DragFloat3("Position", &o.transform.position.x, 0.01f);
+                ImGui::DragFloat3("Rotation (deg)", &o.transform.rotation_deg.x, 0.25f);
+                ImGui::DragFloat3("Scale", &o.transform.scale.x, 0.01f, 0.001f, 1000.0f);
+            }
 
             o.transform.scale.x = std::max(o.transform.scale.x, 0.001f);
             o.transform.scale.y = std::max(o.transform.scale.y, 0.001f);

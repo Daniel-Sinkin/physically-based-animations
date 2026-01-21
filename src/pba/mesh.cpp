@@ -1,6 +1,7 @@
 // pba/mesh.cpp
 #include "pba/gl_types.hpp"
 #include "pba/pch.hpp"  // IWYU pragma: keep
+#include "pba/render_context.hpp"
 //
 #include "pba/mesh.hpp"
 //
@@ -324,8 +325,13 @@ GLMesh create_cylinder_mesh(int n_segments, f32 radius, f32 height)
     return mesh;
 }
 
-GLMesh create_grid_mesh(int n_lines_per_side, f32 spacing, f32 axis_alpha, f32 minor_alpha)
+GLMesh create_grid_mesh(GridSettings grid)
 {
+    const auto n_lines_per_side = grid.n_lines_per_side;
+    const auto spacing = grid.spacing;
+    const auto axis_alpha = grid.axis_alpha;
+    const auto minor_alpha = grid.minor_alpha;
+
     struct V
     {
         f32 px, py, pz;

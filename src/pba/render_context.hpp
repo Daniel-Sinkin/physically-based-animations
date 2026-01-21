@@ -82,6 +82,9 @@ struct RenderContext
     void step();
     bool setup();
 
+    bool create_programs();
+    bool create_meshes();
+
     bool is_active() const;
     void deactivate() noexcept
     {

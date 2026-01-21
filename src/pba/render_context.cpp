@@ -400,22 +400,24 @@ void ds_pba::RenderContext::step()
                             }
                         }
                     }
-                    if (!found && rc.object_type == ObjectType::Hitmarker)
-                    {
-                        for (usize i{0zu}; i < scene_context->hitmarker_objects.size(); ++i)
+                    if constexpr (false)
+                    {  // Selection for Hitmarker is disabled
+                        if (!found && rc.object_type == ObjectType::Hitmarker)
                         {
-                            const Object& obj = scene_context->hitmarker_objects[i];
-                            if (obj.id == rc.object_id)
+                            for (usize i{0zu}; i < scene_context->hitmarker_objects.size(); ++i)
                             {
-                                scene_context->selected_index = i;
-                                scene_context->selected_type = ObjectType::Sphere;
-                                ui_log(std::format("Selected Hitmarker [id={}]", obj.id));
-                                found = true;
-                                break;
+                                const Object& obj = scene_context->hitmarker_objects[i];
+                                if (obj.id == rc.object_id)
+                                {
+                                    scene_context->selected_index = i;
+                                    scene_context->selected_type = ObjectType::Hitmarker;
+                                    ui_log(std::format("Selected Hitmarker [id={}]", obj.id));
+                                    found = true;
+                                    break;
+                                }
                             }
                         }
                     }
-                    assert(found);
                 }
                 if (spawning)
                 {
@@ -462,6 +464,75 @@ void ds_pba::RenderContext::step()
 
     glfwSwapBuffers(window);
     ++frame_counter;
+}
+
+bool ds_pba::RenderContext::create_programs()
+{
+    auto grid_prog_res = create_program_from_file("grid");
+    if (!grid_prog_res)
+    {
+        std::println(
+            stderr,
+            "Failed to load 'grid' shaders, got error code: {}",
+            static_cast<int>(grid_prog_res.error())
+        );
+        return false;
+    }
+    grid_prog = *grid_prog_res;
+
+    auto obj_prog_res = create_program_from_file("object");
+    if (!obj_prog_res)
+    {
+        std::println(
+            stderr,
+            "Failed to load 'object' shaders, got error code: {}",
+            static_cast<int>(obj_prog_res.error())
+        );
+        return false;
+    }
+    obj_prog = *obj_prog_res;
+
+    auto outline_prog_res = create_program_from_file("outline");
+    if (!outline_prog_res)
+    {
+        std::println(
+            stderr,
+            "Failed to load 'outline' shaders, got error code: {}",
+            static_cast<int>(outline_prog_res.error())
+        );
+        return false;
+    }
+    outline_prog = *outline_prog_res;
+
+    if (!grid_prog.valid() || !obj_prog.valid() || !outline_prog.valid())
+    {
+        std::println(stderr, "Failed to create shader programs");
+        return false;
+    }
+
+    return true;
+}
+
+bool ds_pba::RenderContext::create_meshes()
+{
+    cube_mesh = create_cube_mesh();
+    sphere_mesh = create_sphere_mesh(32, 24, 1.0f);
+    grid_mesh = create_grid_mesh(grid);
+
+    {
+        auto mesh_res = ds_pba::load_gltf_mesh(
+            "assets/models/marble_bust_01/marble_bust_01_4k.gltf", ds_pba::AxisFix::RotX90_Z180
+        );
+        if (!mesh_res)
+        {
+            std::println(
+                stderr, "Failed to load glTF mesh: {}", static_cast<int>(mesh_res.error())
+            );
+            return false;
+        }
+        marble_bust_mesh = *mesh_res;
+    }
+    return true;
 }
 
 bool ds_pba::RenderContext::setup()
@@ -558,67 +629,14 @@ bool ds_pba::RenderContext::setup()
     glEnable(GL_STENCIL_TEST);
     glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
-    auto grid_prog_res = create_program_from_file("grid");
-    if (!grid_prog_res)
+    if (!create_programs())
     {
-        std::println(
-            stderr,
-            "Failed to load 'grid' shaders, got error code: {}",
-            static_cast<int>(grid_prog_res.error())
-        );
         return false;
     }
-    grid_prog = *grid_prog_res;
-
-    auto obj_prog_res = create_program_from_file("object");
-    if (!obj_prog_res)
+    if (!create_meshes())
     {
-        std::println(
-            stderr,
-            "Failed to load 'object' shaders, got error code: {}",
-            static_cast<int>(obj_prog_res.error())
-        );
         return false;
     }
-    obj_prog = *obj_prog_res;
-
-    auto outline_prog_res = create_program_from_file("outline");
-    if (!outline_prog_res)
-    {
-        std::println(
-            stderr,
-            "Failed to load 'outline' shaders, got error code: {}",
-            static_cast<int>(outline_prog_res.error())
-        );
-        return false;
-    }
-    outline_prog = *outline_prog_res;
-
-    if (!grid_prog.valid() || !obj_prog.valid() || !outline_prog.valid())
-    {
-        std::println(stderr, "Failed to create shader programs");
-        return false;
-    }
-
-    cube_mesh = create_cube_mesh();
-    sphere_mesh = create_sphere_mesh(32, 24, 1.0f);
-    grid_mesh =
-        create_grid_mesh(grid.n_lines_per_side, grid.spacing, grid.axis_alpha, grid.minor_alpha);
-
-    {
-        auto mesh_res = ds_pba::load_gltf_mesh(
-            "assets/models/marble_bust_01/marble_bust_01_4k.gltf", ds_pba::AxisFix::RotX90_Z180
-        );
-        if (!mesh_res)
-        {
-            std::println(
-                stderr, "Failed to load glTF mesh: {}", static_cast<int>(mesh_res.error())
-            );
-            return false;
-        }
-        marble_bust_mesh = *mesh_res;
-    }
-
     last_scene_poll = std::chrono::steady_clock::now();
 
     return true;
