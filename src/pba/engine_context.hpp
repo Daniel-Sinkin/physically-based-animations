@@ -6,6 +6,7 @@
 #include "pba/render_context.hpp"
 #include "pba/scene_context.hpp"
 #include "pba/scene_types.hpp"
+#include "pba/util/scope_timer.hpp"
 
 #include <unordered_map>
 
@@ -94,6 +95,7 @@ struct EngineContext
 
     bool setup()
     {
+        util::ScopeTimer timer{"Engine setup"};
         {
             add_ground();
 

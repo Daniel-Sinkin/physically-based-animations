@@ -169,7 +169,6 @@ void ds_pba::RenderContext::step()
                     VAO::unbind();
                 }
 
-                if constexpr (false)
                 {  // Spheres
                     sphere_mesh.vao.bind();
                     for (usize i{0zu}; i < scene_context->sphere_objects.size(); ++i)
