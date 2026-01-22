@@ -1,4 +1,4 @@
-// pba/shutdown.hpp
+// pba/util/shutdown.hpp
 #pragma once
 
 #include <atomic>

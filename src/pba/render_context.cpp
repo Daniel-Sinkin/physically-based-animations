@@ -13,9 +13,9 @@
 #include "pba/raycast.hpp"
 #include "pba/scene_context.hpp"
 #include "pba/scene_types.hpp"
-#include "pba/shutdown.hpp"
 #include "pba/ui.hpp"
 #include "pba/util/scope_timer.hpp"
+#include "pba/util/shutdown.hpp"
 
 #include <json.hpp>
 #include <print>
@@ -536,9 +536,7 @@ bool ds_pba::RenderContext::create_meshes()
     grid_mesh = create_grid_mesh(grid);
 
     {
-        auto mesh_res = ds_pba::load_gltf_mesh(
-            "assets/models/marble_bust_01/marble_bust_01_4k.gltf", ds_pba::AxisFix::RotX90_Z180
-        );
+        auto mesh_res = ds_pba::load_model_mesh("marble_bust_01");
         if (!mesh_res)
         {
             std::println(

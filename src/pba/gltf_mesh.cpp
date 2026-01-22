@@ -3,6 +3,7 @@
 
 #include "pba/core_types.hpp"
 #include "pba/gl_types.hpp"
+#include "pba/model_config.hpp"
 #include "pba/pch.hpp"  // IWYU pragma: keep
 #include "pba/util/scope_timer.hpp"
 
@@ -13,6 +14,53 @@ namespace ds_pba
 {
 namespace
 {
+static std::optional<std::filesystem::path>
+find_model_gltf_file(const std::filesystem::path& model_dir)
+{
+    if (!std::filesystem::exists(model_dir) || !std::filesystem::is_directory(model_dir))
+    {
+        return std::nullopt;
+    }
+
+    std::vector<std::filesystem::path> glb{};
+    std::vector<std::filesystem::path> gltf{};
+
+    for (const auto& e : std::filesystem::directory_iterator(model_dir))
+    {
+        if (!e.is_regular_file())
+        {
+            continue;
+        }
+
+        const auto p = e.path();
+        const auto ext = p.extension().string();
+        if (ext == ".glb")
+        {
+            glb.push_back(p);
+        }
+        else if (ext == ".gltf")
+        {
+            gltf.push_back(p);
+        }
+    }
+
+    auto pick = [](std::vector<std::filesystem::path>& v) -> std::optional<std::filesystem::path>
+    {
+        if (v.empty())
+        {
+            return std::nullopt;
+        }
+        std::sort(v.begin(), v.end());
+        return v.front();
+    };
+
+    if (auto p = pick(glb))
+    {
+        return p;
+    }
+    return pick(gltf);
+}
+
 struct V
 {
     f32 px, py, pz;  // position
@@ -150,83 +198,21 @@ static bool validate_vec3_f32(const tinygltf::Accessor& a)
     return (a.type == TINYGLTF_TYPE_VEC3 && a.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
 }
 
-static glm::mat3 axis_fix_matrix(AxisFix fix) noexcept
+static glm::mat4 preprocess_matrix(const Transform& t) noexcept
 {
-    using AF = AxisFix;
-    using glm::mat3;
-    using glm::vec3;
-
-    const f32 c0 = 0.0f;
-    const f32 c1 = 1.0f;
-    const f32 cn = -1.0f;
-
-    const auto Rx90 = [&]() -> mat3
-    { return mat3(vec3(c1, c0, c0), vec3(c0, c0, c1), vec3(c0, cn, c0)); };
-    const auto Rx180 = [&]() -> mat3
-    { return mat3(vec3(c1, c0, c0), vec3(c0, cn, c0), vec3(c0, c0, cn)); };
-    const auto Rx270 = [&]() -> mat3
-    { return mat3(vec3(c1, c0, c0), vec3(c0, c0, cn), vec3(c0, c1, c0)); };
-
-    const auto Ry90 = [&]() -> mat3
-    { return mat3(vec3(c0, c0, cn), vec3(c0, c1, c0), vec3(c1, c0, c0)); };
-    const auto Ry180 = [&]() -> mat3
-    { return mat3(vec3(cn, c0, c0), vec3(c0, c1, c0), vec3(c0, c0, cn)); };
-    const auto Ry270 = [&]() -> mat3
-    { return mat3(vec3(c0, c0, c1), vec3(c0, c1, c0), vec3(cn, c0, c0)); };
-
-    const auto Rz90 = [&]() -> mat3
-    { return mat3(vec3(c0, c1, c0), vec3(cn, c0, c0), vec3(c0, c0, c1)); };
-    const auto Rz180 = [&]() -> mat3
-    { return mat3(vec3(cn, c0, c0), vec3(c0, cn, c0), vec3(c0, c0, c1)); };
-    const auto Rz270 = [&]() -> mat3
-    { return mat3(vec3(c0, cn, c0), vec3(c1, c0, c0), vec3(c0, c0, c1)); };
-
-    // clang-format off
-    switch (fix)
-    {
-        case AF::None:        return mat3(1.0f);
-
-        case AF::RotX90:      return Rx90();
-        case AF::RotX180:     return Rx180();
-        case AF::RotX270:     return Rx270();
-
-        case AF::RotY90:      return Ry90();
-        case AF::RotY180:     return Ry180();
-        case AF::RotY270:     return Ry270();
-
-        case AF::RotZ90:      return Rz90();
-        case AF::RotZ180:     return Rz180();
-        case AF::RotZ270:     return Rz270();
-
-        case AF::RotX90_Z90:   return Rz90()  * Rx90();
-        case AF::RotX90_Z180:  return Rz180() * Rx90();
-        case AF::RotX90_Z270:  return Rz270() * Rx90();
-
-        case AF::RotX180_Z90:  return Rz90()  * Rx180();
-        case AF::RotX180_Z270: return Rz270() * Rx180();
-
-        case AF::RotX270_Z90:  return Rz90()  * Rx270();
-        case AF::RotX270_Z180: return Rz180() * Rx270();
-        case AF::RotX270_Z270: return Rz270() * Rx270();
-
-        case AF::RotY90_Z180:  return Rz180() * Ry90();
-        case AF::RotY270_Z180: return Rz180() * Ry270();
-
-        case AF::RotZ90_X90:   return Rx90()  * Rz90();
-        case AF::RotZ90_X270:  return Rx270() * Rz90();
-        case AF::RotZ270_X90:  return Rx90()  * Rz270();
-        case AF::RotZ270_X270: return Rx270() * Rz270();
-
-        case AF::FlipX: return mat3(vec3(cn, c0, c0), vec3(c0, c1, c0), vec3(c0, c0, c1));
-        case AF::FlipY: return mat3(vec3(c1, c0, c0), vec3(c0, cn, c0), vec3(c0, c0, c1));
-        case AF::FlipZ: return mat3(vec3(c1, c0, c0), vec3(c0, c1, c0), vec3(c0, c0, cn));
-    }
-    // clang-format on
+    glm::mat4 M(1.0f);
+    M = glm::translate(M, t.position);
+    M = glm::rotate(M, glm::radians(t.rotation_deg.z), glm::vec3(0, 0, 1));
+    M = glm::rotate(M, glm::radians(t.rotation_deg.y), glm::vec3(0, 1, 0));
+    M = glm::rotate(M, glm::radians(t.rotation_deg.x), glm::vec3(1, 0, 0));
+    M = glm::scale(M, t.scale);
+    return M;
 }
 
 }  // namespace
 
-std::expected<GLMesh, GltfLoadError> load_gltf_mesh(const std::string& path, AxisFix fix)
+std::expected<GLMesh, GltfLoadError>
+load_gltf_mesh(const std::string& path, const Transform& preprocess)
 {
     util::ScopeTimer timer{path};
     tinygltf::Model model;
@@ -244,7 +230,7 @@ std::expected<GLMesh, GltfLoadError> load_gltf_mesh(const std::string& path, Axi
         {
             if (!path.ends_with(".gltf"))
             {
-                std::println("[Warning] Loading file which does not end on glb of gltf: {}", path);
+                std::println("[Warning] Loading file which does not end on glb or gltf: {}", path);
             }
             res = loader.LoadASCIIFromFile(&model, &err, &warn, path);
         }
@@ -309,6 +295,7 @@ std::expected<GLMesh, GltfLoadError> load_gltf_mesh(const std::string& path, Axi
     {
         return std::unexpected(GltfLoadError::UnsupportedAccessorType);
     }
+
     int buffer_view_i{pos_accessor.bufferView};
     if (buffer_view_i < 0)
     {
@@ -378,19 +365,25 @@ std::expected<GLMesh, GltfLoadError> load_gltf_mesh(const std::string& path, Axi
     }
     const std::vector<u32>& idx = *idx_res;
 
-    const glm::mat3 preprocessing = axis_fix_matrix(fix);
+    const glm::mat4 P = preprocess_matrix(preprocess);
+    const glm::mat3 N = glm::transpose(glm::inverse(glm::mat3(P)));
+
+    auto apply_pos = [&](const glm::vec3& p) -> glm::vec3
+    { return glm::vec3(P * glm::vec4(p, 1.0f)); };
+
+    auto apply_nrm = [&](const glm::vec3& n) -> glm::vec3 { return safe_normalize(N * n); };
 
     auto read_pos = [&](u32 i) -> glm::vec3
     {
         const glm::vec3 p = read_vec3_f32_strided(pos_base, pos_stride, static_cast<usize>(i));
-        return preprocessing * p;
+        return apply_pos(p);
     };
 
     auto read_nrm = [&](u32 i) -> glm::vec3
     {
         const glm::vec3 n =
             safe_normalize(read_vec3_f32_strided(nrm_base, nrm_stride, static_cast<usize>(i)));
-        return safe_normalize(preprocessing * n);
+        return apply_nrm(n);
     };
 
     std::vector<V> verts;
@@ -433,9 +426,13 @@ std::expected<GLMesh, GltfLoadError> load_gltf_mesh(const std::string& path, Axi
             }
             else
             {
-                verts.emplace_back(p0.x, p0.y, p0.z);
-                verts.emplace_back(p1.x, p1.y, p1.z);
-                verts.emplace_back(p2.x, p2.y, p2.z);
+                const glm::vec3 fn = face_normal(p0, p1, p2);
+                auto emit = [&](const glm::vec3& p, const glm::vec3& n)
+                { verts.emplace_back(p.x, p.y, p.z, n.x, n.y, n.z); };
+
+                emit(p0, fn);
+                emit(p1, fn);
+                emit(p2, fn);
             }
         }
     }
@@ -497,4 +494,31 @@ std::expected<GLMesh, GltfLoadError> load_gltf_mesh(const std::string& path, Axi
 
     return out;
 }
+
+std::expected<GLMesh, GltfLoadError> load_model_mesh(const std::string& model_name)
+{
+    const std::filesystem::path model_dir = std::filesystem::path("assets/models") / model_name;
+
+    auto cfg_res = load_or_create_model_config(model_dir);
+    if (!cfg_res)
+    {
+        std::println(
+            stderr,
+            "Model config error for '{}': {}",
+            model_name,
+            std::to_underlying(cfg_res.error())
+        );
+        return std::unexpected(GltfLoadError::ParseError);
+    }
+
+    auto file_res = find_model_gltf_file(model_dir);
+    if (!file_res)
+    {
+        std::println(stderr, "Model file error for '{}'", model_name);
+        return std::unexpected(GltfLoadError::ParseError);
+    }
+    const std::string path = file_res->string();
+    return load_gltf_mesh(path, cfg_res->transform);
+}
+
 }  // namespace ds_pba

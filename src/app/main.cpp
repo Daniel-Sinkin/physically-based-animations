@@ -2,8 +2,8 @@
 #include "pba/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/engine_context.hpp"
-#include "pba/shutdown.hpp"
 #include "pba/util/scope_timer.hpp"
+#include "pba/util/shutdown.hpp"
 
 namespace
 {

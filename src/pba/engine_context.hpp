@@ -119,11 +119,6 @@ struct EngineContext
                 Object{
                     .id = next_object_id(),
                     .type = ObjectType::Sphere,
-                    .transform = {
-                        .position = {2.89f, 3.14f, 0.74f},
-                        .rotation_deg = {23.5f, 0.0f, -34.5f},
-                        .scale = {5.0f, 5.0f, 5.0f},
-                    }
                 }
             );
         }
@@ -134,7 +129,7 @@ struct EngineContext
             renderer->engine_context = this;
             return renderer->setup();
         }
-    }
+    }  // namespace ds_pba
 
     void run()
     {
@@ -157,4 +152,5 @@ struct EngineContext
         }
     }
 };
+
 }  // namespace ds_pba
