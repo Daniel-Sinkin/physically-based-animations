@@ -18,12 +18,10 @@ std::optional<Raycast> raycast(const SceneContext& scene_context, const Ray& ray
 
     for (usize i{0zu}; i < scene_context.cube_objects.size(); ++i)
     {
-        const Object& o = scene_context.cube_objects[i];
-        const auto M = o.transform.model_matrix();
-
-        if (auto res = intersect_ray_cube(ray, M))
+        const Object& o{scene_context.cube_objects[i]};
+        if (auto res = intersect_ray_cube(ray, o.transform.model_matrix()))
         {
-            const f32 t = *res;
+            f32 t = *res;
             if (t < best_t)
             {
                 best_t = t;
@@ -40,7 +38,7 @@ std::optional<Raycast> raycast(const SceneContext& scene_context, const Ray& ray
 
         if (auto res = intersect_ray_sphere(ray, M))
         {
-            const f32 t = *res;
+            f32 t = *res;
             if (t < best_t)
             {
                 best_t = t;
@@ -75,32 +73,34 @@ Ray ray_from_mouse(
     const ProjMatrix& camera_proj_matrix
 )
 {
-    int window_width = 1, window_height = 1;
-    int framebuffer_width = 1, framebuffer_height = 1;
+    int window_width{0};
+    int window_height{0};
+    int framebuffer_width{0};
+    int framebuffer_height{0};
     glfwGetWindowSize(window, &window_width, &window_height);
     glfwGetFramebufferSize(window, &framebuffer_width, &framebuffer_height);
 
-    float window_width_f = static_cast<f32>(window_width);
-    float window_height_f = static_cast<f32>(window_height);
-    float framebuffer_width_f = static_cast<f32>(framebuffer_width);
-    float framebuffer_height_f = static_cast<f32>(framebuffer_height);
+    const auto window_width_f = static_cast<f32>(window_width);
+    const auto window_height_f = static_cast<f32>(window_height);
+    const auto framebuffer_width_f = static_cast<f32>(framebuffer_width);
+    const auto framebuffer_height_f = static_cast<f32>(framebuffer_height);
 
-    const f32 sx = (window_width_f > 0) ? (framebuffer_width_f / window_width_f) : 1.0f;
-    const f32 sy = (window_height_f > 0) ? (framebuffer_height_f / window_height_f) : 1.0f;
+    const f32 sx{(window_width_f > 0) ? (framebuffer_width_f / window_width_f) : 1.0f};
+    const f32 sy{(window_height_f > 0) ? (framebuffer_height_f / window_height_f) : 1.0f};
 
-    const f32 mx = static_cast<f32>(mouse_x) * sx;
-    const f32 my = static_cast<f32>(mouse_y) * sy;
+    const auto mx = static_cast<f32>(mouse_x) * sx;
+    const auto my = static_cast<f32>(mouse_y) * sy;
 
-    const f32 x_ndc = (framebuffer_width_f > 0) ? (2.0f * mx / framebuffer_width_f - 1.0f) : 0.0f;
-    const f32 y_ndc = (framebuffer_height_f > 0) ? (1.0f - 2.0f * my / framebuffer_height_f) : 0.0f;
+    const f32 x_ndc{(framebuffer_width_f > 0) ? (2.0f * mx / framebuffer_width_f - 1.0f) : 0.0f};
+    const f32 y_ndc{(framebuffer_height_f > 0) ? (1.0f - 2.0f * my / framebuffer_height_f) : 0.0f};
 
-    const glm::mat4 invPV = glm::inverse(camera_proj_matrix * camera_view_matrix);
+    const glm::mat4 invPV{glm::inverse(camera_proj_matrix * camera_view_matrix)};
 
-    glm::vec4 near_ndc(x_ndc, y_ndc, -1.0f, 1.0f);
-    glm::vec4 far_ndc(x_ndc, y_ndc, 1.0f, 1.0f);
+    const glm::vec4 near_ndc{x_ndc, y_ndc, -1.0f, 1.0f};
+    const glm::vec4 far_ndc{x_ndc, y_ndc, 1.0f, 1.0f};
 
-    glm::vec4 near_w = invPV * near_ndc;
-    glm::vec4 far_w = invPV * far_ndc;
+    glm::vec4 near_w{invPV * near_ndc};
+    glm::vec4 far_w{invPV * far_ndc};
     near_w /= near_w.w;
     far_w /= far_w.w;
 
@@ -118,16 +118,16 @@ Ray ray_from_imgui_rect(
     const ProjMatrix& camera_proj_matrix
 )
 {
-    const float lx = mouse_pos.x - rect_pos.x;
-    const float ly = mouse_pos.y - rect_pos.y;
+    const f32 lx{mouse_pos.x - rect_pos.x};
+    const f32 ly{mouse_pos.y - rect_pos.y};
 
-    const float w = std::max(1.0f, rect_size.x);
-    const float h = std::max(1.0f, rect_size.y);
+    const f32 w{std::max(1.0f, rect_size.x)};
+    f32 h{std::max(1.0f, rect_size.y)};
 
-    const float x_ndc = 2.0f * (lx / w) - 1.0f;
-    const float y_ndc = 1.0f - 2.0f * (ly / h);
+    const f32 x_ndc{2.0f * (lx / w) - 1.0f};
+    const f32 y_ndc{1.0f - 2.0f * (ly / h)};
 
-    const glm::mat4 invPV = glm::inverse(camera_proj_matrix * camera_view_matrix);
+    const glm::mat4 invPV{glm::inverse(camera_proj_matrix * camera_view_matrix)};
 
     glm::vec4 near_ndc(x_ndc, y_ndc, -1.0f, 1.0f);
     glm::vec4 far_ndc(x_ndc, y_ndc, 1.0f, 1.0f);
@@ -204,14 +204,14 @@ std::optional<f32> intersect_ray_ground(const Ray& ray)
 std::optional<f32> intersect_ray_cube(const Ray& ray_world, const ModelMatrix& model)
 {
     const glm::mat4 invM = glm::inverse(model);
-
     const glm::vec3 oL = glm::vec3(invM * glm::vec4(ray_world.origin, 1.0f));
     const glm::vec3 dL = glm::vec3(invM * glm::vec4(ray_world.dir, 0.0f));
 
-    const glm::vec3 bmin(-0.5f), bmax(0.5f);
+    const glm::vec3 bmin{-0.5f};
+    const glm::vec3 bmax{0.5f};
 
-    f32 tmin = -1e30f;
-    f32 tmax = 1e30f;
+    f32 tmin{-1e30f};
+    f32 tmax{1e30f};
 
     auto slab = [&](f32 o, f32 d, f32 mn, f32 mx) -> bool
     {

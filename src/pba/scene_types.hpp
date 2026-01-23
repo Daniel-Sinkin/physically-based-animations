@@ -1,6 +1,7 @@
 // pba/scene_types.hpp
 #pragma once
 
+#include "glm/ext/matrix_transform.hpp"
 #include "pba/core_types.hpp"  // IWYU pragma: keep
 #include "pba/math_types.hpp"
 
@@ -20,7 +21,7 @@ struct Transform
 
     [[nodiscard]] ModelMatrix model_matrix() const
     {
-        ModelMatrix M(1.0f);
+        auto M{glm::identity<ModelMatrix>()};
         M = glm::translate(M, position);
         M = glm::rotate(M, glm::radians(rotation_deg.z), glm::vec3(0, 0, 1));
         M = glm::rotate(M, glm::radians(rotation_deg.y), glm::vec3(0, 1, 0));

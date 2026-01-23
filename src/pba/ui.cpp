@@ -6,6 +6,8 @@
 //
 #include "pba/engine_context.hpp"
 
+#include <exception>
+
 namespace ds_pba
 {
 namespace
@@ -111,95 +113,76 @@ void ui_log(std::string_view msg)
 
 void apply_blender_style()
 {
+
     ImGui::StyleColorsDark();
 
-    ImGuiStyle& style = ImGui::GetStyle();
-    ImVec4* c = style.Colors;
+    ImGuiStyle& style{ImGui::GetStyle()};
+    ImVec4* c{style.Colors};
 
-    const ImVec4 text = rgba_u32(0xE6E6E6FF);
-    const ImVec4 text_disabled = rgba_u32(0xA6A6A6FF);
+    // clang-format off
+    struct ColorAssign
+    {
+        ImGuiCol slot;
+        u32      rgba;
+    };
 
-    const ImVec4 bg_window = rgba_u32(0x353535FF);
-    const ImVec4 bg_child = rgba_u32(0x333333FF);
-    const ImVec4 bg_popup = rgba_u32(0x252525FF);
+    constexpr ColorAssign palette[] = {
+        { ImGuiCol_Text,                  0xE6E6E6FF },
+        { ImGuiCol_TextDisabled,          0xA6A6A6FF },
 
-    const ImVec4 border = rgba_u32(0x232323FF);
+        { ImGuiCol_WindowBg,              0x353535FF },
+        { ImGuiCol_ChildBg,               0x333333FF },
+        { ImGuiCol_PopupBg,               0x252525FF },
 
-    const ImVec4 frame_bg = rgba_u32(0x282828FF);
-    const ImVec4 frame_bg_hover = rgba_u32(0x3A3A3AFF);
-    const ImVec4 frame_bg_active = rgba_u32(0x424242FF);
+        { ImGuiCol_Border,                0x232323FF },
+        { ImGuiCol_BorderShadow,          0x00000000 },
 
-    const ImVec4 title_bg = rgba_u32(0x232323FF);
-    const ImVec4 title_bg_active = rgba_u32(0x2B2B2BFF);
+        { ImGuiCol_FrameBg,               0x282828FF },
+        { ImGuiCol_FrameBgHovered,        0x3A3A3AFF },
+        { ImGuiCol_FrameBgActive,         0x424242FF },
 
-    const ImVec4 menubar_bg = rgba_u32(0x2E2E2EFF);
+        { ImGuiCol_TitleBg,               0x232323FF },
+        { ImGuiCol_TitleBgActive,         0x2B2B2BFF },
+        { ImGuiCol_TitleBgCollapsed,      0x232323FF },
 
-    const ImVec4 button = rgba_u32(0x424242FF);
-    const ImVec4 button_hover = rgba_u32(0x4B4B4BFF);
-    const ImVec4 button_active = rgba_u32(0x3C3C3CFF);
+        { ImGuiCol_MenuBarBg,             0x2E2E2EFF },
 
-    const ImVec4 header_selected = rgba_u32(0x314E78FF);
-    const ImVec4 header_hover = rgba_u32(0x3A3A3AFF);
-    const ImVec4 header_active = rgba_u32(0x2E3F58FF);
+        { ImGuiCol_Button,                0x424242FF },
+        { ImGuiCol_ButtonHovered,         0x4B4B4BFF },
+        { ImGuiCol_ButtonActive,          0x3C3C3CFF },
 
-    const ImVec4 tab_active = rgba_u32(0x4B4B4BFF);
-    const ImVec4 tab_inactive = rgba_u32(0x2B2B2BFF);
-    const ImVec4 tab_hover = rgba_u32(0x3A3A3AFF);
+        { ImGuiCol_Header,                0x314E78FF },
+        { ImGuiCol_HeaderHovered,         0x3A3A3AFF },
+        { ImGuiCol_HeaderActive,          0x2E3F58FF },
 
-    const ImVec4 table_row_bg = rgba_u32(0x282828FF);
-    const ImVec4 table_row_bg_alt = rgba_u32(0x2E2E2EFF);
+        { ImGuiCol_Separator,             0x2A2A2AFF },
+        { ImGuiCol_SeparatorHovered,      0x3A3A3AFF },
+        { ImGuiCol_SeparatorActive,       0x4B4B4BFF },
 
-    const ImVec4 accent_orange = rgba_u32(0xFF8500FF);
+        { ImGuiCol_Tab,                   0x2B2B2BFF },
+        { ImGuiCol_TabHovered,            0x3A3A3AFF },
+        { ImGuiCol_TabActive,             0x4B4B4BFF },
+        { ImGuiCol_TabUnfocused,          0x2B2B2BFF },
+        { ImGuiCol_TabUnfocusedActive,    0x4B4B4BFF },
 
-    c[ImGuiCol_Text] = text;
-    c[ImGuiCol_TextDisabled] = text_disabled;
+        { ImGuiCol_ScrollbarBg,           0x1E1E1EFF },
+        { ImGuiCol_ScrollbarGrab,         0x4B4B4BFF },
+        { ImGuiCol_ScrollbarGrabHovered,  0x5A5A5AFF },
+        { ImGuiCol_ScrollbarGrabActive,   0x6A6A6AFF },
 
-    c[ImGuiCol_WindowBg] = bg_window;
-    c[ImGuiCol_ChildBg] = bg_child;
-    c[ImGuiCol_PopupBg] = bg_popup;
+        { ImGuiCol_CheckMark,             0xFF8500FF },
+        { ImGuiCol_SliderGrab,            0xFF8500FF },
+        { ImGuiCol_SliderGrabActive,      0xE96A00FF },
 
-    c[ImGuiCol_Border] = border;
-    c[ImGuiCol_BorderShadow] = rgba_u32(0x00000000);
+        { ImGuiCol_TableRowBg,            0x282828FF },
+        { ImGuiCol_TableRowBgAlt,         0x2E2E2EFF },
+    };
+    // clang-format on
 
-    c[ImGuiCol_FrameBg] = frame_bg;
-    c[ImGuiCol_FrameBgHovered] = frame_bg_hover;
-    c[ImGuiCol_FrameBgActive] = frame_bg_active;
-
-    c[ImGuiCol_TitleBg] = title_bg;
-    c[ImGuiCol_TitleBgActive] = title_bg_active;
-    c[ImGuiCol_TitleBgCollapsed] = title_bg;
-
-    c[ImGuiCol_MenuBarBg] = menubar_bg;
-
-    c[ImGuiCol_Button] = button;
-    c[ImGuiCol_ButtonHovered] = button_hover;
-    c[ImGuiCol_ButtonActive] = button_active;
-
-    c[ImGuiCol_Header] = header_selected;
-    c[ImGuiCol_HeaderHovered] = header_hover;
-    c[ImGuiCol_HeaderActive] = header_active;
-
-    c[ImGuiCol_Separator] = rgba_u32(0x2A2A2AFF);
-    c[ImGuiCol_SeparatorHovered] = rgba_u32(0x3A3A3AFF);
-    c[ImGuiCol_SeparatorActive] = rgba_u32(0x4B4B4BFF);
-
-    c[ImGuiCol_Tab] = tab_inactive;
-    c[ImGuiCol_TabHovered] = tab_hover;
-    c[ImGuiCol_TabActive] = tab_active;
-    c[ImGuiCol_TabUnfocused] = tab_inactive;
-    c[ImGuiCol_TabUnfocusedActive] = tab_active;
-
-    c[ImGuiCol_ScrollbarBg] = rgba_u32(0x1E1E1EFF);
-    c[ImGuiCol_ScrollbarGrab] = rgba_u32(0x4B4B4BFF);
-    c[ImGuiCol_ScrollbarGrabHovered] = rgba_u32(0x5A5A5AFF);
-    c[ImGuiCol_ScrollbarGrabActive] = rgba_u32(0x6A6A6AFF);
-
-    c[ImGuiCol_CheckMark] = accent_orange;
-    c[ImGuiCol_SliderGrab] = accent_orange;
-    c[ImGuiCol_SliderGrabActive] = rgba_u32(0xE96A00FF);
-
-    c[ImGuiCol_TableRowBg] = table_row_bg;
-    c[ImGuiCol_TableRowBgAlt] = table_row_bg_alt;
+    for (const auto& p : palette)
+    {
+        c[p.slot] = rgba_u32(p.rgba);
+    }
 
     style.WindowRounding = 0.0f;
     style.ChildRounding = 0.0f;
@@ -214,11 +197,11 @@ void apply_blender_style()
     style.PopupBorderSize = 1.0f;
     style.FrameBorderSize = 1.0f;
 
-    style.FramePadding = ImVec2(6.0f, 4.0f);
-    style.ItemSpacing = ImVec2(8.0f, 4.0f);
-    style.ItemInnerSpacing = ImVec2(6.0f, 4.0f);
+    style.FramePadding = ImVec2{6.0f, 4.0f};
+    style.ItemSpacing = ImVec2{8.0f, 4.0f};
+    style.ItemInnerSpacing = ImVec2{6.0f, 4.0f};
 
-    const ImGuiIO& io = ImGui::GetIO();
+    const ImGuiIO& io{ImGui::GetIO()};
     if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
     {
         style.WindowRounding = 0.0f;
@@ -273,8 +256,64 @@ void render_imgui_windows(EngineContext& engine_context)
     }
 
     {
+        auto apply_theme_with_font = [&](const ui_theme::UiTheme& t)
+        {
+            ui_theme::apply_theme(t);
+
+            ImGuiIO& io = ImGui::GetIO();
+            ImFont* chosen = render_context.default_font;
+
+            if (t.font_id)
+            {
+                if (auto it = render_context.fonts_by_id.find(*t.font_id);
+                    it != render_context.fonts_by_id.end())
+                {
+                    chosen = it->second;
+                }
+                else
+                {
+                    std::println(
+                        "[UI Theme] Font fallback: theme '{}' requested '{}', not found. Using "
+                        "default.",
+                        t.name,
+                        *t.font_id
+                    );
+                }
+            }
+
+            io.FontDefault = chosen;
+        };
+
         auto& grid = render_context.grid;
         ImGui::Begin("Render");
+        const auto& themes = render_context.theme_pack.themes;
+        if (render_context.theme_loaded && !themes.empty())
+        {
+            auto theme_name = themes[render_context.theme_index].name.c_str();
+            if (ImGui::BeginCombo("Theme", theme_name))
+            {
+                for (usize i{0zu}; i < render_context.theme_pack.themes.size(); ++i)
+                {
+                    const bool selected = (i == render_context.theme_index);
+                    if (ImGui::Selectable(
+                            render_context.theme_pack.themes[i].name.c_str(), selected
+                        ))
+                    {
+                        render_context.theme_index = i;
+                        apply_theme_with_font(render_context.theme_pack.themes[i]);
+                    }
+                    if (selected)
+                    {
+                        ImGui::SetItemDefaultFocus();
+                    }
+                }
+                ImGui::EndCombo();
+            }
+        }
+        else
+        {
+            ImGui::TextUnformatted("Theme: (not loaded)");
+        }
         ImGui::ColorEdit4("Background", render_context.background_color.data());
         ImGui::Separator();
         ImGui::Text("Grid");
@@ -487,8 +526,8 @@ void render_imgui_windows(EngineContext& engine_context)
 
                 ImGui::EndTable();
             }
-            ImGui::EndChild();
         }
+        ImGui::EndChild();
         ImGui::End();
     }
     render_terminal_window(render_context);

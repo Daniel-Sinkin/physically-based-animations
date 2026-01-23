@@ -39,9 +39,9 @@ struct Shader
         return id != 0;
     }
 
-    [[nodiscard]] static constexpr bool is_valid_type(ShaderType t) noexcept
+    [[nodiscard]] static constexpr bool is_valid_type(ShaderType type) noexcept
     {
-        switch (t)
+        switch (type)
         {
             case ShaderType::Vertex:
             case ShaderType::Fragment:
@@ -57,10 +57,7 @@ struct Shader
     static Shader create(ShaderType shader_type) noexcept
     {
         assert(is_valid_type(shader_type) && "Invalid ShaderType");
-        Shader s{};
-        s.type = shader_type;
-        s.id = glCreateShader(static_cast<GLenum>(shader_type));
-        return s;
+        return Shader{.id = glCreateShader(static_cast<GLenum>(shader_type)), .type = shader_type};
     }
 
     void compile(const std::string& source) const noexcept
@@ -74,7 +71,7 @@ struct Shader
 
     static Shader create_and_compile(ShaderType shader_type, const std::string& source) noexcept
     {
-        Shader shader = Shader::create(shader_type);
+        Shader shader{Shader::create(shader_type)};
         shader.compile(source);
         return shader;
     }
@@ -82,7 +79,7 @@ struct Shader
     [[nodiscard]] bool compiled_ok() const noexcept
     {
         assert(valid() && "Attempting to query invalid Shader (id == 0)");
-        GLint ok = 0;
+        GLint ok{GL_FALSE};
         glGetShaderiv(id, GL_COMPILE_STATUS, &ok);
         return ok == GL_TRUE;
     }

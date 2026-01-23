@@ -3,10 +3,10 @@
 
 #include "pba/core_types.hpp"
 #include "pba/gl_types.hpp"
+#include "pba/ui_theme.hpp"
 #include "pba/viewport_fbo.hpp"
 
 #include <chrono>
-//
 #include <glm/vec2.hpp>
 
 struct GLFWwindow;
@@ -19,16 +19,16 @@ struct EngineContext;
 
 struct GridSettings
 {
-    int n_lines_per_side = 30;
-    f32 spacing = 1.0f;
-    f32 fog_start = 12.0f;
-    f32 fog_end = 30.0f;
-    f32 minor_alpha = 0.35f;
-    f32 axis_alpha = 0.95f;
+    int n_lines_per_side{30};
+    f32 spacing{1.0f};
+    f32 fog_start{12.0f};
+    f32 fog_end{30.0f};
+    f32 minor_alpha{0.35f};
+    f32 axis_alpha{0.95f};
 };
 
-constexpr f32 zoom_speed = 0.12f;
-constexpr f32 sensitivity = 0.0050f;
+constexpr f32 zoom_speed{0.12f};
+constexpr f32 sensitivity{0.0050f};
 
 struct SceneContext;
 
@@ -49,6 +49,13 @@ struct RenderContext
     bool initialised_imgui{false};
 
     ColorRGBAf background_color{0.255f, 0.255f, 0.255f, 1.0f};
+
+    ui_theme::UiThemePack theme_pack{};
+    usize theme_index{0zu};
+    bool theme_loaded{false};
+
+    std::unordered_map<std::string, ImFont*> fonts_by_id{};
+    ImFont* default_font{};
 
     glm::vec2 viewport_img_pos{};
     glm::vec2 viewport_img_size{};
@@ -83,6 +90,9 @@ struct RenderContext
     GLMesh marble_bust_mesh{};
 
     GridSettings grid{};
+
+    void render_to_viewport();
+    void viewport_window();
 
     void step();
     bool setup();

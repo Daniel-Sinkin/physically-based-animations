@@ -13,11 +13,11 @@ namespace ds_pba
 
 struct ViewportFBO
 {
-    GLuint fbo = 0;
-    GLuint color_tex = 0;
-    GLuint depth_rbo = 0;
-    int width = 0;
-    int height = 0;
+    GLuint fbo{0};
+    GLuint color_tex{0};
+    GLuint depth_rbo{0};
+    int width{0};
+    int height{0};
 
     [[nodiscard]] f32 aspect_ratio() const noexcept
     {

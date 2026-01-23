@@ -5,6 +5,8 @@
 #include "pba/util/scope_timer.hpp"
 #include "pba/util/shutdown.hpp"
 
+#include <cstdlib>
+
 namespace
 {
 extern "C" void handle_term(int) noexcept

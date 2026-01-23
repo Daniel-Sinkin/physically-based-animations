@@ -2,7 +2,7 @@
 #include "pba/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/model_config.hpp"
-#include "pba/serialization.hpp"
+#include "pba/serialization.hpp"  // IWYU pragma: keep
 //
 
 #include <json.hpp>
@@ -91,7 +91,7 @@ load_or_create_model_config(const std::filesystem::path& model_dir)
     {
         ModelConfig cfg{};
         cfg.name = model_name;
-        cfg.transform = Transform{};  // defaults: pos=0 rot=0 scale=1
+        cfg.transform = Transform{};
 
         nlohmann::json j = cfg;
         auto wr = write_json_file(cfg_path, j);
@@ -111,10 +111,7 @@ load_or_create_model_config(const std::filesystem::path& model_dir)
     try
     {
         ModelConfig cfg = jr->get<ModelConfig>();
-
-        // Keep consistent with folder name (directory is source of truth)
         cfg.name = model_name;
-
         return cfg;
     }
     catch (...)

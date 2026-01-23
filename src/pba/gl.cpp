@@ -31,7 +31,7 @@ create_program(const std::string& vert_src, const std::string& frag_src)
     glDeleteShader(vs);
     glDeleteShader(fs);
 
-    GLint ok = 0;
+    GLint ok{0};
     glGetProgramiv(prog, GL_LINK_STATUS, &ok);
     if (!ok)
     {

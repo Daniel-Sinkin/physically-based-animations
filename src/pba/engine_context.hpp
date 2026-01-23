@@ -31,8 +31,8 @@ struct EngineContext
         obj_map.insert_or_assign(
             id,
             ObjectLink{
-                scene->cube_objects.size() - 1,
-                physics->bodies.size() - 1,
+                scene->cube_objects.size() - 1zu,
+                physics->bodies.size() - 1zu,
             }
         );
     }
@@ -103,9 +103,9 @@ struct EngineContext
             constexpr int n{1};
             constexpr f32 s{1.10f};
 
-            for (int y = 0; y < n; ++y)
+            for (int y{0}; y < n; ++y)
             {
-                for (int x = 0; x < n; ++x)
+                for (int x{0}; x < n; ++x)
                 {
                     const f32 px = (static_cast<f32>(x) - (n - 1) * 0.5f) * s;
                     const f32 py = (static_cast<f32>(y) - (n - 1) * 0.5f) * s;

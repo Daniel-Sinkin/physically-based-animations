@@ -67,27 +67,6 @@ struct V
     f32 nx, ny, nz;  // normals
 };
 
-class ScopedBufferBinding
-{
-  public:
-    explicit ScopedBufferBinding(GLMesh& mesh)
-    {
-        mesh.vao.bind();
-        mesh.vbo.bind();
-    }
-    ~ScopedBufferBinding()
-    {
-        VBO::unbind();
-        VAO::unbind();
-    }
-
-    ScopedBufferBinding(const ScopedBufferBinding&) = delete;
-    ScopedBufferBinding& operator=(const ScopedBufferBinding&) = delete;
-
-    ScopedBufferBinding(ScopedBufferBinding&&) = delete;
-    ScopedBufferBinding& operator=(ScopedBufferBinding&&) = delete;
-};
-
 static const std::byte* accessor_data_begin(
     const tinygltf::Model& model,
     const tinygltf::Accessor& accessor,
@@ -321,12 +300,12 @@ load_gltf_mesh(const std::string& path, const Transform& preprocess)
     const usize vertex_count = pos_accessor.count;
 
     bool has_normals{false};
-    const std::byte* nrm_base = nullptr;
-    usize nrm_stride = 0;
+    const std::byte* nrm_base{};
+    usize nrm_stride{0};
 
     if (auto it_n = prim.attributes.find("NORMAL"); it_n != prim.attributes.end())
     {
-        const int normal_idx_i = it_n->second;
+        const int normal_idx_i{it_n->second};
         if (normal_idx_i < 0)
         {
             std::println(stderr, "Malformed Normal Accessor, shouldn't be negative");
@@ -363,10 +342,10 @@ load_gltf_mesh(const std::string& path, const Transform& preprocess)
     {
         return std::unexpected(idx_res.error());
     }
-    const std::vector<u32>& idx = *idx_res;
+    const std::vector<u32>& idx{*idx_res};
 
-    const glm::mat4 P = preprocess_matrix(preprocess);
-    const glm::mat3 N = glm::transpose(glm::inverse(glm::mat3(P)));
+    const glm::mat4 P{preprocess_matrix(preprocess)};
+    const glm::mat3 N{glm::transpose(glm::inverse(glm::mat3(P)))};
 
     auto apply_pos = [&](const glm::vec3& p) -> glm::vec3
     { return glm::vec3(P * glm::vec4(p, 1.0f)); };
@@ -387,7 +366,6 @@ load_gltf_mesh(const std::string& path, const Transform& preprocess)
     };
 
     std::vector<V> verts;
-
     if (!idx.empty())
     {
         if ((idx.size() % 3u) != 0u)
@@ -399,9 +377,9 @@ load_gltf_mesh(const std::string& path, const Transform& preprocess)
 
         for (usize t = 0; t < idx.size(); t += 3)
         {
-            const u32 i0 = idx[t + 0];
-            const u32 i1 = idx[t + 1];
-            const u32 i2 = idx[t + 2];
+            const u32 i0{idx[t + 0]};
+            const u32 i1{idx[t + 1]};
+            const u32 i2{idx[t + 2]};
 
             if (i0 >= vertex_count || i1 >= vertex_count || i2 >= vertex_count)
             {
@@ -476,7 +454,7 @@ load_gltf_mesh(const std::string& path, const Transform& preprocess)
     out.vertex_count = static_cast<GLsizei>(verts.size());
 
     {
-        ScopedBufferBinding bind{out};
+        ScopedBufferBinder bind{out};
 
         glBufferData(
             GL_ARRAY_BUFFER,

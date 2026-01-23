@@ -123,4 +123,25 @@ struct GLMesh
     }
 };
 
+class ScopedBufferBinder
+{
+  public:
+    ScopedBufferBinder(GLMesh& mesh)
+    {
+        mesh.vao.bind();
+        mesh.vbo.bind();
+    }
+    ~ScopedBufferBinder()
+    {
+        VBO::unbind();
+        VAO::unbind();
+    }
+
+    ScopedBufferBinder(const ScopedBufferBinder&) = delete;
+    ScopedBufferBinder& operator=(const ScopedBufferBinder&) = delete;
+
+    ScopedBufferBinder(ScopedBufferBinder&&) = delete;
+    ScopedBufferBinder& operator=(ScopedBufferBinder&&) = delete;
+};
+
 }  // namespace ds_pba

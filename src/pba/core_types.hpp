@@ -9,7 +9,6 @@
 
 namespace ds_pba
 {
-
 using usize = std::size_t;
 
 using i64 = std::int64_t;
