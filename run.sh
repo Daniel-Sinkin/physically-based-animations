@@ -10,7 +10,6 @@ echo "===== RUN ====="
 app_pid=$!
 
 cleanup() {
-  # Ask nicely
   kill -TERM "$app_pid" 2>/dev/null || true
   wait "$app_pid" 2>/dev/null || true
 }
