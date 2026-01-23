@@ -408,7 +408,7 @@
 {
   "name": "Kickstart Night",
   "base": "dark",
-  "font": { "id": "default" },
+  "font": { "id": "krypton-14" },
   "colors": {
     "Text": "0xC0CAF5FF",
     "TextDisabled": "0x565F89FF",
