@@ -457,8 +457,16 @@ void render_imgui_windows(EngineContext& engine_context)
                         )};
                         if (selectable)
                         {
-                            scene_context.selected_index = i;
-                            scene_context.selected_type = ObjectType::Cube;
+                            if (scene_context.selected_index == i)
+                            {  // Deselect on clicking selected
+                                scene_context.selected_index = std::nullopt;
+                                scene_context.selected_type = std::nullopt;
+                            }
+                            else
+                            {
+                                scene_context.selected_index = i;
+                                scene_context.selected_type = ObjectType::Cube;
+                            }
                         }
                     }
                 }

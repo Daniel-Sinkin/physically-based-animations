@@ -26,6 +26,9 @@ struct Camera
     [[nodiscard]] Position3 position() const;
     [[nodiscard]] ViewMatrix view_matrix() const;
     [[nodiscard]] ProjMatrix proj_matrix(f32 aspect) const;
+
+    [[nodiscard]] Direction3 right() const;
+    [[nodiscard]] Direction3 up() const;
 };
 
 }  // namespace ds_pba

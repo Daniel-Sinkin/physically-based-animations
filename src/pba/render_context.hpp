@@ -29,6 +29,7 @@ struct GridSettings
 
 constexpr f32 zoom_speed{0.12f};
 constexpr f32 sensitivity{0.0050f};
+constexpr f32 pan_sensitivity{1.00f};
 
 struct SceneContext;
 
@@ -42,6 +43,7 @@ struct RenderContext
     ShaderProgram grid_prog{};
     ShaderProgram obj_prog{};
     ShaderProgram outline_prog{};
+    ShaderProgram pivot_prog{};
 
     bool initialised_glfw{false};
     bool window_created{false};
@@ -63,6 +65,7 @@ struct RenderContext
     bool prev_left{false};
     bool prev_middle{false};
     bool prev_right{false};
+    bool prev_f1{false};
     f64 prev_mx{0.0};
     f64 prev_my{0.0};
 
@@ -83,10 +86,14 @@ struct RenderContext
 
     bool is_active_{true};
 
+    bool pivot_active{true};
+
     GLMesh cube_mesh{};
     GLMesh sphere_mesh{};
     GLMesh grid_mesh{};
     GLMesh marble_bust_mesh{};
+    GLMesh pyramid_mesh{};
+    GLMesh cylinder_mesh{};
 
     GridSettings grid{};
 

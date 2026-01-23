@@ -8,7 +8,7 @@
 namespace ds_pba
 {
 
-glm::vec3 Camera::position() const
+[[nodiscard]] glm::vec3 Camera::position() const
 {
     const f32 cos_pitch = std::cos(pitch);
     const f32 sin_pitch = std::sin(pitch);
@@ -24,14 +24,31 @@ glm::vec3 Camera::position() const
     return pivot + offset;
 }
 
-ViewMatrix Camera::view_matrix() const
+[[nodiscard]] ViewMatrix Camera::view_matrix() const
 {
     return glm::lookAt(position(), pivot, glm::vec3(0, 0, 1));
 }
 
-ProjMatrix Camera::proj_matrix(f32 aspect) const
+[[nodiscard]] ProjMatrix Camera::proj_matrix(f32 aspect) const
 {
     return glm::perspective(fov_y, aspect, z_near, z_far);
+}
+
+[[nodiscard]] Direction3 Camera::right() const
+{
+    const Position3 pos = position();
+    const Direction3 forward = glm::normalize(pivot - pos);
+    const Direction3 world_up{0.0f, 0.0f, 1.0f};
+    const Direction3 right = glm::normalize(glm::cross(forward, world_up));
+    return right;
+}
+
+[[nodiscard]] Direction3 Camera::up() const
+{
+    const glm::vec3 pos = position();
+    const Direction3 forward = glm::normalize(pivot - pos);
+    const Direction3 up = glm::normalize(glm::cross(right(), forward));
+    return up;
 }
 
 }  // namespace ds_pba

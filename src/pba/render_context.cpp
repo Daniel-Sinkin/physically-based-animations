@@ -15,12 +15,12 @@
 #include "pba/scene_types.hpp"
 #include "pba/ui.hpp"
 #include "pba/util/shutdown.hpp"
+#include "pba/gl_types.hpp"
 
+#include <GLFW/glfw3.h>
 #include <glm/ext/matrix_float4x4.hpp>
 #include <imgui.h>
 #include <json.hpp>
-#include <print>
-#include <utility>
 
 ds_pba::RenderContext::~RenderContext()
 {
@@ -54,8 +54,11 @@ void ds_pba::RenderContext::render_to_viewport()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
     f32 aspect = viewport_fbo.aspect_ratio();
-    const ViewMatrix camera_view_matrix{scene_context->camera.view_matrix()};
-    const ProjMatrix camera_proj_matrix{scene_context->camera.proj_matrix(aspect)};
+
+    const Camera& cam{scene_context->camera};
+
+    const ViewMatrix camera_view_matrix{cam.view_matrix()};
+    const ProjMatrix camera_proj_matrix{cam.proj_matrix(aspect)};
 
     {  // Grid
         glDepthMask(GL_FALSE);
@@ -130,10 +133,32 @@ void ds_pba::RenderContext::render_to_viewport()
         }
     }
 
+    if (pivot_active)
+    {
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LESS);
+
+        GLMesh& pivot_mesh{sphere_mesh};
+
+        pivot_prog.bind();
+        set_uniform_mat4(pivot_prog.id, "uView", camera_view_matrix);
+        set_uniform_mat4(pivot_prog.id, "uProj", camera_proj_matrix);
+
+        pivot_mesh.vao.bind();
+
+        const Transform t{.position = cam.pivot, .scale = {0.1f, 0.1f, 0.1f}};
+        set_uniform_mat4(obj_prog.id, "uModel", t.model_matrix());
+        set_uniform_vec3(
+            obj_prog.id, "uColor", {196.0f / 255.0f, 209.0f / 255.0f, 102.0f / 255.0f}
+        );
+        glDrawArrays(GL_TRIANGLES, 0, pivot_mesh.vertex_count);
+
+        VAO::unbind();
+    }
+
     // Outline via stencil (in FBO)
     if (scene_context->selected_index.has_value())
     {
-
         assert(scene_context->selected_type.has_value());
 
         auto type = *scene_context->selected_type;
@@ -232,7 +257,6 @@ void ds_pba::RenderContext::render_to_viewport()
 
 void ds_pba::RenderContext::viewport_window()
 {
-    // Viewport window
     ImGuiWindowFlags vp_flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse
                                 | ImGuiWindowFlags_NoCollapse;
 
@@ -340,6 +364,22 @@ void ds_pba::RenderContext::step()
         glfwSetWindowShouldClose(window, GLFW_TRUE);
     }
 
+    const bool f1_down{glfwGetKey(window, GLFW_KEY_F1) == GLFW_PRESS};
+    if (f1_down && !prev_f1)
+    {  // Switch pivot off and on
+        if (pivot_active)
+        {
+            ui_log("Deactivated the pivot");
+            pivot_active = false;
+        }
+        else
+        {
+            ui_log("Activated the pivot");
+            pivot_active = true;
+        }
+    }
+    prev_f1 = f1_down;
+
     const auto mouse_x = static_cast<f64>(io.MousePos.x);
     const auto mouse_y = static_cast<f64>(io.MousePos.y);
 
@@ -349,25 +389,40 @@ void ds_pba::RenderContext::step()
 
     if (viewport_image_hovered)
     {
+        Camera& cam{scene_context->camera};
         assert(viewport_fb_rect_valid && "If viewport hovered then it must be valid");
         const f32 wheel = io.MouseWheel;
         if (wheel != 0.0f)
-        {
-            scene_context->camera.distance *= std::exp(-wheel * zoom_speed);
-            scene_context->camera.distance =
-                std::clamp(scene_context->camera.distance, 0.75f, 200.0f);
+        {  // Zooming
+            cam.distance *= std::exp(-wheel * zoom_speed);
+            cam.distance = std::clamp(scene_context->camera.distance, 0.75f, 200.0f);
         }
 
         if (middle_down && prev_middle)
-        {
+        {  // Holding Middle mouse button
             const f32 dx = static_cast<f32>(mouse_x - prev_mx);
             const f32 dy = static_cast<f32>(mouse_y - prev_my);
 
-            scene_context->camera.yaw += -dx * sensitivity;
-            scene_context->camera.pitch += dy * sensitivity;
+            const bool left_shift_down = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS;
+            const bool right_shift_down = glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS;
+            if (left_shift_down || right_shift_down)
+            {  // Move Pivot
+                const f32 vp_h = std::max(1.0f, viewport_img_size.y);
 
-            const f32 lim = glm::radians(89.0f);
-            scene_context->camera.pitch = std::clamp(scene_context->camera.pitch, -lim, lim);
+                const f32 units_per_px = (2.0f * cam.distance * std::tan(0.5f * cam.fov_y)) / vp_h;
+
+                auto right_offset = (-dx * units_per_px) * cam.right();
+                auto up_offset = dy * units_per_px * cam.up();
+                cam.pivot += (right_offset + up_offset) * pan_sensitivity;
+            }
+            else
+            {  // Rotate Around pivot
+                scene_context->camera.yaw += -dx * sensitivity;
+                scene_context->camera.pitch += dy * sensitivity;
+
+                const f32 lim = glm::radians(89.0f);
+                scene_context->camera.pitch = std::clamp(scene_context->camera.pitch, -lim, lim);
+            }
         }
 
         const bool selecting{left_down && !prev_left};
@@ -404,8 +459,16 @@ void ds_pba::RenderContext::step()
                             const Object& obj = scene_context->cube_objects[i];
                             if (obj.id == rc.object_id)
                             {
-                                scene_context->selected_index = i;
-                                scene_context->selected_type = ObjectType::Cube;
+                                if (scene_context->selected_index == i)
+                                {  // Deselect on selecting again
+                                    scene_context->selected_index = std::nullopt;
+                                    scene_context->selected_type = std::nullopt;
+                                }
+                                else
+                                {
+                                    scene_context->selected_index = i;
+                                    scene_context->selected_type = ObjectType::Cube;
+                                }
                                 std::println();
                                 ui_log(std::format("Selected Cube [id={}]", obj.id));
                                 found = true;
@@ -420,8 +483,16 @@ void ds_pba::RenderContext::step()
                             const Object& obj = scene_context->sphere_objects[i];
                             if (obj.id == rc.object_id)
                             {
-                                scene_context->selected_index = i;
-                                scene_context->selected_type = ObjectType::Sphere;
+                                if (scene_context->selected_index == i)
+                                {  // Deselect on selecting again
+                                    scene_context->selected_index = std::nullopt;
+                                    scene_context->selected_type = std::nullopt;
+                                }
+                                else
+                                {
+                                    scene_context->selected_index = i;
+                                    scene_context->selected_type = ObjectType::Sphere;
+                                }
                                 ui_log(std::format("Selected Sphere [id={}]", obj.id));
                                 found = true;
                                 break;
@@ -532,7 +603,19 @@ bool ds_pba::RenderContext::create_programs()
     }
     outline_prog = *outline_prog_res;
 
-    if (!grid_prog.valid() || !obj_prog.valid() || !outline_prog.valid())
+    auto pivot_prog_res = create_program_from_file("pivot");
+    if (!pivot_prog_res)
+    {
+        std::println(
+            stderr,
+            "Failed to load 'pivot' shaders, got error code: {}",
+            static_cast<int>(outline_prog_res.error())
+        );
+        return false;
+    }
+    pivot_prog = *pivot_prog_res;
+
+    if (!grid_prog.valid() || !obj_prog.valid() || !outline_prog.valid() || !pivot_prog.valid())
     {
         std::println(stderr, "Failed to create shader programs");
         return false;
@@ -546,7 +629,8 @@ bool ds_pba::RenderContext::create_meshes()
     cube_mesh = create_cube_mesh();
     sphere_mesh = create_sphere_mesh(32, 24, 1.0f);
     grid_mesh = create_grid_mesh(grid);
-
+    cylinder_mesh = create_cylinder_mesh(24, 0.5f, 1.0f);
+    pyramid_mesh = create_pyramid_mesh();
     {
         auto mesh_res = ds_pba::load_model_mesh("marble_bust_01");
         if (!mesh_res)

@@ -4,8 +4,6 @@
 #include "pba/core_types.hpp"
 #include "pba/util/scope_timer.hpp"
 
-#include <print>
-
 namespace ds_pba
 {
 
@@ -147,7 +145,7 @@ void EngineContext::run()
             frame_dt = max_frame_dt;
         }
 
-        int n_phys_updates{0};
+        [[maybe_unused]] int n_phys_updates{0};
         accumulator += frame_dt;
         while (accumulator >= fixed_dt)
         {
@@ -155,7 +153,6 @@ void EngineContext::run()
             accumulator -= fixed_dt;
             ++n_phys_updates;
         }
-        std::println("Did {} physics updates for frame #{}", n_phys_updates, renderer->frame_count);
 
         for (const auto& [id, idxs] : obj_map)
         {
