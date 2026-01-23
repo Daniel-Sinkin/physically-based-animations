@@ -11,7 +11,7 @@ namespace ds_pba
 glm::vec3 Camera::position() const
 {
     const f32 cos_pitch = std::cos(pitch);
-    f32 sin_pitch = std::sin(pitch);
+    const f32 sin_pitch = std::sin(pitch);
     const f32 cos_yaw = std::cos(yaw);
     const f32 sin_yaw = std::sin(yaw);
 

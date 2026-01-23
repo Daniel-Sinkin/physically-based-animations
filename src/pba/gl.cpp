@@ -10,13 +10,13 @@ namespace ds_pba
 std::optional<ShaderProgram>
 create_program(const std::string& vert_src, const std::string& frag_src)
 {
-    Shader vs = Shader::create_and_compile(ShaderType::Vertex, vert_src);
+    const Shader vs = Shader::create_and_compile(ShaderType::Vertex, vert_src);
     if (!vs.valid() || !vs.compiled_ok())
     {
         std::println(stderr, "Failed Vertex Shader Creation");
         return std::nullopt;
     }
-    Shader fs = Shader::create_and_compile(ShaderType::Fragment, frag_src);
+    const Shader fs = Shader::create_and_compile(ShaderType::Fragment, frag_src);
     if (!fs.valid() || !fs.compiled_ok())
     {
         std::println(stderr, "Failed Fragment Shader Creation");
@@ -49,7 +49,7 @@ create_program(const std::string& vert_src, const std::string& frag_src)
 
 std::expected<std::string, ShaderCreateError> read_text_file(const std::string& path)
 {
-    std::ifstream file(path, std::ios::in);
+    const std::ifstream file(path, std::ios::in);
     if (!file.is_open())
     {
         return std::unexpected(ShaderCreateError::FileNotFound);

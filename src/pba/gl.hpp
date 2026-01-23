@@ -33,28 +33,28 @@ std::expected<std::string, ShaderCreateError> load_shader_sources(const std::str
 
 inline void set_uniform_mat4(GLuint program, const char* name, const glm::mat4& m)
 {
-    GLint loc{glGetUniformLocation(program, name)};
+    const GLint loc{glGetUniformLocation(program, name)};
     assert(loc >= 0);
     glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(m));
 }
 
 inline void set_uniform_vec3(GLuint program, const char* name, const glm::vec3& v)
 {
-    GLint loc{glGetUniformLocation(program, name)};
+    const GLint loc{glGetUniformLocation(program, name)};
     assert(loc >= 0);
     glUniform3f(loc, v.x, v.y, v.z);
 }
 
 inline void set_uniform_float(GLuint program, const char* name, f32 v)
 {
-    GLint loc{glGetUniformLocation(program, name)};
+    const GLint loc{glGetUniformLocation(program, name)};
     assert(loc >= 0);
     glUniform1f(loc, v);
 }
 
 inline void set_uniform_bool(GLuint program, const char* name, bool v)
 {
-    GLint loc{glGetUniformLocation(program, name)};
+    const GLint loc{glGetUniformLocation(program, name)};
     assert(loc >= 0);
     glUniform1i(loc, v ? 1 : 0);
 }

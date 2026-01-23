@@ -193,7 +193,7 @@ static glm::mat4 preprocess_matrix(const Transform& t) noexcept
 std::expected<GLMesh, GltfLoadError>
 load_gltf_mesh(const std::string& path, const Transform& preprocess)
 {
-    util::ScopeTimer timer{path};
+    const util::ScopeTimer timer{path};
     tinygltf::Model model;
     std::string err;
     std::string warn;
@@ -275,7 +275,7 @@ load_gltf_mesh(const std::string& path, const Transform& preprocess)
         return std::unexpected(GltfLoadError::UnsupportedAccessorType);
     }
 
-    int buffer_view_i{pos_accessor.bufferView};
+    const int buffer_view_i{pos_accessor.bufferView};
     if (buffer_view_i < 0)
     {
         std::println(stderr, "bufferView must not be negative");
@@ -454,7 +454,7 @@ load_gltf_mesh(const std::string& path, const Transform& preprocess)
     out.vertex_count = static_cast<GLsizei>(verts.size());
 
     {
-        ScopedBufferBinder bind{out};
+        const ScopedBufferBinder binder{out};
 
         glBufferData(
             GL_ARRAY_BUFFER,

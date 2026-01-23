@@ -21,7 +21,7 @@ std::optional<Raycast> raycast(const SceneContext& scene_context, const Ray& ray
         const Object& o{scene_context.cube_objects[i]};
         if (auto res = intersect_ray_cube(ray, o.transform.model_matrix()))
         {
-            f32 t = *res;
+            const f32 t = *res;
             if (t < best_t)
             {
                 best_t = t;
@@ -38,7 +38,7 @@ std::optional<Raycast> raycast(const SceneContext& scene_context, const Ray& ray
 
         if (auto res = intersect_ray_sphere(ray, M))
         {
-            f32 t = *res;
+            const f32 t = *res;
             if (t < best_t)
             {
                 best_t = t;
@@ -122,15 +122,15 @@ Ray ray_from_imgui_rect(
     const f32 ly{mouse_pos.y - rect_pos.y};
 
     const f32 w{std::max(1.0f, rect_size.x)};
-    f32 h{std::max(1.0f, rect_size.y)};
+    const f32 h{std::max(1.0f, rect_size.y)};
 
     const f32 x_ndc{2.0f * (lx / w) - 1.0f};
     const f32 y_ndc{1.0f - 2.0f * (ly / h)};
 
     const glm::mat4 invPV{glm::inverse(camera_proj_matrix * camera_view_matrix)};
 
-    glm::vec4 near_ndc(x_ndc, y_ndc, -1.0f, 1.0f);
-    glm::vec4 far_ndc(x_ndc, y_ndc, 1.0f, 1.0f);
+    const glm::vec4 near_ndc(x_ndc, y_ndc, -1.0f, 1.0f);
+    const glm::vec4 far_ndc(x_ndc, y_ndc, 1.0f, 1.0f);
 
     glm::vec4 near_w = invPV * near_ndc;
     glm::vec4 far_w = invPV * far_ndc;
@@ -243,7 +243,7 @@ std::optional<f32> intersect_ray_cube(const Ray& ray_world, const ModelMatrix& m
         return std::nullopt;
     }
 
-    f32 tL = (tmin > 0.0f) ? tmin : ((tmax > 0.0f) ? tmax : -1.0f);
+    const f32 tL = (tmin > 0.0f) ? tmin : ((tmax > 0.0f) ? tmax : -1.0f);
     if (tL <= 0.0f)
     {
         return std::nullopt;

@@ -1,12 +1,11 @@
-// pba/scene_context->hpp
-#include "glm/ext/matrix_float4x4.hpp"
-#include "imgui.h"
+// pba/render_context.cpp
 #include "pba/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/render_context.hpp"
 //
+#include "pba/format.hpp"  // IWYU pragma: keep
+//
 #include "pba/core_types.hpp"
-#include "pba/format.hpp"
 #include "pba/gl.hpp"
 #include "pba/gltf_mesh.hpp"
 #include "pba/math_types.hpp"
@@ -15,9 +14,10 @@
 #include "pba/scene_context.hpp"
 #include "pba/scene_types.hpp"
 #include "pba/ui.hpp"
-#include "pba/util/scope_timer.hpp"
 #include "pba/util/shutdown.hpp"
 
+#include <glm/ext/matrix_float4x4.hpp>
+#include <imgui.h>
 #include <json.hpp>
 #include <print>
 #include <utility>
@@ -44,7 +44,7 @@ void ds_pba::RenderContext::request_close() noexcept
 void ds_pba::RenderContext::render_to_viewport()
 {
     assert(viewport_fb_rect_valid && "Should only render to valid viewports");
-    ImVec2 content_size = ImGui::GetContentRegionAvail();
+    const ImVec2 content_size = ImGui::GetContentRegionAvail();
 
     glBindFramebuffer(GL_FRAMEBUFFER, viewport_fbo.fbo);
     glViewport(0, 0, viewport_fbo.width, viewport_fbo.height);
@@ -268,7 +268,7 @@ void ds_pba::RenderContext::viewport_window()
         const auto fbw_f = static_cast<f32>(fbw);
         const auto fbh_f = static_cast<f32>(fbh);
 
-        f32 scale_x{(win_w_f > 0.0f) ? (fbw_f / win_w_f) : 1.0f};
+        const f32 scale_x{(win_w_f > 0.0f) ? (fbw_f / win_w_f) : 1.0f};
         const f32 scale_y{(win_h_f > 0.0f) ? (fbh_f / win_h_f) : 1.0f};
 
         const f32 left_px{viewport_img_pos.x * scale_x};
@@ -310,7 +310,7 @@ void ds_pba::RenderContext::step()
     assert(scene_context && "Scene Context not set for RenderContext");
     assert(physics_context && "Physics Context not set for RenderContext");
 
-    ImGuiIO& io = ImGui::GetIO();
+    const ImGuiIO& io = ImGui::GetIO();
     if (!is_active())
     {
         return;
@@ -370,15 +370,17 @@ void ds_pba::RenderContext::step()
             scene_context->camera.pitch = std::clamp(scene_context->camera.pitch, -lim, lim);
         }
 
-        bool selecting{left_down && !prev_left};
-        bool spawning{right_down && !prev_right};
+        const bool selecting{left_down && !prev_left};
+        const bool spawning{right_down && !prev_right};
         if (selecting || spawning)
         {  // Selecting objects
             const f32 aspect = viewport_fbo.aspect_ratio();
             const glm::mat4 camera_view_matrix = scene_context->camera.view_matrix();
             const glm::mat4 camera_proj_matrix = scene_context->camera.proj_matrix(aspect);
 
-            glm::vec2 mouse_pos = glm::vec2{static_cast<f32>(mouse_x), static_cast<f32>(mouse_y)};
+            const glm::vec2 mouse_pos{
+                glm::vec2{static_cast<f32>(mouse_x), static_cast<f32>(mouse_y)}
+            };
 
             const Ray mouse_ray = ray_from_imgui_rect(
                 mouse_pos,
@@ -591,7 +593,7 @@ bool ds_pba::RenderContext::setup()
     window_created = true;
     {  // Place on 2nd monitor with correct sizing for mixed-DPI
         int monitor_count{0};
-        GLFWmonitor** monitors = glfwGetMonitors(&monitor_count);
+        GLFWmonitor* const* monitors = glfwGetMonitors(&monitor_count);
 
         if (monitor_count >= 2)
         {

@@ -40,7 +40,7 @@ struct EngineContext
     // TODO: Add arbitrary transforms
     void add_cube(Position3 position)
     {
-        ObjectId id = next_object_id();
+        const ObjectId id = next_object_id();
         scene->cube_objects.push_back(
             Object{.id = id, .type = ObjectType::Cube, .transform = {.position = position}}
         );
@@ -59,7 +59,7 @@ struct EngineContext
 
     void add_ground()
     {
-        ObjectId id = next_object_id();
+        const ObjectId id = next_object_id();
 
         constexpr Position3 ground_center{0.0f, 0.0f, -0.5f};
         constexpr Position3 half_extents{10.0f, 10.0f, 0.5f};
@@ -96,7 +96,7 @@ struct EngineContext
 
     bool setup()
     {
-        util::ScopeTimer timer{"Engine setup"};
+        const util::ScopeTimer timer{"Engine setup"};
         {
             add_ground();
 
@@ -137,7 +137,7 @@ struct EngineContext
         {
             // TODO: Sync renderer and physics time
             f32 physics_time = 0.0f;
-            f32 physics_dt = 0.001f;
+            const f32 physics_dt = 0.001f;
             while (physics_time < 0.008f)
             {
                 physics->step(physics_dt);

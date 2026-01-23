@@ -93,7 +93,7 @@ load_or_create_model_config(const std::filesystem::path& model_dir)
         cfg.name = model_name;
         cfg.transform = Transform{};
 
-        nlohmann::json j = cfg;
+        const nlohmann::json j = cfg;
         auto wr = write_json_file(cfg_path, j);
         if (!wr)
         {

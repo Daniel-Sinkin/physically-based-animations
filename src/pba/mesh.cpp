@@ -74,7 +74,7 @@ GLMesh create_cube_mesh()
     mesh.vertex_count = static_cast<GLsizei>(verts.size());
 
     {
-        ScopedBufferBinder binder{mesh};
+        const ScopedBufferBinder binder{mesh};
         glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts.data(), GL_STATIC_DRAW);
 
         glEnableVertexAttribArray(0);
@@ -105,7 +105,7 @@ GLMesh create_quad_mesh()
     mesh.vertex_count = static_cast<GLsizei>(verts.size());
 
     {
-        ScopedBufferBinder binder{mesh};
+        const ScopedBufferBinder binder{mesh};
         glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts.data(), GL_STATIC_DRAW);
 
         glEnableVertexAttribArray(0);
@@ -165,7 +165,7 @@ GLMesh create_pyramid_mesh()
     mesh.vertex_count = static_cast<GLsizei>(verts.size());
 
     {
-        ScopedBufferBinder binder{mesh};
+        const ScopedBufferBinder binder{mesh};
         glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts.data(), GL_STATIC_DRAW);
 
         glEnableVertexAttribArray(0);
@@ -272,7 +272,7 @@ GLMesh create_cylinder_mesh(int n_segments, f32 radius, f32 height)
     mesh.vertex_count = static_cast<GLsizei>(verts.size());
 
     {
-        ScopedBufferBinder binder{mesh};
+        const ScopedBufferBinder binder{mesh};
         glBufferData(
             GL_ARRAY_BUFFER,
             static_cast<GLsizeiptr>(verts.size() * sizeof(V)),
@@ -314,7 +314,7 @@ GLMesh create_grid_mesh(GridSettings grid)
     // x = const -> y axis parallels
     for (int i{-N}; i <= N; ++i)
     {
-        f32 x = static_cast<f32>(i) * grid.spacing;
+        const f32 x = static_cast<f32>(i) * grid.spacing;
         if (i == 0)
         {
             push_line({x, -E, 0}, {x, E, 0}, 0.15f, 0.90f, 0.25f, grid.axis_alpha);
@@ -328,7 +328,7 @@ GLMesh create_grid_mesh(GridSettings grid)
     // y = const -> x axis parallels
     for (int i{-N}; i <= N; ++i)
     {
-        f32 y = static_cast<f32>(i) * grid.spacing;
+        const f32 y = static_cast<f32>(i) * grid.spacing;
         if (i == 0)
         {
             push_line({-E, y, 0}, {E, y, 0}, 0.90f, 0.20f, 0.18f, grid.axis_alpha);
@@ -345,7 +345,7 @@ GLMesh create_grid_mesh(GridSettings grid)
     mesh.vertex_count = static_cast<GLsizei>(verts.size());
 
     {
-        ScopedBufferBinder bind{mesh};
+        const ScopedBufferBinder bind{mesh};
         glBufferData(
             GL_ARRAY_BUFFER,
             static_cast<GLsizeiptr>(verts.size() * sizeof(GridV)),
@@ -481,7 +481,7 @@ GLMesh create_sphere_mesh(int lat, int lon, f32 radius)
     mesh.vertex_count = static_cast<GLsizei>(verts.size());
 
     {
-        ScopedBufferBinder binder{mesh};
+        const ScopedBufferBinder binder{mesh};
         glBufferData(
             GL_ARRAY_BUFFER,
             static_cast<GLsizeiptr>(verts.size() * sizeof(V)),

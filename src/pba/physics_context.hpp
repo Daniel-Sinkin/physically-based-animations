@@ -80,7 +80,7 @@ struct RigidBody
     Direction3 velocity;
     f32 inv_mass;
 
-    AABB get_world_collider()
+    AABB get_world_collider() const
     {
         return {.min = collider.min + position, .max = collider.max + position};
     }
@@ -163,7 +163,7 @@ struct PhysicsContext
             }
             body.position += body.velocity * delta_time;
 
-            f32 r2 = glm::dot(body.position, body.position);
+            const f32 r2 = glm::dot(body.position, body.position);
             if (r2 > 200.0f * 200.0f)
             {
                 // TODO: Add bounding box culling, can't safely remove objects yet

@@ -79,7 +79,7 @@ void render_terminal_window(RenderContext& render_context)
     bool reclaim_focus = false;
     ImGui::Separator();
 
-    ImGuiInputTextFlags flags = ImGuiInputTextFlags_EnterReturnsTrue;
+    const ImGuiInputTextFlags flags = ImGuiInputTextFlags_EnterReturnsTrue;
     if (ImGui::InputText("##terminal_input", t.input_buf.data(), t.input_buf.size(), flags))
     {
         std::string cmd = t.input_buf.data();
@@ -449,12 +449,12 @@ void render_imgui_windows(EngineContext& engine_context)
                                                  && scene_context.selected_index
                                                  && *scene_context.selected_index == i;
 
-                        std::string label = std::format("{} [Cube]##cube_{}", o.id, i);
+                        const std::string label = std::format("{} [Cube]##cube_{}", o.id, i);
 
                         ImGui::TableNextRow();
                         ImGui::TableNextColumn();
 
-                        bool selectable{ImGui::Selectable(
+                        const bool selectable{ImGui::Selectable(
                             label.c_str(), is_selected, ImGuiSelectableFlags_SpanAllColumns
                         )};
                         if (selectable)
@@ -479,12 +479,12 @@ void render_imgui_windows(EngineContext& engine_context)
                                                  && scene_context.selected_index
                                                  && *scene_context.selected_index == i;
 
-                        std::string label = std::format("{} [Sphere]##sphere_{}", o.id, i);
+                        const std::string label = std::format("{} [Sphere]##sphere_{}", o.id, i);
 
                         ImGui::TableNextRow();
                         ImGui::TableNextColumn();
 
-                        bool selectable{ImGui::Selectable(
+                        const bool selectable{ImGui::Selectable(
                             label.c_str(), is_selected, ImGuiSelectableFlags_SpanAllColumns
                         )};
                         if (selectable)
@@ -508,12 +508,13 @@ void render_imgui_windows(EngineContext& engine_context)
                             scene_context.selected_type == ObjectType::Hitmarker
                             && scene_context.selected_index && *scene_context.selected_index == i;
 
-                        std::string label = std::format("{} [Hitmarker]##hitmarker_{}", o.id, i);
+                        const std::string label =
+                            std::format("{} [Hitmarker]##hitmarker_{}", o.id, i);
 
                         ImGui::TableNextRow();
                         ImGui::TableNextColumn();
 
-                        bool selectable{ImGui::Selectable(
+                        const bool selectable{ImGui::Selectable(
                             label.c_str(), is_selected, ImGuiSelectableFlags_SpanAllColumns
                         )};
                         if (selectable)
