@@ -1,14 +1,12 @@
 // pba/scene_types.hpp
 #pragma once
 
-#include "glm/ext/matrix_transform.hpp"
 #include "pba/core_types.hpp"  // IWYU pragma: keep
 #include "pba/math_types.hpp"
 
-#include <cmath>
+#include <glm/ext/matrix_transform.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <string>
 
 namespace ds_pba
 {

@@ -310,38 +310,43 @@ std::expected<UiTheme, UiThemeError> parse_theme(const nlohmann::json& j)
             return {};
         };
 
-        struct ScalarField
-        {
-            const char* name;
-            bool UiTheme::* has;
-            float UiTheme::* value;
-        };
+        if (!set_scalar("WindowRounding", out.has_window_rounding, out.window_rounding))
+            return std::unexpected(UiThemeError::InvalidFormat);
+        if (!set_scalar("ChildRounding", out.has_child_rounding, out.child_rounding))
+            return std::unexpected(UiThemeError::InvalidFormat);
+        if (!set_scalar("PopupRounding", out.has_popup_rounding, out.popup_rounding))
+            return std::unexpected(UiThemeError::InvalidFormat);
+        if (!set_scalar("FrameRounding", out.has_frame_rounding, out.frame_rounding))
+            return std::unexpected(UiThemeError::InvalidFormat);
+        if (!set_scalar("TabRounding", out.has_tab_rounding, out.tab_rounding))
+            return std::unexpected(UiThemeError::InvalidFormat);
+        if (!set_scalar("GrabRounding", out.has_grab_rounding, out.grab_rounding))
+            return std::unexpected(UiThemeError::InvalidFormat);
+        if (!set_scalar("ScrollbarRounding", out.has_scrollbar_rounding, out.scrollbar_rounding))
+            return std::unexpected(UiThemeError::InvalidFormat);
 
-        static constexpr ScalarField scalars[] = {
-            {"WindowRounding", &UiTheme::has_window_rounding, &UiTheme::window_rounding},
-            {"ChildRounding", &UiTheme::has_child_rounding, &UiTheme::child_rounding},
-            {"PopupRounding", &UiTheme::has_popup_rounding, &UiTheme::popup_rounding},
-            {"FrameRounding", &UiTheme::has_frame_rounding, &UiTheme::frame_rounding},
-            {"TabRounding", &UiTheme::has_tab_rounding, &UiTheme::tab_rounding},
-            {"GrabRounding", &UiTheme::has_grab_rounding, &UiTheme::grab_rounding},
-            {"ScrollbarRounding", &UiTheme::has_scrollbar_rounding, &UiTheme::scrollbar_rounding},
+        if (!set_scalar("WindowBorderSize", out.has_window_border_size, out.window_border_size))
+            return std::unexpected(UiThemeError::InvalidFormat);
+        if (!set_scalar("ChildBorderSize", out.has_child_border_size, out.child_border_size))
+            return std::unexpected(UiThemeError::InvalidFormat);
+        if (!set_scalar("PopupBorderSize", out.has_popup_border_size, out.popup_border_size))
+            return std::unexpected(UiThemeError::InvalidFormat);
+        if (!set_scalar("FrameBorderSize", out.has_frame_border_size, out.frame_border_size))
+            return std::unexpected(UiThemeError::InvalidFormat);
 
-            {"WindowBorderSize", &UiTheme::has_window_border_size, &UiTheme::window_border_size},
-            {"ChildBorderSize", &UiTheme::has_child_border_size, &UiTheme::child_border_size},
-            {"PopupBorderSize", &UiTheme::has_popup_border_size, &UiTheme::popup_border_size},
-            {"FrameBorderSize", &UiTheme::has_frame_border_size, &UiTheme::frame_border_size},
-        };
-
-        for (const auto& f : scalars)
-        {
-            if (!set_scalar(f.name, out.*(f.has), out.*(f.value)))
-                return std::unexpected(UiThemeError::InvalidFormat);
-        }
+        if (!set_vec2("FramePadding", out.has_frame_padding, out.frame_padding))
+            return std::unexpected(UiThemeError::InvalidFormat);
+        if (!set_vec2("ItemSpacing", out.has_item_spacing, out.item_spacing))
+            return std::unexpected(UiThemeError::InvalidFormat);
+        if (!set_vec2("ItemInnerSpacing", out.has_item_inner_spacing, out.item_inner_spacing))
+            return std::unexpected(UiThemeError::InvalidFormat);
     }
     if (auto it_font = j.find("font"); it_font != j.end())
     {
         if (!it_font->is_object())
+        {
             return std::unexpected(UiThemeError::InvalidFormat);
+        }
 
         if (auto it_id = it_font->find("id"); it_id != it_font->end())
         {
@@ -369,7 +374,6 @@ std::expected<UiThemePack, UiThemeError> load_theme_pack_json(const std::filesys
         return std::unexpected(UiThemeError::FileOpenFailed);
     }
 
-    // Non-throwing parse
     nlohmann::json root = nlohmann::json::parse(f, nullptr, false);
     if (root.is_discarded())
     {

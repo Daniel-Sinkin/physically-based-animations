@@ -9,7 +9,6 @@
 
 namespace ds_pba
 {
-
 void to_json(nlohmann::json& j, const ModelConfig& c)
 {
     j = nlohmann::json::object();
@@ -25,7 +24,6 @@ void from_json(const nlohmann::json& j, ModelConfig& c)
 
 namespace
 {
-
 static std::filesystem::path config_path(const std::filesystem::path& model_dir)
 {
     return model_dir / "config.json";

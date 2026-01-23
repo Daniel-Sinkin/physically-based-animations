@@ -1,10 +1,10 @@
 // pba/gltf_mesh.cpp
-#include "pba/gltf_mesh.hpp"
-
+#include "pba/pch.hpp"  // IWYU pragma: keep
+//
 #include "pba/core_types.hpp"
 #include "pba/gl_types.hpp"
+#include "pba/gltf_mesh.hpp"
 #include "pba/model_config.hpp"
-#include "pba/pch.hpp"  // IWYU pragma: keep
 #include "pba/util/scope_timer.hpp"
 
 #include <print>
