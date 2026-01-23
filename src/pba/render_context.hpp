@@ -3,6 +3,7 @@
 
 #include "pba/core_types.hpp"
 #include "pba/gl_types.hpp"
+#include "pba/math_types.hpp"
 #include "pba/ui_theme.hpp"
 #include "pba/viewport_fbo.hpp"
 
@@ -32,6 +33,8 @@ constexpr f32 sensitivity{0.0050f};
 constexpr f32 pan_sensitivity{1.00f};
 
 struct SceneContext;
+struct Raycast;
+struct Camera;
 
 struct RenderContext
 {
@@ -55,6 +58,8 @@ struct RenderContext
     ui_theme::UiThemePack theme_pack{};
     usize theme_index{0zu};
     bool theme_loaded{false};
+
+    bool viewport_valid_warning_shown{false};
 
     std::unordered_map<std::string, ImFont*> fonts_by_id{};
     ImFont* default_font{};
@@ -97,7 +102,12 @@ struct RenderContext
 
     GridSettings grid{};
 
-    void render_to_viewport();
+    void render_to_viewport() const;
+    void render_to_viewport_grid(const ViewMatrix&, const ProjMatrix&) const;
+    void render_to_viewport_objects(const ViewMatrix&, const ProjMatrix&) const;
+    void render_to_viewport_pivot(const Position3&, const ViewMatrix&, const ProjMatrix&) const;
+    void render_to_viewport_outline(const ViewMatrix&, const ProjMatrix&) const;
+
     void viewport_window();
 
     void step();
@@ -105,6 +115,12 @@ struct RenderContext
 
     bool create_programs();
     bool create_meshes();
+
+    void hover_interaction(
+        f64 mouse_x, f64 mouse_y, bool left_down, bool middle_down, bool right_down
+    ) const;
+    void hover_interaction_selection(const Raycast& rc) const;
+    void hover_interaction_holding_middle(f64 mouse_x, f64 mouse_y, Camera& cam) const;
 
     bool is_active() const;
     void deactivate() noexcept
