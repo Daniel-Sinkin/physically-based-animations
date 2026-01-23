@@ -13,36 +13,34 @@ namespace ds_pba
 constexpr f32 k_static_mass{0.0f};
 constexpr Direction3 k_gravity{0.0f, 0.0f, -9.81f};
 
-struct AABB
-{
-    Position3 min{-0.5f, -0.5f, -0.5f};
-    Position3 max{0.5f, 0.5f, 0.5f};
-};
-
-struct Contact
-{
-    bool hit{false};
-    Direction3 normal{0.0f, 0.0f, 0.0f};
-    f32 penetration{0.0f};
-};
-
 f32 center_axis(f32 mn, f32 mx) noexcept;
-Contact aabb_contact(const AABB& a, const AABB& b) noexcept;
 
 struct RigidBody
 {
     ObjectId id{k_invalid_id};
-    AABB collider{};
+
+    // Half Extents
+    Direction3 half_extents{0.5f, 0.5f, 0.5f};
+
+    // Linear
     Position3 position{0.0f, 0.0f, 0.0f};
     Direction3 velocity{0.0f, 0.0f, 0.0f};
-    Quaternion orientation{1.0f, 0.0f, 0.0f, 0.0f};
+    Direction3 force_accum{0.0f, 0.0f, 0.0f};
     f32 inv_mass{k_static_mass};
 
-    AABB get_world_collider() const;
-    bool is_static() const noexcept;
-};
+    // Angular
+    Quaternion orientation{1.0f, 0.0f, 0.0f, 0.0f};
+    Direction3 angular_velocity{0.0f, 0.0f, 0.0f};  // omega (world space)
+    Direction3 torque_accum{0.0f, 0.0f, 0.0f};
 
-void resolve_contact(RigidBody& a, RigidBody& b, const Contact& c, f32 restitution);
+    glm::mat3 inv_inertia_body{0.0f};   // constant
+    glm::mat3 inv_inertia_world{0.0f};  // based on orientation
+
+    [[nodiscard]] bool is_static() const noexcept
+    {
+        return inv_mass == k_static_mass;
+    }
+};
 
 struct PhysicsContext
 {

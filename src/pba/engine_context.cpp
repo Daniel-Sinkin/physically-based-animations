@@ -1,14 +1,55 @@
-// pba/engine_context.hpp
+// pba/engine_context.cpp
+#include "pba/pch.hpp"  // IWYU pragma: keep
+//
 #include "pba/engine_context.hpp"
 //
-#include "glm/ext/quaternion_trigonometric.hpp"
-#include "glm/gtc/quaternion.hpp"
-#include "pba/core_types.hpp"
-#include "pba/math_types.hpp"
 #include "pba/util/scope_timer.hpp"
+
+#include <algorithm>
 
 namespace ds_pba
 {
+namespace
+{
+
+[[nodiscard]] glm::mat3 inv_inertia_body_box(f32 inv_mass, const Direction3& he) noexcept
+{
+    if (inv_mass == k_static_mass)
+    {
+        return glm::mat3(0.0f);
+    }
+
+    const f32 m = 1.0f / inv_mass;
+
+    const f32 x = 2.0f * he.x;
+    const f32 y = 2.0f * he.y;
+    const f32 z = 2.0f * he.z;
+
+    const f32 Ixx = (m / 12.0f) * (y * y + z * z);
+    const f32 Iyy = (m / 12.0f) * (x * x + z * z);
+    const f32 Izz = (m / 12.0f) * (x * x + y * y);
+
+    glm::mat3 invI(0.0f);
+    invI[0][0] = (Ixx > 0.0f) ? (1.0f / Ixx) : 0.0f;
+    invI[1][1] = (Iyy > 0.0f) ? (1.0f / Iyy) : 0.0f;
+    invI[2][2] = (Izz > 0.0f) ? (1.0f / Izz) : 0.0f;
+    return invI;
+}
+
+[[nodiscard]] glm::mat3
+inv_inertia_world_from_body(const Quaternion& q, const glm::mat3& inv_inertia_body) noexcept
+{
+    const glm::mat3 R = glm::mat3_cast(q);
+    return R * inv_inertia_body * glm::transpose(R);
+}
+
+void init_box_inertia(RigidBody& b) noexcept
+{
+    b.inv_inertia_body = inv_inertia_body_box(b.inv_mass, b.half_extents);
+    b.inv_inertia_world = inv_inertia_world_from_body(b.orientation, b.inv_inertia_body);
+}
+
+}  // namespace
 
 EngineContext::EngineContext()
     : scene(std::make_unique<SceneContext>()), renderer(std::make_unique<RenderContext>()),
@@ -38,11 +79,24 @@ void EngineContext::add_cube(Position3 position)
     physics->bodies.push_back(
         RigidBody{
             .id = id,
+
+            .half_extents = Direction3{0.5f, 0.5f, 0.5f},
+
             .position = position,
             .velocity = Direction3{0.0f, 0.0f, 0.0f},
+            .force_accum = Direction3{0.0f, 0.0f, 0.0f},
             .inv_mass = 1.0f,
+
+            .orientation = Quaternion{1.0f, 0.0f, 0.0f, 0.0f},
+            .angular_velocity = Direction3{0.0f, 0.0f, 0.0f},
+            .torque_accum = Direction3{0.0f, 0.0f, 0.0f},
+
+            .inv_inertia_body = glm::mat3(0.0f),
+            .inv_inertia_world = glm::mat3(0.0f),
         }
     );
+
+    init_box_inertia(physics->bodies.back());
 
     link_latest_objects(id);
 }
@@ -70,16 +124,24 @@ void EngineContext::add_ground()
     physics->bodies.push_back(
         RigidBody{
             .id = id,
-            .collider =
-                AABB{
-                    .min = -half_extents,
-                    .max = +half_extents,
-                },
+
+            .half_extents = half_extents,
+
             .position = ground_center,
             .velocity = Direction3{0.0f, 0.0f, 0.0f},
+            .force_accum = Direction3{0.0f, 0.0f, 0.0f},
             .inv_mass = k_static_mass,
+
+            .orientation = Quaternion{1.0f, 0.0f, 0.0f, 0.0f},
+            .angular_velocity = Direction3{0.0f, 0.0f, 0.0f},
+            .torque_accum = Direction3{0.0f, 0.0f, 0.0f},
+
+            .inv_inertia_body = glm::mat3(0.0f),
+            .inv_inertia_world = glm::mat3(0.0f),
         }
     );
+
+    init_box_inertia(physics->bodies.back());
 
     link_latest_objects(id);
 }
@@ -108,19 +170,6 @@ bool EngineContext::setup()
             }
         }
     }
-
-    scene->sphere_objects.push_back(
-        Object{
-            .id = next_object_id(),
-            .transform = {
-                .scale = {2.0f, 2.0f, 2.0f},
-                .orientation = glm::normalize(
-                    glm::angleAxis(glm::radians(180.0f), glm::vec3{0.0f, 0.0f, 1.0f})
-                    * glm::angleAxis(glm::radians(90.0f), glm::vec3{1.0f, 0.0f, 0.0f})
-                ),
-            },
-        }
-    );
 
     renderer->scene_context = scene.get();
     renderer->engine_context = this;
@@ -151,28 +200,14 @@ void EngineContext::run()
         Duration frame_dt = std::chrono::duration_cast<Duration>(now - frame_time);
         frame_time = now;
 
-        if (frame_dt > max_frame_dt)
-        {  // Clamp so we don't get stuck on breakpoints and computer hiccups
-            frame_dt = max_frame_dt;
-        }
+        // Clamp so we don't get stuck on breakpoints and computer hiccups
+        frame_dt = std::min(frame_dt, max_frame_dt);
 
         [[maybe_unused]] int n_phys_updates{0};
         accumulator += frame_dt;
         while (accumulator >= fixed_dt)
         {
-            // physics->step();
-            for (usize i{1zu}; i < physics->bodies.size(); ++i)
-            {
-                auto& q = physics->bodies[i].orientation;
-
-                constexpr f32 deg_per_step = 1.0f;
-                const f32 rad = glm::radians(deg_per_step);
-
-                const glm::quat dq = glm::angleAxis(rad, glm::vec3{1.0f, 1.0f, 0.0f});
-
-                q = glm::normalize(dq * q);
-            }
-
+            physics->step();
             accumulator -= fixed_dt;
             ++n_phys_updates;
         }

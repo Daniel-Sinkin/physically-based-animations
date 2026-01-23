@@ -105,7 +105,7 @@ void ds_pba::RenderContext::render_to_viewport_objects(
         VAO::unbind();
     }
 
-    constexpr const bool render_general_mesh{true};
+    constexpr const bool render_general_mesh{false};
     if constexpr (!render_general_mesh)
     {  // Spheres
         sphere_mesh.vao.bind();

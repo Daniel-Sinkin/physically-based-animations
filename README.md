@@ -48,6 +48,11 @@ if(ImGui::BeginTable(/*args*/)){
 
 ## References
 * https://pbr-book.org/4ed/
+  * Rendering basics, Camera Transformation, Shader Effects
+* Iterative Dynamics with Temporal Coherence — Erin Catto, 2005 — https://box2d.org/files/ErinCatto_IterativeDynamics_GDC2005.pdf
+  * Efficient real time box collision dynamics
+* Real-Time Collision Detection — Christer Ericson, 2004 — https://realtimecollisiondetection.net/
+* Position Based Dynamics — Matthias Müller, Bruno Heidelberger, Marcus Hennix, John Ratcliff, 2007 — https://matthias-research.github.io/pages/publications/posBasedDyn.pdf
 
 ### Assets
 * PolyHaven
