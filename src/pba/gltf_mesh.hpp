@@ -1,7 +1,7 @@
 // pba/gltf_mesh.hpp
 #pragma once
 
-#include "pba/gl_types.hpp"
+#include "pba/mesh_data.hpp"
 #include "pba/scene_types.hpp"
 
 #include <expected>
@@ -17,9 +17,9 @@ enum class GltfLoadError
     UnsupportedAccessorType,
 };
 
-std::expected<GLMesh, GltfLoadError>
+std::expected<MeshData, GltfLoadError>
 load_gltf_mesh(const std::string& path, const Transform& preprocess);
 
-std::expected<GLMesh, GltfLoadError> load_model_mesh(const std::string& model_name);
+std::expected<MeshData, GltfLoadError> load_model_mesh(const std::string& model_name);
 
 }  // namespace ds_pba

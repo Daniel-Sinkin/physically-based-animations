@@ -11,186 +11,151 @@ namespace ds_pba
 {
 namespace
 {
-struct V
+template <usize N>
+[[nodiscard]] MeshData mesh_from_array(const std::array<MeshV, N>& a)
 {
-    f32 px, py, pz;  // points
-    f32 nx, ny, nz;  // normals
-};
+    MeshData out{};
+    out.vertices.reserve(N);
+    out.vertices.insert(out.vertices.end(), a.begin(), a.end());
+    return out;
+}
 }  // namespace
 
-GLMesh create_cube_mesh()
+MeshData create_cube_mesh()
 {
-
     // clang-format off
-    static constexpr std::array<V, 36> verts = {
+    static constexpr std::array<MeshV, 36> verts = {
         // +Z
-        V{-0.5f, -0.5f,  0.5f,  0,  0,  1},
-        V{ 0.5f, -0.5f,  0.5f,  0,  0,  1},
-        V{ 0.5f,  0.5f,  0.5f,  0,  0,  1},
-        V{-0.5f, -0.5f,  0.5f,  0,  0,  1},
-        V{ 0.5f,  0.5f,  0.5f,  0,  0,  1},
-        V{-0.5f,  0.5f,  0.5f,  0,  0,  1},
+        MeshV{-0.5f, -0.5f,  0.5f,  0,  0,  1},
+        MeshV{ 0.5f, -0.5f,  0.5f,  0,  0,  1},
+        MeshV{ 0.5f,  0.5f,  0.5f,  0,  0,  1},
+        MeshV{-0.5f, -0.5f,  0.5f,  0,  0,  1},
+        MeshV{ 0.5f,  0.5f,  0.5f,  0,  0,  1},
+        MeshV{-0.5f,  0.5f,  0.5f,  0,  0,  1},
+
         // -Z
-        V{-0.5f, -0.5f, -0.5f,  0,  0, -1},
-        V{ 0.5f,  0.5f, -0.5f,  0,  0, -1},
-        V{ 0.5f, -0.5f, -0.5f,  0,  0, -1},
-        V{-0.5f, -0.5f, -0.5f,  0,  0, -1},
-        V{-0.5f,  0.5f, -0.5f,  0,  0, -1},
-        V{ 0.5f,  0.5f, -0.5f,  0,  0, -1},
+        MeshV{-0.5f, -0.5f, -0.5f,  0,  0, -1},
+        MeshV{ 0.5f,  0.5f, -0.5f,  0,  0, -1},
+        MeshV{ 0.5f, -0.5f, -0.5f,  0,  0, -1},
+        MeshV{-0.5f, -0.5f, -0.5f,  0,  0, -1},
+        MeshV{-0.5f,  0.5f, -0.5f,  0,  0, -1},
+        MeshV{ 0.5f,  0.5f, -0.5f,  0,  0, -1},
+
         // +X
-        V{ 0.5f, -0.5f, -0.5f,  1,  0,  0},
-        V{ 0.5f,  0.5f, -0.5f,  1,  0,  0},
-        V{ 0.5f,  0.5f,  0.5f,  1,  0,  0},
-        V{ 0.5f, -0.5f, -0.5f,  1,  0,  0},
-        V{ 0.5f,  0.5f,  0.5f,  1,  0,  0},
-        V{ 0.5f, -0.5f,  0.5f,  1,  0,  0},
+        MeshV{ 0.5f, -0.5f, -0.5f,  1,  0,  0},
+        MeshV{ 0.5f,  0.5f, -0.5f,  1,  0,  0},
+        MeshV{ 0.5f,  0.5f,  0.5f,  1,  0,  0},
+        MeshV{ 0.5f, -0.5f, -0.5f,  1,  0,  0},
+        MeshV{ 0.5f,  0.5f,  0.5f,  1,  0,  0},
+        MeshV{ 0.5f, -0.5f,  0.5f,  1,  0,  0},
+
         // -X
-        V{-0.5f, -0.5f, -0.5f, -1,  0,  0},
-        V{-0.5f,  0.5f,  0.5f, -1,  0,  0},
-        V{-0.5f,  0.5f, -0.5f, -1,  0,  0},
-        V{-0.5f, -0.5f, -0.5f, -1,  0,  0},
-        V{-0.5f, -0.5f,  0.5f, -1,  0,  0},
-        V{-0.5f,  0.5f,  0.5f, -1,  0,  0},
+        MeshV{-0.5f, -0.5f, -0.5f, -1,  0,  0},
+        MeshV{-0.5f,  0.5f,  0.5f, -1,  0,  0},
+        MeshV{-0.5f,  0.5f, -0.5f, -1,  0,  0},
+        MeshV{-0.5f, -0.5f, -0.5f, -1,  0,  0},
+        MeshV{-0.5f, -0.5f,  0.5f, -1,  0,  0},
+        MeshV{-0.5f,  0.5f,  0.5f, -1,  0,  0},
+
         // +Y
-        V{-0.5f,  0.5f, -0.5f,  0,  1,  0},
-        V{ 0.5f,  0.5f,  0.5f,  0,  1,  0},
-        V{ 0.5f,  0.5f, -0.5f,  0,  1,  0},
-        V{-0.5f,  0.5f, -0.5f,  0,  1,  0},
-        V{-0.5f,  0.5f,  0.5f,  0,  1,  0},
-        V{ 0.5f,  0.5f,  0.5f,  0,  1,  0},
+        MeshV{-0.5f,  0.5f, -0.5f,  0,  1,  0},
+        MeshV{ 0.5f,  0.5f,  0.5f,  0,  1,  0},
+        MeshV{ 0.5f,  0.5f, -0.5f,  0,  1,  0},
+        MeshV{-0.5f,  0.5f, -0.5f,  0,  1,  0},
+        MeshV{-0.5f,  0.5f,  0.5f,  0,  1,  0},
+        MeshV{ 0.5f,  0.5f,  0.5f,  0,  1,  0},
+
         // -Y
-        V{-0.5f, -0.5f, -0.5f,  0, -1,  0},
-        V{ 0.5f, -0.5f, -0.5f,  0, -1,  0},
-        V{ 0.5f, -0.5f,  0.5f,  0, -1,  0},
-        V{-0.5f, -0.5f, -0.5f,  0, -1,  0},
-        V{ 0.5f, -0.5f,  0.5f,  0, -1,  0},
-        V{-0.5f, -0.5f,  0.5f,  0, -1,  0},
+        MeshV{-0.5f, -0.5f, -0.5f,  0, -1,  0},
+        MeshV{ 0.5f, -0.5f, -0.5f,  0, -1,  0},
+        MeshV{ 0.5f, -0.5f,  0.5f,  0, -1,  0},
+        MeshV{-0.5f, -0.5f, -0.5f,  0, -1,  0},
+        MeshV{ 0.5f, -0.5f,  0.5f,  0, -1,  0},
+        MeshV{-0.5f, -0.5f,  0.5f,  0, -1,  0},
     };
     // clang-format on
 
-    GLMesh mesh{};
-    glGenVertexArrays(1, mesh.vao.ptr());
-    glGenBuffers(1, mesh.vbo.ptr());
-    mesh.vertex_count = static_cast<GLsizei>(verts.size());
-
-    {
-        const ScopedBufferBinder binder{mesh};
-        glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts.data(), GL_STATIC_DRAW);
-
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(V), GLPtr::offset0());
-
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(V), GLPtr::offset(3 * sizeof(f32)));
-    }
-    return mesh;
+    return mesh_from_array(verts);
 }
 
-GLMesh create_quad_mesh()
+MeshData create_quad_mesh()
 {
     // clang-format off
-    static constexpr std::array<V, 6> verts = {
-        V{-0.5f, -0.5f,  0.0f,  0,  0,  1},
-        V{ 0.5f, -0.5f,  0.0f,  0,  0,  1},
-        V{ 0.5f,  0.5f,  0.0f,  0,  0,  1},
-        V{-0.5f, -0.5f,  0.0f,  0,  0,  1},
-        V{ 0.5f,  0.5f,  0.0f,  0,  0,  1},
-        V{-0.5f,  0.5f,  0.0f,  0,  0,  1},
+    static constexpr std::array<MeshV, 6> verts = {
+        MeshV{-0.5f, -0.5f,  0.0f,  0,  0,  1},
+        MeshV{ 0.5f, -0.5f,  0.0f,  0,  0,  1},
+        MeshV{ 0.5f,  0.5f,  0.0f,  0,  0,  1},
+        MeshV{-0.5f, -0.5f,  0.0f,  0,  0,  1},
+        MeshV{ 0.5f,  0.5f,  0.0f,  0,  0,  1},
+        MeshV{-0.5f,  0.5f,  0.0f,  0,  0,  1},
     };
     // clang-format on
 
-    GLMesh mesh{};
-    glGenVertexArrays(1, mesh.vao.ptr());
-    glGenBuffers(1, mesh.vbo.ptr());
-    mesh.vertex_count = static_cast<GLsizei>(verts.size());
-
-    {
-        const ScopedBufferBinder binder{mesh};
-        glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts.data(), GL_STATIC_DRAW);
-
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(V), GLPtr::offset0());
-
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(V), GLPtr::offset(3 * sizeof(f32)));
-    }
-    return mesh;
+    return mesh_from_array(verts);
 }
 
-GLMesh create_pyramid_mesh()
+MeshData create_pyramid_mesh()
 {
     static constexpr f32 n_xy = 0.8944271909999159f;  // 2 / sqrt(5)
     static constexpr f32 n_z = 0.4472135954999579f;   // 1 / sqrt(5)
 
     // clang-format off
-    static constexpr std::array<V, 18> verts = {
+    static constexpr std::array<MeshV, 18> verts = {
         // Side faces
         // -Y face
-        V{-0.5f, -0.5f, -0.5f,   0.0f, -n_xy,  n_z},
-        V{ 0.5f, -0.5f, -0.5f,   0.0f, -n_xy,  n_z},
-        V{ 0.0f,  0.0f,  0.5f,   0.0f, -n_xy,  n_z},
+        MeshV{-0.5f, -0.5f, -0.5f,   0.0f, -n_xy,  n_z},
+        MeshV{ 0.5f, -0.5f, -0.5f,   0.0f, -n_xy,  n_z},
+        MeshV{ 0.0f,  0.0f,  0.5f,   0.0f, -n_xy,  n_z},
 
         // +X face
-        V{ 0.5f, -0.5f, -0.5f,   n_xy,  0.0f,  n_z},
-        V{ 0.5f,  0.5f, -0.5f,   n_xy,  0.0f,  n_z},
-        V{ 0.0f,  0.0f,  0.5f,   n_xy,  0.0f,  n_z},
+        MeshV{ 0.5f, -0.5f, -0.5f,   n_xy,  0.0f,  n_z},
+        MeshV{ 0.5f,  0.5f, -0.5f,   n_xy,  0.0f,  n_z},
+        MeshV{ 0.0f,  0.0f,  0.5f,   n_xy,  0.0f,  n_z},
 
         // +Y face
-        V{ 0.5f,  0.5f, -0.5f,   0.0f,  n_xy,  n_z},
-        V{-0.5f,  0.5f, -0.5f,   0.0f,  n_xy,  n_z},
-        V{ 0.0f,  0.0f,  0.5f,   0.0f,  n_xy,  n_z},
+        MeshV{ 0.5f,  0.5f, -0.5f,   0.0f,  n_xy,  n_z},
+        MeshV{-0.5f,  0.5f, -0.5f,   0.0f,  n_xy,  n_z},
+        MeshV{ 0.0f,  0.0f,  0.5f,   0.0f,  n_xy,  n_z},
 
         // -X face
-        V{-0.5f,  0.5f, -0.5f,  -n_xy,  0.0f,  n_z},
-        V{-0.5f, -0.5f, -0.5f,  -n_xy,  0.0f,  n_z},
-        V{ 0.0f,  0.0f,  0.5f,  -n_xy,  0.0f,  n_z},
+        MeshV{-0.5f,  0.5f, -0.5f,  -n_xy,  0.0f,  n_z},
+        MeshV{-0.5f, -0.5f, -0.5f,  -n_xy,  0.0f,  n_z},
+        MeshV{ 0.0f,  0.0f,  0.5f,  -n_xy,  0.0f,  n_z},
 
         // Base face (normal -Z)
-        V{-0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f},
-        V{ 0.5f,  0.5f, -0.5f,   0.0f,  0.0f, -1.0f},
-        V{ 0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f},
+        MeshV{-0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f},
+        MeshV{ 0.5f,  0.5f, -0.5f,   0.0f,  0.0f, -1.0f},
+        MeshV{ 0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f},
 
-        V{-0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f},
-        V{-0.5f,  0.5f, -0.5f,   0.0f,  0.0f, -1.0f},
-        V{ 0.5f,  0.5f, -0.5f,   0.0f,  0.0f, -1.0f},
+        MeshV{-0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f},
+        MeshV{-0.5f,  0.5f, -0.5f,   0.0f,  0.0f, -1.0f},
+        MeshV{ 0.5f,  0.5f, -0.5f,   0.0f,  0.0f, -1.0f},
     };
     // clang-format on
 
-    GLMesh mesh{};
-    glGenVertexArrays(1, mesh.vao.ptr());
-    glGenBuffers(1, mesh.vbo.ptr());
-    mesh.vertex_count = static_cast<GLsizei>(verts.size());
-
-    {
-        const ScopedBufferBinder binder{mesh};
-        glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts.data(), GL_STATIC_DRAW);
-
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(V), GLPtr::offset0());
-
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(V), GLPtr::offset(3 * sizeof(f32)));
-    }
-    return mesh;
+    return mesh_from_array(verts);
 }
 
-GLMesh create_cylinder_mesh(int n_segments, f32 radius, f32 height)
+MeshData create_cylinder_mesh(int n_segments, f32 radius, f32 height)
 {
-    const auto seg_f = static_cast<f32>(n_segments);
     const f32 r = radius;
     const f32 hz = 0.5f * height;
 
-    std::vector<V> verts;
-    verts.reserve(static_cast<usize>(n_segments) * 12zu);
+    MeshData out{};
+    out.vertices.reserve(
+        static_cast<usize>(n_segments) * 12zu + static_cast<usize>(n_segments) * 6zu
+    );
 
     auto push = [&](const glm::vec3& p, const glm::vec3& n)
-    { verts.emplace_back(p.x, p.y, p.z, n.x, n.y, n.z); };
+    { out.vertices.push_back(MeshV{p.x, p.y, p.z, n.x, n.y, n.z}); };
 
     static constexpr f32 k_two_pi = 2.0f * std::numbers::pi_v<f32>;
 
     for (int i = 0; i < n_segments; ++i)
     {
-        const auto i_f = static_cast<f32>(i);
+        const f32 i_f = static_cast<f32>(i);
+        const f32 seg_f = static_cast<f32>(n_segments);
+
         const f32 a0 = (i_f / seg_f) * k_two_pi;
         const f32 a1 = ((i_f + 1.0f) / seg_f) * k_two_pi;
 
@@ -224,9 +189,10 @@ GLMesh create_cylinder_mesh(int n_segments, f32 radius, f32 height)
 
     for (int i = 0; i < n_segments; ++i)
     {
-        const auto i_f = static_cast<f32>(i);
-        const f32 a0 = (i_f / seg_f) * k_two_pi;
+        const f32 i_f = static_cast<f32>(i);
+        const f32 seg_f = static_cast<f32>(n_segments);
 
+        const f32 a0 = (i_f / seg_f) * k_two_pi;
         const f32 a1 = ((i_f + 1.0f) / seg_f) * k_two_pi;
 
         const f32 c0 = std::cos(a0);
@@ -237,7 +203,6 @@ GLMesh create_cylinder_mesh(int n_segments, f32 radius, f32 height)
         const glm::vec3 p0{r * c0, r * s0, hz};
         const glm::vec3 p1{r * c1, r * s1, hz};
 
-        // Top cap is counter clock wise when looking down (from +Z)
         push(c_top, n_top);
         push(p0, n_top);
         push(p1, n_top);
@@ -245,49 +210,143 @@ GLMesh create_cylinder_mesh(int n_segments, f32 radius, f32 height)
 
     for (int i = 0; i < n_segments; ++i)
     {
-        const auto i_f = static_cast<f32>(i);
+        const f32 i_f = static_cast<f32>(i);
+        const f32 seg_f = static_cast<f32>(n_segments);
+
         const f32 a0 = (i_f / seg_f) * k_two_pi;
-        const f32 a1 = ((i_f + 1) / seg_f) * k_two_pi;
+        const f32 a1 = ((i_f + 1.0f) / seg_f) * k_two_pi;
 
         const f32 c0 = std::cos(a0);
         const f32 s0 = std::sin(a0);
         const f32 c1 = std::cos(a1);
         const f32 s1 = std::sin(a1);
 
-        const Position3 p0{r * c0, r * s0, -hz};
-        const Position3 p1{r * c1, r * s1, -hz};
+        const glm::vec3 p0{r * c0, r * s0, -hz};
+        const glm::vec3 p1{r * c1, r * s1, -hz};
 
-        // Top cap is counter clock wise when looking down (from +Z)
         push(c_bot, n_bot);
         push(p1, n_bot);
         push(p0, n_bot);
     }
 
-    GLMesh mesh{};
-    glGenVertexArrays(1, mesh.vao.ptr());
-    glGenBuffers(1, mesh.vbo.ptr());
-    mesh.vertex_count = static_cast<GLsizei>(verts.size());
+    return out;
+}
+
+MeshData create_sphere_mesh(int lat, int lon, f32 radius)
+{
+    if (lat < 2 || lon < 3)
+    {
+        throw std::runtime_error(
+            std::format(
+                "Expected lat to be >= 2 (actually {}), expected lon to be >= 3 (actually {})",
+                lat,
+                lon
+            )
+        );
+    }
+
+    const f32 lat_f = static_cast<f32>(lat);
+    const f32 lon_f = static_cast<f32>(lon);
+
+    static constexpr f32 k_pi{std::numbers::pi_v<f32>};
+    static constexpr f32 k_two_pi{2.0f * std::numbers::pi_v<f32>};
+
+    MeshData out{};
+    out.vertices.reserve(static_cast<usize>(lon) * 6zu * static_cast<usize>(lat));
+
+    auto push = [&](const Position3& p, const Direction3& n)
+    { out.vertices.push_back(MeshV{p.x, p.y, p.z, n.x, n.y, n.z}); };
+
+    const Direction3 n_top{0.0f, 0.0f, 1.0f};
+    const Direction3 n_bot{0.0f, 0.0f, -1.0f};
+    const Position3 p_top{radius * n_top};
+    const Position3 p_bot{radius * n_bot};
+
+    auto unit = [&](f32 theta, f32 phi) -> Direction3
+    {
+        return Direction3{
+            std::sin(theta) * std::cos(phi), std::sin(theta) * std::sin(phi), std::cos(theta)
+        };
+    };
 
     {
-        const ScopedBufferBinder binder{mesh};
-        glBufferData(
-            GL_ARRAY_BUFFER,
-            static_cast<GLsizeiptr>(verts.size() * sizeof(V)),
-            verts.data(),
-            GL_STATIC_DRAW
-        );
+        const f32 theta1 = k_pi / lat_f;
+        for (int j = 0; j < lon; ++j)
+        {
+            const f32 j_f = static_cast<f32>(j);
 
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(V), GLPtr::offset0());
+            const f32 phi0 = (j_f / lon_f) * k_two_pi;
+            const f32 phi1 = ((j_f + 1.0f) / lon_f) * k_two_pi;
 
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(V), GLPtr::offset(3 * sizeof(f32)));
+            const Direction3 n10{unit(theta1, phi0)};
+            const Direction3 n11{unit(theta1, phi1)};
+
+            const Position3 p10{radius * n10};
+            const Position3 p11{radius * n11};
+
+            push(p_top, n_top);
+            push(p10, n10);
+            push(p11, n11);
+        }
     }
-    return mesh;
+
+    for (int i = 1; i <= lat - 2; ++i)
+    {
+        const f32 i_f = static_cast<f32>(i);
+        const f32 theta0 = (i_f / lat_f) * k_pi;
+        const f32 theta1 = ((i_f + 1.0f) / lat_f) * k_pi;
+
+        for (int j = 0; j < lon; ++j)
+        {
+            const f32 j_f = static_cast<f32>(j);
+
+            const f32 phi0 = (j_f / lon_f) * k_two_pi;
+            const f32 phi1 = ((j_f + 1.0f) / lon_f) * k_two_pi;
+
+            const Direction3 n00 = unit(theta0, phi0);
+            const Direction3 n10 = unit(theta0, phi1);
+            const Direction3 n01 = unit(theta1, phi0);
+            const Direction3 n11 = unit(theta1, phi1);
+
+            const Position3 p00 = radius * n00;
+            const Position3 p10 = radius * n10;
+            const Position3 p01 = radius * n01;
+            const Position3 p11 = radius * n11;
+
+            push(p00, n00);
+            push(p01, n01);
+            push(p11, n11);
+
+            push(p00, n00);
+            push(p11, n11);
+            push(p10, n10);
+        }
+    }
+
+    {
+        const f32 theta0 = (static_cast<f32>(lat - 1) / static_cast<f32>(lat)) * k_pi;
+        for (int j = 0; j < lon; ++j)
+        {
+            const f32 j_f = static_cast<f32>(j);
+
+            const Direction3 n00{unit(theta0, (j_f * lon_f) / k_two_pi)};
+            const Direction3 n01{unit(theta0, ((j_f + 1.0f) + lon_f) / k_two_pi)};
+
+            const Position3 p00{radius * n00};
+            const Position3 p01{radius * n01};
+
+            push(p00, n00);
+            push(p_bot, n_bot);
+            push(p01, n01);
+        }
+    }
+
+    return out;
 }
 
 GLMesh create_grid_mesh(GridSettings grid)
 {
+
     struct GridV
     {
         f32 px, py, pz;
@@ -360,139 +419,4 @@ GLMesh create_grid_mesh(GridSettings grid)
     }
     return mesh;
 }
-
-GLMesh create_sphere_mesh(int lat, int lon, f32 radius)
-{
-    if (lat < 2 || lon < 3)
-    {
-        throw std::runtime_error(
-            std::format(
-                "Expected lat to be >= 2 (actually {}), expected lon to be >= 3 (actually {})",
-                lat,
-                lon
-            )
-        );
-    }
-
-    const auto lat_f = static_cast<f32>(lat);
-    const auto lon_f = static_cast<f32>(lon);
-
-    static constexpr f32 k_pi{std::numbers::pi_v<f32>};
-    static constexpr f32 k_two_pi{2.0f * std::numbers::pi_v<f32>};
-
-    std::vector<V> verts;
-    verts.reserve(static_cast<usize>(lon) * 6zu * static_cast<usize>(lat));
-
-    auto push = [&](const Position3& p, const Direction3& n)
-    { verts.emplace_back(p.x, p.y, p.z, n.x, n.y, n.z); };
-
-    const Direction3 n_top{0.0f, 0.0f, 1.0f};
-    const Direction3 n_bot{0.0f, 0.0f, -1.0f};
-    const Position3 p_top{radius * n_top};
-    const Position3 p_bot{radius * n_bot};
-
-    // Gives the vector at the corresponding (theta, phi) angles
-    // which is exactly the normal direction on a sphere
-    auto unit = [&](f32 theta, f32 phi) -> Direction3
-    {
-        return Direction3{
-            std::sin(theta) * std::cos(phi), std::sin(theta) * std::sin(phi), std::cos(theta)
-        };
-    };
-
-    {
-        const f32 theta1 = k_pi / lat_f;
-        for (int j{0}; j < lon; ++j)
-        {
-            const auto j_f = static_cast<f32>(j);
-
-            const f32 phi0 = (j_f / lon_f) * k_two_pi;
-            const f32 phi1 = ((j_f + 1.0f) / lon_f) * k_two_pi;
-
-            const Direction3 n10{unit(theta1, phi0)};
-            const Direction3 n11{unit(theta1, phi1)};
-
-            const Position3 p10{radius * n10};
-            const Position3 p11{radius * n11};
-
-            push(p_top, n_top);
-            push(p10, n10);
-            push(p11, n11);
-        }
-    }
-
-    for (int i{1}; i <= lat - 2; ++i)
-    {
-        const auto i_f = static_cast<f32>(i);
-        const f32 theta0 = (i_f / lat_f) * k_pi;
-        const f32 theta1 = ((i_f + 1.0f) / lat_f) * k_pi;
-
-        for (int j{0}; j < lon; ++j)
-        {
-            const auto j_f = static_cast<f32>(j);
-
-            const f32 phi0 = (j_f / lon_f) * k_two_pi;
-            const f32 phi1 = ((j_f + 1.0f) / lon_f) * k_two_pi;
-
-            const Direction3 n00 = unit(theta0, phi0);
-            const Direction3 n10 = unit(theta0, phi1);
-            const Direction3 n01 = unit(theta1, phi0);
-            const Direction3 n11 = unit(theta1, phi1);
-
-            const Direction3 p00 = radius * n00;
-            const Direction3 p10 = radius * n10;
-            const Direction3 p01 = radius * n01;
-            const Direction3 p11 = radius * n11;
-
-            push(p00, n00);
-            push(p01, n01);
-            push(p11, n11);
-
-            push(p00, n00);
-            push(p11, n11);
-            push(p10, n10);
-        }
-    }
-
-    {
-        const f32 theta0 = (static_cast<f32>(lat - 1) / static_cast<f32>(lat)) * k_pi;
-        for (int j{0}; j < lon; ++j)
-        {
-            const auto j_f = static_cast<f32>(j);
-
-            const Direction3 n00{unit(theta0, (j_f * lon_f) / k_two_pi)};
-            const Direction3 n01{unit(theta0, ((j_f + 1.0f) + lon_f) / k_two_pi)};
-
-            const Position3 p00{radius * n00};
-            const Position3 p01{radius * n01};
-
-            push(p00, n00);
-            push(p_bot, n_bot);
-            push(p01, n01);
-        }
-    }
-
-    GLMesh mesh{};
-    glGenVertexArrays(1, mesh.vao.ptr());
-    glGenBuffers(1, mesh.vbo.ptr());
-    mesh.vertex_count = static_cast<GLsizei>(verts.size());
-
-    {
-        const ScopedBufferBinder binder{mesh};
-        glBufferData(
-            GL_ARRAY_BUFFER,
-            static_cast<GLsizeiptr>(verts.size() * sizeof(V)),
-            verts.data(),
-            GL_STATIC_DRAW
-        );
-
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(V), GLPtr::offset0());
-
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(V), GLPtr::offset(3 * sizeof(f32)));
-    }
-    return mesh;
-}
-
 }  // namespace ds_pba

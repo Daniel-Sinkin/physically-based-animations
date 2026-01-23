@@ -1,4 +1,5 @@
 // pba/render_context.cpp
+#include "pba/mesh_data.hpp"
 #include "pba/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/render_context.hpp"
@@ -21,7 +22,42 @@
 #include <glm/ext/matrix_float4x4.hpp>
 #include <imgui.h>
 #include <json.hpp>
+namespace
+{
+[[nodiscard]] ds_pba::GLMesh upload_mesh_pn(const ds_pba::MeshData& mesh_data)
+{
+    using namespace ds_pba;
 
+    const auto& verts = mesh_data.vertices;
+    assert(!verts.empty());
+
+    GLMesh mesh{};
+    glGenVertexArrays(1, mesh.vao.ptr());
+    glGenBuffers(1, mesh.vbo.ptr());
+    mesh.vertex_count = static_cast<GLsizei>(verts.size());
+
+    {
+        const ScopedBufferBinder binder{mesh};
+
+        glBufferData(
+            GL_ARRAY_BUFFER,
+            static_cast<GLsizeiptr>(verts.size() * sizeof(MeshV)),
+            verts.data(),
+            GL_STATIC_DRAW
+        );
+
+        const auto stride = static_cast<GLsizei>(sizeof(MeshV));
+
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, GLPtr::offset0());
+
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, GLPtr::offset(3 * sizeof(f32)));
+    }
+
+    return mesh;
+}
+}  // namespace
 ds_pba::RenderContext::~RenderContext()
 {
     shutdown();
@@ -684,22 +720,20 @@ bool ds_pba::RenderContext::create_programs()
 
 bool ds_pba::RenderContext::create_meshes()
 {
-    cube_mesh = create_cube_mesh();
-    sphere_mesh = create_sphere_mesh(32, 24, 1.0f);
-    grid_mesh = create_grid_mesh(grid);
-    cylinder_mesh = create_cylinder_mesh(24, 0.5f, 1.0f);
-    pyramid_mesh = create_pyramid_mesh();
+    cube_mesh = upload_mesh_pn(create_cube_mesh());
+    sphere_mesh = upload_mesh_pn(create_sphere_mesh(32, 24, 1.0f));
+
+    grid_mesh = create_grid_mesh(grid);  // TODO: Change away from GL type
+
+    cylinder_mesh = upload_mesh_pn(create_cylinder_mesh(24, 0.5f, 1.0f));
+    pyramid_mesh = upload_mesh_pn(create_pyramid_mesh());
+
     {
         auto mesh_res = ds_pba::load_model_mesh("marble_bust_01");
-        if (!mesh_res)
-        {
-            std::println(
-                stderr, "Failed to load glTF mesh: {}", std::to_underlying(mesh_res.error())
-            );
-            return false;
-        }
-        marble_bust_mesh = *mesh_res;
+        assert(mesh_res && "Failed to load marble bust mesh");
+        marble_bust_mesh = upload_mesh_pn(*mesh_res);
     }
+
     return true;
 }
 

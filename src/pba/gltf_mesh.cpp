@@ -1,9 +1,9 @@
 // pba/gltf_mesh.cpp
 #include "glm/gtc/quaternion.hpp"
+#include "pba/mesh_data.hpp"
 #include "pba/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/core_types.hpp"
-#include "pba/gl_types.hpp"
 #include "pba/gltf_mesh.hpp"
 #include "pba/model_config.hpp"
 #include "pba/util/scope_timer.hpp"
@@ -61,12 +61,6 @@ find_model_gltf_file(const std::filesystem::path& model_dir)
     }
     return pick(gltf);
 }
-
-struct V
-{
-    f32 px, py, pz;  // position
-    f32 nx, ny, nz;  // normals
-};
 
 static const std::byte* accessor_data_begin(
     const tinygltf::Model& model,
@@ -188,8 +182,7 @@ static glm::mat4 preprocess_matrix(const Transform& t) noexcept
 }
 
 }  // namespace
-
-std::expected<GLMesh, GltfLoadError>
+std::expected<MeshData, GltfLoadError>
 load_gltf_mesh(const std::string& path, const Transform& preprocess)
 {
     const util::ScopeTimer timer{path};
@@ -349,7 +342,7 @@ load_gltf_mesh(const std::string& path, const Transform& preprocess)
     auto apply_pos = [&](const glm::vec3& p) -> glm::vec3
     { return glm::vec3(P * glm::vec4(p, 1.0f)); };
 
-    auto apply_nrm = [&](const glm::vec3& n) -> glm::vec3 { return safe_normalize(N * n); };
+    auto normalized = [&](const glm::vec3& n) -> glm::vec3 { return safe_normalize(N * n); };
 
     auto read_pos = [&](u32 i) -> glm::vec3
     {
@@ -361,10 +354,10 @@ load_gltf_mesh(const std::string& path, const Transform& preprocess)
     {
         const glm::vec3 n =
             safe_normalize(read_vec3_f32_strided(nrm_base, nrm_stride, static_cast<usize>(i)));
-        return apply_nrm(n);
+        return normalized(n);
     };
 
-    std::vector<V> verts;
+    std::vector<MeshV> verts;
     if (!idx.empty())
     {
         if ((idx.size() % 3u) != 0u)
@@ -438,7 +431,7 @@ load_gltf_mesh(const std::string& path, const Transform& preprocess)
             auto emit = [&](u32 i, const glm::vec3& p)
             {
                 const glm::vec3 n = has_normals ? read_nrm(i) : fn;
-                verts.push_back(V{p.x, p.y, p.z, n.x, n.y, n.z});
+                verts.push_back(MeshV{p.x, p.y, p.z, n.x, n.y, n.z});
             };
 
             emit(i0, p0);
@@ -447,32 +440,10 @@ load_gltf_mesh(const std::string& path, const Transform& preprocess)
         }
     }
 
-    GLMesh out{};
-    glGenVertexArrays(1, out.vao.ptr());
-    glGenBuffers(1, out.vbo.ptr());
-    out.vertex_count = static_cast<GLsizei>(verts.size());
-
-    {
-        const ScopedBufferBinder binder{out};
-
-        glBufferData(
-            GL_ARRAY_BUFFER,
-            static_cast<GLsizeiptr>(verts.size() * sizeof(V)),
-            verts.data(),
-            GL_STATIC_DRAW
-        );
-
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(V), GLPtr::offset0());
-
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(V), GLPtr::offset(3 * sizeof(f32)));
-    }
-
-    return out;
+    return MeshData{.vertices = verts};
 }
 
-std::expected<GLMesh, GltfLoadError> load_model_mesh(const std::string& model_name)
+std::expected<MeshData, GltfLoadError> load_model_mesh(const std::string& model_name)
 {
     const std::filesystem::path model_dir = std::filesystem::path("assets/models") / model_name;
 
