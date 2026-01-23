@@ -237,15 +237,15 @@ void render_imgui_windows(EngineContext& engine_context)
         ImGui::Text("  pivot:     (%.2f, %.2f, %.2f)", pivot_x_d, pivot_y_d, pivot_z_d);
         ImGui::Separator();
 
-        ImGui::Text("Frame Counter: %d", render_context.frame_counter);
+        ImGui::Text("Frame Counter: %d", render_context.frame_count);
 
         const auto now = std::chrono::steady_clock::now();
         const auto dur = now - render_context.run_start;
 
         const double seconds = std::chrono::duration<double>(dur).count();
 
-        const double frame_counter_d = static_cast<double>(render_context.frame_counter);
-        const double fps = (seconds > 0.0) ? frame_counter_d / seconds : 0.0;
+        const double frame_count_d = static_cast<double>(render_context.frame_count);
+        const double fps = (seconds > 0.0) ? frame_count_d / seconds : 0.0;
 
         ImGui::Text("Total Runtime: %.2f s", seconds);
         ImGui::Text("Average FPS: %.2f", fps);

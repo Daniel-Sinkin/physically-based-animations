@@ -1,7 +1,10 @@
 // pba/engine_context.hpp
 #include "pba/engine_context.hpp"
 //
+#include "pba/core_types.hpp"
 #include "pba/util/scope_timer.hpp"
+
+#include <print>
 
 namespace ds_pba
 {
@@ -111,24 +114,48 @@ bool EngineContext::setup()
     }
 
     renderer->scene_context = scene.get();
-    renderer->physics_context = physics.get();
     renderer->engine_context = this;
+    if (!renderer->setup())
+    {
+        return false;
+    }
 
-    return renderer->setup();
+    frame_time = Clock::now();
+    physics->time = frame_time;
+    accumulator = Duration{0.0};
+
+    return true;
 }
 
 void EngineContext::run()
 {
+    const Duration fixed_dt = physics->time_step;
+    const Duration max_frame_dt{0.25};
+
+    frame_time = Clock::now();
+    physics->time = frame_time;
+    accumulator = Duration{0.0};
+
     while (renderer->is_active())
     {
-        f32 physics_time = 0.0f;
-        constexpr f32 physics_dt = 0.001f;
+        const TimePoint now = Clock::now();
+        Duration frame_dt = std::chrono::duration_cast<Duration>(now - frame_time);
+        frame_time = now;
 
-        while (physics_time < 0.008f)
-        {
-            physics->step(physics_dt);
-            physics_time += physics_dt;
+        if (frame_dt > max_frame_dt)
+        {  // Clamp so we don't get stuck on breakpoints and computer hiccups
+            frame_dt = max_frame_dt;
         }
+
+        int n_phys_updates{0};
+        accumulator += frame_dt;
+        while (accumulator >= fixed_dt)
+        {
+            physics->step();
+            accumulator -= fixed_dt;
+            ++n_phys_updates;
+        }
+        std::println("Did {} physics updates for frame #{}", n_phys_updates, renderer->frame_count);
 
         for (const auto& [id, idxs] : obj_map)
         {

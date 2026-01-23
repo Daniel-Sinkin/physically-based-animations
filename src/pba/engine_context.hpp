@@ -29,6 +29,9 @@ struct EngineContext
 
     EngineContext();
 
+    TimePoint frame_time = Clock::now();
+    Duration accumulator{0.0};
+
     void link_latest_objects(ObjectId id);
 
     void add_cube(Position3 position);

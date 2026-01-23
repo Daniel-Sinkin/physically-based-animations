@@ -46,10 +46,13 @@ struct PhysicsContext
 {
     std::vector<RigidBody> bodies;
 
-    void apply_forces(f32 delta_time);
-    void update_positions(f32 delta_time);
+    TimePoint time{};
+    Duration time_step{std::chrono::duration<f64>(1.0 / 120.0)};
+
+    void apply_forces();
+    void update_positions();
     void solve_collisions();
-    void step(f32 dt);
+    void step();
 };
 
 }  // namespace ds_pba

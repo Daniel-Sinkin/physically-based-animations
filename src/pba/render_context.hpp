@@ -66,7 +66,7 @@ struct RenderContext
     f64 prev_mx{0.0};
     f64 prev_my{0.0};
 
-    int frame_counter{0};
+    int frame_count{0};
 
     TimePoint run_start = Clock::now();
     TimePoint last_scene_poll = Clock::now();
@@ -79,8 +79,7 @@ struct RenderContext
     bool viewport_image_hovered{false};
 
     SceneContext* scene_context{};
-    EngineContext* engine_context{};
-    PhysicsContext* physics_context{};
+    EngineContext* engine_context{};  // Only for ImGUI
 
     bool is_active_{true};
 

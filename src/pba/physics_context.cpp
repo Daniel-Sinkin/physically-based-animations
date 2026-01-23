@@ -1,7 +1,7 @@
-// pba/physics_context.cpp
 #include "pba/physics_context.hpp"
 
 #include <algorithm>
+#include <chrono>
 
 namespace ds_pba
 {
@@ -107,18 +107,18 @@ void resolve_contact(RigidBody& a, RigidBody& b, const Contact& c, f32 restituti
     }
 }
 
-void PhysicsContext::apply_forces(f32 delta_time)
+void PhysicsContext::apply_forces()
 {
     for (RigidBody& body : bodies)
     {
         if (!body.is_static())
         {
-            body.velocity += k_gravity * delta_time;
+            body.velocity += k_gravity * static_cast<f32>(time_step.count());
         }
     }
 }
 
-void PhysicsContext::update_positions(f32 delta_time)
+void PhysicsContext::update_positions()
 {
     for (RigidBody& body : bodies)
     {
@@ -127,7 +127,7 @@ void PhysicsContext::update_positions(f32 delta_time)
             continue;
         }
 
-        body.position += body.velocity * delta_time;
+        body.position += body.velocity * static_cast<f32>(time_step.count());
 
         const f32 r2 = glm::dot(body.position, body.position);
         if (r2 > 200.0f * 200.0f)
@@ -158,11 +158,13 @@ void PhysicsContext::solve_collisions()
     }
 }
 
-void PhysicsContext::step(f32 dt)
+void PhysicsContext::step()
 {
-    apply_forces(dt);
-    update_positions(dt);
+    apply_forces();
+    update_positions();
     solve_collisions();
+
+    time = time + std::chrono::duration_cast<Clock::duration>(time_step);
 }
 
 }  // namespace ds_pba

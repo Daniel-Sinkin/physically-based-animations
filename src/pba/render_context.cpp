@@ -309,7 +309,6 @@ void ds_pba::RenderContext::step()
 {
     using namespace ds_pba;
     assert(scene_context && "Scene Context not set for RenderContext");
-    assert(physics_context && "Physics Context not set for RenderContext");
 
     const ImGuiIO& io = ImGui::GetIO();
     if (!is_active())
@@ -492,7 +491,7 @@ void ds_pba::RenderContext::step()
     }
 
     glfwSwapBuffers(window);
-    ++frame_counter;
+    ++frame_count;
 }
 
 bool ds_pba::RenderContext::create_programs()
