@@ -107,20 +107,16 @@ struct EngineContext
             {
                 for (int x{0}; x < n; ++x)
                 {
-                    const f32 px = (static_cast<f32>(x) - (n - 1) * 0.5f) * s;
-                    const f32 py = (static_cast<f32>(y) - (n - 1) * 0.5f) * s;
+                    const auto x_f = static_cast<f32>(x);
+                    const auto y_f = static_cast<f32>(y);
+                    const f32 px = (x_f - (n - 1) * 0.5f) * s;
+                    const f32 py = (y_f - (n - 1) * 0.5f) * s;
 
-                    const f32 pz = 5.0f + s * static_cast<f32>(x + y);
+                    const f32 pz = 5.0f + s * (x_f + y_f);
 
                     add_cube({px, py, pz});
                 }
             }
-            scene->sphere_objects.push_back(
-                Object{
-                    .id = next_object_id(),
-                    .type = ObjectType::Sphere,
-                }
-            );
         }
 
         {  // Setup Renderer

@@ -9,7 +9,6 @@
 
 namespace ds_pba
 {
-
 enum class GltfLoadError
 {
     ParseError,

@@ -8,7 +8,6 @@
 
 namespace std
 {
-
 template <>
 struct formatter<glm::vec3>
 {

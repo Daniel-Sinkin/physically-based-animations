@@ -6,8 +6,6 @@
 //
 #include "pba/engine_context.hpp"
 
-#include <exception>
-
 namespace ds_pba
 {
 namespace

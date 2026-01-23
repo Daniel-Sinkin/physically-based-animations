@@ -10,7 +10,6 @@
 
 namespace ds_pba
 {
-
 enum class ShaderType : GLenum
 {
     Vertex = GL_VERTEX_SHADER,

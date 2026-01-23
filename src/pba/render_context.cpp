@@ -97,7 +97,6 @@ void ds_pba::RenderContext::render_to_viewport()
             VAO::unbind();
         }
 
-        if constexpr (false)
         {  // Spheres
             sphere_mesh.vao.bind();
             for (usize i{0zu}; i < scene_context->sphere_objects.size(); ++i)
@@ -118,7 +117,9 @@ void ds_pba::RenderContext::render_to_viewport()
             }
             VAO::unbind();
         }
-        {
+        if constexpr (false && !scene_context->sphere_objects.empty())
+        {  // Currently no generic mesh support, this just spawns in first sphere pos and assumes
+           // spheres are not rendered
             marble_bust_mesh.vao.bind();
             const Object& o{scene_context->sphere_objects[0]};
             set_uniform_mat4(obj_prog.id, "uModel", o.transform.model_matrix());
