@@ -30,6 +30,8 @@ if(ImGui::BeginTable(/*args*/)){
 ## References
 * https://pbr-book.org/4ed/
 
-## Assets
+### Assets
 * PolyHaven
     * https://polyhaven.com/a/marble_bust_01
+* Fonts
+    * https://monaspace.githubnext.com
