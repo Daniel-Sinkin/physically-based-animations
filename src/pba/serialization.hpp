@@ -28,6 +28,27 @@ struct adl_serializer<glm::vec3>
     }
 };
 
+template <>
+struct adl_serializer<glm::quat>
+{
+    static void to_json(json& j, const glm::quat& q)
+    {
+        j = json::array({q.w, q.x, q.y, q.z});
+    }
+
+    static void from_json(const json& j, glm::quat& q)
+    {
+        if (!j.is_array() || j.size() != 4)
+        {
+            throw json::type_error::create(302, "glm::quat must be array[4] (w,x,y,z)", j);
+        }
+        q.w = j.at(0).get<float>();
+        q.x = j.at(1).get<float>();
+        q.y = j.at(2).get<float>();
+        q.z = j.at(3).get<float>();
+    }
+};
+
 }  // namespace nlohmann
 
 namespace ds_pba
@@ -37,8 +58,8 @@ inline void to_json(nlohmann::json& j, const Transform& t)
 {
     j = nlohmann::json::object();
     j["position"] = t.position;
-    j["rotation_deg"] = t.rotation_deg;
     j["scale"] = t.scale;
+    j["orientation"] = t.orientation;
 }
 
 inline void from_json(const nlohmann::json& j, Transform& t)
@@ -49,8 +70,8 @@ inline void from_json(const nlohmann::json& j, Transform& t)
     }
 
     t.position = j.at("position").get<glm::vec3>();
-    t.rotation_deg = j.at("rotation_deg").get<glm::vec3>();
     t.scale = j.at("scale").get<glm::vec3>();
+    t.orientation = j.at("orientation").get<glm::quat>();
 }
 
 }  // namespace ds_pba

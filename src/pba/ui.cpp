@@ -1,5 +1,8 @@
 // pba/ui.cpp
+#include "glm/gtc/quaternion.hpp"
+#include "glm/trigonometric.hpp"
 #include "imgui.h"
+#include "pba/math_types.hpp"
 #include "pba/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/ui.hpp"
@@ -385,8 +388,27 @@ void render_imgui_windows(EngineContext& engine_context)
             {
                 RigidBody& rb = physics_context.bodies[*physics_index];
                 ImGui::DragFloat3("Position", &rb.position.x, 0.01f);
-                // ImGui::DragFloat3("Rotation (deg)", &o.transform.rotation_deg.x, 0.25f);
-                // ImGui::DragFloat3("Scale", &o.transform.scale.x, 0.01f, 0.001f, 1000.0f);
+                Quaternion& ori = rb.orientation;
+                const EulerDeg3& rot = glm::degrees(glm::eulerAngles(ori));
+                ImGui::Text(
+                    "Orientation (Quaternion) (%.2f,%.2f,%.2f,%.2f)",
+                    static_cast<double>(ori.x),
+                    static_cast<double>(ori.y),
+                    static_cast<double>(ori.z),
+                    static_cast<double>(ori.w)
+                );
+                ImGui::Text(
+                    "Orientation (Degrees) (%.2f°,%.2f°,%.2f°)",
+                    static_cast<double>(rot.x),
+                    static_cast<double>(rot.y),
+                    static_cast<double>(rot.z)
+                );
+                ImGui::Text(
+                    "Scaling (%.2f,%.2f,%.2f)",
+                    static_cast<double>(o.transform.scale.x),
+                    static_cast<double>(o.transform.scale.y),
+                    static_cast<double>(o.transform.scale.z)
+                );
                 ImGui::Text(
                     "Velocity (%.2f,%.2f,%.2f)",
                     static_cast<double>(rb.velocity.x),
@@ -397,7 +419,6 @@ void render_imgui_windows(EngineContext& engine_context)
             else
             {  // Non-physical object
                 ImGui::DragFloat3("Position", &o.transform.position.x, 0.01f);
-                ImGui::DragFloat3("Rotation (deg)", &o.transform.rotation_deg.x, 0.25f);
                 ImGui::DragFloat3("Scale", &o.transform.scale.x, 0.01f, 0.001f, 1000.0f);
             }
 

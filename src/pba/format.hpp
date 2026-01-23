@@ -2,9 +2,11 @@
 #pragma once
 
 #include "pba/raycast.hpp"
+#include "pba/scene_types.hpp"
 
 #include <format>
 #include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 namespace std
 {
@@ -30,6 +32,36 @@ struct formatter<glm::vec3>
         *out++ = ',';
         *out++ = ' ';
         out = float_fmt.format(v.z, ctx);
+        *out++ = ')';
+        return out;
+    }
+};
+
+template <>
+struct formatter<glm::quat>
+{
+    formatter<float> float_fmt;
+
+    constexpr auto parse(format_parse_context& ctx)
+    {
+        return float_fmt.parse(ctx);
+    }
+
+    template <class FormatContext>
+    auto format(const glm::quat& q, FormatContext& ctx) const
+    {
+        auto out = ctx.out();
+        *out++ = '(';
+        out = float_fmt.format(q.w, ctx);
+        *out++ = ',';
+        *out++ = ' ';
+        out = float_fmt.format(q.x, ctx);
+        *out++ = ',';
+        *out++ = ' ';
+        out = float_fmt.format(q.y, ctx);
+        *out++ = ',';
+        *out++ = ' ';
+        out = float_fmt.format(q.z, ctx);
         *out++ = ')';
         return out;
     }
@@ -73,6 +105,30 @@ struct formatter<glm::mat4>
         return out;
     }
 };
+
+template <>
+struct formatter<ds_pba::Transform>
+{
+    formatter<float> float_fmt;
+
+    constexpr auto parse(format_parse_context& ctx)
+    {
+        return float_fmt.parse(ctx);
+    }
+
+    template <class FormatContext>
+    auto format(const ds_pba::Transform& t, FormatContext& ctx) const
+    {
+        return std::format_to(
+            ctx.out(),
+            "Transform{{position={}, scale={}, orientation={}}}",
+            t.position,
+            t.scale,
+            t.orientation
+        );
+    }
+};
+
 template <>
 struct formatter<ds_pba::Ray>
 {

@@ -6,6 +6,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 
 namespace ds_pba
 {
@@ -36,6 +37,7 @@ using TimePoint = Clock::time_point;
 using Duration = std::chrono::duration<f64>;
 
 using ObjectId = u32;
+inline constexpr ObjectId k_invalid_id{std::numeric_limits<u32>::max()};
 
 inline ObjectId next_object_id()
 {

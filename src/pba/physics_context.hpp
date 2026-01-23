@@ -4,6 +4,7 @@
 #include "pba/core_types.hpp"
 #include "pba/math_types.hpp"
 
+#include <glm/gtc/quaternion.hpp>
 #include <vector>
 
 namespace ds_pba
@@ -14,8 +15,8 @@ constexpr Direction3 k_gravity{0.0f, 0.0f, -9.81f};
 
 struct AABB
 {
-    Position3 min;
-    Position3 max;
+    Position3 min{-0.5f, -0.5f, -0.5f};
+    Position3 max{0.5f, 0.5f, 0.5f};
 };
 
 struct Contact
@@ -30,11 +31,12 @@ Contact aabb_contact(const AABB& a, const AABB& b) noexcept;
 
 struct RigidBody
 {
-    ObjectId id;
-    AABB collider;
-    Position3 position;
-    Direction3 velocity;
-    f32 inv_mass;
+    ObjectId id{k_invalid_id};
+    AABB collider{};
+    Position3 position{0.0f, 0.0f, 0.0f};
+    Direction3 velocity{0.0f, 0.0f, 0.0f};
+    Quaternion orientation{1.0f, 0.0f, 0.0f, 0.0f};
+    f32 inv_mass{k_static_mass};
 
     AABB get_world_collider() const;
     bool is_static() const noexcept;

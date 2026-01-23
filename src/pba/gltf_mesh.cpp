@@ -1,4 +1,5 @@
 // pba/gltf_mesh.cpp
+#include "glm/gtc/quaternion.hpp"
 #include "pba/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/core_types.hpp"
@@ -181,9 +182,7 @@ static glm::mat4 preprocess_matrix(const Transform& t) noexcept
 {
     glm::mat4 M(1.0f);
     M = glm::translate(M, t.position);
-    M = glm::rotate(M, glm::radians(t.rotation_deg.z), glm::vec3(0, 0, 1));
-    M = glm::rotate(M, glm::radians(t.rotation_deg.y), glm::vec3(0, 1, 0));
-    M = glm::rotate(M, glm::radians(t.rotation_deg.x), glm::vec3(1, 0, 0));
+    M *= glm::mat4_cast(t.orientation);
     M = glm::scale(M, t.scale);
     return M;
 }

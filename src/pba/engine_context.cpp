@@ -1,7 +1,10 @@
 // pba/engine_context.hpp
 #include "pba/engine_context.hpp"
 //
+#include "glm/ext/quaternion_trigonometric.hpp"
+#include "glm/gtc/quaternion.hpp"
 #include "pba/core_types.hpp"
+#include "pba/math_types.hpp"
 #include "pba/util/scope_timer.hpp"
 
 namespace ds_pba
@@ -35,11 +38,6 @@ void EngineContext::add_cube(Position3 position)
     physics->bodies.push_back(
         RigidBody{
             .id = id,
-            .collider =
-                AABB{
-                    .min = Position3{-0.5f, -0.5f, -0.5f},
-                    .max = Position3{0.5f, 0.5f, 0.5f},
-                },
             .position = position,
             .velocity = Direction3{0.0f, 0.0f, 0.0f},
             .inv_mass = 1.0f,
@@ -92,7 +90,7 @@ bool EngineContext::setup()
     {
         add_ground();
 
-        constexpr int n{1};
+        constexpr int n{10};
         constexpr f32 s{1.10f};
 
         for (int y{0}; y < n; ++y)
@@ -110,6 +108,19 @@ bool EngineContext::setup()
             }
         }
     }
+
+    scene->sphere_objects.push_back(
+        Object{
+            .id = next_object_id(),
+            .transform = {
+                .scale = {2.0f, 2.0f, 2.0f},
+                .orientation = glm::normalize(
+                    glm::angleAxis(glm::radians(180.0f), glm::vec3{0.0f, 0.0f, 1.0f})
+                    * glm::angleAxis(glm::radians(90.0f), glm::vec3{1.0f, 0.0f, 0.0f})
+                ),
+            },
+        }
+    );
 
     renderer->scene_context = scene.get();
     renderer->engine_context = this;
@@ -149,7 +160,19 @@ void EngineContext::run()
         accumulator += frame_dt;
         while (accumulator >= fixed_dt)
         {
-            physics->step();
+            // physics->step();
+            for (usize i{1zu}; i < physics->bodies.size(); ++i)
+            {
+                auto& q = physics->bodies[i].orientation;
+
+                constexpr f32 deg_per_step = 1.0f;
+                const f32 rad = glm::radians(deg_per_step);
+
+                const glm::quat dq = glm::angleAxis(rad, glm::vec3{1.0f, 1.0f, 0.0f});
+
+                q = glm::normalize(dq * q);
+            }
+
             accumulator -= fixed_dt;
             ++n_phys_updates;
         }
@@ -158,6 +181,8 @@ void EngineContext::run()
         {
             const auto [scene_i, phys_i] = idxs;
             scene->cube_objects[scene_i].transform.position = physics->bodies[phys_i].position;
+            scene->cube_objects[scene_i].transform.orientation =
+                physics->bodies[phys_i].orientation;
         }
 
         renderer->step();
