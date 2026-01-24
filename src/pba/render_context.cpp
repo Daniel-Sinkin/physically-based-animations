@@ -848,17 +848,24 @@ void ds_pba::RenderContext::step()
     using namespace ds_pba;
     assert(scene_context && "Scene Context not set for RenderContext");
 
-    const ImGuiIO& io{ImGui::GetIO()};
     if (!is_active())
     {
         return;
+    }
+    // See shutdown.hpp for details on our signal handling
+    if (ds_pba::g_request_close_sig)
+    {
+        ds_pba::g_request_close.store(true, std::memory_order_relaxed);
+        ds_pba::g_request_close_sig = 0;
     }
     if (ds_pba::g_request_close.load(std::memory_order_relaxed))
     {
         request_close();
     }
+
     glfwPollEvents();
 
+    const ImGuiIO& io{ImGui::GetIO()};
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
