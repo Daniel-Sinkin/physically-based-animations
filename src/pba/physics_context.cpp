@@ -1,11 +1,14 @@
 // pba/physics_context.cpp
-#include "pba/constants.hpp"
+#include "pba/math_types.hpp"
 #include "pba/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/physics_context.hpp"
 //
+#include "pba/constants.hpp"
 #include "pba/core_types.hpp"
 #include "pba/format.hpp"  // IWYU pragma: keep
+
+#include <glm/geometric.hpp>
 
 namespace ds_pba
 {
@@ -126,34 +129,20 @@ inv_inertia_world_from_body(const Quaternion& q, const glm::mat3& inv_inertia_bo
 
 [[nodiscard]] std::array<Position3, 8> box_world_corners(const RigidBody& b) noexcept
 {
-    const std::array<Direction3, 3> axes{obb_axes_world(b)};
-    const Direction3 ax{axes[0]};
-    const Direction3 ay{axes[1]};
-    const Direction3 az{axes[2]};
-    const Direction3 he{b.half_extents};
-    const Direction3 ex{ax * he.x};
-    const Direction3 ey{ay * he.y};
-    const Direction3 ez{az * he.z};
-
-    std::array<Position3, 8> c{};
-
-    usize i{0zu};
-    for (int sx{-1}; sx <= 1; sx += 2)
-    {
-        for (int sy{-1}; sy <= 1; sy += 2)
-        {
-            for (int sz{-1}; sz <= 1; sz += 2)
-            {
-                const auto sx_f = static_cast<f32>(sx);
-                const auto sy_f = static_cast<f32>(sy);
-                const auto sz_f = static_cast<f32>(sz);
-
-                c[i++] = b.position + sx_f * ex + sy_f * ey + sz_f * ez;
-            }
-        }
-    }
-
-    return c;
+    const auto [ax, ay, az] = obb_axes_world(b);
+    const Direction3 ex{ax * b.half_extents.x};
+    const Direction3 ey{ay * b.half_extents.y};
+    const Direction3 ez{az * b.half_extents.z};
+    return std::array<Position3, 8>{
+        b.position - ex - ey - ez,
+        b.position - ex - ey + ez,
+        b.position - ex + ey - ez,
+        b.position - ex + ey + ez,
+        b.position + ex - ey - ez,
+        b.position + ex - ey + ez,
+        b.position + ex + ey - ez,
+        b.position + ex + ey + ez,
+    };
 }
 
 [[nodiscard]] bool point_in_obb(const Position3& p, const RigidBody& b) noexcept
@@ -200,8 +189,6 @@ void project_obb_on_axis(
     const auto ax = obb_axes_world(a);
     const auto bx = obb_axes_world(b);
 
-    // Candidate separating axes:
-    // 3 from A, 3 from B, 9 cross products
     std::array<Direction3, 15> axes{};
     {
         axes[0] = ax[0];
@@ -335,10 +322,89 @@ void generate_obb_contacts(const std::vector<RigidBody>& bodies, std::vector<Con
     }
 }
 
+void apply_impulse_contact_friction(
+    RigidBody& a,
+    RigidBody& b,
+    Direction3 r_a,
+    Direction3 r_b,
+    Direction3 n_hat,
+    f32 impulse_magnitude
+) noexcept
+{
+    // This section adapted from [Catto05] (4.3) Friction Constraints.
+    // The paper explicitly uses a orthonormal tangent basis {u1, u2} with
+    // u1 x u2 = n and computes (v_rel.u1) and (v_rel.u2) seperately.
+    // To avoid computing these U:={u1, u2} explicitly this code does
+    //
+    // proj_U(v_rel) = v_rel - (v_rel.n)*n == (v_rel.u1)*u1 + (v_rel.u2)*u2
+    //
+    // which is an orthonormal projection onto the orthogonal space of the
+    // normal direction (i.e. exactly the tangent space).
+    const Direction3 p_a_dot{a.velocity + glm::cross(a.angular_velocity, r_a)};
+    const Direction3 p_b_dot{b.velocity + glm::cross(b.angular_velocity, r_b)};
+    const Direction3 v_rel_w{p_a_dot - p_b_dot};
+
+    // Projection onto the tangent
+    // v_rel.n
+    const f32 vrel_dot_n{glm::dot(v_rel_w, n_hat)};
+    // v_rel - (v_rel.n) * n
+    const Direction3 v_t{v_rel_w - vrel_dot_n * n_hat};
+    // Equation (21) would be C_{u1}' = v_rel_w . u1
+    // Equation (22) would be C_{u2}' = v_rel_w . u2
+
+    const f32 vt2{glm::dot(v_t, v_t)};
+    if (vt2 <= 1e-12f)
+    {
+        return;
+    }
+    const f32 vt_len{std::sqrt(vt2)};
+    // Model friction as a force acting in the opposite direction of "slip"
+    const Direction3 t_hat{v_t / vt_len};
+
+    // These are the angular Jacobian terms (r x u) from Equation (23)
+    const Direction3 r_a_cross_t{glm::cross(r_a, t_hat)};
+    const Direction3 r_b_cross_t{glm::cross(r_b, t_hat)};
+
+    // Change in angular velocity is given by
+    //
+    // Delta omega = I^-1(r x J)
+    //
+    const Direction3 invI_r_axt{a.inv_inertia_world * r_a_cross_t};
+    const Direction3 invI_r_bxt{b.inv_inertia_world * r_b_cross_t};
+
+    // Computes effective mass along t_hat, often denoted by just k
+    const f32 k2a{a.inv_mass + glm::dot(t_hat, glm::cross(invI_r_axt, r_a))};
+    const f32 k2b{b.inv_mass + glm::dot(t_hat, glm::cross(invI_r_bxt, r_b))};
+    const f32 effective_mass{k2a + k2b};
+    if (effective_mass <= 1e-12f)
+    {
+        return;
+    }
+
+    // Coulomb limit on impulse magnitude
+    f32 friction_impulse_magnitude{-glm::dot(v_rel_w, t_hat) / effective_mass};
+    const f32 max_jt{k_friction * impulse_magnitude};
+    friction_impulse_magnitude = std::clamp(friction_impulse_magnitude, -max_jt, +max_jt);
+
+    const Direction3 friction_impulse{friction_impulse_magnitude * t_hat};
+
+    if (!a.is_static())
+    {
+        a.velocity += friction_impulse * a.inv_mass;
+        a.angular_velocity += a.inv_inertia_world * glm::cross(r_a, friction_impulse);
+    }
+    if (!b.is_static())
+    {
+        b.velocity -= friction_impulse * b.inv_mass;
+        b.angular_velocity -= b.inv_inertia_world * glm::cross(r_b, friction_impulse);
+    }
+}
+
 void apply_impulse_contact(
     RigidBody& a, RigidBody& b, const Contact& c, f32 restitution, f32 dt_s
 ) noexcept
 {
+    // This is based on [Baraff97]
     if (a.is_static() && b.is_static())
     {
         return;
@@ -373,136 +439,76 @@ void apply_impulse_contact(
     const Direction3 r_a{p_a - x_a};
     const Direction3 r_b{p_b - x_b};
 
-    // Angular velocities
-    const Direction3 omega_a{a.angular_velocity};
-    const Direction3 omega_b{b.angular_velocity};
+    // Angular velocities are denoted by omega_a and omega_b respectively
+    // (8-1) p_a'(t_0) = v_a(t_0) + omega_a(t_0) x (p_a(t_0) - x_a(t_0))
+    const Direction3 p_a_dot{v_a + glm::cross(a.angular_velocity, r_a)};
+    // (8-2) p_b'(t_0) = v_b(t_0) + omega_b(t_0) x (p_b(t_0) - x_b(t_0))
+    const Direction3 p_b_dot{v_b + glm::cross(b.angular_velocity, r_b)};
 
-    // [8-1] p_a'(t_0) = v_a(t_0) + omega_a(t_0) x (p_a(t_0) - x_a(t_0))
-    const Direction3 p_a_dot{v_a + glm::cross(omega_a, r_a)};
-    // [8-2] p_b'(t_0) = v_b(t_0) + omega_b(t_0) x (p_b(t_0) - x_b(t_0))
-    const Direction3 p_b_dot{v_b + glm::cross(omega_b, r_b)};
-
-    // [8-3] v_rel = n^ . (p_a'(t_0) - p_b'(t_0)) // Normal Relative Velocity
+    // (8-3) v_rel = n^ . (p_a'(t_0) - p_b'(t_0)) // Normal Relative Velocity
     const f32 v_rel = glm::dot(n_hat, p_a_dot - p_b_dot);
 
-    // Impulse is some J = j * n^ where we can derive j based on constraints.
+    // Impulse is given by J = j * n^ where we can derive j based on constraints.
     // Will omit the derivation, can express the v_a^+ and v_a^- as well as omega_a^+ and omega_a^-
     // conditions both via coefficient of restitution as well as the impulse identity and solve
     // for the magnitude j
 
     // Angular impulse direction
-    const Direction3 r_axn{glm::cross(r_a, n_hat)};
-    const Direction3 r_bxn{glm::cross(r_b, n_hat)};
-    const Direction3 invI_r_axn{a.inv_inertia_world * r_axn};
-    const Direction3 invI_r_bxn{b.inv_inertia_world * r_bxn};
+    const Direction3 r_a_cross_n{glm::cross(r_a, n_hat)};
+    const Direction3 r_b_cross_n{glm::cross(r_b, n_hat)};
+    const Direction3 invI_r_axn{a.inv_inertia_world * r_a_cross_n};
+    const Direction3 invI_r_bxn{b.inv_inertia_world * r_b_cross_n};
 
-    // [8-18] Denominator
-    // "Effective Mass" denominator
+    // (8-18) Denominator
+    // "Effective Mass" denominator; in the literature often denoted by k
     const f32 k_a{a.inv_mass + glm::dot(n_hat, glm::cross(invI_r_axn, r_a))};
     const f32 k_b{b.inv_mass + glm::dot(n_hat, glm::cross(invI_r_bxn, r_b))};
-    const f32 k{k_a + k_b};
-    if (k_a + k_b <= 1e-12f)
+    const f32 effective_mass{k_a + k_b};
+    if (effective_mass <= 1e-12f)
     {
         return;
     }
-
     if (-v_rel < k_restitution_threshold)
     {
         eps = 0.0f;
     }
-
-    constexpr f32 slop{0.001f};
-    constexpr f32 beta{0.2f};
-    static_assert((beta >= 0.0f) && (beta <= 1.0f));
-
-    const f32 pen{std::max(0.0f, c.penetration - slop)};
-    const f32 bias{-(beta / dt_s) * pen};
-    const f32 j{-((1.0f + eps) * v_rel + bias) / k};
-
-    if (j <= 0.0f)
+    // Baumgarte-style bias
+    const f32 effective_pen{std::max(0.0f, c.penetration - k_pen_tolerance)};
+    const f32 bias{-(k_pen_correction_frag / dt_s) * effective_pen};
+    // In the paper this is denoted by j
+    const f32 impulse_magnitude{-((1.0f + eps) * v_rel + bias) / effective_mass};
+    if (impulse_magnitude <= 0.0f)
     {
         return;
     }
 
-    // [8-7] Impulse
-    const Direction3 J{j * n_hat};
+    // Equation (8-7) Impulse is denoted by J
+    const Direction3 impulse{impulse_magnitude * n_hat};
 
-    // [8-5] Delta v = J / M
+    // Equation (8-5) Delta v = J / M
     if (!a.is_static())
     {
-        a.velocity += J * a.inv_mass;
+        a.velocity += impulse * a.inv_mass;
     }
     if (!b.is_static())
     {
         // Recall n^(t_0) points from b to a so we have to reverse impulse direction
-        b.velocity -= J * b.inv_mass;
+        b.velocity -= impulse * b.inv_mass;
     }
-    // [8-6] tau_impulse = (p - x(t)) x J
+    // Equation (8-6) tau_impulse = (p - x(t)) x J
     // "The change in angular velocity is simply I^{-1}(t_0)\tau_{impulse}"
     if (!a.is_static())
     {
-        const Direction3 tau_a_impulse{glm::cross(r_a, J)};
+        const Direction3 tau_a_impulse{glm::cross(r_a, impulse)};
         a.angular_velocity += a.inv_inertia_world * tau_a_impulse;
     }
     if (!b.is_static())
     {
         // Recall n^(t_0) points from b to a so we have to reverse impulse direction
-        const Direction3 tau_b_impulse{glm::cross(r_b, J)};
+        const Direction3 tau_b_impulse{glm::cross(r_b, impulse)};
         b.angular_velocity -= b.inv_inertia_world * tau_b_impulse;
     }
-
-    {
-        const Direction3 v_a2{a.velocity};
-        const Direction3 v_b2{b.velocity};
-        const Direction3 omega_a2{a.angular_velocity};
-        const Direction3 omega_b2{b.angular_velocity};
-
-        const Direction3 p_a_dot2{v_a2 + glm::cross(omega_a2, r_a)};
-        const Direction3 p_b_dot2{v_b2 + glm::cross(omega_b2, r_b)};
-        const Direction3 v_rel_w{p_a_dot2 - p_b_dot2};
-
-        const f32 vrel_n{glm::dot(v_rel_w, n_hat)};
-        const Direction3 v_t{v_rel_w - vrel_n * n_hat};
-
-        const f32 vt2{glm::dot(v_t, v_t)};
-        if (vt2 > 1e-12f)
-        {
-            const f32 vt_len{std::sqrt(vt2)};
-            const Direction3 t_hat{v_t / vt_len};
-
-            const Direction3 r_axt{glm::cross(r_a, t_hat)};
-            const Direction3 r_bxt{glm::cross(r_b, t_hat)};
-            const Direction3 invI_r_axt{a.inv_inertia_world * r_axt};
-            const Direction3 invI_r_bxt{b.inv_inertia_world * r_bxt};
-
-            const f32 k2a{a.inv_mass + glm::dot(t_hat, glm::cross(invI_r_axt, r_a))};
-            const f32 k2b{b.inv_mass + glm::dot(t_hat, glm::cross(invI_r_bxt, r_b))};
-            const f32 k2{k2a + k2b};
-
-            if (k2 > 1e-12f)
-            {
-                f32 j2 = -glm::dot(v_rel_w, t_hat) / k2;
-
-                const f32 jn{j};
-                const f32 max_jt{k_friction * jn};
-
-                j2 = std::clamp(j2, -max_jt, +max_jt);
-
-                const Direction3 J2{j2 * t_hat};
-
-                if (!a.is_static())
-                {
-                    a.velocity += J2 * a.inv_mass;
-                    a.angular_velocity += a.inv_inertia_world * glm::cross(r_a, J2);
-                }
-                if (!b.is_static())
-                {
-                    b.velocity -= J2 * b.inv_mass;
-                    b.angular_velocity -= b.inv_inertia_world * glm::cross(r_b, J2);
-                }
-            }
-        }
-    }
+    apply_impulse_contact_friction(a, b, r_a, r_b, n_hat, impulse_magnitude);
 }
 
 void positional_correction_contacts(
@@ -519,7 +525,6 @@ void positional_correction_contacts(
         {
             continue;
         }
-
         const f32 pen{c.penetration};
         if (pen <= k_pen_tolerance)
         {
@@ -558,10 +563,6 @@ void PhysicsContext::step()
 {
     const Duration dt{time_step};
     const f32 dt_s{dt_f32(dt)};
-
-    constexpr int solver_iterations{8};
-    constexpr int position_iterations{2};
-    constexpr f32 restitution{0.1f};
 
     for (RigidBody& b : bodies)
     {
@@ -605,24 +606,25 @@ void PhysicsContext::step()
 
     std::vector<Contact> contacts{};
     generate_obb_contacts(bodies, contacts);
-    if constexpr (k_validate_contacts) {
+    if constexpr (k_validate_contacts)
+    {
         for (const auto& c : contacts)
         {
             assert(c.is_valid());
         }
     }
 
-    for (usize i{0zu}; i < solver_iterations; ++i)
+    for (usize i{0zu}; i < k_solver_iterations; ++i)
     {
         for (const Contact& c : contacts)
         {
             RigidBody& a{bodies[c.a_idx]};
             RigidBody& b{bodies[c.b_idx]};
-            apply_impulse_contact(a, b, c, restitution, dt_s);
+            apply_impulse_contact(a, b, c, k_restitution, dt_s);
         }
     }
 
-    for (usize i{0zu}; i < position_iterations; ++i)
+    for (usize i{0zu}; i < k_position_iterations; ++i)
     {
         positional_correction_contacts(bodies, contacts);
     }
