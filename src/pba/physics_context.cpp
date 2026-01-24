@@ -1,14 +1,90 @@
 // pba/physics_context.cpp
-#include "pba/core_types.hpp"
 #include "pba/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/physics_context.hpp"
 //
+#include "pba/core_types.hpp"
+#include "pba/format.hpp"  // IWYU pragma: keep
 
 namespace ds_pba
 {
 namespace
 {
+
+static void reduce_contact_points_4(std::vector<Position3>& pts, const Direction3& n) noexcept
+{
+    if (pts.size() <= 4)
+    {
+        return;
+    }
+
+    // Build tangent basis from normal
+    Direction3 t1 = glm::cross(n, Direction3{1.0f, 0.0f, 0.0f});
+    if (glm::dot(t1, t1) < 1e-8f)
+    {
+        t1 = glm::cross(n, Direction3{0.0f, 1.0f, 0.0f});
+    }
+    t1 = glm::normalize(t1);
+    const Direction3 t2 = glm::normalize(glm::cross(n, t1));
+
+    auto pick_extremes = [&](const Direction3& axis) -> std::pair<usize, usize>
+    {
+        usize i_min{0zu};
+        usize i_max{0zu};
+        f32 mn = glm::dot(pts[0], axis);
+        f32 mx = mn;
+
+        for (usize i{1zu}; i < pts.size(); ++i)
+        {
+            const f32 d = glm::dot(pts[i], axis);
+            if (d < mn)
+            {
+                mn = d;
+                i_min = i;
+            }
+            if (d > mx)
+            {
+                mx = d;
+                i_max = i;
+            }
+        }
+        return {i_min, i_max};
+    };
+
+    const auto [a0, a1] = pick_extremes(t1);
+    const auto [b0, b1] = pick_extremes(t2);
+
+    std::array<usize, 4> idx{a0, a1, b0, b1};
+
+    // Deduplicate indices (can happen if points are few/colinear)
+    std::vector<Position3> reduced;
+    reduced.reserve(4);
+    for (usize k{0zu}; k < idx.size(); ++k)
+    {
+        const Position3 p = pts[idx[k]];
+        bool dup{false};
+        for (const Position3& q : reduced)
+        {
+            const Direction3 d = p - q;
+            if (glm::dot(d, d) < 1e-8f)
+            {
+                dup = true;
+                break;
+            }
+        }
+        if (!dup)
+        {
+            reduced.push_back(p);
+        }
+        if (reduced.size() == 4)
+        {
+            break;
+        }
+    }
+
+    pts = std::move(reduced);
+}
+
 [[nodiscard]] f32 dt_f32(const Duration& dt) noexcept
 {
     return static_cast<f32>(dt.count());
@@ -182,21 +258,12 @@ void generate_obb_contacts(const std::vector<RigidBody>& bodies, std::vector<Con
 
     for (usize i{0zu}; i < bodies.size(); ++i)
     {
-        const RigidBody& a = bodies[i];
-        if (a.is_static())
+        for (usize j{i + 1zu}; j < bodies.size(); ++j)
         {
-            continue;
-        }
-
-        for (usize j{0zu}; j < bodies.size(); ++j)
-        {
-            if (i == j)
-            {
-                continue;
-            }
-
+            const RigidBody& a = bodies[i];
             const RigidBody& b = bodies[j];
-            if (!b.is_static())
+
+            if (a.is_static() && b.is_static())
             {
                 continue;
             }
@@ -240,29 +307,29 @@ void generate_obb_contacts(const std::vector<RigidBody>& bodies, std::vector<Con
                 continue;
             }
 
-            // Use average point (simple manifold reduction).
-            Position3 p_sum{0.0f, 0.0f, 0.0f};
+            reduce_contact_points_4(pts, n);
+
             for (const Position3& p : pts)
             {
-                p_sum += p;
+                out.push_back(
+                    Contact{.a_idx = i, .b_idx = j, .p = p, .n = n, .penetration = penetration}
+                );
             }
-            const Position3 p_avg = p_sum / static_cast<f32>(pts.size());
-
-            out.push_back(
-                Contact{.a_idx = i, .b_idx = j, .p = p_avg, .n = n, .penetration = penetration}
-            );
         }
     }
 }
 
-void apply_impulse_contact(RigidBody& a, RigidBody& b, const Contact& c, f32 restitution) noexcept
+void apply_impulse_contact(
+    RigidBody& a, RigidBody& b, const Contact& c, f32 restitution, f32 dt_s
+) noexcept
 {
     if (a.is_static() && b.is_static())
     {
         return;
     }
     // "The quantity eps is called the coefficient of restitution (...)"
-    const f32 eps = restitution;
+    constexpr f32 k_restitution_threshold{1.0f};
+    f32 eps{restitution};
     // (...) and must satisfy 0 <= eps <= 1. If eps = 1 then v_rel^+ = -v_rel^-,
     // and the collision is perfectly 'bouncy'; in particular, no kinetic energy is lost.
     // At the other end of the spectrum, eps = 0 results in v_rel^+ = 0, and a maxium
@@ -302,14 +369,6 @@ void apply_impulse_contact(RigidBody& a, RigidBody& b, const Contact& c, f32 res
     // [8-3] v_rel = n^ . (p_a'(t_0) - p_b'(t_0)) // Normal Relative Velocity
     const f32 v_rel = glm::dot(n_hat, p_a_dot - p_b_dot);
 
-    if (v_rel >= 0.0f)
-    {
-        // vn == 0 is resting contact, later if resting for some period then we stop the contact
-        // force as a optimisation.
-        // vn > 0 means we already move away so there's nothing to correct
-        return;
-    }
-
     // Impulse is some J = j * n^ where we can derive j based on constraints.
     // Will omit the derivation, can express the v_a^+ and v_a^- as well as omega_a^+ and omega_a^-
     // conditions both via coefficient of restitution as well as the impulse identity and solve
@@ -330,7 +389,22 @@ void apply_impulse_contact(RigidBody& a, RigidBody& b, const Contact& c, f32 res
     {
         return;
     }
-    const f32 j = -(1.0f + eps) * v_rel / k;
+
+    if (-v_rel < k_restitution_threshold)
+    {
+        eps = 0.0f;
+    }
+
+    constexpr f32 slop = 0.001f;
+    constexpr f32 beta = 0.2f;  // 0..1, tune
+    const f32 pen = std::max(0.0f, c.penetration - slop);
+    const f32 bias = -(beta / dt_s) * pen;
+    const f32 j{-((1.0f + eps) * v_rel + bias) / k};
+
+    if (j <= 0.0f)
+    {
+        return;
+    }
 
     // [8-7] Impulse
     const Direction3 J = j * n_hat;
@@ -354,8 +428,9 @@ void apply_impulse_contact(RigidBody& a, RigidBody& b, const Contact& c, f32 res
     }
     if (!b.is_static())
     {
+        // Recall n^(t_0) points from b to a so we have to reverse impulse direction
         const Direction3 tau_b_impulse{glm::cross(r_b, J)};
-        b.angular_velocity += b.inv_inertia_world * tau_b_impulse;
+        b.angular_velocity -= b.inv_inertia_world * tau_b_impulse;
     }
 }
 
@@ -363,10 +438,10 @@ void positional_correction_contacts(
     std::vector<RigidBody>& bodies, const std::vector<Contact>& contacts
 ) noexcept
 {
-    // This corresponds to [Box2D] linaerSlop parameter
+    // This corresponds to [Box2D] linearSlop parameter
     constexpr f32 pen_tolerance{0.001f};
     // Percentage of remaining penetration corrected per step
-    constexpr f32 percent{0.80f};
+    constexpr f32 percent{0.25f};
 
     for (const Contact& c : contacts)
     {
@@ -416,6 +491,7 @@ void PhysicsContext::step()
     const f32 dt_s = dt_f32(dt);
 
     constexpr int solver_iterations{16};
+    constexpr int position_iterations{8};
     constexpr f32 restitution{0.1f};
 
     for (RigidBody& b : bodies)
@@ -461,17 +537,22 @@ void PhysicsContext::step()
     std::vector<Contact> contacts{};
     generate_obb_contacts(bodies, contacts);
 
-    for (int it{0}; it < solver_iterations; ++it)
+    for (usize i{0zu}; i < solver_iterations; ++i)
     {
         for (const Contact& c : contacts)
         {
             RigidBody& a = bodies[c.a_idx];
             RigidBody& b = bodies[c.b_idx];
-            apply_impulse_contact(a, b, c, restitution);
+            apply_impulse_contact(a, b, c, restitution, dt_s);
         }
     }
 
-    positional_correction_contacts(bodies, contacts);
+    for (usize i{0zu}; i < position_iterations; ++i)
+    {
+        std::vector<Contact> pos_contacts{};
+        generate_obb_contacts(bodies, pos_contacts);
+        positional_correction_contacts(bodies, pos_contacts);
+    }
 
     for (RigidBody& b : bodies)
     {

@@ -157,25 +157,11 @@ bool EngineContext::setup()
     {
         add_ground();
 
-        constexpr int n{1};
-        constexpr f32 s{1.10f};
+        add_cube(Position3{-2.0f, 0.0f, 1.0f});
+        physics->bodies.back().velocity = Direction3{+3.0f, 0.0f, 0.0f};
 
-        for (int y{0}; y < n; ++y)
-        {
-            for (int x{0}; x < n; ++x)
-            {
-                const auto x_f = static_cast<f32>(x);
-                const auto y_f = static_cast<f32>(y);
-
-                add_cube(
-                    Position3{
-                        (x_f - (n - 1) * 0.5f) * s,
-                        (y_f - (n - 1) * 0.5f) * s,
-                        5.0f + s * (x_f + y_f)
-                    }
-                );
-            }
-        }
+        add_cube(Position3{+2.0f, 0.0f, 1.0f});
+        physics->bodies.back().velocity = Direction3{-3.0f, 0.0f, 0.0f};
     }
 
     renderer->scene_context = scene.get();
