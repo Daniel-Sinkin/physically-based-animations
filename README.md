@@ -53,6 +53,8 @@ if(ImGui::BeginTable(/*args*/)){
   * Efficient real time box collision dynamics
 * Real-Time Collision Detection — Christer Ericson, 2004 — https://realtimecollisiondetection.net/
 * Position Based Dynamics — Matthias Müller, Bruno Heidelberger, Marcus Hennix, John Ratcliff, 2007 — https://matthias-research.github.io/pages/publications/posBasedDyn.pdf
+* Physically Based Modeling: Principles and Practice — David Baraff, 1997 (SIGGRAPH Course Notes) — https://www.cs.cmu.edu/~baraff/sigcourse/
+  * https://www.cs.cmu.edu/~baraff/sigcourse/notesd2.pdf
 
 ### Assets
 * PolyHaven

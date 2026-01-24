@@ -3,6 +3,7 @@
 //
 #include "pba/engine_context.hpp"
 //
+#include "pba/format.hpp"  // IWYU pragma: keep
 #include "pba/util/scope_timer.hpp"
 
 #include <algorithm>
@@ -95,6 +96,10 @@ void EngineContext::add_cube(Position3 position)
             .inv_inertia_world = glm::mat3(0.0f),
         }
     );
+    RigidBody& b{physics->bodies.back()};
+    const Quaternion qx = glm::angleAxis(glm::radians(45.0f), Direction3{1.0f, 0.0f, 0.0f});
+    const Quaternion qy = glm::angleAxis(glm::radians(45.0f), Direction3{0.0f, 1.0f, 0.0f});
+    b.orientation = glm::normalize(qy * qx);
 
     init_box_inertia(physics->bodies.back());
 
@@ -152,21 +157,23 @@ bool EngineContext::setup()
     {
         add_ground();
 
-        constexpr int n{10};
+        constexpr int n{1};
         constexpr f32 s{1.10f};
 
         for (int y{0}; y < n; ++y)
         {
             for (int x{0}; x < n; ++x)
             {
-                const f32 x_f = static_cast<f32>(x);
-                const f32 y_f = static_cast<f32>(y);
+                const auto x_f = static_cast<f32>(x);
+                const auto y_f = static_cast<f32>(y);
 
-                const f32 px = (x_f - (n - 1) * 0.5f) * s;
-                const f32 py = (y_f - (n - 1) * 0.5f) * s;
-                const f32 pz = 5.0f + s * (x_f + y_f);
-
-                add_cube({px, py, pz});
+                add_cube(
+                    Position3{
+                        (x_f - (n - 1) * 0.5f) * s,
+                        (y_f - (n - 1) * 0.5f) * s,
+                        5.0f + s * (x_f + y_f)
+                    }
+                );
             }
         }
     }
