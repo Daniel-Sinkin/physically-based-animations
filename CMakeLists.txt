@@ -7,6 +7,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include(FetchContent)
 
+find_program(FFMPEG_EXECUTABLE NAMES ffmpeg REQUIRED)
+message(STATUS "Found ffmpeg: ${FFMPEG_EXECUTABLE}")
+
 FetchContent_Declare(
   glfw
   GIT_REPOSITORY https://github.com/glfw/glfw.git
@@ -113,6 +116,10 @@ file(GLOB_RECURSE PBA_SOURCES
 add_executable(main
   src/app/main.cpp
   ${PBA_SOURCES}
+)
+
+target_compile_definitions(main PRIVATE
+DS_PBA_FFMPEG_EXECUTABLE=\"${FFMPEG_EXECUTABLE}\"
 )
 
 target_include_directories(main PRIVATE
