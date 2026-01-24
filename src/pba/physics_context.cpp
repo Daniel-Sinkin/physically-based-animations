@@ -10,15 +10,15 @@ namespace ds_pba
 {
 namespace
 {
-
-static void reduce_contact_points_4(std::vector<Position3>& pts, const Direction3& n) noexcept
+static void reduce_contact_points_4(
+    std::array<Position3, k_contact_points>& pts, usize& pt_count, const Direction3& n
+) noexcept
 {
-    if (pts.size() <= 4)
+    if (pt_count <= 4)
     {
         return;
     }
 
-    // Build tangent basis from normal
     Direction3 t1 = glm::cross(n, Direction3{1.0f, 0.0f, 0.0f});
     if (glm::dot(t1, t1) < 1e-8f)
     {
@@ -34,7 +34,7 @@ static void reduce_contact_points_4(std::vector<Position3>& pts, const Direction
         f32 mn = glm::dot(pts[0], axis);
         f32 mx = mn;
 
-        for (usize i{1zu}; i < pts.size(); ++i)
+        for (usize i{1zu}; i < pt_count; ++i)
         {
             const f32 d = glm::dot(pts[i], axis);
             if (d < mn)
@@ -56,33 +56,40 @@ static void reduce_contact_points_4(std::vector<Position3>& pts, const Direction
 
     std::array<usize, 4> idx{a0, a1, b0, b1};
 
-    // Deduplicate indices (can happen if points are few/colinear)
-    std::vector<Position3> reduced;
-    reduced.reserve(4);
+    std::array<Position3, 4> reduced{};
+    usize reduced_count{0zu};
+
     for (usize k{0zu}; k < idx.size(); ++k)
     {
         const Position3 p = pts[idx[k]];
+
         bool dup{false};
-        for (const Position3& q : reduced)
+        for (usize r{0zu}; r < reduced_count; ++r)
         {
-            const Direction3 d = p - q;
+            const Direction3 d = p - reduced[r];
             if (glm::dot(d, d) < 1e-8f)
             {
                 dup = true;
                 break;
             }
         }
+
         if (!dup)
         {
-            reduced.push_back(p);
-        }
-        if (reduced.size() == 4)
-        {
-            break;
+            reduced[reduced_count++] = p;
+            if (reduced_count == 4)
+            {
+                break;
+            }
         }
     }
 
-    pts = std::move(reduced);
+    // write back
+    for (usize i{0zu}; i < reduced_count; ++i)
+    {
+        pts[i] = reduced[i];
+    }
+    pt_count = reduced_count;
 }
 
 [[nodiscard]] f32 dt_f32(const Duration& dt) noexcept
@@ -137,11 +144,11 @@ inv_inertia_world_from_body(const Quaternion& q, const glm::mat3& inv_inertia_bo
         {
             for (int sz{-1}; sz <= 1; sz += 2)
             {
-                const f32 sxf = static_cast<f32>(sx);
-                const f32 syf = static_cast<f32>(sy);
-                const f32 szf = static_cast<f32>(sz);
+                const f32 sx_f{static_cast<f32>(sx)};
+                const f32 sy_f{static_cast<f32>(sy)};
+                const f32 sz_f{static_cast<f32>(sz)};
 
-                c[i++] = b.position + sxf * ex + syf * ey + szf * ez;
+                c[i++] = b.position + sx_f * ex + sy_f * ey + sz_f * ez;
             }
         }
     }
@@ -254,7 +261,7 @@ void project_obb_on_axis(
 void generate_obb_contacts(const std::vector<RigidBody>& bodies, std::vector<Contact>& out)
 {
     out.clear();
-    out.reserve(bodies.size() * 4zu);
+    out.reserve(bodies.size() * bodies.size());
 
     for (usize i{0zu}; i < bodies.size(); ++i)
     {
@@ -275,16 +282,18 @@ void generate_obb_contacts(const std::vector<RigidBody>& bodies, std::vector<Con
                 continue;
             }
 
-            // Collect candidate points: corners of A inside B and corners of B inside A.
-            std::vector<Position3> pts{};
-            pts.reserve(16);
+            std::array<Position3, k_contact_points> pts{};
+            usize pt_count{0};
 
             const auto a_corners = box_world_corners(a);
             for (const Position3& p : a_corners)
             {
                 if (point_in_obb(p, b))
                 {
-                    pts.push_back(p);
+                    if (pt_count < pts.size())
+                    {
+                        pts[pt_count++] = p;
+                    }
                 }
             }
 
@@ -293,13 +302,15 @@ void generate_obb_contacts(const std::vector<RigidBody>& bodies, std::vector<Con
             {
                 if (point_in_obb(p, a))
                 {
-                    pts.push_back(p);
+                    if (pt_count < pts.size())
+                    {
+                        pts[pt_count++] = p;
+                    }
                 }
             }
 
-            if (pts.empty())
+            if (pt_count == 0)
             {
-                // Fallback: use midpoint between centers projected along normal.
                 const Position3 p = 0.5f * (a.position + b.position);
                 out.push_back(
                     Contact{.a_idx = i, .b_idx = j, .p = p, .n = n, .penetration = penetration}
@@ -307,12 +318,12 @@ void generate_obb_contacts(const std::vector<RigidBody>& bodies, std::vector<Con
                 continue;
             }
 
-            reduce_contact_points_4(pts, n);
+            reduce_contact_points_4(pts, pt_count, n);
 
-            for (const Position3& p : pts)
+            for (usize k{0zu}; k < pt_count; ++k)
             {
                 out.push_back(
-                    Contact{.a_idx = i, .b_idx = j, .p = p, .n = n, .penetration = penetration}
+                    Contact{.a_idx = i, .b_idx = j, .p = pts[k], .n = n, .penetration = penetration}
                 );
             }
         }
@@ -396,9 +407,11 @@ void apply_impulse_contact(
     }
 
     constexpr f32 slop = 0.001f;
-    constexpr f32 beta = 0.2f;  // 0..1, tune
-    const f32 pen = std::max(0.0f, c.penetration - slop);
-    const f32 bias = -(beta / dt_s) * pen;
+    constexpr f32 beta = 0.2f;
+    static_assert((beta >= 0.0f) && (beta <= 1.0f));
+
+    const f32 pen{std::max(0.0f, c.penetration - slop)};
+    const f32 bias{-(beta / dt_s) * pen};
     const f32 j{-((1.0f + eps) * v_rel + bias) / k};
 
     if (j <= 0.0f)
@@ -407,7 +420,7 @@ void apply_impulse_contact(
     }
 
     // [8-7] Impulse
-    const Direction3 J = j * n_hat;
+    const Direction3 J{j * n_hat};
 
     // [8-5] Delta v = J / M
     if (!a.is_static())
@@ -431,6 +444,61 @@ void apply_impulse_contact(
         // Recall n^(t_0) points from b to a so we have to reverse impulse direction
         const Direction3 tau_b_impulse{glm::cross(r_b, J)};
         b.angular_velocity -= b.inv_inertia_world * tau_b_impulse;
+    }
+
+    {
+        constexpr f32 mu{0.5f};
+
+        const Direction3 v_a2 = a.velocity;
+        const Direction3 v_b2 = b.velocity;
+        const Direction3 omega_a2 = a.angular_velocity;
+        const Direction3 omega_b2 = b.angular_velocity;
+
+        const Direction3 p_a_dot2{v_a2 + glm::cross(omega_a2, r_a)};
+        const Direction3 p_b_dot2{v_b2 + glm::cross(omega_b2, r_b)};
+        const Direction3 v_rel_w = p_a_dot2 - p_b_dot2;
+
+        const f32 vrel_n = glm::dot(v_rel_w, n_hat);
+        const Direction3 v_t = v_rel_w - vrel_n * n_hat;
+
+        const f32 vt2 = glm::dot(v_t, v_t);
+        if (vt2 > 1e-12f)
+        {
+            const f32 vt_len = std::sqrt(vt2);
+            const Direction3 t_hat = v_t / vt_len;
+
+            const Direction3 r_axt{glm::cross(r_a, t_hat)};
+            const Direction3 r_bxt{glm::cross(r_b, t_hat)};
+            const Direction3 invI_r_axt{a.inv_inertia_world * r_axt};
+            const Direction3 invI_r_bxt{b.inv_inertia_world * r_bxt};
+
+            const f32 k_t_a = a.inv_mass + glm::dot(t_hat, glm::cross(invI_r_axt, r_a));
+            const f32 k_t_b = b.inv_mass + glm::dot(t_hat, glm::cross(invI_r_bxt, r_b));
+            const f32 k_t = k_t_a + k_t_b;
+
+            if (k_t > 1e-12f)
+            {
+                f32 j_t = -glm::dot(v_rel_w, t_hat) / k_t;
+
+                const f32 jn = j;
+                const f32 max_jt = mu * jn;
+
+                j_t = std::clamp(j_t, -max_jt, +max_jt);
+
+                const Direction3 Jt = j_t * t_hat;
+
+                if (!a.is_static())
+                {
+                    a.velocity += Jt * a.inv_mass;
+                    a.angular_velocity += a.inv_inertia_world * glm::cross(r_a, Jt);
+                }
+                if (!b.is_static())
+                {
+                    b.velocity -= Jt * b.inv_mass;
+                    b.angular_velocity -= b.inv_inertia_world * glm::cross(r_b, Jt);
+                }
+            }
+        }
     }
 }
 
@@ -490,8 +558,8 @@ void PhysicsContext::step()
     const Duration dt = time_step;
     const f32 dt_s = dt_f32(dt);
 
-    constexpr int solver_iterations{16};
-    constexpr int position_iterations{8};
+    constexpr int solver_iterations{8};
+    constexpr int position_iterations{2};
     constexpr f32 restitution{0.1f};
 
     for (RigidBody& b : bodies)
@@ -549,9 +617,33 @@ void PhysicsContext::step()
 
     for (usize i{0zu}; i < position_iterations; ++i)
     {
-        std::vector<Contact> pos_contacts{};
-        generate_obb_contacts(bodies, pos_contacts);
-        positional_correction_contacts(bodies, pos_contacts);
+        positional_correction_contacts(bodies, contacts);
+    }
+
+    for (RigidBody& b : bodies)
+    {
+        if (b.is_static())
+        {
+            continue;
+        }
+
+        constexpr f32 linear_damping = 0.2f;
+        constexpr f32 angular_damping = 1.5f;
+
+        constexpr f32 v_sleep = 0.25f;
+        constexpr f32 w_sleep = 1.0f;
+
+        const f32 v2 = glm::dot(b.velocity, b.velocity);
+        const f32 w2 = glm::dot(b.angular_velocity, b.angular_velocity);
+
+        if (v2 < v_sleep * v_sleep)
+        {
+            b.velocity *= std::exp(-linear_damping * dt_s);
+        }
+        if (w2 < w_sleep * w_sleep)
+        {
+            b.angular_velocity *= std::exp(-angular_damping * dt_s);
+        }
     }
 
     for (RigidBody& b : bodies)

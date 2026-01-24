@@ -14,12 +14,12 @@ namespace ds_pba
 struct Camera
 {
     Position3 pivot{0.0f, 0.0f, 0.0f};
-    f32 distance{8.0f};
+    f32 distance{20.0f};
 
     f32 yaw{glm::radians(45.0f)};
-    f32 pitch{glm::radians(25.0f)};
+    f32 pitch{glm::radians(30.0f)};
 
-    f32 fov_y{glm::radians(45.0f)};
+    f32 fov_y{glm::radians(60.0f)};
     f32 z_near{0.1f};
     f32 z_far{250.0f};
 

@@ -7,6 +7,7 @@
 #include "pba/format.hpp"  // IWYU pragma: keep
 //
 #include "pba/core_types.hpp"
+#include "pba/engine_context.hpp"
 #include "pba/gl.hpp"
 #include "pba/gl_types.hpp"
 #include "pba/gltf_mesh.hpp"
@@ -410,6 +411,22 @@ void ds_pba::RenderContext::viewport_window()
 void ds_pba::RenderContext::hover_interaction_selection(const Raycast& rc) const
 {
     bool found{false};
+
+    auto log_selected = [&](ObjectId id, const char* kind) -> void
+    {
+        if (engine_context)
+        {
+            if (auto it = engine_context->obj_name_map.find(id);
+                it != engine_context->obj_name_map.end())
+            {
+                ui_log(std::format("Selected {} [id={}] [{}]", it->second, id, kind));
+                return;
+            }
+        }
+
+        ui_log(std::format("Selected [id={}] [{}]", id, kind));
+    };
+
     if (rc.object_type == ObjectType::Cube)
     {
         for (usize i{0zu}; i < scene_context->cube_objects.size(); ++i)
@@ -418,7 +435,7 @@ void ds_pba::RenderContext::hover_interaction_selection(const Raycast& rc) const
             if (obj.id == rc.object_id)
             {
                 if (scene_context->selected_index == i)
-                {  // Deselect on selecting again
+                {
                     scene_context->selected_index = std::nullopt;
                     scene_context->selected_type = std::nullopt;
                 }
@@ -427,13 +444,15 @@ void ds_pba::RenderContext::hover_interaction_selection(const Raycast& rc) const
                     scene_context->selected_index = i;
                     scene_context->selected_type = ObjectType::Cube;
                 }
+
                 std::println();
-                ui_log(std::format("Selected Cube [id={}]", obj.id));
+                log_selected(obj.id, "Cube");
                 found = true;
                 break;
             }
         }
     }
+
     if (!found && rc.object_type == ObjectType::Sphere)
     {
         for (usize i{0zu}; i < scene_context->sphere_objects.size(); ++i)
@@ -442,7 +461,7 @@ void ds_pba::RenderContext::hover_interaction_selection(const Raycast& rc) const
             if (obj.id == rc.object_id)
             {
                 if (scene_context->selected_index == i)
-                {  // Deselect on selecting again
+                {
                     scene_context->selected_index = std::nullopt;
                     scene_context->selected_type = std::nullopt;
                 }
@@ -451,14 +470,16 @@ void ds_pba::RenderContext::hover_interaction_selection(const Raycast& rc) const
                     scene_context->selected_index = i;
                     scene_context->selected_type = ObjectType::Sphere;
                 }
-                ui_log(std::format("Selected Sphere [id={}]", obj.id));
+
+                log_selected(obj.id, "Sphere");
                 found = true;
                 break;
             }
         }
     }
+
     if constexpr (false)
-    {  // Selection for Hitmarker is disabled
+    {
         if (!found && rc.object_type == ObjectType::Hitmarker)
         {
             for (usize i{0zu}; i < scene_context->hitmarker_objects.size(); ++i)
@@ -468,7 +489,8 @@ void ds_pba::RenderContext::hover_interaction_selection(const Raycast& rc) const
                 {
                     scene_context->selected_index = i;
                     scene_context->selected_type = ObjectType::Hitmarker;
-                    ui_log(std::format("Selected Hitmarker [id={}]", obj.id));
+
+                    log_selected(obj.id, "Hitmarker");
                     found = true;
                     break;
                 }
@@ -551,14 +573,32 @@ void ds_pba::RenderContext::hover_interaction(
             }
             if (spawning)
             {
-                ui_log(
-                    std::format(
-                        "Hit Object [id={}] at {} [distance from camera {:.2f}]",
-                        rc.object_id,
-                        rc.hit,
-                        rc.t
-                    )
-                );
+                {
+                    auto it = engine_context->obj_name_map.find(rc.object_id);
+                    if (it != engine_context->obj_name_map.end())
+                    {
+                        ui_log(
+                            std::format(
+                                "Hit Object [id={} {}] at {} [distance from camera {:.2f}]",
+                                rc.object_id,
+                                it->second,
+                                rc.hit,
+                                rc.t
+                            )
+                        );
+                    }
+                    else
+                    {
+                        ui_log(
+                            std::format(
+                                "Hit Object [id={}] at {} [distance from camera {:.2f}]",
+                                rc.object_id,
+                                rc.hit,
+                                rc.t
+                            )
+                        );
+                    }
+                }
                 scene_context->hitmarker_objects.push_back(
                     Object{
                         .id = next_object_id(),

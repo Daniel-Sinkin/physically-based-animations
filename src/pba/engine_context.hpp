@@ -26,11 +26,15 @@ struct EngineContext
     std::unique_ptr<PhysicsContext> physics;
 
     std::unordered_map<ObjectId, ObjectLink> obj_map{};
+    std::unordered_map<ObjectId, std::string> obj_name_map{};
 
     EngineContext();
 
     TimePoint frame_time = Clock::now();
     Duration accumulator{0.0};
+
+    bool paused{true};
+    bool prev_space{false};
 
     void link_latest_objects(ObjectId id);
 

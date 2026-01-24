@@ -14,6 +14,10 @@ namespace ds_pba
 
 constexpr f32 k_static_mass{0.0f};
 constexpr Direction3 k_gravity{0.0f, 0.0f, -9.81f};
+constexpr int k_contact_points{8};
+
+constexpr f32 friction_static{0.8f};
+constexpr f32 friction_dynamic{0.6f};
 
 f32 center_axis(f32 mn, f32 mx) noexcept;
 

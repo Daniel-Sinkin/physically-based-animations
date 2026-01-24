@@ -219,6 +219,16 @@ void render_imgui_windows(EngineContext& engine_context)
     assert(render_context.scene_context && "Scene Context of render context not set!");
     auto& scene_context = *render_context.scene_context;
 
+    auto object_label = [&](ObjectId id, std::string_view type, usize ui_idx) -> std::string
+    {
+        auto it = engine_context.obj_name_map.find(id);
+        if (it != engine_context.obj_name_map.end())
+        {
+            return std::format("{} {} [{}]##{}_{}", id, it->second, type, type, ui_idx);
+        }
+        return std::format("{} [{}]##{}_{}", id, type, type, ui_idx);
+    };
+
     auto& cam = scene_context.camera;
     {
         ImGui::Begin("Info");
@@ -365,17 +375,45 @@ void render_imgui_windows(EngineContext& engine_context)
             {
                 case ds_pba::ObjectType::Cube:
                     {
-                        ImGui::Text("Selected : %d [Cube]", o.id);
+                        if (auto it = engine_context.obj_name_map.find(o.id);
+                            it != engine_context.obj_name_map.end())
+                        {
+                            ImGui::Text("Selected : %s [id=%d] [Cube]", it->second.c_str(), o.id);
+                        }
+                        else
+                        {
+                            ImGui::Text("Selected : [id=%d] [Cube]", o.id);
+                        }
                         break;
                     }
+
                 case ds_pba::ObjectType::Sphere:
                     {
-                        ImGui::Text("Selected : %d [Sphere]", o.id);
+                        if (auto it = engine_context.obj_name_map.find(o.id);
+                            it != engine_context.obj_name_map.end())
+                        {
+                            ImGui::Text("Selected : %s [id=%d] [Sphere]", it->second.c_str(), o.id);
+                        }
+                        else
+                        {
+                            ImGui::Text("Selected : [id=%d] [Sphere]", o.id);
+                        }
                         break;
                     }
+
                 case ds_pba::ObjectType::Hitmarker:
                     {
-                        ImGui::Text("Selected : %d [Hitmarker]", o.id);
+                        if (auto it = engine_context.obj_name_map.find(o.id);
+                            it != engine_context.obj_name_map.end())
+                        {
+                            ImGui::Text(
+                                "Selected : %s [id=%d] [Hitmarker]", it->second.c_str(), o.id
+                            );
+                        }
+                        else
+                        {
+                            ImGui::Text("Selected : [id=%d] [Hitmarker]", o.id);
+                        }
                         break;
                     }
             }
@@ -468,7 +506,7 @@ void render_imgui_windows(EngineContext& engine_context)
                                                  && scene_context.selected_index
                                                  && *scene_context.selected_index == i;
 
-                        const std::string label = std::format("{} [Cube]##cube_{}", o.id, i);
+                        const std::string label = object_label(o.id, "Cube", i);
 
                         ImGui::TableNextRow();
                         ImGui::TableNextColumn();
@@ -506,7 +544,7 @@ void render_imgui_windows(EngineContext& engine_context)
                                                  && scene_context.selected_index
                                                  && *scene_context.selected_index == i;
 
-                        const std::string label = std::format("{} [Sphere]##sphere_{}", o.id, i);
+                        const std::string label = object_label(o.id, "Sphere", i);
 
                         ImGui::TableNextRow();
                         ImGui::TableNextColumn();
@@ -535,8 +573,7 @@ void render_imgui_windows(EngineContext& engine_context)
                             scene_context.selected_type == ObjectType::Hitmarker
                             && scene_context.selected_index && *scene_context.selected_index == i;
 
-                        const std::string label =
-                            std::format("{} [Hitmarker]##hitmarker_{}", o.id, i);
+                        const std::string label = object_label(o.id, "Hitmarker", i);
 
                         ImGui::TableNextRow();
                         ImGui::TableNextColumn();
