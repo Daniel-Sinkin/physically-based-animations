@@ -158,7 +158,7 @@ struct RenderContext
     void cancel_grab();
     void confirm_grab();
     void set_grab_constraint(GrabConstraint c);
-    void set_object_position(ObjectId id, const Position3& p);
+    void set_object_position(ObjectId id, const Position3& p) const;
     [[nodiscard]] std::optional<Position3> get_object_position(ObjectId id) const;
 
     bool is_active() const;

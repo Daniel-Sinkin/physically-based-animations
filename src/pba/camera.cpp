@@ -10,10 +10,10 @@ namespace ds_pba
 
 [[nodiscard]] glm::vec3 Camera::position() const
 {
-    const f32 cos_pitch = std::cos(pitch);
-    const f32 sin_pitch = std::sin(pitch);
-    const f32 cos_yaw = std::cos(yaw);
-    const f32 sin_yaw = std::sin(yaw);
+    const f32 cos_pitch{std::cos(pitch)};
+    const f32 sin_pitch{std::sin(pitch)};
+    const f32 cos_yaw{std::cos(yaw)};
+    const f32 sin_yaw{std::sin(yaw)};
 
     const glm::vec3 offset{
         distance * cos_pitch * cos_yaw,
@@ -36,18 +36,18 @@ namespace ds_pba
 
 [[nodiscard]] Direction3 Camera::right() const
 {
-    const Position3 pos = position();
-    const Direction3 forward = glm::normalize(pivot - pos);
+    const Position3 pos{position()};
+    const Direction3 forward{glm::normalize(pivot - pos)};
     const Direction3 world_up{0.0f, 0.0f, 1.0f};
-    const Direction3 right = glm::normalize(glm::cross(forward, world_up));
+    const Direction3 right{glm::normalize(glm::cross(forward, world_up))};
     return right;
 }
 
 [[nodiscard]] Direction3 Camera::up() const
 {
-    const glm::vec3 pos = position();
-    const Direction3 forward = glm::normalize(pivot - pos);
-    const Direction3 up = glm::normalize(glm::cross(right(), forward));
+    const glm::vec3 pos{position()};
+    const Direction3 forward{glm::normalize(pivot - pos)};
+    const Direction3 up{glm::normalize(glm::cross(right(), forward))};
     return up;
 }
 

@@ -37,7 +37,7 @@ static void reduce_contact_points_4(
 
         for (usize i{1zu}; i < pt_count; ++i)
         {
-            const f32 d = glm::dot(pts[i], axis);
+            const f32 d{glm::dot(pts[i], axis)};
             if (d < mn)
             {
                 mn = d;
@@ -62,12 +62,12 @@ static void reduce_contact_points_4(
 
     for (usize k{0zu}; k < idx.size(); ++k)
     {
-        const Position3 p = pts[idx[k]];
+        const Position3 p{pts[idx[k]]};
 
         bool dup{false};
         for (usize r{0zu}; r < reduced_count; ++r)
         {
-            const Direction3 d = p - reduced[r];
+            const Direction3 d{p - reduced[r]};
             if (glm::dot(d, d) < 1e-8f)
             {
                 dup = true;
@@ -102,7 +102,7 @@ static void reduce_contact_points_4(
 integrate_orientation(const Quaternion& q, const Direction3& omega_world, f32 dt) noexcept
 {
     const Quaternion wq{0.0f, omega_world.x, omega_world.y, omega_world.z};
-    const Quaternion out = q + (0.5f * dt) * (wq * q);
+    const Quaternion out{q + (0.5f * dt) * (wq * q)};
     return glm::normalize(out);
 }
 
@@ -126,16 +126,14 @@ inv_inertia_world_from_body(const Quaternion& q, const glm::mat3& inv_inertia_bo
 
 [[nodiscard]] std::array<Position3, 8> box_world_corners(const RigidBody& b) noexcept
 {
-    const auto axes = obb_axes_world(b);
-    const Direction3 ax = axes[0];
-    const Direction3 ay = axes[1];
-    const Direction3 az = axes[2];
-
-    const Direction3 he = b.half_extents;
-
-    const Direction3 ex = ax * he.x;
-    const Direction3 ey = ay * he.y;
-    const Direction3 ez = az * he.z;
+    const std::array<Direction3, 3> axes{obb_axes_world(b)};
+    const Direction3 ax{axes[0]};
+    const Direction3 ay{axes[1]};
+    const Direction3 az{axes[2]};
+    const Direction3 he{b.half_extents};
+    const Direction3 ex{ax * he.x};
+    const Direction3 ey{ay * he.y};
+    const Direction3 ez{az * he.z};
 
     std::array<Position3, 8> c{};
 
@@ -160,7 +158,7 @@ inv_inertia_world_from_body(const Quaternion& q, const glm::mat3& inv_inertia_bo
 
 [[nodiscard]] bool point_in_obb(const Position3& p, const RigidBody& b) noexcept
 {
-    const auto axes = obb_axes_world(b);
+    const std::array<Direction3, 3> axes = obb_axes_world(b);
     const Direction3 d{p - b.position};
 
     const f32 lx{glm::dot(d, axes[0])};
@@ -244,7 +242,7 @@ void project_obb_on_axis(
         project_obb_on_axis(a, axis, a_min, a_max);
         project_obb_on_axis(b, axis, b_min, b_max);
 
-        const f32 overlap = std::min(a_max, b_max) - std::max(a_min, b_min);
+        const f32 overlap{std::min(a_max, b_max) - std::max(a_min, b_min)};
         if (overlap <= 0.0f)
         {
             return false;
@@ -255,7 +253,7 @@ void project_obb_on_axis(
             best_overlap = overlap;
 
             // Ensure normal points from b -> a
-            const f32 s = glm::dot(d, axis);
+            const f32 s{glm::dot(d, axis)};
             best_axis = (s >= 0.0f) ? axis : -axis;
         }
     }
@@ -274,8 +272,8 @@ void generate_obb_contacts(const std::vector<RigidBody>& bodies, std::vector<Con
     {
         for (usize j{i + 1zu}; j < bodies.size(); ++j)
         {
-            const RigidBody& a = bodies[i];
-            const RigidBody& b = bodies[j];
+            const RigidBody& a{bodies[i]};
+            const RigidBody& b{bodies[j]};
 
             if (a.is_static() && b.is_static())
             {
@@ -292,7 +290,7 @@ void generate_obb_contacts(const std::vector<RigidBody>& bodies, std::vector<Con
             std::array<Position3, k_contact_points> pts{};
             usize pt_count{0};
 
-            const auto a_corners = box_world_corners(a);
+            const std::array<Position3, 8> a_corners{box_world_corners(a)};
             for (const Position3& p : a_corners)
             {
                 if (point_in_obb(p, b))
@@ -304,7 +302,7 @@ void generate_obb_contacts(const std::vector<RigidBody>& bodies, std::vector<Con
                 }
             }
 
-            const auto b_corners = box_world_corners(b);
+            const std::array<Position3, 8> b_corners{box_world_corners(b)};
             for (const Position3& p : b_corners)
             {
                 if (point_in_obb(p, a))
@@ -318,7 +316,7 @@ void generate_obb_contacts(const std::vector<RigidBody>& bodies, std::vector<Con
 
             if (pt_count == 0)
             {
-                const Position3 p = 0.5f * (a.position + b.position);
+                const Position3 p{0.5f * (a.position + b.position)};
                 out.push_back(
                     Contact{.a_idx = i, .b_idx = j, .p = p, .n = n, .penetration = penetration}
                 );
@@ -413,8 +411,8 @@ void apply_impulse_contact(
         eps = 0.0f;
     }
 
-    constexpr f32 slop = 0.001f;
-    constexpr f32 beta = 0.2f;
+    constexpr f32 slop{0.001f};
+    constexpr f32 beta{0.2f};
     static_assert((beta >= 0.0f) && (beta <= 1.0f));
 
     const f32 pen{std::max(0.0f, c.penetration - slop)};
@@ -522,7 +520,7 @@ void positional_correction_contacts(
             continue;
         }
 
-        const f32 pen = c.penetration;
+        const f32 pen{c.penetration};
         if (pen <= k_pen_tolerance)
         {
             continue;
@@ -539,8 +537,9 @@ void positional_correction_contacts(
             continue;
         }
 
-        const Direction3 correction =
-            (k_pen_correction_frag * (pen - k_pen_tolerance) / inv_mass_sum) * n_hat;
+        const Direction3 correction{
+            (k_pen_correction_frag * (pen - k_pen_tolerance) / inv_mass_sum) * n_hat
+        };
 
         if (!a.is_static())
         {
@@ -581,13 +580,13 @@ void PhysicsContext::step()
             continue;
         }
 
-        const f32 m = 1.0f / b.inv_mass;
+        const f32 m{1.0f / b.inv_mass};
         b.force_accum += (m * k_gravity);
 
-        const Direction3 a = b.force_accum * b.inv_mass;
+        const Direction3 a{b.force_accum * b.inv_mass};
         b.velocity += a * dt_s;
 
-        const Direction3 alpha = b.inv_inertia_world * b.torque_accum;
+        const Direction3 alpha{b.inv_inertia_world * b.torque_accum};
         b.angular_velocity += alpha * dt_s;
     }
 

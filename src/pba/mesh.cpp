@@ -265,7 +265,7 @@ MeshData create_sphere_mesh(int lat, int lon, f32 radius)
     };
 
     {
-        const f32 theta1 = k_pi / lat_f;
+        const f32 theta1{k_pi / lat_f};
         for (int j = 0; j < lon; ++j)
         {
             const auto j_f = static_cast<f32>(j);
@@ -287,9 +287,9 @@ MeshData create_sphere_mesh(int lat, int lon, f32 radius)
 
     for (int i = 1; i <= lat - 2; ++i)
     {
-        const f32 i_f = static_cast<f32>(i);
-        const f32 theta0 = (i_f / lat_f) * k_pi;
-        const f32 theta1 = ((i_f + 1.0f) / lat_f) * k_pi;
+        const auto i_f = static_cast<f32>(i);
+        const f32 theta0{(i_f / lat_f) * k_pi};
+        const f32 theta1{((i_f + 1.0f) / lat_f) * k_pi};
 
         for (int j = 0; j < lon; ++j)
         {
@@ -319,7 +319,7 @@ MeshData create_sphere_mesh(int lat, int lon, f32 radius)
     }
 
     {
-        const f32 theta0 = (static_cast<f32>(lat - 1) / static_cast<f32>(lat)) * k_pi;
+        const f32 theta0{(static_cast<f32>(lat - 1) / static_cast<f32>(lat)) * k_pi};
         for (int j = 0; j < lon; ++j)
         {
             const auto j_f = static_cast<f32>(j);

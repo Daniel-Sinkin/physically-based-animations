@@ -3,6 +3,7 @@
 #include "glm/trigonometric.hpp"
 #include "imgui.h"
 #include "pba/constants.hpp"
+#include "pba/core_types.hpp"
 #include "pba/math_types.hpp"
 #include "pba/pch.hpp"  // IWYU pragma: keep
 //
@@ -28,7 +29,7 @@ struct TerminalState
 
         if (lines.size() > k_max_terminal_lines)
         {
-            const usize overflow = lines.size() - k_max_terminal_lines;
+            const usize overflow{lines.size() - k_max_terminal_lines};
             using StrDiff = std::vector<std::string>::difference_type;
             lines.erase(lines.begin(), lines.begin() + static_cast<StrDiff>(overflow));
         }
@@ -43,12 +44,12 @@ TerminalState& terminal()
 
 constexpr ImVec4 rgba_u32(u32 rgba) noexcept
 {
-    constexpr float inv = 1.0f / 255.0f;
-    const float r = static_cast<float>((rgba >> 24) & 0xFFu) * inv;
-    const float g = static_cast<float>((rgba >> 16) & 0xFFu) * inv;
-    const float b = static_cast<float>((rgba >> 8) & 0xFFu) * inv;
-    const float a = static_cast<float>((rgba >> 0) & 0xFFu) * inv;
-    return ImVec4(r, g, b, a);
+    constexpr float inv{1.0f / 255.0f};
+    const auto r = static_cast<float>((rgba >> 24) & 0xFFu);
+    const auto g = static_cast<float>((rgba >> 16) & 0xFFu);
+    const auto b = static_cast<float>((rgba >> 8) & 0xFFu);
+    const auto a = static_cast<float>((rgba >> 0) & 0xFFu);
+    return ImVec4(r * inv, g * inv, b * inv, a * inv);
 }
 
 void render_terminal_window(RenderContext& render_context)
@@ -77,10 +78,10 @@ void render_terminal_window(RenderContext& render_context)
     }
     ImGui::EndChild();
 
-    bool reclaim_focus = false;
+    bool reclaim_focus{false};
     ImGui::Separator();
 
-    const ImGuiInputTextFlags flags = ImGuiInputTextFlags_EnterReturnsTrue;
+    const ImGuiInputTextFlags flags{ImGuiInputTextFlags_EnterReturnsTrue};
     if (ImGui::InputText("##terminal_input", t.input_buf.data(), t.input_buf.size(), flags))
     {
         std::string cmd = t.input_buf.data();
@@ -252,13 +253,13 @@ void render_imgui_windows(EngineContext& engine_context)
 
         ImGui::Text("Frame Counter: %d", render_context.frame_count);
 
-        const auto now = std::chrono::steady_clock::now();
-        const auto dur = now - render_context.run_start;
+        const TimePoint now{std::chrono::steady_clock::now()};
+        const auto dur{now - render_context.run_start};
 
-        const double seconds = std::chrono::duration<double>(dur).count();
+        const double seconds{std::chrono::duration<double>(dur).count()};
 
-        const double frame_count_d = static_cast<double>(render_context.frame_count);
-        const double fps = (seconds > 0.0) ? frame_count_d / seconds : 0.0;
+        const double frame_count_d{static_cast<double>(render_context.frame_count)};
+        const double fps{(seconds > 0.0) ? frame_count_d / seconds : 0.0};
 
         ImGui::Text("Total Runtime: %.2f s", seconds);
         ImGui::Text("Average FPS: %.2f", fps);
@@ -305,7 +306,7 @@ void render_imgui_windows(EngineContext& engine_context)
             {
                 for (usize i{0zu}; i < render_context.theme_pack.themes.size(); ++i)
                 {
-                    const bool selected = (i == render_context.theme_index);
+                    const bool selected{i == render_context.theme_index};
                     if (ImGui::Selectable(
                             render_context.theme_pack.themes[i].name.c_str(), selected
                         ))
@@ -339,11 +340,11 @@ void render_imgui_windows(EngineContext& engine_context)
         ImGui::Begin("Object Inspector");
         if (scene_context.active_id.has_value())
         {
-            const ObjectId active_id = *scene_context.active_id;
+            const ObjectId active_id{*scene_context.active_id};
 
             auto find_active = [&](ObjectId id) -> std::optional<std::pair<ObjectType, Object*>>
             {
-                for (usize i = 0; i < scene_context.cube_objects.size(); ++i)
+                for (usize i{0zu}; i < scene_context.cube_objects.size(); ++i)
                 {
                     Object& o = scene_context.cube_objects[i];
                     if (o.id == id)
@@ -351,7 +352,7 @@ void render_imgui_windows(EngineContext& engine_context)
                         return std::pair<ObjectType, Object*>{ObjectType::Cube, &o};
                     }
                 }
-                for (usize i = 0; i < scene_context.sphere_objects.size(); ++i)
+                for (usize i{0zu}; i < scene_context.sphere_objects.size(); ++i)
                 {
                     Object& o = scene_context.sphere_objects[i];
                     if (o.id == id)
@@ -359,7 +360,7 @@ void render_imgui_windows(EngineContext& engine_context)
                         return std::pair<ObjectType, Object*>{ObjectType::Sphere, &o};
                     }
                 }
-                for (usize i = 0; i < scene_context.hitmarker_objects.size(); ++i)
+                for (usize i{0zu}; i < scene_context.hitmarker_objects.size(); ++i)
                 {
                     Object& o = scene_context.hitmarker_objects[i];
                     if (o.id == id)
@@ -391,7 +392,7 @@ void render_imgui_windows(EngineContext& engine_context)
                 }
             }
 
-            const char* type_str = "";
+            const char* type_str{""};
             switch (type)
             {
                 case ds_pba::ObjectType::Cube:
@@ -425,7 +426,7 @@ void render_imgui_windows(EngineContext& engine_context)
                 ImGui::DragFloat3("Position", &rb.position.x, 0.01f);
 
                 Quaternion& ori = rb.orientation;
-                const EulerDeg3& rot = glm::degrees(glm::eulerAngles(ori));
+                const EulerDeg3& rot{glm::degrees(glm::eulerAngles(ori))};
                 ImGui::Text(
                     "Orientation (Quaternion) (%.2f,%.2f,%.2f,%.2f)",
                     static_cast<double>(ori.x),
@@ -475,7 +476,7 @@ void render_imgui_windows(EngineContext& engine_context)
 
     {
         ImGui::Begin("Scene Inspector");
-        const usize n_obj = scene_context.cube_objects.size() + scene_context.sphere_objects.size();
+        const usize n_obj{scene_context.cube_objects.size() + scene_context.sphere_objects.size()};
         ImGui::Text("There are %zu objects in the scene", n_obj);
         if (!scene_context.hitmarker_objects.empty())
         {
@@ -485,8 +486,8 @@ void render_imgui_windows(EngineContext& engine_context)
         }
         ImGui::Separator();
 
-        const ImGuiTableFlags flags =
-            ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_ScrollY;
+        const ImGuiTableFlags flags{
+            ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_ScrollY};
 
         if (ImGui::BeginChild("##scene_list_child", ImVec2(0.0f, 0.0f), true))
         {
@@ -499,10 +500,10 @@ void render_imgui_windows(EngineContext& engine_context)
                     ImGui::TextUnformatted("Cubes");
                     ImGui::Separator();
 
-                    for (usize i = 0; i < scene_context.cube_objects.size(); ++i)
+                    for (usize i{0zu}; i < scene_context.cube_objects.size(); ++i)
                     {
                         const Object& o{scene_context.cube_objects[i]};
-                        const bool is_selected = scene_context.is_selected(o.id);
+                        const bool is_selected{scene_context.is_selected(o.id)};
 
                         const std::string label{object_label(o.id, "Cube", i)};
 
@@ -514,7 +515,7 @@ void render_imgui_windows(EngineContext& engine_context)
                         )};
                         if (selectable)
                         {
-                            const bool shift_down = ImGui::GetIO().KeyShift;
+                            const bool shift_down{ImGui::GetIO().KeyShift};
                             if (shift_down)
                             {
                                 scene_context.toggle_selection(o.id);
@@ -534,10 +535,10 @@ void render_imgui_windows(EngineContext& engine_context)
                     ImGui::TextUnformatted("Spheres");
                     ImGui::Separator();
 
-                    for (usize i = 0; i < scene_context.sphere_objects.size(); ++i)
+                    for (usize i{0zu}; i < scene_context.sphere_objects.size(); ++i)
                     {
                         const Object& o{scene_context.sphere_objects[i]};
-                        const bool is_selected = scene_context.is_selected(o.id);
+                        const bool is_selected{scene_context.is_selected(o.id)};
 
                         const std::string label{object_label(o.id, "Sphere", i)};
 
@@ -549,7 +550,7 @@ void render_imgui_windows(EngineContext& engine_context)
                         )};
                         if (selectable)
                         {
-                            const bool shift_down = ImGui::GetIO().KeyShift;
+                            const bool shift_down{ImGui::GetIO().KeyShift};
                             if (shift_down)
                             {
                                 scene_context.toggle_selection(o.id);
@@ -571,7 +572,7 @@ void render_imgui_windows(EngineContext& engine_context)
                     for (usize i{0zu}; i < scene_context.hitmarker_objects.size(); ++i)
                     {
                         const Object& o{scene_context.hitmarker_objects[i]};
-                        const bool is_selected = scene_context.is_selected(o.id);
+                        const bool is_selected{scene_context.is_selected(o.id)};
 
                         const std::string label{object_label(o.id, "Hitmarker", i)};
 
@@ -583,7 +584,7 @@ void render_imgui_windows(EngineContext& engine_context)
                         )};
                         if (selectable)
                         {
-                            const bool shift_down = ImGui::GetIO().KeyShift;
+                            const bool shift_down{ImGui::GetIO().KeyShift};
                             if (shift_down)
                             {
                                 scene_context.toggle_selection(o.id);

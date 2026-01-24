@@ -33,12 +33,12 @@ std::optional<Raycast> raycast(const SceneContext& scene_context, const Ray& ray
     }
     for (usize i{0zu}; i < scene_context.sphere_objects.size(); ++i)
     {
-        const Object& o = scene_context.sphere_objects[i];
+        const Object& o{scene_context.sphere_objects[i]};
         const ModelMatrix M{o.transform.model_matrix()};
 
         if (auto res = intersect_ray_sphere(ray, M))
         {
-            const f32 t = *res;
+            const f32 t{*res};
             if (t < best_t)
             {
                 best_t = t;

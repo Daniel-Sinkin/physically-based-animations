@@ -315,7 +315,7 @@ void ds_pba::RenderContext::render_to_viewport_grid(
 void ds_pba::RenderContext::render_to_viewport() const
 {
     assert(viewport_fb_rect_valid && "Should only render to valid viewports");
-    const ImVec2 content_size = ImGui::GetContentRegionAvail();
+    const ImVec2 content_size{ImGui::GetContentRegionAvail()};
 
     glBindFramebuffer(GL_FRAMEBUFFER, viewport_fbo.fbo);
     glViewport(0, 0, viewport_fbo.width, viewport_fbo.height);
@@ -496,17 +496,16 @@ void ds_pba::RenderContext::hover_interaction_holding_middle(
     f64 mouse_x, f64 mouse_y, Camera& cam
 ) const
 {
-    // Holding Middle mouse button
-    const f32 dx = static_cast<f32>(mouse_x - prev_mx);
-    const f32 dy = static_cast<f32>(mouse_y - prev_my);
+    const auto dx = static_cast<f32>(mouse_x - prev_mx);
+    const auto dy = static_cast<f32>(mouse_y - prev_my);
 
     const bool left_shift_down = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS;
     const bool right_shift_down = glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS;
     if (left_shift_down || right_shift_down)
     {  // Move Pivot
-        const f32 vp_h = std::max(1.0f, viewport_img_size.y);
+        const f32 vp_h{std::max(1.0f, viewport_img_size.y)};
 
-        const f32 units_per_px = (2.0f * cam.distance * std::tan(0.5f * cam.fov_y)) / vp_h;
+        const f32 units_per_px{(2.0f * cam.distance * std::tan(0.5f * cam.fov_y)) / vp_h};
 
         auto right_offset = (-dx * units_per_px) * cam.right();
         auto up_offset = dy * units_per_px * cam.up();
@@ -517,7 +516,7 @@ void ds_pba::RenderContext::hover_interaction_holding_middle(
         scene_context->camera.yaw += -dx * k_sensitivity;
         scene_context->camera.pitch += dy * k_sensitivity;
 
-        const f32 lim = glm::radians(89.0f);
+        const f32 lim{glm::radians(89.0f)};
         scene_context->camera.pitch = std::clamp(scene_context->camera.pitch, -lim, lim);
     }
 }
@@ -526,7 +525,7 @@ void ds_pba::RenderContext::hover_interaction(
     f64 mouse_x, f64 mouse_y, bool left_down, bool middle_down, bool right_down
 ) const
 {
-    const ImGuiIO& io = ImGui::GetIO();
+    const ImGuiIO& io{ImGui::GetIO()};
 
     Camera& cam{scene_context->camera};
     assert(viewport_fb_rect_valid && "If viewport hovered then it must be valid");
@@ -552,13 +551,13 @@ void ds_pba::RenderContext::hover_interaction(
 
         const glm::vec2 mouse_pos{glm::vec2{static_cast<f32>(mouse_x), static_cast<f32>(mouse_y)}};
 
-        const Ray mouse_ray = ray_from_imgui_rect(
+        const Ray mouse_ray{ray_from_imgui_rect(
             mouse_pos, viewport_img_pos, viewport_img_size, camera_view_matrix, camera_proj_matrix
-        );
+        )};
 
         const bool left_shift_down = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS;
         const bool right_shift_down = glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS;
-        const bool shift_down = left_shift_down || right_shift_down;
+        const bool shift_down{left_shift_down || right_shift_down};
 
         auto rc_res = raycast(*scene_context, mouse_ray);
         if (rc_res)
@@ -725,13 +724,13 @@ void ds_pba::RenderContext::update_grab(f64 mouse_x, f64 mouse_y)
         return;
     }
 
-    const Camera& cam = scene_context->camera;
+    const Camera& cam{scene_context->camera};
 
-    const f32 vp_h = std::max(1.0f, viewport_img_size.y);
-    const f32 units_per_px = (2.0f * cam.distance * std::tan(0.5f * cam.fov_y)) / vp_h;
+    const f32 vp_h{std::max(1.0f, viewport_img_size.y)};
+    const f32 units_per_px{(2.0f * cam.distance * std::tan(0.5f * cam.fov_y)) / vp_h};
 
-    const f32 dx = static_cast<f32>(mouse_x - grab.start_mouse_x);
-    const f32 dy = static_cast<f32>(mouse_y - grab.start_mouse_y);
+    const auto dx = static_cast<f32>(mouse_x - grab.start_mouse_x);
+    const auto dy = static_cast<f32>(mouse_y - grab.start_mouse_y);
 
     // Mouse right = +X in screen, mouse up = -dy; map to camera basis
     const Direction3 v = (dx * units_per_px) * cam.right() + (-dy * units_per_px) * cam.up();
@@ -792,7 +791,7 @@ void ds_pba::RenderContext::confirm_grab()
     grab.constraint = GrabConstraint::None;
     ui_log("Grab confirmed");
 }
-void ds_pba::RenderContext::set_object_position(ObjectId id, const Position3& p)
+void ds_pba::RenderContext::set_object_position(ObjectId id, const Position3& p) const
 {
     if (!scene_context)
     {
@@ -849,7 +848,7 @@ void ds_pba::RenderContext::step()
     using namespace ds_pba;
     assert(scene_context && "Scene Context not set for RenderContext");
 
-    const ImGuiIO& io = ImGui::GetIO();
+    const ImGuiIO& io{ImGui::GetIO()};
     if (!is_active())
     {
         return;
@@ -896,18 +895,16 @@ void ds_pba::RenderContext::step()
     const bool left_down{glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS};
     const bool middle_down{glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS};
     const bool right_down{glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS};
-
     const bool g_down{glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS};
-
     const bool esc_down{glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS};
     const bool enter_down{glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS};
     const bool kp_enter_down{glfwGetKey(window, GLFW_KEY_KP_ENTER) == GLFW_PRESS};
 
-    const bool g_pressed = g_down && !prev_g;
+    const bool g_pressed{g_down && !prev_g};
 
-    const bool esc_pressed = esc_down && !prev_esc;
-    const bool enter_pressed = enter_down && !prev_enter;
-    const bool kp_enter_pressed = kp_enter_down && !prev_kp_enter;
+    const bool esc_pressed{esc_down && !prev_esc};
+    const bool enter_pressed{enter_down && !prev_enter};
+    const bool kp_enter_pressed{kp_enter_down && !prev_kp_enter};
 
     // Grab mode takes priority
     if (grab.active)
@@ -926,13 +923,14 @@ void ds_pba::RenderContext::step()
             set_grab_constraint(GrabConstraint::Z);
         }
 
-        const bool confirm = (left_down && !prev_left) || enter_pressed || kp_enter_pressed;
-        const bool cancel = (right_down && !prev_right) || esc_pressed;
+        const bool confirm{(left_down && !prev_left) || enter_pressed || kp_enter_pressed};
+        const bool cancel{(right_down && !prev_right) || esc_pressed};
 
-        if (cancel)
+        if (cancel) {
             cancel_grab();
-        else if (confirm)
+        } else if (confirm){
             confirm_grab();
+        }
     }
     else
     {
@@ -1111,15 +1109,15 @@ bool ds_pba::RenderContext::setup()
             f32 sy{1.0f};
             glfwGetMonitorContentScale(monitor, &sx, &sy);
 
-            const int ww = std::max(1, static_cast<int>(std::lround(desired_fb_w / sx)));
-            const int wh = std::max(1, static_cast<int>(std::lround(desired_fb_h / sy)));
+            const int window_width{std::max(1, static_cast<int>(std::lround(desired_fb_w / sx)))};
+            const int window_height{std::max(1, static_cast<int>(std::lround(desired_fb_h / sy)))};
 
-            glfwSetWindowSize(window, ww, wh);
+            glfwSetWindowSize(window, window_width, window_height);
 
-            const int wx{monitor_x + (mode->width - ww) / 2};
-            const int wy{monitor_y + (mode->height - wh) / 2};
+            const int window_x{monitor_x + (mode->width - window_width) / 2};
+            const int window_y{monitor_y + (mode->height - window_height) / 2};
 
-            glfwSetWindowPos(window, wx, wy);
+            glfwSetWindowPos(window, window_x, window_y);
         }
     }
 
@@ -1176,7 +1174,7 @@ bool ds_pba::RenderContext::setup()
         }
     }
 
-    const char* glsl_version = "#version 330";
+    const char* glsl_version{"#version 330"};
     if (!ImGui_ImplGlfw_InitForOpenGL(window, true))
     {
         std::println(stderr, "ImGui_ImplGlfw_InitForOpenGL failed");

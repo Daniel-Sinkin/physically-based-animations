@@ -458,10 +458,10 @@ void apply_theme(const UiTheme& theme)
 
     for (const auto& a : theme.colors)
     {
-        const u32 r = (a.rgba >> 24u) & 0xFFu;
-        const u32 g = (a.rgba >> 16u) & 0xFFu;
-        const u32 b = (a.rgba >> 8u) & 0xFFu;
-        const u32 al = (a.rgba >> 0u) & 0xFFu;
+        const u32 r{(a.rgba >> 24u) & 0xFFu};
+        const u32 g{(a.rgba >> 16u) & 0xFFu};
+        const u32 b{(a.rgba >> 8u) & 0xFFu};
+        const u32 al{(a.rgba >> 0u) & 0xFFu};
 
         const ImU32 imgui_u32 = (al << 24u) | (b << 16u) | (g << 8u) | r;
         c[a.slot] = ImGui::ColorConvertU32ToFloat4(imgui_u32);

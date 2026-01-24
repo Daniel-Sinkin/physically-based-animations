@@ -111,7 +111,7 @@ void EngineContext::add_cube(Position3 position)
 
 void EngineContext::add_ground()
 {
-    const ObjectId id = next_object_id();
+    const ObjectId id{next_object_id()};
 
     constexpr Position3 ground_center{0.0f, 0.0f, -0.5f};
     constexpr Position3 half_extents{10.0f, 10.0f, 0.5f};

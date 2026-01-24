@@ -29,8 +29,8 @@ inline constexpr Direction3 k_gravity{0.0f, 0.0f, -9.81f};
 inline constexpr usize k_contact_points{8};
 inline constexpr usize k_collision_reduced_num{4zu};
 
-constexpr f32 k_linear_damping = 0.2f;
-constexpr f32 k_angular_damping = 1.5f;
+constexpr f32 k_linear_damping{0.2f};
+constexpr f32 k_angular_damping{1.5f};
 constexpr f32 k_linear_sleep_speed_threshold{0.25f};
 constexpr f32 k_angular_sleep_speed_threshold{1.0f};
 

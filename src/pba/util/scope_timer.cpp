@@ -1,4 +1,5 @@
 // pba/util/scope_timer.cpp
+#include "pba/core_types.hpp"
 #include "pba/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/util/scope_timer.hpp"
@@ -13,17 +14,17 @@ ScopeTimer::ScopeTimer(std::string_view label) noexcept : label_(label), start_(
 
 ScopeTimer::~ScopeTimer() noexcept
 {
-    const auto end = Clock::now();
+    const TimePoint end{Clock::now()};
     const auto dt = end - start_;
 
-    const double seconds = std::chrono::duration<double>(dt).count();
+    const double seconds{std::chrono::duration<double>(dt).count()};
     if (seconds >= 2.0)
     {
         std::println("{}: {:.2f} s", label_, seconds);
     }
     else
     {
-        const double ms = seconds * 1000.0;
+        const double ms{seconds * 1000.0};
         std::println("{}: {:.3f} ms", label_, ms);
     }
 }
