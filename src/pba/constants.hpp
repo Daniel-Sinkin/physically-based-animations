@@ -8,6 +8,9 @@
 
 namespace ds_pba
 {
+// Development
+constexpr bool k_validate_contacts{false};
+
 // Input Handling
 constexpr f32 k_zoom_speed{0.12f};
 constexpr f32 k_sensitivity{0.0050f};

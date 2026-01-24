@@ -605,6 +605,12 @@ void PhysicsContext::step()
 
     std::vector<Contact> contacts{};
     generate_obb_contacts(bodies, contacts);
+    if constexpr (k_validate_contacts) {
+        for (const auto& c : contacts)
+        {
+            assert(c.is_valid());
+        }
+    }
 
     for (usize i{0zu}; i < solver_iterations; ++i)
     {
