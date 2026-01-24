@@ -11,6 +11,8 @@
 #include <glm/vec2.hpp>
 #include <string>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
 struct GLFWwindow;
 
@@ -69,6 +71,12 @@ struct RenderContext
     bool prev_middle{false};
     bool prev_right{false};
     bool prev_f1{false};
+
+    bool prev_g{false};
+    bool prev_esc{false};
+    bool prev_enter{false};
+    bool prev_kp_enter{false};
+
     f64 prev_mx{0.0};
     f64 prev_my{0.0};
 
@@ -100,6 +108,31 @@ struct RenderContext
 
     GridSettings grid{};
 
+    enum class GrabConstraint : u8
+    {
+        None,
+        X,
+        Y,
+        Z,
+    };
+
+    struct GrabState
+    {
+        bool active{false};
+
+        f64 start_mouse_x{0.0};
+        f64 start_mouse_y{0.0};
+
+        GrabConstraint constraint{GrabConstraint::None};
+
+        std::vector<std::pair<ObjectId, Position3>> start_positions{};
+    };
+
+    GrabState grab{};
+    bool prev_x{false};
+    bool prev_y{false};
+    bool prev_z{false};
+
     void render_to_viewport() const;
     void render_to_viewport_grid(const ViewMatrix&, const ProjMatrix&) const;
     void render_to_viewport_objects(const ViewMatrix&, const ProjMatrix&) const;
@@ -119,6 +152,14 @@ struct RenderContext
     ) const;
     void hover_interaction_selection(const Raycast& rc) const;
     void hover_interaction_holding_middle(f64 mouse_x, f64 mouse_y, Camera& cam) const;
+
+    void begin_grab(f64 mouse_x, f64 mouse_y);
+    void update_grab(f64 mouse_x, f64 mouse_y);
+    void cancel_grab();
+    void confirm_grab();
+    void set_grab_constraint(GrabConstraint c);
+    void set_object_position(ObjectId id, const Position3& p);
+    [[nodiscard]] std::optional<Position3> get_object_position(ObjectId id) const;
 
     bool is_active() const;
     void deactivate() noexcept

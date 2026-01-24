@@ -152,95 +152,112 @@ void ds_pba::RenderContext::render_to_viewport_outline(
     const ds_pba::ViewMatrix& camera_view_matrix, const ds_pba::ProjMatrix& camera_proj_matrix
 ) const
 {
-    if (!scene_context->selected_index)
+    if (!scene_context || scene_context->selected_ids.empty())
     {
         return;
     }
-    // Outline via stencil (in FBO)
-    assert(scene_context->selected_type.has_value());
 
-    auto type = *scene_context->selected_type;
-    auto idx = *scene_context->selected_index;
+    auto find_object = [&](ObjectId id) -> std::optional<std::pair<ObjectType, const Object*>>
+    {
+        for (const Object& o : scene_context->cube_objects)
+        {
+            if (o.id == id)
+            {
+                return std::pair<ObjectType, const Object*>{ObjectType::Cube, &o};
+            }
+        }
+        for (const Object& o : scene_context->sphere_objects)
+        {
+            if (o.id == id)
+            {
+                return std::pair<ObjectType, const Object*>{ObjectType::Sphere, &o};
+            }
+        }
+        for (const Object& o : scene_context->hitmarker_objects)
+        {
+            if (o.id == id)
+            {
+                return std::pair<ObjectType, const Object*>{ObjectType::Hitmarker, &o};
+            }
+        }
+        return std::nullopt;
+    };
 
-    auto selector = [&](ObjectType type, usize idx) -> const Object&
+    auto instantiate_mesh_for_type = [&](ObjectType type) -> void
     {
         switch (type)
         {
             case ds_pba::ObjectType::Cube:
-                return scene_context->cube_objects[idx];
+                cube_mesh.instantiate_once();
+                break;
             case ds_pba::ObjectType::Sphere:
-                return scene_context->sphere_objects[idx];
             case ds_pba::ObjectType::Hitmarker:
-                return scene_context->hitmarker_objects[idx];
+                sphere_mesh.instantiate_once();
+                break;
         }
     };
-    const Object& sel = selector(type, idx);
 
-    const glm::mat4 M = sel.transform.model_matrix();
-
-    auto instantiate_selection_type = [&]() -> void
+    for (const ObjectId id : scene_context->selected_ids)
     {
-        switch (type)
+        auto obj_res = find_object(id);
+        if (!obj_res)
         {
-            case ds_pba::ObjectType::Cube:
-                {
-                    cube_mesh.instantiate_once();
-                    break;
-                }
-            case ds_pba::ObjectType::Sphere:
-            case ds_pba::ObjectType::Hitmarker:
-                {
-                    sphere_mesh.instantiate_once();
-                    break;
-                }
+            continue;
         }
-    };
 
-    {  // Pass 1: write stencil
-        glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-        glDepthMask(GL_FALSE);
-        glDisable(GL_DEPTH_TEST);
+        const auto [type, sel_ptr] = *obj_res;
+        const Object& sel = *sel_ptr;
 
-        glStencilMask(0xFF);
-        glStencilFunc(GL_ALWAYS, 1, 0xFF);
-        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+        const glm::mat4 M = sel.transform.model_matrix();
 
-        obj_prog.bind();
-        set_uniform_mat4(obj_prog.id, "uView", camera_view_matrix);
-        set_uniform_mat4(obj_prog.id, "uProj", camera_proj_matrix);
-        set_uniform_mat4(obj_prog.id, "uModel", M);
+        glClear(GL_STENCIL_BUFFER_BIT);
 
-        instantiate_selection_type();
+        {  // Pass 1: write stencil
+            glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+            glDepthMask(GL_FALSE);
+            glDisable(GL_DEPTH_TEST);
 
-        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-        glDepthMask(GL_TRUE);
-        glEnable(GL_DEPTH_TEST);
-        glDepthFunc(GL_LESS);
-    }
+            glStencilMask(0xFF);
+            glStencilFunc(GL_ALWAYS, 1, 0xFF);
+            glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
-    {  // Pass 2: draw outline where stencil != 1
-        glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-        glStencilMask(0x00);
+            obj_prog.bind();
+            set_uniform_mat4(obj_prog.id, "uView", camera_view_matrix);
+            set_uniform_mat4(obj_prog.id, "uProj", camera_proj_matrix);
+            set_uniform_mat4(obj_prog.id, "uModel", M);
 
-        glDisable(GL_DEPTH_TEST);
-        glDisable(GL_CULL_FACE);
+            instantiate_mesh_for_type(type);
 
-        const ModelMatrix M_outline = M * glm::scale(glm::mat4(1.0f), glm::vec3(1.04f));
+            glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+            glDepthMask(GL_TRUE);
+            glEnable(GL_DEPTH_TEST);
+            glDepthFunc(GL_LESS);
+        }
 
-        outline_prog.bind();
-        set_uniform_mat4(outline_prog.id, "uModel", M_outline);
-        set_uniform_mat4(outline_prog.id, "uView", camera_view_matrix);
-        set_uniform_mat4(outline_prog.id, "uProj", camera_proj_matrix);
-        set_uniform_vec3(outline_prog.id, "uColor", glm::vec3(1.0f, 0.55f, 0.0f));
+        {  // Pass 2: draw outline where stencil != 1
+            glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+            glStencilMask(0x00);
 
-        instantiate_selection_type();
+            glDisable(GL_DEPTH_TEST);
+            glDisable(GL_CULL_FACE);
 
-        glEnable(GL_DEPTH_TEST);
-        glDepthFunc(GL_LESS);
+            const ModelMatrix M_outline = M * glm::scale(glm::mat4(1.0f), glm::vec3(1.04f));
 
-        glStencilMask(0xFF);
-        glStencilFunc(GL_ALWAYS, 0, 0xFF);
-        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+            outline_prog.bind();
+            set_uniform_mat4(outline_prog.id, "uModel", M_outline);
+            set_uniform_mat4(outline_prog.id, "uView", camera_view_matrix);
+            set_uniform_mat4(outline_prog.id, "uProj", camera_proj_matrix);
+            set_uniform_vec3(outline_prog.id, "uColor", glm::vec3(1.0f, 0.55f, 0.0f));
+
+            instantiate_mesh_for_type(type);
+
+            glEnable(GL_DEPTH_TEST);
+            glDepthFunc(GL_LESS);
+
+            glStencilMask(0xFF);
+            glStencilFunc(GL_ALWAYS, 0, 0xFF);
+            glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+        }
     }
 }
 
@@ -414,89 +431,64 @@ void ds_pba::RenderContext::viewport_window()
 
 void ds_pba::RenderContext::hover_interaction_selection(const Raycast& rc) const
 {
-    bool found{false};
+    assert(scene_context);
 
-    auto log_selected = [&](ObjectId id, const char* kind) -> void
+    const bool left_shift_down = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS;
+    const bool right_shift_down = glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS;
+    const bool shift_down = left_shift_down || right_shift_down;
+
+    auto log_action = [&](std::string_view action, ObjectId id, const char* kind) -> void
     {
         if (engine_context)
         {
             if (auto it = engine_context->obj_name_map.find(id);
                 it != engine_context->obj_name_map.end())
             {
-                ui_log(std::format("Selected {} [id={}] [{}]", it->second, id, kind));
+                ui_log(std::format("{} {} [id={}] [{}]", action, it->second, id, kind));
                 return;
             }
         }
-
-        ui_log(std::format("Selected [id={}] [{}]", id, kind));
+        ui_log(std::format("{} [id={}] [{}]", action, id, kind));
     };
 
-    if (rc.object_type == ObjectType::Cube)
+    const char* kind = "";
+    switch (rc.object_type)
     {
-        for (usize i{0zu}; i < scene_context->cube_objects.size(); ++i)
-        {
-            const Object& obj{scene_context->cube_objects[i]};
-            if (obj.id == rc.object_id)
-            {
-                if (scene_context->selected_index == i)
-                {
-                    scene_context->selected_index = std::nullopt;
-                    scene_context->selected_type = std::nullopt;
-                }
-                else
-                {
-                    scene_context->selected_index = i;
-                    scene_context->selected_type = ObjectType::Cube;
-                }
-                log_selected(obj.id, "Cube");
-                found = true;
-                break;
-            }
-        }
+        case ObjectType::Cube:
+            kind = "Cube";
+            break;
+        case ObjectType::Sphere:
+            kind = "Sphere";
+            break;
+        case ObjectType::Hitmarker:
+            kind = "Hitmarker";
+            break;
     }
 
-    if (!found && rc.object_type == ObjectType::Sphere)
+    const bool was_selected = scene_context->is_selected(rc.object_id);
+
+    if (shift_down)
     {
-        for (usize i{0zu}; i < scene_context->sphere_objects.size(); ++i)
-        {
-            const Object& obj = scene_context->sphere_objects[i];
-            if (obj.id == rc.object_id)
-            {
-                if (scene_context->selected_index == i)
-                {
-                    scene_context->selected_index = std::nullopt;
-                    scene_context->selected_type = std::nullopt;
-                }
-                else
-                {
-                    scene_context->selected_index = i;
-                    scene_context->selected_type = ObjectType::Sphere;
-                }
-                log_selected(obj.id, "Sphere");
-                found = true;
-                break;
-            }
-        }
+        scene_context->toggle_selection(rc.object_id);
+    }
+    else
+    {
+        scene_context->select_single(rc.object_id);
     }
 
-    if constexpr (false)
+    const bool now_selected = scene_context->is_selected(rc.object_id);
+    if (now_selected && !was_selected)
     {
-        if (!found && rc.object_type == ObjectType::Hitmarker)
-        {
-            for (usize i{0zu}; i < scene_context->hitmarker_objects.size(); ++i)
-            {
-                const Object& obj = scene_context->hitmarker_objects[i];
-                if (obj.id == rc.object_id)
-                {
-                    scene_context->selected_index = i;
-                    scene_context->selected_type = ObjectType::Hitmarker;
-
-                    log_selected(obj.id, "Hitmarker");
-                    found = true;
-                    break;
-                }
-            }
-        }
+        log_action("Selected", rc.object_id, kind);
+    }
+    else if (!now_selected && was_selected)
+    {
+        log_action("Deselected", rc.object_id, kind);
+    }
+    else
+    {
+        // e.g. clicking already selected without shift -> still selected
+        log_action("Selected", rc.object_id, kind);
     }
 }
 
@@ -545,7 +537,7 @@ void ds_pba::RenderContext::hover_interaction(
         cam.distance = std::clamp(scene_context->camera.distance, 0.75f, 200.0f);
     }
 
-    if (middle_down && prev_middle)
+    if (middle_down)
     {
         hover_interaction_holding_middle(mouse_x, mouse_y, cam);
     }
@@ -563,6 +555,10 @@ void ds_pba::RenderContext::hover_interaction(
         const Ray mouse_ray = ray_from_imgui_rect(
             mouse_pos, viewport_img_pos, viewport_img_size, camera_view_matrix, camera_proj_matrix
         );
+
+        const bool left_shift_down = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS;
+        const bool right_shift_down = glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS;
+        const bool shift_down = left_shift_down || right_shift_down;
 
         auto rc_res = raycast(*scene_context, mouse_ray);
         if (rc_res)
@@ -610,6 +606,241 @@ void ds_pba::RenderContext::hover_interaction(
                 );
             }
         }
+        else if (selecting && !shift_down)
+        {
+            // Deselect on clicking on background
+            if (!scene_context->selected_ids.empty())
+            {
+
+                scene_context->clear_selection();
+                ui_log("Deselected all");
+            }
+        }
+    }
+}
+
+std::optional<ds_pba::Position3> ds_pba::RenderContext::get_object_position(ObjectId id) const
+{
+    if (!scene_context)
+    {
+        return std::nullopt;
+    }
+
+    if (engine_context)
+    {
+        if (auto it = engine_context->obj_map.find(id); it != engine_context->obj_map.end())
+        {
+            const auto [scene_i, phys_i] = it->second;
+            if (engine_context->physics && phys_i < engine_context->physics->bodies.size())
+            {
+                return engine_context->physics->bodies[phys_i].position;
+            }
+            if (scene_i < scene_context->cube_objects.size())
+            {
+                return scene_context->cube_objects[scene_i].transform.position;
+            }
+        }
+    }
+
+    for (const Object& o : scene_context->cube_objects)
+    {
+        if (o.id == id)
+        {
+            return o.transform.position;
+        }
+    }
+    for (const Object& o : scene_context->sphere_objects)
+    {
+        if (o.id == id)
+        {
+            return o.transform.position;
+        }
+    }
+    for (const Object& o : scene_context->hitmarker_objects)
+    {
+        if (o.id == id)
+        {
+            return o.transform.position;
+        }
+    }
+
+    return std::nullopt;
+}
+void ds_pba::RenderContext::set_grab_constraint(GrabConstraint c)
+{
+    grab.constraint = c;
+
+    switch (c)
+    {
+        case GrabConstraint::None:
+            ui_log("Grab: unconstrained");
+            break;
+        case GrabConstraint::X:
+            ui_log("Grab: constrain X");
+            break;
+        case GrabConstraint::Y:
+            ui_log("Grab: constrain Y");
+            break;
+        case GrabConstraint::Z:
+            ui_log("Grab: constrain Z");
+            break;
+    }
+}
+
+void ds_pba::RenderContext::begin_grab(f64 mouse_x, f64 mouse_y)
+{
+    assert(scene_context);
+
+    if (scene_context->selected_ids.empty())
+    {
+        ui_log("Grab (G): nothing selected");
+        return;
+    }
+
+    grab.active = true;
+    grab.start_mouse_x = mouse_x;
+    grab.start_mouse_y = mouse_y;
+    grab.constraint = GrabConstraint::None;
+
+    grab.start_positions.clear();
+    grab.start_positions.reserve(scene_context->selected_ids.size());
+
+    for (const ObjectId id : scene_context->selected_ids)
+    {
+        if (auto p = get_object_position(id))
+        {
+            grab.start_positions.emplace_back(id, *p);
+        }
+    }
+
+    ui_log("Grab: move mouse. X/Y/Z constrain. LMB/Enter confirm. RMB/Esc cancel.");
+}
+
+void ds_pba::RenderContext::update_grab(f64 mouse_x, f64 mouse_y)
+{
+    assert(scene_context);
+
+    if (!grab.active)
+    {
+        return;
+    }
+
+    const Camera& cam = scene_context->camera;
+
+    const f32 vp_h = std::max(1.0f, viewport_img_size.y);
+    const f32 units_per_px = (2.0f * cam.distance * std::tan(0.5f * cam.fov_y)) / vp_h;
+
+    const f32 dx = static_cast<f32>(mouse_x - grab.start_mouse_x);
+    const f32 dy = static_cast<f32>(mouse_y - grab.start_mouse_y);
+
+    // Mouse right = +X in screen, mouse up = -dy; map to camera basis
+    const Direction3 v = (dx * units_per_px) * cam.right() + (-dy * units_per_px) * cam.up();
+
+    Direction3 delta = v;
+
+    switch (grab.constraint)
+    {
+        case GrabConstraint::None:
+            break;
+
+        case GrabConstraint::X:
+            delta = Direction3{delta.x, 0.0f, 0.0f};
+            break;
+
+        case GrabConstraint::Y:
+            delta = Direction3{0.0f, delta.y, 0.0f};
+            break;
+
+        case GrabConstraint::Z:
+            delta = Direction3{0.0f, 0.0f, delta.z};
+            break;
+    }
+
+    for (const auto& [id, start_pos] : grab.start_positions)
+    {
+        set_object_position(id, start_pos + delta);
+    }
+}
+
+void ds_pba::RenderContext::cancel_grab()
+{
+    if (!grab.active)
+    {
+        return;
+    }
+
+    for (const auto& [id, start_pos] : grab.start_positions)
+    {
+        set_object_position(id, start_pos);
+    }
+
+    grab.active = false;
+    grab.start_positions.clear();
+    grab.constraint = GrabConstraint::None;
+    ui_log("Grab cancelled");
+}
+
+void ds_pba::RenderContext::confirm_grab()
+{
+    if (!grab.active)
+    {
+        return;
+    }
+
+    grab.active = false;
+    grab.start_positions.clear();
+    grab.constraint = GrabConstraint::None;
+    ui_log("Grab confirmed");
+}
+void ds_pba::RenderContext::set_object_position(ObjectId id, const Position3& p)
+{
+    if (!scene_context)
+    {
+        return;
+    }
+
+    // Physics-backed cubes
+    if (engine_context)
+    {
+        if (auto it = engine_context->obj_map.find(id); it != engine_context->obj_map.end())
+        {
+            const auto [scene_i, phys_i] = it->second;
+
+            if (engine_context->physics && phys_i < engine_context->physics->bodies.size())
+            {
+                RigidBody& rb = engine_context->physics->bodies[phys_i];
+                rb.position = p;
+
+                rb.velocity = Direction3{};
+                rb.angular_velocity = Direction3{};
+                rb.force_accum = Direction3{};
+                rb.torque_accum = Direction3{};
+            }
+
+            if (scene_i < scene_context->cube_objects.size())
+            {
+                scene_context->cube_objects[scene_i].transform.position = p;
+            }
+            return;
+        }
+    }
+
+    // Non-physics objects (spheres/hitmarkers)
+    for (Object& o : scene_context->sphere_objects)
+    {
+        if (o.id == id)
+        {
+            o.transform.position = p;
+            return;
+        }
+    }
+    for (Object& o : scene_context->hitmarker_objects)
+    {
+        if (o.id == id)
+        {
+            o.transform.position = p;
+            return;
+        }
     }
 }
 
@@ -643,11 +874,6 @@ void ds_pba::RenderContext::step()
 
     viewport_window();
 
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-    {
-        glfwSetWindowShouldClose(window, GLFW_TRUE);
-    }
-
     const bool f1_down{glfwGetKey(window, GLFW_KEY_F1) == GLFW_PRESS};
     if (f1_down && !prev_f1)
     {  // Switch pivot off and on
@@ -671,14 +897,71 @@ void ds_pba::RenderContext::step()
     const bool middle_down{glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS};
     const bool right_down{glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS};
 
-    if (viewport_image_hovered)
+    const bool g_down{glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS};
+
+    const bool esc_down{glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS};
+    const bool enter_down{glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS};
+    const bool kp_enter_down{glfwGetKey(window, GLFW_KEY_KP_ENTER) == GLFW_PRESS};
+
+    const bool g_pressed = g_down && !prev_g;
+
+    const bool esc_pressed = esc_down && !prev_esc;
+    const bool enter_pressed = enter_down && !prev_enter;
+    const bool kp_enter_pressed = kp_enter_down && !prev_kp_enter;
+
+    // Grab mode takes priority
+    if (grab.active)
     {
-        hover_interaction(mouse_x, mouse_y, left_down, middle_down, right_down);
+        update_grab(mouse_x, mouse_y);
+        if (ImGui::IsKeyPressed(ImGuiKey_X))
+        {
+            set_grab_constraint(GrabConstraint::X);
+        }
+        if (ImGui::IsKeyPressed(ImGuiKey_Y))
+        {
+            set_grab_constraint(GrabConstraint::Y);
+        }
+        if (ImGui::IsKeyPressed(ImGuiKey_Z))
+        {
+            set_grab_constraint(GrabConstraint::Z);
+        }
+
+        const bool confirm = (left_down && !prev_left) || enter_pressed || kp_enter_pressed;
+        const bool cancel = (right_down && !prev_right) || esc_pressed;
+
+        if (cancel)
+            cancel_grab();
+        else if (confirm)
+            confirm_grab();
+    }
+    else
+    {
+        if (viewport_image_hovered && g_pressed && !io.WantCaptureKeyboard)
+        {
+            begin_grab(mouse_x, mouse_y);
+        }
+
+        if (esc_pressed)
+        {
+            glfwSetWindowShouldClose(window, GLFW_TRUE);
+        }
+
+        if (viewport_image_hovered)
+        {
+            hover_interaction(mouse_x, mouse_y, left_down, middle_down, right_down);
+        }
     }
 
     prev_left = left_down;
     prev_middle = middle_down;
     prev_right = right_down;
+
+    prev_g = g_down;
+
+    prev_esc = esc_down;
+    prev_enter = enter_down;
+    prev_kp_enter = kp_enter_down;
+
     prev_mx = mouse_x;
     prev_my = mouse_y;
 

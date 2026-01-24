@@ -337,29 +337,49 @@ void render_imgui_windows(EngineContext& engine_context)
 
     {
         ImGui::Begin("Object Inspector");
-        if (scene_context.selected_index.has_value())
+        if (scene_context.active_id.has_value())
         {
-            assert(scene_context.selected_type);
+            const ObjectId active_id = *scene_context.active_id;
 
-            auto idx = *scene_context.selected_index;
-            auto type = *scene_context.selected_type;
-
-            const auto selector = [&](ObjectType type, usize idx) -> Object&
+            auto find_active = [&](ObjectId id) -> std::optional<std::pair<ObjectType, Object*>>
             {
-                switch (type)
+                for (usize i = 0; i < scene_context.cube_objects.size(); ++i)
                 {
-                    case ObjectType::Cube:
-                        assert(idx < scene_context.cube_objects.size());
-                        return scene_context.cube_objects[idx];
-                    case ObjectType::Sphere:
-                        assert(idx < scene_context.sphere_objects.size());
-                        return scene_context.sphere_objects[idx];
-                    case ObjectType::Hitmarker:
-                        assert(idx < scene_context.hitmarker_objects.size());
-                        return scene_context.hitmarker_objects[idx];
+                    Object& o = scene_context.cube_objects[i];
+                    if (o.id == id)
+                    {
+                        return std::pair<ObjectType, Object*>{ObjectType::Cube, &o};
+                    }
                 }
+                for (usize i = 0; i < scene_context.sphere_objects.size(); ++i)
+                {
+                    Object& o = scene_context.sphere_objects[i];
+                    if (o.id == id)
+                    {
+                        return std::pair<ObjectType, Object*>{ObjectType::Sphere, &o};
+                    }
+                }
+                for (usize i = 0; i < scene_context.hitmarker_objects.size(); ++i)
+                {
+                    Object& o = scene_context.hitmarker_objects[i];
+                    if (o.id == id)
+                    {
+                        return std::pair<ObjectType, Object*>{ObjectType::Hitmarker, &o};
+                    }
+                }
+                return std::nullopt;
             };
-            Object& o = selector(type, idx);
+
+            auto active_res = find_active(active_id);
+            if (!active_res)
+            {
+                ImGui::Text("Active selection not found.");
+                ImGui::End();
+                return;
+            }
+
+            auto [type, o_ptr] = *active_res;
+            Object& o = *o_ptr;
 
             std::optional<usize> physics_index{};
             for (usize i{0zu}; i < physics_context.bodies.size(); ++i)
@@ -371,51 +391,28 @@ void render_imgui_windows(EngineContext& engine_context)
                 }
             }
 
-            switch (*scene_context.selected_type)
+            const char* type_str = "";
+            switch (type)
             {
                 case ds_pba::ObjectType::Cube:
-                    {
-                        if (auto it = engine_context.obj_name_map.find(o.id);
-                            it != engine_context.obj_name_map.end())
-                        {
-                            ImGui::Text("Selected : %s [id=%d] [Cube]", it->second.c_str(), o.id);
-                        }
-                        else
-                        {
-                            ImGui::Text("Selected : [id=%d] [Cube]", o.id);
-                        }
-                        break;
-                    }
-
+                    type_str = "Cube";
+                    break;
                 case ds_pba::ObjectType::Sphere:
-                    {
-                        if (auto it = engine_context.obj_name_map.find(o.id);
-                            it != engine_context.obj_name_map.end())
-                        {
-                            ImGui::Text("Selected : %s [id=%d] [Sphere]", it->second.c_str(), o.id);
-                        }
-                        else
-                        {
-                            ImGui::Text("Selected : [id=%d] [Sphere]", o.id);
-                        }
-                        break;
-                    }
-
+                    type_str = "Sphere";
+                    break;
                 case ds_pba::ObjectType::Hitmarker:
-                    {
-                        if (auto it = engine_context.obj_name_map.find(o.id);
-                            it != engine_context.obj_name_map.end())
-                        {
-                            ImGui::Text(
-                                "Selected : %s [id=%d] [Hitmarker]", it->second.c_str(), o.id
-                            );
-                        }
-                        else
-                        {
-                            ImGui::Text("Selected : [id=%d] [Hitmarker]", o.id);
-                        }
-                        break;
-                    }
+                    type_str = "Hitmarker";
+                    break;
+            }
+
+            if (auto it = engine_context.obj_name_map.find(o.id);
+                it != engine_context.obj_name_map.end())
+            {
+                ImGui::Text("Active : %s [id=%d] [%s]", it->second.c_str(), o.id, type_str);
+            }
+            else
+            {
+                ImGui::Text("Active : [id=%d] [%s]", o.id, type_str);
             }
 
             ImGui::Separator();
@@ -426,6 +423,7 @@ void render_imgui_windows(EngineContext& engine_context)
             {
                 RigidBody& rb = physics_context.bodies[*physics_index];
                 ImGui::DragFloat3("Position", &rb.position.x, 0.01f);
+
                 Quaternion& ori = rb.orientation;
                 const EulerDeg3& rot = glm::degrees(glm::eulerAngles(ori));
                 ImGui::Text(
@@ -455,7 +453,7 @@ void render_imgui_windows(EngineContext& engine_context)
                 );
             }
             else
-            {  // Non-physical object
+            {
                 ImGui::DragFloat3("Position", &o.transform.position.x, 0.01f);
                 ImGui::DragFloat3("Scale", &o.transform.scale.x, 0.01f, 0.001f, 1000.0f);
             }
@@ -468,6 +466,8 @@ void render_imgui_windows(EngineContext& engine_context)
         {
             ImGui::Text("No object selected.");
             ImGui::Text("Left-click objects to select.");
+            ImGui::Text("Shift + left-click to multi-select.");
+            ImGui::Text("Press G to grab (Z only).");
             ImGui::Text("Middle-mouse drag to orbit.");
         }
         ImGui::End();
@@ -502,10 +502,7 @@ void render_imgui_windows(EngineContext& engine_context)
                     for (usize i = 0; i < scene_context.cube_objects.size(); ++i)
                     {
                         const Object& o{scene_context.cube_objects[i]};
-                        const bool is_selected{
-                            scene_context.selected_type == ObjectType::Cube
-                            && scene_context.selected_index && *scene_context.selected_index == i
-                        };
+                        const bool is_selected = scene_context.is_selected(o.id);
 
                         const std::string label{object_label(o.id, "Cube", i)};
 
@@ -517,15 +514,14 @@ void render_imgui_windows(EngineContext& engine_context)
                         )};
                         if (selectable)
                         {
-                            if (scene_context.selected_index == i)
-                            {  // Deselect on clicking selected
-                                scene_context.selected_index = std::nullopt;
-                                scene_context.selected_type = std::nullopt;
+                            const bool shift_down = ImGui::GetIO().KeyShift;
+                            if (shift_down)
+                            {
+                                scene_context.toggle_selection(o.id);
                             }
                             else
                             {
-                                scene_context.selected_index = i;
-                                scene_context.selected_type = ObjectType::Cube;
+                                scene_context.select_single(o.id);
                             }
                         }
                     }
@@ -541,10 +537,7 @@ void render_imgui_windows(EngineContext& engine_context)
                     for (usize i = 0; i < scene_context.sphere_objects.size(); ++i)
                     {
                         const Object& o{scene_context.sphere_objects[i]};
-                        const bool is_selected{
-                            scene_context.selected_type == ObjectType::Sphere
-                            && scene_context.selected_index && *scene_context.selected_index == i
-                        };
+                        const bool is_selected = scene_context.is_selected(o.id);
 
                         const std::string label{object_label(o.id, "Sphere", i)};
 
@@ -556,8 +549,15 @@ void render_imgui_windows(EngineContext& engine_context)
                         )};
                         if (selectable)
                         {
-                            scene_context.selected_index = i;
-                            scene_context.selected_type = ObjectType::Sphere;
+                            const bool shift_down = ImGui::GetIO().KeyShift;
+                            if (shift_down)
+                            {
+                                scene_context.toggle_selection(o.id);
+                            }
+                            else
+                            {
+                                scene_context.select_single(o.id);
+                            }
                         }
                     }
                 }
@@ -571,10 +571,7 @@ void render_imgui_windows(EngineContext& engine_context)
                     for (usize i{0zu}; i < scene_context.hitmarker_objects.size(); ++i)
                     {
                         const Object& o{scene_context.hitmarker_objects[i]};
-                        const bool is_selected{
-                            scene_context.selected_type == ObjectType::Hitmarker
-                            && scene_context.selected_index && *scene_context.selected_index == i
-                        };
+                        const bool is_selected = scene_context.is_selected(o.id);
 
                         const std::string label{object_label(o.id, "Hitmarker", i)};
 
@@ -586,8 +583,15 @@ void render_imgui_windows(EngineContext& engine_context)
                         )};
                         if (selectable)
                         {
-                            scene_context.selected_index = i;
-                            scene_context.selected_type = ObjectType::Hitmarker;
+                            const bool shift_down = ImGui::GetIO().KeyShift;
+                            if (shift_down)
+                            {
+                                scene_context.toggle_selection(o.id);
+                            }
+                            else
+                            {
+                                scene_context.select_single(o.id);
+                            }
                         }
                     }
                 }
