@@ -10,13 +10,13 @@ namespace ds_pba
 std::optional<ShaderProgram>
 create_program(const std::string& vert_src, const std::string& frag_src)
 {
-    const Shader vs{Shader::create_and_compile(ShaderType::Vertex, vert_src)};
+    Shader vs{Shader::create_and_compile(ShaderType::Vertex, vert_src)};
     if (!vs.valid() || !vs.compiled_ok())
     {
         std::println(stderr, "Failed Vertex Shader Creation");
         return std::nullopt;
     }
-    const Shader fs{Shader::create_and_compile(ShaderType::Fragment, frag_src)};
+    Shader fs{Shader::create_and_compile(ShaderType::Fragment, frag_src)};
     if (!fs.valid() || !fs.compiled_ok())
     {
         std::println(stderr, "Failed Fragment Shader Creation");
@@ -24,21 +24,21 @@ create_program(const std::string& vert_src, const std::string& frag_src)
     }
 
     ShaderProgram prog{glCreateProgram()};
-    glAttachShader(prog, vs);
-    glAttachShader(prog, fs);
-    glLinkProgram(prog);
+    glAttachShader(prog.id, vs.handle.id);
+    glAttachShader(prog.id, fs.handle.id);
+    glLinkProgram(prog.id);
 
-    glDeleteShader(vs);
-    glDeleteShader(fs);
+    vs.destroy();
+    fs.destroy();
 
     GLint ok{0};
-    glGetProgramiv(prog, GL_LINK_STATUS, &ok);
+    glGetProgramiv(prog.id, GL_LINK_STATUS, &ok);
     if (!ok)
     {
         GLint log_len = 0;
-        glGetProgramiv(prog, GL_INFO_LOG_LENGTH, &log_len);
+        glGetProgramiv(prog.id, GL_INFO_LOG_LENGTH, &log_len);
         std::string log(static_cast<usize>(std::max(1, log_len)), '\0');
-        glGetProgramInfoLog(prog, log_len, nullptr, log.data());
+        glGetProgramInfoLog(prog.id, log_len, nullptr, log.data());
         std::println(stderr, "Program link failed:\n{}", log);
         glDeleteProgram(prog.id);
         prog.id = 0;

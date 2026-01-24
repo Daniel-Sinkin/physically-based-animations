@@ -21,18 +21,25 @@
 #include "pba/util/shutdown.hpp"
 
 #include <GLFW/glfw3.h>
+#include <atomic>
 #include <glm/ext/matrix_float4x4.hpp>
 #include <imgui.h>
 #include <json.hpp>
+#include <optional>
+#include <print>
 #include <utility>
 namespace
 {
-[[nodiscard]] ds_pba::GLMesh upload_mesh_pn(const ds_pba::MeshData& mesh_data)
+[[nodiscard]] std::optional<ds_pba::GLMesh> upload_mesh_pn(const ds_pba::MeshData& mesh_data)
 {
     using namespace ds_pba;
 
     const auto& verts = mesh_data.vertices;
-    assert(!verts.empty());
+    if (verts.empty())
+    {
+        std::println(stderr, "Mesh data empty!");
+        return std::nullopt;
+    }
 
     GLMesh mesh{};
     glGenVertexArrays(1, mesh.vao.ptr());
@@ -57,7 +64,6 @@ namespace
         glEnableVertexAttribArray(1);
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, GLPtr::offset(3 * sizeof(f32)));
     }
-
     return mesh;
 }
 }  // namespace
@@ -91,8 +97,8 @@ void ds_pba::RenderContext::render_to_viewport_objects(
     glStencilFunc(GL_ALWAYS, 0, 0xFF);
 
     obj_prog.bind();
-    set_uniform_mat4(obj_prog.id, "uView", camera_view_matrix);
-    set_uniform_mat4(obj_prog.id, "uProj", camera_proj_matrix);
+    set_uniform_mat4(obj_prog.handle(), "uView", camera_view_matrix);
+    set_uniform_mat4(obj_prog.handle(), "uProj", camera_proj_matrix);
 
     {  // Cubes
         cube_mesh.vao.bind();
@@ -101,8 +107,8 @@ void ds_pba::RenderContext::render_to_viewport_objects(
             const Object& o{scene_context->cube_objects[i]};
             assert(o.id != k_invalid_id);
 
-            set_uniform_mat4(obj_prog.id, "uModel", o.transform.model_matrix());
-            set_uniform_vec3(obj_prog.id, "uColor", o.color);
+            set_uniform_mat4(obj_prog.handle(), "uModel", o.transform.model_matrix());
+            set_uniform_vec3(obj_prog.handle(), "uColor", o.color);
             glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
         }
         VAO::unbind();
@@ -117,8 +123,8 @@ void ds_pba::RenderContext::render_to_viewport_objects(
             const Object& o{scene_context->sphere_objects[i]};
             assert(o.id != k_invalid_id);
 
-            set_uniform_mat4(obj_prog.id, "uModel", o.transform.model_matrix());
-            set_uniform_vec3(obj_prog.id, "uColor", o.color);
+            set_uniform_mat4(obj_prog.handle(), "uModel", o.transform.model_matrix());
+            set_uniform_vec3(obj_prog.handle(), "uColor", o.color);
 
             glDrawArrays(GL_TRIANGLES, 0, sphere_mesh.vertex_count);
         }
@@ -127,8 +133,8 @@ void ds_pba::RenderContext::render_to_viewport_objects(
             const Object& o{scene_context->hitmarker_objects[i]};
             assert(o.id != k_invalid_id);
 
-            set_uniform_mat4(obj_prog.id, "uModel", o.transform.model_matrix());
-            set_uniform_vec3(obj_prog.id, "uColor", o.color);
+            set_uniform_mat4(obj_prog.handle(), "uModel", o.transform.model_matrix());
+            set_uniform_vec3(obj_prog.handle(), "uColor", o.color);
 
             glDrawArrays(GL_TRIANGLES, 0, sphere_mesh.vertex_count);
         }
@@ -140,8 +146,8 @@ void ds_pba::RenderContext::render_to_viewport_objects(
         assert(!scene_context->sphere_objects.empty());
         marble_bust_mesh.vao.bind();
         const Object& o{scene_context->sphere_objects[0]};
-        set_uniform_mat4(obj_prog.id, "uModel", o.transform.model_matrix());
-        set_uniform_vec3(obj_prog.id, "uColor", o.color);
+        set_uniform_mat4(obj_prog.handle(), "uModel", o.transform.model_matrix());
+        set_uniform_vec3(obj_prog.handle(), "uColor", o.color);
 
         glDrawArrays(GL_TRIANGLES, 0, marble_bust_mesh.vertex_count);
         VAO::unbind();
@@ -222,9 +228,9 @@ void ds_pba::RenderContext::render_to_viewport_outline(
             glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
             obj_prog.bind();
-            set_uniform_mat4(obj_prog.id, "uView", camera_view_matrix);
-            set_uniform_mat4(obj_prog.id, "uProj", camera_proj_matrix);
-            set_uniform_mat4(obj_prog.id, "uModel", M);
+            set_uniform_mat4(obj_prog.handle(), "uView", camera_view_matrix);
+            set_uniform_mat4(obj_prog.handle(), "uProj", camera_proj_matrix);
+            set_uniform_mat4(obj_prog.handle(), "uModel", M);
 
             instantiate_mesh_for_type(type);
 
@@ -244,10 +250,10 @@ void ds_pba::RenderContext::render_to_viewport_outline(
             const ModelMatrix M_outline = M * glm::scale(glm::mat4(1.0f), glm::vec3(1.04f));
 
             outline_prog.bind();
-            set_uniform_mat4(outline_prog.id, "uModel", M_outline);
-            set_uniform_mat4(outline_prog.id, "uView", camera_view_matrix);
-            set_uniform_mat4(outline_prog.id, "uProj", camera_proj_matrix);
-            set_uniform_vec3(outline_prog.id, "uColor", glm::vec3(1.0f, 0.55f, 0.0f));
+            set_uniform_mat4(outline_prog.handle(), "uModel", M_outline);
+            set_uniform_mat4(outline_prog.handle(), "uView", camera_view_matrix);
+            set_uniform_mat4(outline_prog.handle(), "uProj", camera_proj_matrix);
+            set_uniform_vec3(outline_prog.handle(), "uColor", glm::vec3(1.0f, 0.55f, 0.0f));
 
             instantiate_mesh_for_type(type);
 
@@ -278,14 +284,16 @@ void ds_pba::RenderContext::render_to_viewport_pivot(
     const GLMesh& pivot_mesh{sphere_mesh};
 
     pivot_prog.bind();
-    set_uniform_mat4(pivot_prog.id, "uView", camera_view_matrix);
-    set_uniform_mat4(pivot_prog.id, "uProj", camera_proj_matrix);
+    set_uniform_mat4(pivot_prog.handle(), "uView", camera_view_matrix);
+    set_uniform_mat4(pivot_prog.handle(), "uProj", camera_proj_matrix);
 
     pivot_mesh.vao.bind();
 
     const Transform t{.position = pivot_pos, .scale = {0.1f, 0.1f, 0.1f}};
-    set_uniform_mat4(pivot_prog.id, "uModel", t.model_matrix());
-    set_uniform_vec3(pivot_prog.id, "uColor", {196.0f / 255.0f, 209.0f / 255.0f, 102.0f / 255.0f});
+    set_uniform_mat4(pivot_prog.handle(), "uModel", t.model_matrix());
+    set_uniform_vec3(
+        pivot_prog.handle(), "uColor", {196.0f / 255.0f, 209.0f / 255.0f, 102.0f / 255.0f}
+    );
 
     glDrawArrays(GL_TRIANGLES, 0, pivot_mesh.vertex_count);
 
@@ -300,10 +308,10 @@ void ds_pba::RenderContext::render_to_viewport_grid(
     glDepthMask(GL_FALSE);
 
     grid_prog.bind();
-    set_uniform_mat4(grid_prog.id, "uView", camera_view_matrix);
-    set_uniform_mat4(grid_prog.id, "uProj", camera_proj_matrix);
-    set_uniform_float(grid_prog.id, "uFogStart", grid.fog_start);
-    set_uniform_float(grid_prog.id, "uFogEnd", grid.fog_end);
+    set_uniform_mat4(grid_prog.handle(), "uView", camera_view_matrix);
+    set_uniform_mat4(grid_prog.handle(), "uProj", camera_proj_matrix);
+    set_uniform_float(grid_prog.handle(), "uFogStart", grid.fog_start);
+    set_uniform_float(grid_prog.handle(), "uFogEnd", grid.fog_end);
 
     grid_mesh.vao.bind();
     glDrawArrays(GL_LINES, 0, grid_mesh.vertex_count);
@@ -933,9 +941,12 @@ void ds_pba::RenderContext::step()
         const bool confirm{(left_down && !prev_left) || enter_pressed || kp_enter_pressed};
         const bool cancel{(right_down && !prev_right) || esc_pressed};
 
-        if (cancel) {
+        if (cancel)
+        {
             cancel_grab();
-        } else if (confirm){
+        }
+        else if (confirm)
+        {
             confirm_grab();
         }
     }
@@ -990,57 +1001,65 @@ void ds_pba::RenderContext::step()
 
 bool ds_pba::RenderContext::create_programs()
 {
-    auto grid_prog_res = create_program_from_file("grid");
-    if (!grid_prog_res)
     {
-        std::println(
-            stderr,
-            "Failed to load 'grid' shaders, got error code: {}",
-            std::to_underlying(grid_prog_res.error())
-        );
-        return false;
+        auto grid_prog_res = create_program_from_file("grid");
+        if (!grid_prog_res)
+        {
+            std::println(
+                stderr,
+                "Failed to load 'grid' shaders, got error code: {}",
+                std::to_underlying(grid_prog_res.error())
+            );
+            return false;
+        }
+        grid_prog = *grid_prog_res;
     }
-    grid_prog = *grid_prog_res;
 
-    auto obj_prog_res = create_program_from_file("object");
-    if (!obj_prog_res)
     {
-        std::println(
-            stderr,
-            "Failed to load 'object' shaders, got error code: {}",
-            static_cast<int>(obj_prog_res.error())
-        );
-        return false;
+        auto obj_prog_res = create_program_from_file("object");
+        if (!obj_prog_res)
+        {
+            std::println(
+                stderr,
+                "Failed to load 'object' shaders, got error code: {}",
+                static_cast<int>(obj_prog_res.error())
+            );
+            return false;
+        }
+        obj_prog = *obj_prog_res;
     }
-    obj_prog = *obj_prog_res;
 
-    auto outline_prog_res = create_program_from_file("outline");
-    if (!outline_prog_res)
     {
-        std::println(
-            stderr,
-            "Failed to load 'outline' shaders, got error code: {}",
-            static_cast<int>(outline_prog_res.error())
-        );
-        return false;
+        auto outline_prog_res = create_program_from_file("outline");
+        if (!outline_prog_res)
+        {
+            std::println(
+                stderr,
+                "Failed to load 'outline' shaders, got error code: {}",
+                static_cast<int>(outline_prog_res.error())
+            );
+            return false;
+        }
+        outline_prog = *outline_prog_res;
     }
-    outline_prog = *outline_prog_res;
 
-    auto pivot_prog_res = create_program_from_file("pivot");
-    if (!pivot_prog_res)
     {
-        std::println(
-            stderr,
-            "Failed to load 'pivot' shaders, got error code: {}",
-            std::to_underlying(outline_prog_res.error())
-        );
-        return false;
+        auto pivot_prog_res = create_program_from_file("pivot");
+        if (!pivot_prog_res)
+        {
+            std::println(
+                stderr,
+                "Failed to load 'pivot' shaders, got error code: {}",
+                std::to_underlying(pivot_prog_res.error())
+            );
+            return false;
+        }
+        pivot_prog = *pivot_prog_res;
     }
-    pivot_prog = *pivot_prog_res;
 
     if (!grid_prog.valid() || !obj_prog.valid() || !outline_prog.valid() || !pivot_prog.valid())
     {
-        std::println(stderr, "Failed to create shader programs");
+        std::println(stderr, "At least one of the shader programs is invalid");
         return false;
     }
 
@@ -1049,18 +1068,63 @@ bool ds_pba::RenderContext::create_programs()
 
 bool ds_pba::RenderContext::create_meshes()
 {
-    cube_mesh = upload_mesh_pn(create_cube_mesh());
-    sphere_mesh = upload_mesh_pn(create_sphere_mesh(32, 24, 1.0f));
+    auto upload_or_fail = [&](MeshData mesh_data, std::string_view label) -> std::optional<GLMesh>
+    {
+        auto m = upload_mesh_pn(mesh_data);
+        if (!m)
+        {
+            std::println(stderr, "Failed to upload mesh '{}'", label);
+        }
+        return m;
+    };
 
-    grid_mesh = create_grid_mesh(grid);  // TODO: Change away from GL type
+    {
+        auto m = upload_or_fail(create_cube_mesh(), "cube");
+        if (!m)
+            return false;
+        cube_mesh = *m;
+    }
+    {
+        auto m = upload_or_fail(create_sphere_mesh(32, 24, 1.0f), "sphere");
+        if (!m)
+            return false;
+        sphere_mesh = *m;
+    }
 
-    cylinder_mesh = upload_mesh_pn(create_cylinder_mesh(24, 0.5f, 1.0f));
-    pyramid_mesh = upload_mesh_pn(create_pyramid_mesh());
+    grid_mesh = create_grid_mesh(grid);  // TODO: Make this also GL independent
+
+    {
+        auto m = upload_or_fail(create_cylinder_mesh(24, 0.5f, 1.0f), "cylinder");
+        if (!m)
+            return false;
+        cylinder_mesh = *m;
+    }
+    {
+        auto m = upload_or_fail(create_pyramid_mesh(), "pyramid");
+        if (!m)
+            return false;
+        pyramid_mesh = *m;
+    }
 
     {
         auto mesh_res = ds_pba::load_model_mesh("marble_bust_01");
-        assert(mesh_res && "Failed to load marble bust mesh");
-        marble_bust_mesh = upload_mesh_pn(*mesh_res);
+        if (!mesh_res)
+        {
+            std::println(
+                stderr,
+                "Failed to load marble bust mesh (err={})",
+                std::to_underlying(mesh_res.error())
+            );
+            return false;
+        }
+
+        auto m = upload_mesh_pn(*mesh_res);
+        if (!m)
+        {
+            std::println(stderr, "Failed to upload mesh 'marble_bust_01'");
+            return false;
+        }
+        marble_bust_mesh = *m;
     }
 
     return true;
@@ -1225,6 +1289,11 @@ void ds_pba::RenderContext::shutdown()
         }
 
         viewport_fbo.destroy();
+
+        invalidate_uniform_cache_for_program(grid_prog.handle());
+        invalidate_uniform_cache_for_program(obj_prog.handle());
+        invalidate_uniform_cache_for_program(outline_prog.handle());
+        invalidate_uniform_cache_for_program(pivot_prog.handle());
 
         glDeleteProgram(grid_prog.id);
         glDeleteProgram(obj_prog.id);

@@ -2,6 +2,7 @@
 #pragma once
 
 #include "pba/core_types.hpp"
+#include "pba/gl_types.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -21,21 +22,12 @@ enum class ShaderType : GLenum
 
 struct Shader
 {
-    GLuint id{};
+    ShaderHandle handle{};
     ShaderType type{};
-
-    constexpr operator GLuint() const noexcept
-    {
-        return id;
-    }
-    constexpr GLuint* ptr() noexcept
-    {
-        return &id;
-    }
 
     [[nodiscard]] constexpr bool valid() const noexcept
     {
-        return id != 0;
+        return handle.valid();
     }
 
     [[nodiscard]] static constexpr bool is_valid_type(ShaderType type) noexcept
@@ -56,16 +48,19 @@ struct Shader
     static Shader create(ShaderType shader_type) noexcept
     {
         assert(is_valid_type(shader_type) && "Invalid ShaderType");
-        return Shader{.id = glCreateShader(static_cast<GLenum>(shader_type)), .type = shader_type};
+        return Shader{
+            .handle = ShaderHandle{glCreateShader(static_cast<GLenum>(shader_type))},
+            .type = shader_type
+        };
     }
 
     void compile(const std::string& source) const noexcept
     {
         assert(valid() && "Attempting to compile invalid Shader (id == 0)");
         const char* src{source.data()};
-        const auto len = static_cast<GLint>(source.size());
-        glShaderSource(id, 1, &src, &len);
-        glCompileShader(id);
+        const GLint len{static_cast<GLint>(source.size())};
+        glShaderSource(handle.id, 1, &src, &len);
+        glCompileShader(handle.id);
     }
 
     static Shader create_and_compile(ShaderType shader_type, const std::string& source) noexcept
@@ -79,26 +74,26 @@ struct Shader
     {
         assert(valid() && "Attempting to query invalid Shader (id == 0)");
         GLint ok{GL_FALSE};
-        glGetShaderiv(id, GL_COMPILE_STATUS, &ok);
+        glGetShaderiv(handle.id, GL_COMPILE_STATUS, &ok);
         return ok == GL_TRUE;
     }
 
     [[nodiscard]] std::string info_log() const
     {
         assert(valid() && "Attempting to query invalid Shader (id == 0)");
-        GLint log_len = 0;
-        glGetShaderiv(id, GL_INFO_LOG_LENGTH, &log_len);
+        GLint log_len{0};
+        glGetShaderiv(handle.id, GL_INFO_LOG_LENGTH, &log_len);
         std::string log(static_cast<usize>(std::max(1, log_len)), '\0');
-        glGetShaderInfoLog(id, log_len, nullptr, log.data());
+        glGetShaderInfoLog(handle.id, log_len, nullptr, log.data());
         return log;
     }
 
     void destroy() noexcept
     {
-        if (id != 0)
+        if (valid())
         {
-            glDeleteShader(id);
-            id = 0;
+            glDeleteShader(handle.id);
+            handle.id = 0;
         }
     }
 };

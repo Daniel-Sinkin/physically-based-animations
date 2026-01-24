@@ -9,6 +9,7 @@
 #include "pba/model_config.hpp"
 #include "pba/util/scope_timer.hpp"
 
+#include <print>
 #include <tiny_gltf.h>
 
 namespace ds_pba
@@ -77,11 +78,12 @@ static const std::byte* accessor_data_begin(
 static usize
 accessor_stride_bytes(const tinygltf::Accessor& accessor, const tinygltf::BufferView& view)
 {
-    const usize default_stride {
+    const usize default_stride{
         static_cast<usize>(
             tinygltf::GetComponentSizeInBytes(static_cast<u32>(accessor.componentType))
         )
-        * static_cast<usize>(tinygltf::GetNumComponentsInType(static_cast<u32>(accessor.type)))};
+        * static_cast<usize>(tinygltf::GetNumComponentsInType(static_cast<u32>(accessor.type)))
+    };
 
     return (view.byteStride != 0) ? static_cast<usize>(view.byteStride) : default_stride;
 }
@@ -111,6 +113,17 @@ static glm::vec3 face_normal(const glm::vec3& p0, const glm::vec3& p1, const glm
     return safe_normalize(glm::cross(p1 - p0, p2 - p0));
 }
 
+namespace
+{
+template <class T>
+[[nodiscard]] static T read_unaligned(const std::byte* p) noexcept
+{
+    T v{};
+    std::memcpy(&v, p, sizeof(T));
+    return v;
+}
+}  // namespace
+
 static std::expected<std::vector<u32>, GltfLoadError>
 read_indices_u32(const tinygltf::Model& model, int accessor_index)
 {
@@ -135,32 +148,67 @@ read_indices_u32(const tinygltf::Model& model, int accessor_index)
     }
 
     const tinygltf::BufferView& bv{model.bufferViews[static_cast<usize>(a.bufferView)]};
-    const std::byte* base{accessor_data_begin(model, a, bv)};
+    if (bv.buffer < 0 || bv.buffer >= static_cast<int>(model.buffers.size()))
+    {
+        std::println(stderr, "Buffer OOB");
+        return std::unexpected(GltfLoadError::ParseError);
+    }
 
-    const auto count = static_cast<usize>(a.count);
-    std::vector<u32> out;
-    out.resize(count);
+    const tinygltf::Buffer& buf{model.buffers[static_cast<usize>(bv.buffer)]};
+
+    const usize base_off{static_cast<usize>(bv.byteOffset) + static_cast<usize>(a.byteOffset)};
+    const usize count{static_cast<usize>(a.count)};
+
+    const usize elem_size{
+        static_cast<usize>(tinygltf::GetComponentSizeInBytes(static_cast<u32>(a.componentType)))
+    };
+
+    const usize stride{(bv.byteStride != 0) ? static_cast<usize>(bv.byteStride) : elem_size};
+    if (count > 0)
+    {  // Checks bounds
+        const usize end_off{base_off + (count - 1) * stride + elem_size};
+        if (end_off > buf.data.size())
+        {
+            std::println(
+                stderr,
+                "Index accessor OOB: base_off={}, count={}, stride={}, elem_size={}, "
+                "buffer_size={}",
+                base_off,
+                count,
+                stride,
+                elem_size,
+                buf.data.size()
+            );
+            return std::unexpected(GltfLoadError::ParseError);
+        }
+    }
+    const std::byte* base{reinterpret_cast<const std::byte*>(buf.data.data() + base_off)};
+
+    std::vector<u32> out(count);
 
     switch (a.componentType)
     {
         case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:
-            for (usize i{0zu}; i < count; ++i)
+            for (usize i = 0; i < count; ++i)
             {
-                out[i] = static_cast<u32>(reinterpret_cast<const std::uint8_t*>(base)[i]);
+                out[i] = static_cast<u32>(read_unaligned<std::uint8_t>(base + i * stride));
             }
             break;
+
         case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:
-            for (usize i{0zu}; i < count; ++i)
+            for (usize i = 0; i < count; ++i)
             {
-                out[i] = static_cast<u32>(reinterpret_cast<const std::uint16_t*>(base)[i]);
+                out[i] = static_cast<u32>(read_unaligned<std::uint16_t>(base + i * stride));
             }
             break;
+
         case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:
-            for (usize i{0zu}; i < count; ++i)
+            for (usize i = 0; i < count; ++i)
             {
-                out[i] = static_cast<u32>(reinterpret_cast<const std::uint32_t*>(base)[i]);
+                out[i] = read_unaligned<std::uint32_t>(base + i * stride);
             }
             break;
+
         default:
             return std::unexpected(GltfLoadError::UnsupportedAccessorType);
     }
@@ -315,14 +363,15 @@ load_gltf_mesh(const std::string& path, const Transform& preprocess)
             );
             return std::unexpected(GltfLoadError::ParseError);
         }
-        const tinygltf::Accessor& normal_accessor {model.accessors[normal_idx]};
+        const tinygltf::Accessor& normal_accessor{model.accessors[normal_idx]};
         if (validate_vec3_f32(normal_accessor))
         {
             if (normal_accessor.count == pos_accessor.count && normal_accessor.bufferView >= 0
                 && normal_accessor.bufferView < static_cast<int>(model.bufferViews.size()))
             {
                 const tinygltf::BufferView& nrm_bv_local{
-                    model.bufferViews[static_cast<usize>(normal_accessor.bufferView)]};
+                    model.bufferViews[static_cast<usize>(normal_accessor.bufferView)]
+                };
                 nrm_base = accessor_data_begin(model, normal_accessor, nrm_bv_local);
                 nrm_stride = accessor_stride_bytes(normal_accessor, nrm_bv_local);
                 has_normals = true;

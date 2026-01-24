@@ -2,6 +2,7 @@
 #include "pba/viewport_fbo.hpp"
 
 #include "pba/core_types.hpp"
+#include "pch.hpp"
 //
 
 #include <algorithm>
@@ -80,7 +81,13 @@ bool ViewportFBO::ensure_size(int w, int h) noexcept
     glBindTexture(GL_TEXTURE_2D, 0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    return status == GL_FRAMEBUFFER_COMPLETE;
+    if (status != GL_FRAMEBUFFER_COMPLETE)
+    {
+        destroy();
+        return false;
+    }
+
+    return true;
 }
 
 ImTextureID ViewportFBO::imgui_texture_id() const noexcept

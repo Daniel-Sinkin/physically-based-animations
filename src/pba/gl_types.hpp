@@ -10,6 +10,8 @@
 namespace ds_pba
 {
 
+using UniformLocation = GLint;
+
 // OpenGL uses void* offsets, helper to avoid having this casting workaround everywhere
 struct GLPtr final
 {
@@ -24,14 +26,30 @@ struct GLPtr final
     }
 };
 
+struct ShaderHandle
+{
+    GLuint id{0};
+
+    constexpr ShaderHandle() = default;
+    constexpr explicit ShaderHandle(GLuint v) noexcept : id{v}
+    {
+    }
+
+    [[nodiscard]] constexpr bool valid() const noexcept
+    {
+        return id != 0;
+    }
+
+    friend constexpr bool operator==(ShaderHandle a, ShaderHandle b) noexcept
+    {
+        return a.id == b.id;
+    }
+};
+
 struct VAO
 {
     GLuint id{};
 
-    constexpr operator GLuint() const noexcept
-    {
-        return id;
-    }
     constexpr GLuint* ptr() noexcept
     {
         return &id;
@@ -58,10 +76,6 @@ struct VBO
 {
     GLuint id{};
 
-    constexpr operator GLuint() const noexcept
-    {
-        return id;
-    }
     constexpr GLuint* ptr() noexcept
     {
         return &id;
@@ -72,7 +86,7 @@ struct VBO
         return id != 0;
     }
 
-    void bind() const noexcept
+    void bind_array_buffer() const noexcept
     {
         assert(valid() && "Attempting to bind invalid VBO (id == 0)");
         glBindBuffer(GL_ARRAY_BUFFER, id);
@@ -84,13 +98,13 @@ struct VBO
     }
 };
 
-struct ShaderProgram
-{
-    GLuint id{};
+struct ProgramHandle
+{  // This is probably completely overkill regarding strong typing
+    GLuint id{0};
 
-    constexpr operator GLuint() const noexcept
+    constexpr ProgramHandle() = default;
+    constexpr explicit ProgramHandle(GLuint v) noexcept : id{v}
     {
-        return id;
     }
 
     [[nodiscard]] constexpr bool valid() const noexcept
@@ -98,9 +112,28 @@ struct ShaderProgram
         return id != 0;
     }
 
+    friend constexpr bool operator==(ProgramHandle a, ProgramHandle b) noexcept
+    {
+        return a.id == b.id;
+    }
+};
+struct ShaderProgram
+{
+    GLuint id{};
+
+    [[nodiscard]] constexpr bool valid() const noexcept
+    {
+        return id != 0;
+    }
+
+    [[nodiscard]] constexpr ProgramHandle handle() const noexcept
+    {
+        return ProgramHandle{id};
+    }
+
     void bind() const noexcept
     {
-        assert(valid() && "Attempting to bind invalid ShaderProgram (id == 0)");
+        assert(valid());
         glUseProgram(id);
     }
 
@@ -130,7 +163,7 @@ class ScopedBufferBinder
     ScopedBufferBinder(GLMesh& mesh)
     {
         mesh.vao.bind();
-        mesh.vbo.bind();
+        mesh.vbo.bind_array_buffer();
     }
     ~ScopedBufferBinder()
     {
@@ -146,3 +179,15 @@ class ScopedBufferBinder
 };
 
 }  // namespace ds_pba
+
+namespace std
+{
+template <>
+struct hash<ds_pba::ProgramHandle>
+{
+    size_t operator()(ds_pba::ProgramHandle h) const noexcept
+    {
+        return std::hash<GLuint>{}(h.id);
+    }
+};
+}  // namespace std

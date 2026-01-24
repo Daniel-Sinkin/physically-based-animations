@@ -3,6 +3,7 @@
 
 #include <array>
 #include <assert.h>
+#include <atomic>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
