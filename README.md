@@ -47,14 +47,17 @@ if(ImGui::BeginTable(/*args*/)){
 ```
 
 ## References
-* https://pbr-book.org/4ed/
-  * Rendering basics, Camera Transformation, Shader Effects
-* Iterative Dynamics with Temporal Coherence — Erin Catto, 2005 — https://box2d.org/files/ErinCatto_IterativeDynamics_GDC2005.pdf
-  * Efficient real time box collision dynamics
-* Real-Time Collision Detection — Christer Ericson, 2004 — https://realtimecollisiondetection.net/
-* Position Based Dynamics — Matthias Müller, Bruno Heidelberger, Marcus Hennix, John Ratcliff, 2007 — https://matthias-research.github.io/pages/publications/posBasedDyn.pdf
-* Physically Based Modeling: Principles and Practice — David Baraff, 1997 (SIGGRAPH Course Notes) — https://www.cs.cmu.edu/~baraff/sigcourse/
-  * https://www.cs.cmu.edu/~baraff/sigcourse/notesd2.pdf
+* [PBRT4] Physically Based Rendering, 4th Edition — Matt Pharr, Wenzel Jakob, Greg Humphreys — https://pbr-book.org/4ed/
+  * Rendering basics, camera transforms, ray–shape intersection, shading
+* [Catto05] Iterative Dynamics with Temporal Coherence — Erin Catto, 2005 — https://box2d.org/files/ErinCatto_IterativeDynamics_GDC2005.pdf
+  * Sequential impulse solver, constraint iteration, real-time rigid body contacts
+* [Ericson04] Real-Time Collision Detection — Christer Ericson, 2004 — https://realtimecollisiondetection.net/
+  * Broadphase, narrowphase, SAT, geometric robustness
+* [Müller07] Position Based Dynamics — Matthias Müller, Bruno Heidelberger, Marcus Hennix, John Ratcliff, 2007 — https://matthias-research.github.io/pages/publications/posBasedDyn.pdf
+  * Position-level constraint solving, alternative to impulse-based rigid body dynamics
+* [Baraff97] Physically Based Modeling: Principles and Practice — Andrew Witkin, David Baraff, 1997 (SIGGRAPH Course Notes) — https://www.cs.cmu.edu/~baraff/sigcourse/
+  * Rigid Body Dynamics II: Motion with Constraints — https://www.cs.cmu.edu/~baraff/sigcourse/notesd2.pdf
+* [Box2D] Box2D Physics Engine — Erin Catto - https://github.com/erincatto/box2d  
 
 ### Assets
 * PolyHaven

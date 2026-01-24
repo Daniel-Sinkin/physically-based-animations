@@ -37,7 +37,9 @@ using TimePoint = Clock::time_point;
 using Duration = std::chrono::duration<f64>;
 
 using ObjectId = u32;
-inline constexpr ObjectId k_invalid_id{std::numeric_limits<u32>::max()};
+inline constexpr ObjectId k_invalid_id{std::numeric_limits<ObjectId>::max()};
+
+inline constexpr usize k_invalid_idx{std::numeric_limits<usize>::max()};
 
 inline ObjectId next_object_id()
 {

@@ -1,5 +1,5 @@
 // pba/physics_context.cpp
-#include "glm/geometric.hpp"
+#include "pba/core_types.hpp"
 #include "pba/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/physics_context.hpp"
@@ -9,15 +9,6 @@ namespace ds_pba
 {
 namespace
 {
-
-struct Contact
-{
-    usize body_idx{};
-    Position3 p{0.0f, 0.0f, 0.0f};
-    Direction3 n{0.0f, 0.0f, 1.0f};
-    f32 penetration{0.0f};
-};
-
 [[nodiscard]] f32 dt_f32(const Duration& dt) noexcept
 {
     return static_cast<f32>(dt.count());
@@ -27,7 +18,7 @@ struct Contact
 integrate_orientation(const Quaternion& q, const Direction3& omega_world, f32 dt) noexcept
 {
     const Quaternion wq{0.0f, omega_world.x, omega_world.y, omega_world.z};
-    Quaternion out = q + (0.5f * dt) * (wq * q);
+    const Quaternion out = q + (0.5f * dt) * (wq * q);
     return glm::normalize(out);
 }
 
@@ -38,14 +29,28 @@ inv_inertia_world_from_body(const Quaternion& q, const glm::mat3& inv_inertia_bo
     return R * inv_inertia_body * glm::transpose(R);
 }
 
-[[nodiscard]] std::array<Position3, 8> box_world_corners(const RigidBody& b) noexcept
+[[nodiscard]] std::array<Direction3, 3> obb_axes_world(const RigidBody& b) noexcept
 {
     const glm::mat3 R = glm::mat3_cast(b.orientation);
+    return {
+        glm::normalize(R * Direction3{1.0f, 0.0f, 0.0f}),
+        glm::normalize(R * Direction3{0.0f, 1.0f, 0.0f}),
+        glm::normalize(R * Direction3{0.0f, 0.0f, 1.0f}),
+    };
+}
+
+[[nodiscard]] std::array<Position3, 8> box_world_corners(const RigidBody& b) noexcept
+{
+    const auto axes = obb_axes_world(b);
+    const Direction3 ax = axes[0];
+    const Direction3 ay = axes[1];
+    const Direction3 az = axes[2];
+
     const Direction3 he = b.half_extents;
 
-    const Direction3 ex = R * Direction3{he.x, 0.0f, 0.0f};
-    const Direction3 ey = R * Direction3{0.0f, he.y, 0.0f};
-    const Direction3 ez = R * Direction3{0.0f, 0.0f, he.z};
+    const Direction3 ex = ax * he.x;
+    const Direction3 ey = ay * he.y;
+    const Direction3 ez = az * he.z;
 
     std::array<Position3, 8> c{};
 
@@ -68,42 +73,191 @@ inv_inertia_world_from_body(const Quaternion& q, const glm::mat3& inv_inertia_bo
     return c;
 }
 
-void generate_ground_contacts(const std::vector<RigidBody>& bodies, std::vector<Contact>& out)
+[[nodiscard]] bool point_in_obb(const Position3& p, const RigidBody& b) noexcept
+{
+    const auto axes = obb_axes_world(b);
+    const Direction3 d = p - b.position;
+
+    const f32 lx = glm::dot(d, axes[0]);
+    const f32 ly = glm::dot(d, axes[1]);
+    const f32 lz = glm::dot(d, axes[2]);
+
+    const Direction3 he = b.half_extents;
+
+    return (std::abs(lx) <= he.x + 1e-6f) && (std::abs(ly) <= he.y + 1e-6f)
+           && (std::abs(lz) <= he.z + 1e-6f);
+}
+
+void project_obb_on_axis(
+    const RigidBody& b, const Direction3& axis, f32& out_min, f32& out_max
+) noexcept
+{
+    const auto axes = obb_axes_world(b);
+    const Direction3 he = b.half_extents;
+
+    const f32 c = glm::dot(b.position, axis);
+
+    const f32 r = std::abs(glm::dot(axes[0], axis)) * he.x
+                  + std::abs(glm::dot(axes[1], axis)) * he.y
+                  + std::abs(glm::dot(axes[2], axis)) * he.z;
+
+    out_min = c - r;
+    out_max = c + r;
+}
+
+[[nodiscard]] bool sat_obb_obb(
+    const RigidBody& a, const RigidBody& b, Direction3& out_n, f32& out_penetration
+) noexcept
+{
+    const auto ax = obb_axes_world(a);
+    const auto bx = obb_axes_world(b);
+
+    // Candidate separating axes:
+    // 3 from A, 3 from B, 9 cross products
+    std::array<Direction3, 15> axes{};
+    {
+        axes[0] = ax[0];
+        axes[1] = ax[1];
+        axes[2] = ax[2];
+
+        axes[3] = bx[0];
+        axes[4] = bx[1];
+        axes[5] = bx[2];
+
+        usize k{6zu};
+        for (usize i{0zu}; i < 3zu; ++i)
+        {
+            for (usize j{0zu}; j < 3zu; ++j)
+            {
+                axes[k++] = glm::cross(ax[i], bx[j]);
+            }
+        }
+    }
+
+    const Direction3 d = a.position - b.position;
+
+    f32 best_overlap = std::numeric_limits<f32>::infinity();
+    Direction3 best_axis{0.0f, 0.0f, 1.0f};
+
+    for (const Direction3& raw_axis : axes)
+    {
+        const f32 len2 = glm::dot(raw_axis, raw_axis);
+        if (len2 <= 1e-10f)
+        {  // Parallel axes => cross product is ~0; skip.
+            continue;
+        }
+
+        const Direction3 axis = raw_axis / std::sqrt(len2);
+
+        f32 a_min{}, a_max{};
+        f32 b_min{}, b_max{};
+        project_obb_on_axis(a, axis, a_min, a_max);
+        project_obb_on_axis(b, axis, b_min, b_max);
+
+        const f32 overlap = std::min(a_max, b_max) - std::max(a_min, b_min);
+        if (overlap <= 0.0f)
+        {
+            return false;
+        }
+
+        if (overlap < best_overlap)
+        {
+            best_overlap = overlap;
+
+            // Ensure normal points from b -> a
+            const f32 s = glm::dot(d, axis);
+            best_axis = (s >= 0.0f) ? axis : -axis;
+        }
+    }
+
+    out_n = best_axis;
+    out_penetration = best_overlap;
+    return true;
+}
+
+void generate_obb_contacts(const std::vector<RigidBody>& bodies, std::vector<Contact>& out)
 {
     out.clear();
-    out.reserve(bodies.size() * 2zu);
+    out.reserve(bodies.size() * 4zu);
 
-    constexpr Direction3 n{0.0f, 0.0f, 1.0f};
-
-    for (usize bi{0zu}; bi < bodies.size(); ++bi)
+    for (usize i{0zu}; i < bodies.size(); ++i)
     {
-        const RigidBody& b = bodies[bi];
-        if (b.is_static())
+        const RigidBody& a = bodies[i];
+        if (a.is_static())
         {
             continue;
         }
 
-        const auto corners = box_world_corners(b);
-        for (const Position3& p : corners)
+        for (usize j{0zu}; j < bodies.size(); ++j)
         {
-            if (p.z < 0.0f)
+            if (i == j)
             {
-                out.push_back(
-                    Contact{
-                        .body_idx = bi,
-                        .p = p,
-                        .n = n,
-                        .penetration = -p.z,
-                    }
-                );
+                continue;
             }
+
+            const RigidBody& b = bodies[j];
+            if (!b.is_static())
+            {
+                continue;
+            }
+
+            Direction3 n{0.0f, 0.0f, 1.0f};
+            f32 penetration{0.0f};
+            if (!sat_obb_obb(a, b, n, penetration))
+            {
+                continue;
+            }
+
+            // Collect candidate points: corners of A inside B and corners of B inside A.
+            std::vector<Position3> pts{};
+            pts.reserve(16);
+
+            const auto a_corners = box_world_corners(a);
+            for (const Position3& p : a_corners)
+            {
+                if (point_in_obb(p, b))
+                {
+                    pts.push_back(p);
+                }
+            }
+
+            const auto b_corners = box_world_corners(b);
+            for (const Position3& p : b_corners)
+            {
+                if (point_in_obb(p, a))
+                {
+                    pts.push_back(p);
+                }
+            }
+
+            if (pts.empty())
+            {
+                // Fallback: use midpoint between centers projected along normal.
+                const Position3 p = 0.5f * (a.position + b.position);
+                out.push_back(
+                    Contact{.a_idx = i, .b_idx = j, .p = p, .n = n, .penetration = penetration}
+                );
+                continue;
+            }
+
+            // Use average point (simple manifold reduction).
+            Position3 p_sum{0.0f, 0.0f, 0.0f};
+            for (const Position3& p : pts)
+            {
+                p_sum += p;
+            }
+            const Position3 p_avg = p_sum / static_cast<f32>(pts.size());
+
+            out.push_back(
+                Contact{.a_idx = i, .b_idx = j, .p = p_avg, .n = n, .penetration = penetration}
+            );
         }
     }
 }
 
-void apply_impulse_ground(RigidBody& a, const Contact& c, f32 restitution) noexcept
+void apply_impulse_contact(RigidBody& a, RigidBody& b, const Contact& c, f32 restitution) noexcept
 {
-    if (a.is_static())
+    if (a.is_static() && b.is_static())
     {
         return;
     }
@@ -115,21 +269,37 @@ void apply_impulse_ground(RigidBody& a, const Contact& c, f32 restitution) noexc
     // of kinetic energy is lost.
     assert(((eps >= 0.0f) && (eps <= 1.0f)) && "Coefficient of restitution must be in [0, 1]");
 
-    const Direction3 n_hat{c.n};  // Unit Surface Normal
+    // n^(t_0) the unit surface normal. Points from b to a
+    const Direction3 n_hat{c.n};
+    assert(std::abs(glm::length(n_hat) - 1.0f) < 1e-4f && "Contact normal must be unit length");
 
-    const Position3 p_a{c.p};                      // Contact point
-    const Position3 x_a{a.position};               // Center of mass
-    const Direction3 v_a{a.velocity};              // Velocity
-    const Direction3 r_a{p_a - x_a};               // Displacement
-    const Direction3 omega_a{a.angular_velocity};  // Angular Velocity
-    const Direction3 rn{glm::cross(r_a, n_hat)};   // Angular impulse direction
+    // Contact Point
+    const Position3 p_a{c.p};
+    const Position3 p_b{c.p};
+    assert(p_a == p_b);
 
-    // [8-1] p_a_dot = v_a + omega_a x (p_a - x_a)
+    // Center of mass
+    const Position3 x_a{a.position};
+    const Position3 x_b{b.position};
+
+    // (Linear) Velocity
+    const Direction3 v_a{a.velocity};
+    const Direction3 v_b{b.velocity};
+
+    // Displacement from COM (TODO what is that?)
+    const Direction3 r_a{p_a - x_a};
+    const Direction3 r_b{p_b - x_b};
+
+    // Angular velocities
+    const Direction3 omega_a{a.angular_velocity};
+    const Direction3 omega_b{b.angular_velocity};
+
+    // [8-1] p_a'(t_0) = v_a(t_0) + omega_a(t_0) x (p_a(t_0) - x_a(t_0))
     const Direction3 p_a_dot{v_a + glm::cross(omega_a, r_a)};
-    // [8-2] p_b_dot = v_b + omega_b x (p_b - x_b)
-    // Can set to 0 b.c. collider body (ground) is static
-    const Direction3 p_b_dot{0.0f, 0.0f, 0.0f};
-    // [8-3] v_rel = n^ . (p_a_dot) // Normal Relative Velocity
+    // [8-2] p_b'(t_0) = v_b(t_0) + omega_b(t_0) x (p_b(t_0) - x_b(t_0))
+    const Direction3 p_b_dot{v_b + glm::cross(omega_b, r_b)};
+
+    // [8-3] v_rel = n^ . (p_a'(t_0) - p_b'(t_0)) // Normal Relative Velocity
     const f32 v_rel = glm::dot(n_hat, p_a_dot - p_b_dot);
 
     if (v_rel >= 0.0f)
@@ -140,59 +310,101 @@ void apply_impulse_ground(RigidBody& a, const Contact& c, f32 restitution) noexc
         return;
     }
 
+    // Impulse is some J = j * n^ where we can derive j based on constraints.
     // Will omit the derivation, can express the v_a^+ and v_a^- as well as omega_a^+ and omega_a^-
     // conditions both via coefficient of restitution as well as the impulse identity and solve
-    // for the magnitude j (the direction is the unit surface normal).
+    // for the magnitude j
+
+    // Angular impulse direction
+    const Direction3 r_axn{glm::cross(r_a, n_hat)};
+    const Direction3 r_bxn{glm::cross(r_b, n_hat)};
+    const Direction3 invI_r_axn{a.inv_inertia_world * r_axn};
+    const Direction3 invI_r_bxn{b.inv_inertia_world * r_bxn};
+
     // [8-18] Denominator
-    const Direction3 invI_rn = a.inv_inertia_world * rn;
     // "Effective Mass" denominator
-    const f32 k = a.inv_mass + glm::dot(n_hat, glm::cross(invI_rn, r_a));
-    if (k <= 1e-12f)
+    const f32 k_a{a.inv_mass + glm::dot(n_hat, glm::cross(invI_r_axn, r_a))};
+    const f32 k_b{b.inv_mass + glm::dot(n_hat, glm::cross(invI_r_bxn, r_b))};
+    const f32 k{k_a + k_b};
+    if (k_a + k_b <= 1e-12f)
     {
         return;
     }
     const f32 j = -(1.0f + eps) * v_rel / k;
+
     // [8-7] Impulse
     const Direction3 J = j * n_hat;
 
     // [8-5] Delta v = J / M
-    a.velocity += J * a.inv_mass;
+    if (!a.is_static())
+    {
+        a.velocity += J * a.inv_mass;
+    }
+    if (!b.is_static())
+    {
+        // Recall n^(t_0) points from b to a so we have to reverse impulse direction
+        b.velocity -= J * b.inv_mass;
+    }
     // [8-6] tau_impulse = (p - x(t)) x J
-    const Direction3 tau_impulse{glm::cross(r_a, J)};
     // "The change in angular velocity is simply I^{-1}(t_0)\tau_{impulse}"
-    a.angular_velocity += a.inv_inertia_world * tau_impulse;
+    if (!a.is_static())
+    {
+        const Direction3 tau_a_impulse{glm::cross(r_a, J)};
+        a.angular_velocity += a.inv_inertia_world * tau_a_impulse;
+    }
+    if (!b.is_static())
+    {
+        const Direction3 tau_b_impulse{glm::cross(r_b, J)};
+        b.angular_velocity += b.inv_inertia_world * tau_b_impulse;
+    }
 }
 
-void positional_correction_ground(
+void positional_correction_contacts(
     std::vector<RigidBody>& bodies, const std::vector<Contact>& contacts
-)
+) noexcept
 {
-    constexpr f32 slop{0.001f};
+    // This corresponds to [Box2D] linaerSlop parameter
+    constexpr f32 pen_tolerance{0.001f};
+    // Percentage of remaining penetration corrected per step
     constexpr f32 percent{0.80f};
-
-    std::vector<f32> max_pen;
-    max_pen.resize(bodies.size(), 0.0f);
 
     for (const Contact& c : contacts)
     {
-        max_pen[c.body_idx] = std::max(max_pen[c.body_idx], c.penetration);
-    }
+        RigidBody& a = bodies[c.a_idx];
+        RigidBody& b = bodies[c.b_idx];
 
-    for (usize i{0zu}; i < bodies.size(); ++i)
-    {
-        RigidBody& b = bodies[i];
-        if (b.is_static())
+        if (a.is_static() && b.is_static())
         {
             continue;
         }
 
-        const f32 p = max_pen[i];
-        if (p <= slop)
+        const f32 pen = c.penetration;
+        if (pen <= pen_tolerance)
         {
             continue;
         }
 
-        b.position.z += percent * (p - slop);
+        const Direction3 n_hat = c.n;
+
+        const f32 inv_mass_a = a.inv_mass;
+        const f32 inv_mass_b = b.inv_mass;
+        const f32 inv_mass_sum = inv_mass_a + inv_mass_b;
+
+        if (inv_mass_sum <= 1e-12f)
+        {
+            continue;
+        }
+
+        const Direction3 correction = (percent * (pen - pen_tolerance) / inv_mass_sum) * n_hat;
+
+        if (!a.is_static())
+        {
+            a.position += correction * inv_mass_a;
+        }
+        if (!b.is_static())
+        {
+            b.position -= correction * inv_mass_b;
+        }
     }
 }
 
@@ -204,9 +416,7 @@ void PhysicsContext::step()
     const f32 dt_s = dt_f32(dt);
 
     constexpr int solver_iterations{16};
-
     constexpr f32 restitution{0.1f};
-    [[maybe_unused]] constexpr f32 friction{0.0f};
 
     for (RigidBody& b : bodies)
     {
@@ -249,18 +459,19 @@ void PhysicsContext::step()
     }
 
     std::vector<Contact> contacts{};
-    generate_ground_contacts(bodies, contacts);
+    generate_obb_contacts(bodies, contacts);
 
     for (int it{0}; it < solver_iterations; ++it)
     {
         for (const Contact& c : contacts)
         {
-            RigidBody& b = bodies[c.body_idx];
-            apply_impulse_ground(b, c, restitution);
+            RigidBody& a = bodies[c.a_idx];
+            RigidBody& b = bodies[c.b_idx];
+            apply_impulse_contact(a, b, c, restitution);
         }
     }
 
-    positional_correction_ground(bodies, contacts);
+    positional_correction_contacts(bodies, contacts);
 
     for (RigidBody& b : bodies)
     {
