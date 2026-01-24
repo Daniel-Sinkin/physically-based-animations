@@ -10,7 +10,6 @@
 
 namespace ds_pba
 {
-
 enum class ModelConfigError
 {
     ModelDirNotFound,

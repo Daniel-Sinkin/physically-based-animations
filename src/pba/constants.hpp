@@ -8,8 +8,19 @@
 
 namespace ds_pba
 {
+// Platform specific
+
+#if defined(_WIN32)
+constexpr bool k_on_windows = true;
+#else
+constexpr bool k_on_windows = false;
+#endif
+
 // Development
 constexpr bool k_validate_contacts{false};
+
+// Video Recorder
+constexpr int k_video_recorder_fps{60};
 
 // Input Handling
 constexpr f32 k_zoom_speed{0.12f};
@@ -38,6 +49,11 @@ constexpr f32 k_linear_sleep_speed_threshold{0.25f};
 constexpr f32 k_angular_sleep_speed_threshold{1.0f};
 
 constexpr f32 k_pen_correction_frag{0.25f};
+
+constexpr int k_solver_iterations{8};
+constexpr int k_position_iterations{2};
+constexpr f32 k_restitution{0.1f};
+
 // This corresponds to [Box2D] linearSlop parameter
 constexpr f32 k_pen_tolerance{0.001f};
 
@@ -54,4 +70,11 @@ inline constexpr f32 k_camera_z_far{1000.0f};
 
 // Render
 inline constexpr ColorRGBf k_scene_object_default_color{0.8f, 0.8f, 0.8f};
+
+inline constexpr int k_num_lines_per_side{30};
+inline constexpr f32 k_spacing{1.0f};
+inline constexpr f32 k_fog_start{12.0f};
+inline constexpr f32 k_fog_end{30.0f};
+inline constexpr f32 k_minor_alpha{0.35f};
+inline constexpr f32 k_axis_alpha{0.95f};
 }  // namespace ds_pba

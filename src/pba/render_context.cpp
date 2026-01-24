@@ -19,15 +19,18 @@
 #include "pba/scene_types.hpp"
 #include "pba/ui.hpp"
 #include "pba/util/shutdown.hpp"
+#include "pba/video_recorder.hpp"
 
 #include <GLFW/glfw3.h>
 #include <atomic>
 #include <glm/ext/matrix_float4x4.hpp>
 #include <imgui.h>
 #include <json.hpp>
+#include <memory>
 #include <optional>
 #include <print>
 #include <utility>
+
 namespace
 {
 [[nodiscard]] std::optional<ds_pba::GLMesh> upload_mesh_pn(const ds_pba::MeshData& mesh_data)
@@ -67,6 +70,7 @@ namespace
     return mesh;
 }
 }  // namespace
+
 ds_pba::RenderContext::~RenderContext()
 {
     shutdown();
@@ -326,6 +330,7 @@ void ds_pba::RenderContext::render_to_viewport() const
     const ImVec2 content_size{ImGui::GetContentRegionAvail()};
 
     glBindFramebuffer(GL_FRAMEBUFFER, viewport_fbo.fbo);
+    assert((viewport_fbo.width >= 0) && (viewport_fbo.height >= 0));
     glViewport(0, 0, viewport_fbo.width, viewport_fbo.height);
 
     ColorRGBAf bg{background_color};
@@ -740,7 +745,7 @@ void ds_pba::RenderContext::update_grab(f64 mouse_x, f64 mouse_y)
     const auto dx = static_cast<f32>(mouse_x - grab.start_mouse_x);
     const auto dy = static_cast<f32>(mouse_y - grab.start_mouse_y);
 
-    // Mouse right = +X in screen, mouse up = -dy; map to camera basis
+    // Mouse up = Look down
     const Direction3 v = (dx * units_per_px) * cam.right() + (-dy * units_per_px) * cam.up();
 
     Direction3 delta = v;
@@ -860,15 +865,16 @@ void ds_pba::RenderContext::step()
     {
         return;
     }
-    // See shutdown.hpp for details on our signal handling
-    if (ds_pba::g_request_close_sig)
-    {
-        ds_pba::g_request_close.store(true, std::memory_order_relaxed);
-        ds_pba::g_request_close_sig = 0;
-    }
-    if (ds_pba::g_request_close.load(std::memory_order_relaxed))
-    {
-        request_close();
+    {  // See shutdown.hpp for details on our signal handling
+        if (ds_pba::g_request_close_sig)
+        {
+            ds_pba::g_request_close.store(true, std::memory_order_relaxed);
+            ds_pba::g_request_close_sig = 0;
+        }
+        if (ds_pba::g_request_close.load(std::memory_order_relaxed))
+        {
+            request_close();
+        }
     }
 
     glfwPollEvents();
@@ -903,6 +909,13 @@ void ds_pba::RenderContext::step()
         }
     }
     prev_f1 = f1_down;
+
+    const bool f2_down{glfwGetKey(window, GLFW_KEY_F2) == GLFW_PRESS};
+    if (f2_down && !prev_f2)
+    {
+        toggle_recording();
+    }
+    prev_f2 = f2_down;
 
     const auto mouse_x = static_cast<f64>(io.MousePos.x);
     const auto mouse_y = static_cast<f64>(io.MousePos.y);
@@ -995,6 +1008,39 @@ void ds_pba::RenderContext::step()
         glfwMakeContextCurrent(backup_current_context);
     }
 
+    if (recorder->is_recording())
+    {
+        const int w{viewport_fbo.width};
+        const int h{viewport_fbo.height};
+
+        if (!viewport_fb_rect_valid)
+        {
+            ui_log("Recording stopped: viewport became invalid");
+            stop_recording();
+        }
+        else if (w != recorder->width || h != recorder->height)
+        {
+            ui_log("Recording stopped: viewport size changed during recording");
+            stop_recording();
+        }
+        else
+        {
+            if (!capture_viewport_rgba8(capture_rgba))
+            {
+                ui_log("Recording stopped: framebuffer readback failed");
+                stop_recording();
+            }
+            else
+            {
+                const std::span<const u8> frame{capture_rgba.data(), capture_rgba.size()};
+                if (!recorder->write_frame(frame))
+                {
+                    ui_log("Recording stopped: failed to write frame to ffmpeg");
+                    stop_recording();
+                }
+            }
+        }
+    }
     glfwSwapBuffers(window);
     ++frame_count;
 }
@@ -1070,40 +1116,48 @@ bool ds_pba::RenderContext::create_meshes()
 {
     auto upload_or_fail = [&](MeshData mesh_data, std::string_view label) -> std::optional<GLMesh>
     {
-        auto m = upload_mesh_pn(mesh_data);
-        if (!m)
+        auto mesh_res = upload_mesh_pn(mesh_data);
+        if (!mesh_res)
         {
             std::println(stderr, "Failed to upload mesh '{}'", label);
         }
-        return m;
+        return mesh_res;
     };
 
     {
-        auto m = upload_or_fail(create_cube_mesh(), "cube");
-        if (!m)
+        auto mesh_res = upload_or_fail(create_cube_mesh(), "cube");
+        if (!mesh_res)
+        {
             return false;
-        cube_mesh = *m;
+        }
+        cube_mesh = *mesh_res;
     }
     {
-        auto m = upload_or_fail(create_sphere_mesh(32, 24, 1.0f), "sphere");
-        if (!m)
+        auto mesh_res = upload_or_fail(create_sphere_mesh(32, 24, 1.0f), "sphere");
+        if (!mesh_res)
+        {
             return false;
-        sphere_mesh = *m;
+        }
+        sphere_mesh = *mesh_res;
     }
 
     grid_mesh = create_grid_mesh(grid);  // TODO: Make this also GL independent
 
     {
-        auto m = upload_or_fail(create_cylinder_mesh(24, 0.5f, 1.0f), "cylinder");
-        if (!m)
+        auto mesh_res = upload_or_fail(create_cylinder_mesh(24, 0.5f, 1.0f), "cylinder");
+        if (!mesh_res)
+        {
             return false;
-        cylinder_mesh = *m;
+        }
+        cylinder_mesh = *mesh_res;
     }
     {
-        auto m = upload_or_fail(create_pyramid_mesh(), "pyramid");
-        if (!m)
+        auto mesh_res = upload_or_fail(create_pyramid_mesh(), "pyramid");
+        if (!mesh_res)
+        {
             return false;
-        pyramid_mesh = *m;
+        }
+        pyramid_mesh = *mesh_res;
     }
 
     {
@@ -1276,11 +1330,149 @@ bool ds_pba::RenderContext::setup()
     }
     last_scene_poll = std::chrono::steady_clock::now();
 
+    if constexpr (k_on_windows)
+    {
+        recorder = nullptr;
+    }
+    else
+    {
+        recorder = std::make_unique<VideoRecorder>();
+    }
     return true;
+}
+
+bool ds_pba::RenderContext::capture_viewport_rgba8(std::vector<u8>& out) const
+{
+    if (!loaded_glad)
+    {
+        return false;
+    }
+    if (!viewport_fb_rect_valid)
+    {
+        return false;
+    }
+    if (viewport_fbo.fbo == 0 || viewport_fbo.color_tex == 0)
+    {
+        return false;
+    }
+
+    const int w{viewport_fbo.width};
+    const int h{viewport_fbo.height};
+    if (w <= 0 || h <= 0)
+    {
+        return false;
+    }
+
+    const usize bytes = static_cast<usize>(w) * static_cast<usize>(h) * 4zu;
+    out.resize(bytes);
+
+    GLint prev_fbo{0};
+    GLint prev_read_buffer{0};
+    GLint prev_pack_alignment{0};
+    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_fbo);
+    glGetIntegerv(GL_READ_BUFFER, &prev_read_buffer);
+    glGetIntegerv(GL_PACK_ALIGNMENT, &prev_pack_alignment);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, viewport_fbo.fbo);
+    glReadBuffer(GL_COLOR_ATTACHMENT0);
+    glPixelStorei(GL_PACK_ALIGNMENT, 1);
+
+    glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, out.data());
+
+    glBindFramebuffer(GL_FRAMEBUFFER, static_cast<GLuint>(prev_fbo));
+    glReadBuffer(static_cast<GLenum>(prev_read_buffer));
+    glPixelStorei(GL_PACK_ALIGNMENT, prev_pack_alignment);
+
+    const GLenum err = glGetError();
+    return err == GL_NO_ERROR;
+}
+
+void ds_pba::RenderContext::start_recording()
+{
+    assert(!k_on_windows && recorder);
+    if (recorder->is_recording())
+    {
+        return;
+    }
+
+    if (!viewport_fb_rect_valid)
+    {
+        ui_log("Recording start failed: viewport is not valid");
+        return;
+    }
+
+    const int w{viewport_fbo.width};
+    const int h{viewport_fbo.height};
+    if (w <= 0 || h <= 0)
+    {
+        ui_log("Recording start failed: invalid viewport size");
+        return;
+    }
+
+    std::filesystem::path out_dir = capture_output_dir;
+    if (out_dir.empty())
+    {
+        out_dir = "renders";
+    }
+
+    std::filesystem::path out_path{};
+    try
+    {
+        std::filesystem::create_directories(out_dir);
+        const std::string file = std::format("capture_{:04}.mp4", capture_take_index++);
+        out_path = out_dir / file;
+    }
+    catch (const std::exception& e)
+    {
+        ui_log(std::format("Recording start failed: {}", e.what()));
+        return;
+    }
+
+    recorder->width = w;
+    recorder->height = h;
+    recorder->fps = capture_fps;
+    if (!recorder->start(out_path))
+    {
+        ui_log("Recording start failed: could not start ffmpeg");
+        return;
+    }
+    ui_log(
+        std::format("Recording started: {} ({}x{} @ {} fps)", out_path.string(), w, h, capture_fps)
+    );
+}
+
+void ds_pba::RenderContext::stop_recording() const
+{
+    assert(!k_on_windows && recorder);
+    if (!recorder->is_recording())
+    {
+        return;
+    }
+
+    const std::string out = recorder->output_path.string();
+    recorder->stop();
+    ui_log(std::format("Recording stopped: {} ({} frames)", out, recorder->frames_written));
+}
+
+void ds_pba::RenderContext::toggle_recording()
+{
+    if (recorder->is_recording())
+    {
+        stop_recording();
+    }
+    else
+    {
+        start_recording();
+    }
 }
 
 void ds_pba::RenderContext::shutdown()
 {
+    if (recorder->is_recording())
+    {
+        recorder->stop();
+    }
+
     if (loaded_glad)
     {
         if (window)

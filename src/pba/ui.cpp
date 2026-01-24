@@ -333,6 +333,36 @@ void render_imgui_windows(EngineContext& engine_context)
         ImGui::DragFloat("Fog end", &grid.fog_end, 0.25f, 0.0f, 1e6f);
         ImGui::DragFloat("Minor alpha", &grid.minor_alpha, 0.01f, 0.0f, 1.0f);
         ImGui::DragFloat("Axis alpha", &grid.axis_alpha, 0.01f, 0.0f, 1.0f);
+
+        ImGui::Separator();
+        ImGui::TextUnformatted("Capture");
+        ImGui::DragInt("FPS##capture_fps", &render_context.capture_fps, 1.0f, 1, 240);
+        {
+            const std::string out_dir = render_context.capture_output_dir.string();
+            ImGui::Text("Output dir: %s", out_dir.c_str());
+        }
+
+        if constexpr (!k_on_windows)
+        {
+            assert(render_context.recorder);
+            if (!render_context.recorder->is_recording())
+            {
+                if (ImGui::Button("Start Recording (F2)"))
+                {
+                    render_context.start_recording();
+                }
+            }
+            else
+            {
+                const std::string out = render_context.recorder->output_path.string();
+                ImGui::Text("Recording to: %s", out.c_str());
+                if (ImGui::Button("Stop Recording (F2)"))
+                {
+                    render_context.stop_recording();
+                }
+            }
+        }
+
         ImGui::End();
     }
 
@@ -468,7 +498,7 @@ void render_imgui_windows(EngineContext& engine_context)
             ImGui::Text("No object selected.");
             ImGui::Text("Left-click objects to select.");
             ImGui::Text("Shift + left-click to multi-select.");
-            ImGui::Text("Press G to grab (Z only).");
+            ImGui::Text("Press G to grab.");
             ImGui::Text("Middle-mouse drag to orbit.");
         }
         ImGui::End();
@@ -487,7 +517,8 @@ void render_imgui_windows(EngineContext& engine_context)
         ImGui::Separator();
 
         const ImGuiTableFlags flags{
-            ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_ScrollY};
+            ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_ScrollY
+        };
 
         if (ImGui::BeginChild("##scene_list_child", ImVec2(0.0f, 0.0f), true))
         {
@@ -611,6 +642,22 @@ void render_menu_bar(RenderContext& render_context)
     assert(render_context.scene_context && "RenderContext has no SceneContext!");
     if (ImGui::BeginMenu("File"))
     {
+        if (!render_context.recorder->is_recording())
+        {
+            if (ImGui::MenuItem("Start Recording (F2)"))
+            {
+                render_context.start_recording();
+            }
+        }
+        else
+        {
+            if (ImGui::MenuItem("Stop Recording (F2)"))
+            {
+                render_context.stop_recording();
+            }
+        }
+
+        ImGui::Separator();
         if (ImGui::MenuItem("Save Scene"))
         {
             ds_pba::ui_log("Save Scene (not implemented)");

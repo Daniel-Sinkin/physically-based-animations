@@ -1,13 +1,16 @@
 // pba/render_context.hpp
 #pragma once
 
+#include "pba/constants.hpp"
 #include "pba/core_types.hpp"
 #include "pba/gl_types.hpp"
 #include "pba/math_types.hpp"
 #include "pba/ui_theme.hpp"
+#include "pba/video_recorder.hpp"
 #include "pba/viewport_fbo.hpp"
 
 #include <chrono>
+#include <filesystem>
 #include <glm/vec2.hpp>
 #include <string>
 #include <unordered_map>
@@ -24,12 +27,12 @@ struct EngineContext;
 
 struct GridSettings
 {
-    int n_lines_per_side{30};
-    f32 spacing{1.0f};
-    f32 fog_start{12.0f};
-    f32 fog_end{30.0f};
-    f32 minor_alpha{0.35f};
-    f32 axis_alpha{0.95f};
+    int n_lines_per_side{k_num_lines_per_side};
+    f32 spacing{k_spacing};
+    f32 fog_start{k_fog_start};
+    f32 fog_end{k_fog_end};
+    f32 minor_alpha{k_minor_alpha};
+    f32 axis_alpha{k_axis_alpha};
 };
 
 struct SceneContext;
@@ -38,7 +41,12 @@ struct Camera;
 
 struct RenderContext
 {
+    RenderContext() = default;
     ~RenderContext();
+    RenderContext(const RenderContext&) = delete;
+    RenderContext& operator=(const RenderContext&) = delete;
+    RenderContext(RenderContext&&) = delete;
+    RenderContext& operator=(RenderContext&&) = delete;
 
     void shutdown();
 
@@ -71,16 +79,17 @@ struct RenderContext
     bool prev_middle{false};
     bool prev_right{false};
     bool prev_f1{false};
+    bool prev_f2{false};
 
     bool prev_g{false};
     bool prev_esc{false};
     bool prev_enter{false};
     bool prev_kp_enter{false};
 
-    f64 prev_mx{0.0};
-    f64 prev_my{0.0};
+    f64 prev_mx{};
+    f64 prev_my{};
 
-    int frame_count{0};
+    int frame_count{};
 
     TimePoint run_start{Clock::now()};
     TimePoint last_scene_poll{Clock::now()};
@@ -93,11 +102,24 @@ struct RenderContext
     bool viewport_image_hovered{false};
 
     SceneContext* scene_context{};
-    EngineContext* engine_context{};  // Only for ImGUI
+    // This is only intended for ImGUI don't access values for the renderer through it
+    EngineContext* engine_context{};
 
     bool is_active_{true};
 
     bool pivot_active{true};
+
+    std::unique_ptr<VideoRecorder> recorder{};
+
+    std::vector<u8> capture_rgba{};
+    int capture_fps{k_video_recorder_fps};
+    std::filesystem::path capture_output_dir{"renders"};
+    usize capture_take_index{0zu};
+
+    void start_recording();
+    void stop_recording() const;
+    void toggle_recording();
+    [[nodiscard]] bool capture_viewport_rgba8(std::vector<u8>& out) const;
 
     GLMesh cube_mesh{};
     GLMesh sphere_mesh{};
