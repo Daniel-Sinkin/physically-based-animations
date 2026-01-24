@@ -77,21 +77,22 @@ static std::string model_name_from_dir(const std::filesystem::path& model_dir)
 std::expected<ModelConfig, ModelConfigError>
 load_or_create_model_config(const std::filesystem::path& model_dir)
 {
-    if (!std::filesystem::exists(model_dir) || !std::filesystem::is_directory(model_dir))
+    namespace fs = std::filesystem;
+    if (!fs::exists(model_dir) || !fs::is_directory(model_dir))
     {
         return std::unexpected(ModelConfigError::ModelDirNotFound);
     }
 
-    const auto cfg_path = config_path(model_dir);
-    const auto model_name = model_name_from_dir(model_dir);
+    const fs::path cfg_path{config_path(model_dir)};
+    const std::string model_name{model_name_from_dir(model_dir)};
 
-    if (!std::filesystem::exists(cfg_path))
+    if (!fs::exists(cfg_path))
     {
         ModelConfig cfg{};
         cfg.name = model_name;
         cfg.transform = Transform{};
 
-        const nlohmann::json j = cfg;
+        const nlohmann::json j{cfg};
         auto wr = write_json_file(cfg_path, j);
         if (!wr)
         {

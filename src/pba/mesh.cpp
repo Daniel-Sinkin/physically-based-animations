@@ -3,6 +3,7 @@
 //
 #include "pba/mesh.hpp"
 //
+#include "pba/constants.hpp"
 #include "pba/gl_types.hpp"
 #include "pba/math_types.hpp"
 #include "pba/render_context.hpp"
@@ -96,8 +97,8 @@ MeshData create_quad_mesh()
 
 MeshData create_pyramid_mesh()
 {
-    static constexpr f32 n_xy = 0.8944271909999159f;  // 2 / sqrt(5)
-    static constexpr f32 n_z = 0.4472135954999579f;   // 1 / sqrt(5)
+    static constexpr f32 n_xy{0.8944271909999159f};  // 2 / sqrt(5)
+    static constexpr f32 n_z{0.4472135954999579f};   // 1 / sqrt(5)
 
     // clang-format off
     static constexpr std::array<MeshV, 18> verts = {
@@ -138,39 +139,38 @@ MeshData create_pyramid_mesh()
 
 MeshData create_cylinder_mesh(int n_segments, f32 radius, f32 height)
 {
-    const f32 r = radius;
-    const f32 hz = 0.5f * height;
+    const f32 r{radius};
+    const f32 hz{0.5f * height};
 
     MeshData out{};
-    out.vertices.reserve(
-        static_cast<usize>(n_segments) * 12zu + static_cast<usize>(n_segments) * 6zu
-    );
+    out.vertices.reserve(static_cast<usize>(n_segments) * 12zu);
 
     auto push = [&](const glm::vec3& p, const glm::vec3& n)
     { out.vertices.push_back(MeshV{p.x, p.y, p.z, n.x, n.y, n.z}); };
 
-    static constexpr f32 k_two_pi = 2.0f * std::numbers::pi_v<f32>;
-
     for (int i = 0; i < n_segments; ++i)
     {
-        const f32 i_f = static_cast<f32>(i);
-        const f32 seg_f = static_cast<f32>(n_segments);
+        const f32 inv_seg{1.0f / static_cast<f32>(n_segments)};
 
-        const f32 a0 = (i_f / seg_f) * k_two_pi;
-        const f32 a1 = ((i_f + 1.0f) / seg_f) * k_two_pi;
+        const f32 i_f{static_cast<f32>(i)};
+        const f32 a0{(i_f * inv_seg) * k_two_pi};
+        const f32 a1{((i_f + 1.0f) * inv_seg) * k_two_pi};
 
-        const f32 c0 = std::cos(a0);
-        const f32 s0 = std::sin(a0);
-        const f32 c1 = std::cos(a1);
-        const f32 s1 = std::sin(a1);
+        const f32 c0{std::cos(a0)};
+        const f32 s0{std::sin(a0)};
+        const f32 c1{std::cos(a1)};
+        const f32 s1{std::sin(a1)};
 
         const glm::vec3 n0{c0, s0, 0.0f};
         const glm::vec3 n1{c1, s1, 0.0f};
 
-        const glm::vec3 p00{r * c0, r * s0, -hz};
-        const glm::vec3 p01{r * c0, r * s0, hz};
-        const glm::vec3 p10{r * c1, r * s1, -hz};
-        const glm::vec3 p11{r * c1, r * s1, hz};
+        const f32 z0{-hz};
+        const f32 z1{hz};
+
+        const glm::vec3 p00{r * c0, r * s0, z0};
+        const glm::vec3 p01{r * c0, r * s0, z1};
+        const glm::vec3 p10{r * c1, r * s1, z0};
+        const glm::vec3 p11{r * c1, r * s1, z1};
 
         push(p00, n0);
         push(p11, n1);
@@ -182,53 +182,51 @@ MeshData create_cylinder_mesh(int n_segments, f32 radius, f32 height)
     }
 
     // Caps
-    const glm::vec3 n_top{0.0f, 0.0f, 1.0f};
-    const glm::vec3 n_bot{0.0f, 0.0f, -1.0f};
+    const glm::vec3 n_top{k_axis_z};
+    const glm::vec3 n_bot{-k_axis_z};
+
     const glm::vec3 c_top{0.0f, 0.0f, hz};
     const glm::vec3 c_bot{0.0f, 0.0f, -hz};
 
-    for (int i = 0; i < n_segments; ++i)
+    const f32 inv_seg{1.0f / static_cast<f32>(n_segments)};
+    const f32 r_top_z{hz};
+    const f32 r_bot_z{-hz};
+
+    auto emit_cap = [&](f32 z, const glm::vec3& center, const glm::vec3& normal, bool flip_winding)
     {
-        const f32 i_f = static_cast<f32>(i);
-        const f32 seg_f = static_cast<f32>(n_segments);
+        for (int i{0}; i < n_segments; ++i)
+        {
+            const f32 i_f{static_cast<f32>(i)};
 
-        const f32 a0 = (i_f / seg_f) * k_two_pi;
-        const f32 a1 = ((i_f + 1.0f) / seg_f) * k_two_pi;
+            const f32 a0{(i_f * inv_seg) * k_two_pi};
+            const f32 a1{((i_f + 1.0f) * inv_seg) * k_two_pi};
 
-        const f32 c0 = std::cos(a0);
-        const f32 s0 = std::sin(a0);
-        const f32 c1 = std::cos(a1);
-        const f32 s1 = std::sin(a1);
+            const f32 c0{std::cos(a0)};
+            const f32 s0{std::sin(a0)};
+            const f32 c1{std::cos(a1)};
+            const f32 s1{std::sin(a1)};
 
-        const glm::vec3 p0{r * c0, r * s0, hz};
-        const glm::vec3 p1{r * c1, r * s1, hz};
+            const glm::vec3 p0{r * c0, r * s0, z};
+            const glm::vec3 p1{r * c1, r * s1, z};
 
-        push(c_top, n_top);
-        push(p0, n_top);
-        push(p1, n_top);
-    }
+            push(center, normal);
+            if (!flip_winding)
+            {
+                push(p0, normal);
+                push(p1, normal);
+            }
+            else
+            {
+                push(p1, normal);
+                push(p0, normal);
+            }
+        }
+    };
 
-    for (int i = 0; i < n_segments; ++i)
-    {
-        const f32 i_f = static_cast<f32>(i);
-        const f32 seg_f = static_cast<f32>(n_segments);
+    emit_cap(r_top_z, c_top, n_top, /*flip_winding=*/false);
+    emit_cap(r_bot_z, c_bot, n_bot, /*flip_winding=*/true);
 
-        const f32 a0 = (i_f / seg_f) * k_two_pi;
-        const f32 a1 = ((i_f + 1.0f) / seg_f) * k_two_pi;
-
-        const f32 c0 = std::cos(a0);
-        const f32 s0 = std::sin(a0);
-        const f32 c1 = std::cos(a1);
-        const f32 s1 = std::sin(a1);
-
-        const glm::vec3 p0{r * c0, r * s0, -hz};
-        const glm::vec3 p1{r * c1, r * s1, -hz};
-
-        push(c_bot, n_bot);
-        push(p1, n_bot);
-        push(p0, n_bot);
-    }
-
+    assert(out.vertices.size() == static_cast<usize>(n_segments) * 12zu);
     return out;
 }
 
@@ -245,11 +243,8 @@ MeshData create_sphere_mesh(int lat, int lon, f32 radius)
         );
     }
 
-    const f32 lat_f = static_cast<f32>(lat);
-    const f32 lon_f = static_cast<f32>(lon);
-
-    static constexpr f32 k_pi{std::numbers::pi_v<f32>};
-    static constexpr f32 k_two_pi{2.0f * std::numbers::pi_v<f32>};
+    const auto lat_f = static_cast<f32>(lat);
+    const auto lon_f = static_cast<f32>(lon);
 
     MeshData out{};
     out.vertices.reserve(static_cast<usize>(lon) * 6zu * static_cast<usize>(lat));
@@ -273,10 +268,10 @@ MeshData create_sphere_mesh(int lat, int lon, f32 radius)
         const f32 theta1 = k_pi / lat_f;
         for (int j = 0; j < lon; ++j)
         {
-            const f32 j_f = static_cast<f32>(j);
+            const auto j_f = static_cast<f32>(j);
 
-            const f32 phi0 = (j_f / lon_f) * k_two_pi;
-            const f32 phi1 = ((j_f + 1.0f) / lon_f) * k_two_pi;
+            const f32 phi0{(j_f / lon_f) * k_two_pi};
+            const f32 phi1{((j_f + 1.0f) / lon_f) * k_two_pi};
 
             const Direction3 n10{unit(theta1, phi0)};
             const Direction3 n11{unit(theta1, phi1)};
@@ -298,20 +293,20 @@ MeshData create_sphere_mesh(int lat, int lon, f32 radius)
 
         for (int j = 0; j < lon; ++j)
         {
-            const f32 j_f = static_cast<f32>(j);
+            const auto j_f = static_cast<f32>(j);
 
-            const f32 phi0 = (j_f / lon_f) * k_two_pi;
-            const f32 phi1 = ((j_f + 1.0f) / lon_f) * k_two_pi;
+            const f32 phi0{(j_f / lon_f) * k_two_pi};
+            const f32 phi1{((j_f + 1.0f) / lon_f) * k_two_pi};
 
-            const Direction3 n00 = unit(theta0, phi0);
-            const Direction3 n10 = unit(theta0, phi1);
-            const Direction3 n01 = unit(theta1, phi0);
-            const Direction3 n11 = unit(theta1, phi1);
+            const Direction3 n00{unit(theta0, phi0)};
+            const Direction3 n10{unit(theta0, phi1)};
+            const Direction3 n01{unit(theta1, phi0)};
+            const Direction3 n11{unit(theta1, phi1)};
 
-            const Position3 p00 = radius * n00;
-            const Position3 p10 = radius * n10;
-            const Position3 p01 = radius * n01;
-            const Position3 p11 = radius * n11;
+            const Position3 p00{radius * n00};
+            const Position3 p10{radius * n10};
+            const Position3 p01{radius * n01};
+            const Position3 p11{radius * n11};
 
             push(p00, n00);
             push(p01, n01);
@@ -327,10 +322,12 @@ MeshData create_sphere_mesh(int lat, int lon, f32 radius)
         const f32 theta0 = (static_cast<f32>(lat - 1) / static_cast<f32>(lat)) * k_pi;
         for (int j = 0; j < lon; ++j)
         {
-            const f32 j_f = static_cast<f32>(j);
+            const auto j_f = static_cast<f32>(j);
+            const f32 phi0{(j_f / lon_f) * k_two_pi};
+            const f32 phi1{((j_f + 1.0f) / lon_f) * k_two_pi};
 
-            const Direction3 n00{unit(theta0, (j_f * lon_f) / k_two_pi)};
-            const Direction3 n01{unit(theta0, ((j_f + 1.0f) + lon_f) / k_two_pi)};
+            const Direction3 n00{unit(theta0, phi0)};
+            const Direction3 n01{unit(theta0, phi1)};
 
             const Position3 p00{radius * n00};
             const Position3 p01{radius * n01};
@@ -370,7 +367,7 @@ GLMesh create_grid_mesh(GridSettings grid)
     // x = const -> y axis parallels
     for (int i{-N}; i <= N; ++i)
     {
-        const f32 x = static_cast<f32>(i) * grid.spacing;
+        const f32 x{static_cast<f32>(i) * grid.spacing};
         if (i == 0)
         {
             push_line({x, -E, 0}, {x, E, 0}, 0.15f, 0.90f, 0.25f, grid.axis_alpha);
@@ -384,7 +381,7 @@ GLMesh create_grid_mesh(GridSettings grid)
     // y = const -> x axis parallels
     for (int i{-N}; i <= N; ++i)
     {
-        const f32 y = static_cast<f32>(i) * grid.spacing;
+        const f32 y{static_cast<f32>(i) * grid.spacing};
         if (i == 0)
         {
             push_line({-E, y, 0}, {E, y, 0}, 0.90f, 0.20f, 0.18f, grid.axis_alpha);

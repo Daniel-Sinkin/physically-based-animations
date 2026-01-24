@@ -11,6 +11,7 @@
 #include <cstddef>      // IWYU pragma: keep
 #include <cstdint>      // IWYU pragma: keep
 #include <cstdlib>      // IWYU pragma: keep
+#include <cstring>      // IWYU pragma: keep
 #include <expected>     // IWYU pragma: keep
 #include <filesystem>   // IWYU pragma: keep
 #include <format>       // IWYU pragma: keep

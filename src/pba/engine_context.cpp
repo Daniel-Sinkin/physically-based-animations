@@ -1,8 +1,10 @@
 // pba/engine_context.cpp
+#include "pba/constants.hpp"
 #include "pba/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/engine_context.hpp"
 //
+#include "pba/constants.hpp"
 #include "pba/format.hpp"  // IWYU pragma: keep
 #include "pba/ui.hpp"
 #include "pba/util/scope_timer.hpp"
@@ -21,17 +23,17 @@ namespace
         return glm::mat3(0.0f);
     }
 
-    const f32 m = 1.0f / inv_mass;
+    const f32 m{1.0f / inv_mass};
 
-    const f32 x = 2.0f * half_extent.x;
-    const f32 y = 2.0f * half_extent.y;
-    const f32 z = 2.0f * half_extent.z;
+    const f32 x{2.0f * half_extent.x};
+    const f32 y{2.0f * half_extent.y};
+    const f32 z{2.0f * half_extent.z};
 
-    const f32 Ixx = (m / 12.0f) * (y * y + z * z);
-    const f32 Iyy = (m / 12.0f) * (x * x + z * z);
-    const f32 Izz = (m / 12.0f) * (x * x + y * y);
+    const f32 Ixx{(m / 12.0f) * (y * y + z * z)};
+    const f32 Iyy{(m / 12.0f) * (x * x + z * z)};
+    const f32 Izz{(m / 12.0f) * (x * x + y * y)};
 
-    glm::mat3 invI(0.0f);
+    glm::mat3 invI{0.0f};
     invI[0][0] = (Ixx > 0.0f) ? (1.0f / Ixx) : 0.0f;
     invI[1][1] = (Iyy > 0.0f) ? (1.0f / Iyy) : 0.0f;
     invI[2][2] = (Izz > 0.0f) ? (1.0f / Izz) : 0.0f;
@@ -41,7 +43,7 @@ namespace
 [[nodiscard]] glm::mat3
 inv_inertia_world_from_body(const Quaternion& q, const glm::mat3& inv_inertia_body) noexcept
 {
-    const glm::mat3 R = glm::mat3_cast(q);
+    const glm::mat3 R{glm::mat3_cast(q)};
     return R * inv_inertia_body * glm::transpose(R);
 }
 
@@ -72,7 +74,7 @@ void EngineContext::link_latest_objects(ObjectId id)
 
 void EngineContext::add_cube(Position3 position)
 {
-    const ObjectId id = next_object_id();
+    const ObjectId id{next_object_id()};
 
     scene->cube_objects.push_back(
         Object{.id = id, .type = ObjectType::Cube, .transform = {.position = position}}
@@ -85,21 +87,21 @@ void EngineContext::add_cube(Position3 position)
             .half_extents = Direction3{0.5f, 0.5f, 0.5f},
 
             .position = position,
-            .velocity = Direction3{0.0f, 0.0f, 0.0f},
-            .force_accum = Direction3{0.0f, 0.0f, 0.0f},
+            .velocity = Direction3{},
+            .force_accum = Direction3{},
             .inv_mass = 1.0f,
 
             .orientation = Quaternion{1.0f, 0.0f, 0.0f, 0.0f},
-            .angular_velocity = Direction3{0.0f, 0.0f, 0.0f},
-            .torque_accum = Direction3{0.0f, 0.0f, 0.0f},
+            .angular_velocity = Direction3{},
+            .torque_accum = Direction3{},
 
-            .inv_inertia_body = glm::mat3(0.0f),
-            .inv_inertia_world = glm::mat3(0.0f),
+            .inv_inertia_body = glm::mat3{0.0f},
+            .inv_inertia_world = glm::mat3{0.0f},
         }
     );
     RigidBody& b{physics->bodies.back()};
-    const Quaternion qx = glm::angleAxis(glm::radians(45.0f), Direction3{1.0f, 0.0f, 0.0f});
-    const Quaternion qy = glm::angleAxis(glm::radians(45.0f), Direction3{0.0f, 1.0f, 0.0f});
+    const Quaternion qx{glm::angleAxis(glm::radians(45.0f), k_axis_x)};
+    const Quaternion qy{glm::angleAxis(glm::radians(45.0f), k_axis_y)};
     b.orientation = glm::normalize(qy * qx);
 
     init_box_inertia(physics->bodies.back());
@@ -134,13 +136,13 @@ void EngineContext::add_ground()
             .half_extents = half_extents,
 
             .position = ground_center,
-            .velocity = Direction3{0.0f, 0.0f, 0.0f},
-            .force_accum = Direction3{0.0f, 0.0f, 0.0f},
+            .velocity = Direction3{},
+            .force_accum = Direction3{},
             .inv_mass = k_static_mass,
 
             .orientation = Quaternion{1.0f, 0.0f, 0.0f, 0.0f},
-            .angular_velocity = Direction3{0.0f, 0.0f, 0.0f},
-            .torque_accum = Direction3{0.0f, 0.0f, 0.0f},
+            .angular_velocity = Direction3{},
+            .torque_accum = Direction3{},
 
             .inv_inertia_body = glm::mat3(0.0f),
             .inv_inertia_world = glm::mat3(0.0f),
@@ -206,30 +208,30 @@ bool EngineContext::setup()
         );
         obj_name_map.insert_or_assign(scene->cube_objects.back().id, "Projecticle Yellow");
 
-        constexpr f32 cube = 1.0f;
-        constexpr f32 gap = 0.06f;
-        constexpr f32 step = cube + gap;
+        constexpr f32 cube{1.0f};
+        constexpr f32 gap{0.06f};
+        constexpr f32 step{cube + gap};
 
-        constexpr int base_n = 8;
-        constexpr f32 base_z = 0.5f;
+        constexpr int base_n{8};
+        constexpr f32 base_z{0.5f};
 
-        for (int layer = 0; layer < base_n; ++layer)
+        for (int layer{0}; layer < base_n; ++layer)
         {
-            const int n = base_n - layer;
-            const f32 z = base_z + static_cast<f32>(layer) * step;
+            const int n{base_n - layer};
+            const f32 z{base_z + static_cast<f32>(layer) * step};
 
-            const f32 half_span = 0.5f * static_cast<f32>(n - 1) * step;
+            const f32 half_span{0.5f * static_cast<f32>(n - 1) * step};
 
-            for (int ix = 0; ix < n; ++ix)
+            for (int ix{0}; ix < n; ++ix)
             {
-                const f32 x = static_cast<f32>(ix) * step - half_span;
-                const f32 y = 0.0f;
+                const f32 x{static_cast<f32>(ix) * step - half_span};
+                const f32 y{};
 
                 spawn_cube(
                     Position3{x, y, z},
-                    Direction3{0.0f, 0.0f, 0.0f},
+                    Direction3{},
                     Quaternion{1.0f, 0.0f, 0.0f, 0.0f},
-                    ColorRGBf{0.80f, 0.80f, 0.80f}
+                    ColorRGBf{k_scene_object_default_color}
                 );
                 obj_name_map.insert_or_assign(
                     scene->cube_objects.back().id,
@@ -255,7 +257,7 @@ bool EngineContext::setup()
 
 void EngineContext::run()
 {
-    const Duration fixed_dt = physics->time_step;
+    const Duration fixed_dt{physics->time_step};
     const Duration max_frame_dt{0.25};
 
     frame_time = Clock::now();
@@ -264,14 +266,14 @@ void EngineContext::run()
 
     while (renderer->is_active())
     {
-        const TimePoint now = Clock::now();
+        const TimePoint now{Clock::now()};
 
-        Duration frame_dt = std::chrono::duration_cast<Duration>(now - frame_time);
+        Duration frame_dt{std::chrono::duration_cast<Duration>(now - frame_time)};
         frame_time = now;
 
         frame_dt = std::min(frame_dt, max_frame_dt);
 
-        const bool space_down = glfwGetKey(renderer->window, GLFW_KEY_SPACE) == GLFW_PRESS;
+        const bool space_down{glfwGetKey(renderer->window, GLFW_KEY_SPACE) == GLFW_PRESS};
         if (space_down && !prev_space)
         {
             paused = !paused;
@@ -302,14 +304,13 @@ void EngineContext::run()
                 accumulator -= fixed_dt;
                 ++n_phys_updates;
             }
-
-            for (const auto& [id, idxs] : obj_map)
-            {
-                const auto [scene_i, phys_i] = idxs;
-                scene->cube_objects[scene_i].transform.position = physics->bodies[phys_i].position;
-                scene->cube_objects[scene_i].transform.orientation =
-                    physics->bodies[phys_i].orientation;
-            }
+        }
+        for (const auto& [id, idxs] : obj_map)
+        {
+            const auto [scene_i, phys_i] = idxs;
+            scene->cube_objects[scene_i].transform.position = physics->bodies[phys_i].position;
+            scene->cube_objects[scene_i].transform.orientation =
+                physics->bodies[phys_i].orientation;
         }
 
         renderer->step();

@@ -2,6 +2,7 @@
 #include "glm/gtc/quaternion.hpp"
 #include "glm/trigonometric.hpp"
 #include "imgui.h"
+#include "pba/constants.hpp"
 #include "pba/math_types.hpp"
 #include "pba/pch.hpp"  // IWYU pragma: keep
 //
@@ -21,16 +22,15 @@ struct TerminalState
 
     void add_line(std::string s)
     {
-        static constexpr std::size_t k_max_lines = 2000;
 
         lines.push_back(std::move(s));
         scroll_to_bottom = true;
 
-        if (lines.size() > k_max_lines)
+        if (lines.size() > k_max_terminal_lines)
         {
-            const std::size_t overflow = lines.size() - k_max_lines;
-            using Diff = std::vector<std::string>::difference_type;
-            lines.erase(lines.begin(), lines.begin() + static_cast<Diff>(overflow));
+            const usize overflow = lines.size() - k_max_terminal_lines;
+            using StrDiff = std::vector<std::string>::difference_type;
+            lines.erase(lines.begin(), lines.begin() + static_cast<StrDiff>(overflow));
         }
     }
 };
@@ -501,12 +501,13 @@ void render_imgui_windows(EngineContext& engine_context)
 
                     for (usize i = 0; i < scene_context.cube_objects.size(); ++i)
                     {
-                        const Object& o = scene_context.cube_objects[i];
-                        const bool is_selected = scene_context.selected_type == ObjectType::Cube
-                                                 && scene_context.selected_index
-                                                 && *scene_context.selected_index == i;
+                        const Object& o{scene_context.cube_objects[i]};
+                        const bool is_selected{
+                            scene_context.selected_type == ObjectType::Cube
+                            && scene_context.selected_index && *scene_context.selected_index == i
+                        };
 
-                        const std::string label = object_label(o.id, "Cube", i);
+                        const std::string label{object_label(o.id, "Cube", i)};
 
                         ImGui::TableNextRow();
                         ImGui::TableNextColumn();
@@ -539,12 +540,13 @@ void render_imgui_windows(EngineContext& engine_context)
 
                     for (usize i = 0; i < scene_context.sphere_objects.size(); ++i)
                     {
-                        const Object& o = scene_context.sphere_objects[i];
-                        const bool is_selected = scene_context.selected_type == ObjectType::Sphere
-                                                 && scene_context.selected_index
-                                                 && *scene_context.selected_index == i;
+                        const Object& o{scene_context.sphere_objects[i]};
+                        const bool is_selected{
+                            scene_context.selected_type == ObjectType::Sphere
+                            && scene_context.selected_index && *scene_context.selected_index == i
+                        };
 
-                        const std::string label = object_label(o.id, "Sphere", i);
+                        const std::string label{object_label(o.id, "Sphere", i)};
 
                         ImGui::TableNextRow();
                         ImGui::TableNextColumn();
@@ -568,12 +570,13 @@ void render_imgui_windows(EngineContext& engine_context)
 
                     for (usize i{0zu}; i < scene_context.hitmarker_objects.size(); ++i)
                     {
-                        const Object& o = scene_context.hitmarker_objects[i];
-                        const bool is_selected =
+                        const Object& o{scene_context.hitmarker_objects[i]};
+                        const bool is_selected{
                             scene_context.selected_type == ObjectType::Hitmarker
-                            && scene_context.selected_index && *scene_context.selected_index == i;
+                            && scene_context.selected_index && *scene_context.selected_index == i
+                        };
 
-                        const std::string label = object_label(o.id, "Hitmarker", i);
+                        const std::string label{object_label(o.id, "Hitmarker", i)};
 
                         ImGui::TableNextRow();
                         ImGui::TableNextColumn();

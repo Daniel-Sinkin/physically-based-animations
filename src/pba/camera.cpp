@@ -26,7 +26,7 @@ namespace ds_pba
 
 [[nodiscard]] ViewMatrix Camera::view_matrix() const
 {
-    return glm::lookAt(position(), pivot, glm::vec3(0, 0, 1));
+    return glm::lookAt(position(), pivot, glm::vec3{0, 0, 1});
 }
 
 [[nodiscard]] ProjMatrix Camera::proj_matrix(f32 aspect) const

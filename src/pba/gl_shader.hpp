@@ -62,8 +62,8 @@ struct Shader
     void compile(const std::string& source) const noexcept
     {
         assert(valid() && "Attempting to compile invalid Shader (id == 0)");
-        const char* src = source.data();
-        const GLint len = static_cast<GLint>(source.size());
+        const char* src{source.data()};
+        const auto len = static_cast<GLint>(source.size());
         glShaderSource(id, 1, &src, &len);
         glCompileShader(id);
     }

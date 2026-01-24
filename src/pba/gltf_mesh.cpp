@@ -1,14 +1,14 @@
 // pba/gltf_mesh.cpp
-#include "glm/gtc/quaternion.hpp"
-#include "pba/mesh_data.hpp"
 #include "pba/pch.hpp"  // IWYU pragma: keep
 //
+#include "glm/gtc/quaternion.hpp"
 #include "pba/core_types.hpp"
 #include "pba/gltf_mesh.hpp"
+#include "pba/math_types.hpp"
+#include "pba/mesh_data.hpp"
 #include "pba/model_config.hpp"
 #include "pba/util/scope_timer.hpp"
 
-#include <print>
 #include <tiny_gltf.h>
 
 namespace ds_pba
@@ -18,15 +18,16 @@ namespace
 static std::optional<std::filesystem::path>
 find_model_gltf_file(const std::filesystem::path& model_dir)
 {
-    if (!std::filesystem::exists(model_dir) || !std::filesystem::is_directory(model_dir))
+    namespace fs = std::filesystem;
+    if (!fs::exists(model_dir) || !fs::is_directory(model_dir))
     {
         return std::nullopt;
     }
 
-    std::vector<std::filesystem::path> glb{};
-    std::vector<std::filesystem::path> gltf{};
+    std::vector<fs::path> glb{};
+    std::vector<fs::path> gltf{};
 
-    for (const auto& e : std::filesystem::directory_iterator(model_dir))
+    for (const auto& e : fs::directory_iterator(model_dir))
     {
         if (!e.is_regular_file())
         {
@@ -45,7 +46,7 @@ find_model_gltf_file(const std::filesystem::path& model_dir)
         }
     }
 
-    auto pick = [](std::vector<std::filesystem::path>& v) -> std::optional<std::filesystem::path>
+    auto pick = [](std::vector<fs::path>& v) -> std::optional<fs::path>
     {
         if (v.empty())
         {
@@ -97,7 +98,7 @@ static glm::vec3 read_vec3_f32_strided(const std::byte* base, usize stride, usiz
 
 static glm::vec3 safe_normalize(glm::vec3 v) noexcept
 {
-    const f32 len = glm::length(v);
+    const f32 len{glm::length(v)};
     if (len <= 1e-12f)
     {
         return glm::vec3{0.0f, 0.0f, 1.0f};
@@ -133,10 +134,10 @@ read_indices_u32(const tinygltf::Model& model, int accessor_index)
         return std::unexpected(GltfLoadError::ParseError);
     }
 
-    const tinygltf::BufferView& bv = model.bufferViews[static_cast<usize>(a.bufferView)];
-    const std::byte* base = accessor_data_begin(model, a, bv);
+    const tinygltf::BufferView& bv{model.bufferViews[static_cast<usize>(a.bufferView)]};
+    const std::byte* base{accessor_data_begin(model, a, bv)};
 
-    const usize count = static_cast<usize>(a.count);
+    const auto count = static_cast<usize>(a.count);
     std::vector<u32> out;
     out.resize(count);
 
@@ -346,14 +347,15 @@ load_gltf_mesh(const std::string& path, const Transform& preprocess)
 
     auto read_pos = [&](u32 i) -> glm::vec3
     {
-        const glm::vec3 p = read_vec3_f32_strided(pos_base, pos_stride, static_cast<usize>(i));
+        const glm::vec3 p{read_vec3_f32_strided(pos_base, pos_stride, static_cast<usize>(i))};
         return apply_pos(p);
     };
 
     auto read_nrm = [&](u32 i) -> glm::vec3
     {
-        const glm::vec3 n =
-            safe_normalize(read_vec3_f32_strided(nrm_base, nrm_stride, static_cast<usize>(i)));
+        const glm::vec3 n{
+            safe_normalize(read_vec3_f32_strided(nrm_base, nrm_stride, static_cast<usize>(i)))
+        };
         return normalized(n);
     };
 
@@ -367,7 +369,7 @@ load_gltf_mesh(const std::string& path, const Transform& preprocess)
 
         verts.reserve(idx.size());
 
-        for (usize t = 0; t < idx.size(); t += 3)
+        for (usize t{0zu}; t < idx.size(); t += 3)
         {
             const u32 i0{idx[t + 0]};
             const u32 i1{idx[t + 1]};
@@ -379,15 +381,15 @@ load_gltf_mesh(const std::string& path, const Transform& preprocess)
                 return std::unexpected(GltfLoadError::ParseError);
             }
 
-            const glm::vec3 p0{read_pos(i0)};
-            const glm::vec3 p1{read_pos(i1)};
-            const glm::vec3 p2{read_pos(i2)};
+            const Position3 p0{read_pos(i0)};
+            const Position3 p1{read_pos(i1)};
+            const Position3 p2{read_pos(i2)};
 
             if (has_normals)
             {
                 auto emit = [&](u32 i, const glm::vec3& p)
                 {
-                    const glm::vec3 n{read_nrm(i)};
+                    const Direction3 n{read_nrm(i)};
                     verts.emplace_back(p.x, p.y, p.z, n.x, n.y, n.z);
                 };
                 emit(i0, p0);
@@ -445,7 +447,8 @@ load_gltf_mesh(const std::string& path, const Transform& preprocess)
 
 std::expected<MeshData, GltfLoadError> load_model_mesh(const std::string& model_name)
 {
-    const std::filesystem::path model_dir = std::filesystem::path("assets/models") / model_name;
+    namespace fs = std::filesystem;
+    const fs::path model_dir = fs::path("assets/models") / model_name;
 
     auto cfg_res = load_or_create_model_config(model_dir);
     if (!cfg_res)

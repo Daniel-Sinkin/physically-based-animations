@@ -1,4 +1,5 @@
 // pba/physics_context.cpp
+#include "pba/constants.hpp"
 #include "pba/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/physics_context.hpp"
@@ -19,13 +20,13 @@ static void reduce_contact_points_4(
         return;
     }
 
-    Direction3 t1 = glm::cross(n, Direction3{1.0f, 0.0f, 0.0f});
+    Direction3 t1{glm::cross(n, Direction3{1.0f, 0.0f, 0.0f})};
     if (glm::dot(t1, t1) < 1e-8f)
     {
         t1 = glm::cross(n, Direction3{0.0f, 1.0f, 0.0f});
     }
     t1 = glm::normalize(t1);
-    const Direction3 t2 = glm::normalize(glm::cross(n, t1));
+    const Direction3 t2{glm::normalize(glm::cross(n, t1))};
 
     auto pick_extremes = [&](const Direction3& axis) -> std::pair<usize, usize>
     {
@@ -56,7 +57,7 @@ static void reduce_contact_points_4(
 
     std::array<usize, 4> idx{a0, a1, b0, b1};
 
-    std::array<Position3, 4> reduced{};
+    std::array<Position3, k_collision_reduced_num> reduced{};
     usize reduced_count{0zu};
 
     for (usize k{0zu}; k < idx.size(); ++k)
@@ -108,17 +109,18 @@ integrate_orientation(const Quaternion& q, const Direction3& omega_world, f32 dt
 [[nodiscard]] glm::mat3
 inv_inertia_world_from_body(const Quaternion& q, const glm::mat3& inv_inertia_body) noexcept
 {
-    const glm::mat3 R = glm::mat3_cast(q);
+    const glm::mat3 R{glm::mat3_cast(q)};
     return R * inv_inertia_body * glm::transpose(R);
 }
 
 [[nodiscard]] std::array<Direction3, 3> obb_axes_world(const RigidBody& b) noexcept
 {
-    const glm::mat3 R = glm::mat3_cast(b.orientation);
+    const glm::mat3 R{glm::mat3_cast(b.orientation)};
+
     return {
-        glm::normalize(R * Direction3{1.0f, 0.0f, 0.0f}),
-        glm::normalize(R * Direction3{0.0f, 1.0f, 0.0f}),
-        glm::normalize(R * Direction3{0.0f, 0.0f, 1.0f}),
+        glm::normalize(R * k_axis_x),
+        glm::normalize(R * k_axis_y),
+        glm::normalize(R * k_axis_z),
     };
 }
 
@@ -144,9 +146,9 @@ inv_inertia_world_from_body(const Quaternion& q, const glm::mat3& inv_inertia_bo
         {
             for (int sz{-1}; sz <= 1; sz += 2)
             {
-                const f32 sx_f{static_cast<f32>(sx)};
-                const f32 sy_f{static_cast<f32>(sy)};
-                const f32 sz_f{static_cast<f32>(sz)};
+                const auto sx_f = static_cast<f32>(sx);
+                const auto sy_f = static_cast<f32>(sy);
+                const auto sz_f = static_cast<f32>(sz);
 
                 c[i++] = b.position + sx_f * ex + sy_f * ey + sz_f * ez;
             }
@@ -159,16 +161,20 @@ inv_inertia_world_from_body(const Quaternion& q, const glm::mat3& inv_inertia_bo
 [[nodiscard]] bool point_in_obb(const Position3& p, const RigidBody& b) noexcept
 {
     const auto axes = obb_axes_world(b);
-    const Direction3 d = p - b.position;
+    const Direction3 d{p - b.position};
 
-    const f32 lx = glm::dot(d, axes[0]);
-    const f32 ly = glm::dot(d, axes[1]);
-    const f32 lz = glm::dot(d, axes[2]);
+    const f32 lx{glm::dot(d, axes[0])};
+    const f32 ly{glm::dot(d, axes[1])};
+    const f32 lz{glm::dot(d, axes[2])};
 
-    const Direction3 he = b.half_extents;
+    const Direction3 he{b.half_extents};
+    constexpr f32 eps{1e-6f};
 
-    return (std::abs(lx) <= he.x + 1e-6f) && (std::abs(ly) <= he.y + 1e-6f)
-           && (std::abs(lz) <= he.z + 1e-6f);
+    const bool inside_x{std::abs(lx) <= he.x + eps};
+    const bool inside_y{std::abs(ly) <= he.y + eps};
+    const bool inside_z{std::abs(lz) <= he.z + eps};
+
+    return inside_x && inside_y && inside_z;
 }
 
 void project_obb_on_axis(
@@ -176,16 +182,17 @@ void project_obb_on_axis(
 ) noexcept
 {
     const auto axes = obb_axes_world(b);
-    const Direction3 he = b.half_extents;
 
-    const f32 c = glm::dot(b.position, axis);
+    const f32 center_proj{glm::dot(b.position, axis)};
 
-    const f32 r = std::abs(glm::dot(axes[0], axis)) * he.x
-                  + std::abs(glm::dot(axes[1], axis)) * he.y
-                  + std::abs(glm::dot(axes[2], axis)) * he.z;
+    const f32 radius_proj{
+        std::abs(glm::dot(axes[0], axis)) * b.half_extents.x
+        + std::abs(glm::dot(axes[1], axis)) * b.half_extents.y
+        + std::abs(glm::dot(axes[2], axis)) * b.half_extents.z
+    };
 
-    out_min = c - r;
-    out_max = c + r;
+    out_min = center_proj - radius_proj;
+    out_max = center_proj + radius_proj;
 }
 
 [[nodiscard]] bool sat_obb_obb(
@@ -364,7 +371,7 @@ void apply_impulse_contact(
     const Direction3 v_a{a.velocity};
     const Direction3 v_b{b.velocity};
 
-    // Displacement from COM (TODO what is that?)
+    // Displacement from center of mass
     const Direction3 r_a{p_a - x_a};
     const Direction3 r_b{p_b - x_b};
 
@@ -447,55 +454,53 @@ void apply_impulse_contact(
     }
 
     {
-        constexpr f32 mu{0.5f};
-
-        const Direction3 v_a2 = a.velocity;
-        const Direction3 v_b2 = b.velocity;
-        const Direction3 omega_a2 = a.angular_velocity;
-        const Direction3 omega_b2 = b.angular_velocity;
+        const Direction3 v_a2{a.velocity};
+        const Direction3 v_b2{b.velocity};
+        const Direction3 omega_a2{a.angular_velocity};
+        const Direction3 omega_b2{b.angular_velocity};
 
         const Direction3 p_a_dot2{v_a2 + glm::cross(omega_a2, r_a)};
         const Direction3 p_b_dot2{v_b2 + glm::cross(omega_b2, r_b)};
-        const Direction3 v_rel_w = p_a_dot2 - p_b_dot2;
+        const Direction3 v_rel_w{p_a_dot2 - p_b_dot2};
 
-        const f32 vrel_n = glm::dot(v_rel_w, n_hat);
-        const Direction3 v_t = v_rel_w - vrel_n * n_hat;
+        const f32 vrel_n{glm::dot(v_rel_w, n_hat)};
+        const Direction3 v_t{v_rel_w - vrel_n * n_hat};
 
-        const f32 vt2 = glm::dot(v_t, v_t);
+        const f32 vt2{glm::dot(v_t, v_t)};
         if (vt2 > 1e-12f)
         {
-            const f32 vt_len = std::sqrt(vt2);
-            const Direction3 t_hat = v_t / vt_len;
+            const f32 vt_len{std::sqrt(vt2)};
+            const Direction3 t_hat{v_t / vt_len};
 
             const Direction3 r_axt{glm::cross(r_a, t_hat)};
             const Direction3 r_bxt{glm::cross(r_b, t_hat)};
             const Direction3 invI_r_axt{a.inv_inertia_world * r_axt};
             const Direction3 invI_r_bxt{b.inv_inertia_world * r_bxt};
 
-            const f32 k_t_a = a.inv_mass + glm::dot(t_hat, glm::cross(invI_r_axt, r_a));
-            const f32 k_t_b = b.inv_mass + glm::dot(t_hat, glm::cross(invI_r_bxt, r_b));
-            const f32 k_t = k_t_a + k_t_b;
+            const f32 k2a{a.inv_mass + glm::dot(t_hat, glm::cross(invI_r_axt, r_a))};
+            const f32 k2b{b.inv_mass + glm::dot(t_hat, glm::cross(invI_r_bxt, r_b))};
+            const f32 k2{k2a + k2b};
 
-            if (k_t > 1e-12f)
+            if (k2 > 1e-12f)
             {
-                f32 j_t = -glm::dot(v_rel_w, t_hat) / k_t;
+                f32 j2 = -glm::dot(v_rel_w, t_hat) / k2;
 
-                const f32 jn = j;
-                const f32 max_jt = mu * jn;
+                const f32 jn{j};
+                const f32 max_jt{k_friction * jn};
 
-                j_t = std::clamp(j_t, -max_jt, +max_jt);
+                j2 = std::clamp(j2, -max_jt, +max_jt);
 
-                const Direction3 Jt = j_t * t_hat;
+                const Direction3 J2{j2 * t_hat};
 
                 if (!a.is_static())
                 {
-                    a.velocity += Jt * a.inv_mass;
-                    a.angular_velocity += a.inv_inertia_world * glm::cross(r_a, Jt);
+                    a.velocity += J2 * a.inv_mass;
+                    a.angular_velocity += a.inv_inertia_world * glm::cross(r_a, J2);
                 }
                 if (!b.is_static())
                 {
-                    b.velocity -= Jt * b.inv_mass;
-                    b.angular_velocity -= b.inv_inertia_world * glm::cross(r_b, Jt);
+                    b.velocity -= J2 * b.inv_mass;
+                    b.angular_velocity -= b.inv_inertia_world * glm::cross(r_b, J2);
                 }
             }
         }
@@ -506,10 +511,6 @@ void positional_correction_contacts(
     std::vector<RigidBody>& bodies, const std::vector<Contact>& contacts
 ) noexcept
 {
-    // This corresponds to [Box2D] linearSlop parameter
-    constexpr f32 pen_tolerance{0.001f};
-    // Percentage of remaining penetration corrected per step
-    constexpr f32 percent{0.25f};
 
     for (const Contact& c : contacts)
     {
@@ -522,23 +523,24 @@ void positional_correction_contacts(
         }
 
         const f32 pen = c.penetration;
-        if (pen <= pen_tolerance)
+        if (pen <= k_pen_tolerance)
         {
             continue;
         }
 
-        const Direction3 n_hat = c.n;
+        const Direction3 n_hat{c.n};
 
-        const f32 inv_mass_a = a.inv_mass;
-        const f32 inv_mass_b = b.inv_mass;
-        const f32 inv_mass_sum = inv_mass_a + inv_mass_b;
+        const f32 inv_mass_a{a.inv_mass};
+        const f32 inv_mass_b{b.inv_mass};
+        const f32 inv_mass_sum{inv_mass_a + inv_mass_b};
 
         if (inv_mass_sum <= 1e-12f)
         {
             continue;
         }
 
-        const Direction3 correction = (percent * (pen - pen_tolerance) / inv_mass_sum) * n_hat;
+        const Direction3 correction =
+            (k_pen_correction_frag * (pen - k_pen_tolerance) / inv_mass_sum) * n_hat;
 
         if (!a.is_static())
         {
@@ -555,8 +557,8 @@ void positional_correction_contacts(
 
 void PhysicsContext::step()
 {
-    const Duration dt = time_step;
-    const f32 dt_s = dt_f32(dt);
+    const Duration dt{time_step};
+    const f32 dt_s{dt_f32(dt)};
 
     constexpr int solver_iterations{8};
     constexpr int position_iterations{2};
@@ -609,8 +611,8 @@ void PhysicsContext::step()
     {
         for (const Contact& c : contacts)
         {
-            RigidBody& a = bodies[c.a_idx];
-            RigidBody& b = bodies[c.b_idx];
+            RigidBody& a{bodies[c.a_idx]};
+            RigidBody& b{bodies[c.b_idx]};
             apply_impulse_contact(a, b, c, restitution, dt_s);
         }
     }
@@ -627,29 +629,26 @@ void PhysicsContext::step()
             continue;
         }
 
-        constexpr f32 linear_damping = 0.2f;
-        constexpr f32 angular_damping = 1.5f;
+        const f32 v_sleep{k_linear_sleep_speed_threshold};
+        const f32 w_sleep{k_angular_sleep_speed_threshold};
 
-        constexpr f32 v_sleep = 0.25f;
-        constexpr f32 w_sleep = 1.0f;
-
-        const f32 v2 = glm::dot(b.velocity, b.velocity);
-        const f32 w2 = glm::dot(b.angular_velocity, b.angular_velocity);
+        const f32 v2{glm::dot(b.velocity, b.velocity)};
+        const f32 w2{glm::dot(b.angular_velocity, b.angular_velocity)};
 
         if (v2 < v_sleep * v_sleep)
         {
-            b.velocity *= std::exp(-linear_damping * dt_s);
+            b.velocity *= std::exp(-k_linear_damping * dt_s);
         }
         if (w2 < w_sleep * w_sleep)
         {
-            b.angular_velocity *= std::exp(-angular_damping * dt_s);
+            b.angular_velocity *= std::exp(-k_angular_damping * dt_s);
         }
     }
 
     for (RigidBody& b : bodies)
     {
-        b.force_accum = Direction3{0.0f, 0.0f, 0.0f};
-        b.torque_accum = Direction3{0.0f, 0.0f, 0.0f};
+        b.force_accum = Direction3{};
+        b.torque_accum = Direction3{};
     }
 
     time = time + std::chrono::duration_cast<Clock::duration>(dt);

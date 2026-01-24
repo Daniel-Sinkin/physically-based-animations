@@ -6,6 +6,7 @@
 #include <expected>
 #include <filesystem>
 #include <imgui.h>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>

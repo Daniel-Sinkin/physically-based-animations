@@ -131,13 +131,19 @@ std::optional<ThemeBase> parse_base(std::string_view s) noexcept
         return out;
     };
 
-    const std::string v = lower(s);
+    const std::string v{lower(s)};
     if (v == "dark")
+    {
         return ThemeBase::Dark;
+    }
     if (v == "light")
+    {
         return ThemeBase::Light;
+    }
     if (v == "classic")
+    {
         return ThemeBase::Classic;
+    }
     return std::nullopt;
 }
 
@@ -250,8 +256,8 @@ std::expected<UiTheme, UiThemeError> parse_theme(const nlohmann::json& j)
 
         for (auto kv = it->begin(); kv != it->end(); ++kv)
         {
-            const std::string& key = kv.key();
-            const nlohmann::json& val = kv.value();
+            const std::string& key{kv.key()};
+            const nlohmann::json& val{kv.value()};
 
             const auto col = col_from_name(key);
             if (!col)
@@ -269,7 +275,6 @@ std::expected<UiTheme, UiThemeError> parse_theme(const nlohmann::json& j)
         }
     }
 
-    // style: optional overrides
     if (auto it = j.find("style"); it != j.end())
     {
         if (!it->is_object())

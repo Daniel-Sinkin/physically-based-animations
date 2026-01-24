@@ -21,7 +21,7 @@ std::optional<Raycast> raycast(const SceneContext& scene_context, const Ray& ray
         const Object& o{scene_context.cube_objects[i]};
         if (auto res = intersect_ray_cube(ray, o.transform.model_matrix()))
         {
-            const f32 t = *res;
+            const f32 t{*res};
             if (t < best_t)
             {
                 best_t = t;
@@ -82,17 +82,17 @@ Ray ray_from_mouse(
 
     const auto window_width_f = static_cast<f32>(window_width);
     const auto window_height_f = static_cast<f32>(window_height);
-    const auto framebuffer_width_f = static_cast<f32>(framebuffer_width);
-    const auto framebuffer_height_f = static_cast<f32>(framebuffer_height);
+    const auto fb_width_f = static_cast<f32>(framebuffer_width);
+    const auto fb_height_f = static_cast<f32>(framebuffer_height);
 
-    const f32 sx{(window_width_f > 0) ? (framebuffer_width_f / window_width_f) : 1.0f};
-    const f32 sy{(window_height_f > 0) ? (framebuffer_height_f / window_height_f) : 1.0f};
+    const f32 scale_x{(window_width_f > 0) ? (fb_width_f / window_width_f) : 1.0f};
+    const f32 scale_y{(window_height_f > 0) ? (fb_height_f / window_height_f) : 1.0f};
 
-    const auto mx = static_cast<f32>(mouse_x) * sx;
-    const auto my = static_cast<f32>(mouse_y) * sy;
+    const auto mx = static_cast<f32>(mouse_x) * scale_x;
+    const auto my = static_cast<f32>(mouse_y) * scale_y;
 
-    const f32 x_ndc{(framebuffer_width_f > 0) ? (2.0f * mx / framebuffer_width_f - 1.0f) : 0.0f};
-    const f32 y_ndc{(framebuffer_height_f > 0) ? (1.0f - 2.0f * my / framebuffer_height_f) : 0.0f};
+    const f32 x_ndc{(fb_width_f > 0) ? (2.0f * mx / fb_width_f - 1.0f) : 0.0f};
+    const f32 y_ndc{(fb_height_f > 0) ? (1.0f - 2.0f * my / fb_height_f) : 0.0f};
 
     const glm::mat4 invPV{glm::inverse(camera_proj_matrix * camera_view_matrix)};
 
@@ -148,40 +148,40 @@ std::optional<f32> intersect_ray_sphere(const Ray& ray, const ModelMatrix& model
 {
     const glm::mat4 invM = glm::inverse(model);
 
-    const glm::vec3 oL = glm::vec3(invM * glm::vec4(ray.origin, 1.0f));
-    glm::vec3 dL = glm::vec3(invM * glm::vec4(ray.dir, 0.0f));
-    dL = glm::normalize(dL);
+    const Position3 origin_local{glm::vec3(invM * glm::vec4(ray.origin, 1.0f))};
+    Direction3 dir_local{glm::vec3(invM * glm::vec4(ray.dir, 0.0f))};
+    dir_local = glm::normalize(dir_local);
 
-    const f32 a = glm::dot(dL, dL);
-    const f32 b = 2.0f * glm::dot(oL, dL);
-    const f32 c = glm::dot(oL, oL) - 1.0f;
+    const f32 a{glm::dot(dir_local, dir_local)};
+    const f32 b{2.0f * glm::dot(origin_local, dir_local)};
+    const f32 c{glm::dot(origin_local, origin_local) - 1.0f};
 
-    const f32 disc = b * b - 4.0f * a * c;
+    const f32 disc{b * b - 4.0f * a * c};
     if (disc < 0.0f)
     {
         return std::nullopt;
     }
 
-    const f32 s = std::sqrt(disc);
-    const f32 inv2a = 0.5f / a;
-    const f32 t0 = (-b - s) * inv2a;
-    const f32 t1 = (-b + s) * inv2a;
+    const f32 s{std::sqrt(disc)};
+    const f32 inv2a{0.5f / a};
+    const f32 t0{(-b - s) * inv2a};
+    const f32 t1{(-b + s) * inv2a};
 
-    const f32 tL = (t0 > 0.0f) ? t0 : ((t1 > 0.0f) ? t1 : -1.0f);
-    if (tL <= 0.0f)
+    const f32 t_local{(t0 > 0.0f) ? t0 : ((t1 > 0.0f) ? t1 : -1.0f)};
+    if (t_local <= 0.0f)
     {
         return std::nullopt;
     }
 
-    const glm::vec3 hitL = oL + tL * dL;
-    const glm::vec3 hitW = glm::vec3(model * glm::vec4(hitL, 1.0f));
+    const Position3 hit_local{origin_local + t_local * dir_local};
+    const Position3 hit_world{glm::vec3(model * glm::vec4(hit_local, 1.0f))};
 
-    const f32 tW = glm::dot(hitW - ray.origin, ray.dir);
-    if (tW <= 0.0f)
+    const f32 t_world{glm::dot(hit_world - ray.origin, ray.dir)};
+    if (t_world <= 0.0f)
     {
         return std::nullopt;
     }
-    return tW;
+    return t_world;
 }
 
 /// Solve ray.origin.z + t * ray.dir.z = 0 for t
@@ -203,12 +203,12 @@ std::optional<f32> intersect_ray_ground(const Ray& ray)
 /// https://www.pbr-book.org/4ed/Shapes/Basic_Shape_Interface
 std::optional<f32> intersect_ray_cube(const Ray& ray_world, const ModelMatrix& model)
 {
-    const glm::mat4 invM = glm::inverse(model);
-    const glm::vec3 oL = glm::vec3(invM * glm::vec4(ray_world.origin, 1.0f));
-    const glm::vec3 dL = glm::vec3(invM * glm::vec4(ray_world.dir, 0.0f));
+    const glm::mat4 invM{glm::inverse(model)};
+    const Position3 origin_local{glm::vec3(invM * glm::vec4(ray_world.origin, 1.0f))};
+    const Direction3 dir_local{glm::vec3(invM * glm::vec4(ray_world.dir, 0.0f))};
 
-    const glm::vec3 bmin{-0.5f};
-    const glm::vec3 bmax{0.5f};
+    const Position3 bmin{-0.5f};
+    const Position3 bmax{0.5f};
 
     f32 tmin{-1e30f};
     f32 tmax{1e30f};
@@ -219,8 +219,8 @@ std::optional<f32> intersect_ray_cube(const Ray& ray_world, const ModelMatrix& m
         {
             return (o >= mn && o <= mx);
         }
-        f32 t1 = (mn - o) / d;
-        f32 t2 = (mx - o) / d;
+        f32 t1{(mn - o) / d};
+        f32 t2{(mx - o) / d};
         if (t1 > t2)
         {
             std::swap(t1, t2);
@@ -230,15 +230,15 @@ std::optional<f32> intersect_ray_cube(const Ray& ray_world, const ModelMatrix& m
         return tmin <= tmax;
     };
 
-    if (!slab(oL.x, dL.x, bmin.x, bmax.x))
+    if (!slab(origin_local.x, dir_local.x, bmin.x, bmax.x))
     {
         return std::nullopt;
     }
-    if (!slab(oL.y, dL.y, bmin.y, bmax.y))
+    if (!slab(origin_local.y, dir_local.y, bmin.y, bmax.y))
     {
         return std::nullopt;
     }
-    if (!slab(oL.z, dL.z, bmin.z, bmax.z))
+    if (!slab(origin_local.z, dir_local.z, bmin.z, bmax.z))
     {
         return std::nullopt;
     }
@@ -249,10 +249,10 @@ std::optional<f32> intersect_ray_cube(const Ray& ray_world, const ModelMatrix& m
         return std::nullopt;
     }
 
-    const glm::vec3 hitL = oL + tL * dL;
-    const glm::vec3 hitW = glm::vec3(model * glm::vec4(hitL, 1.0f));
+    const Position3 hit_local{origin_local + tL * dir_local};
+    const Position3 hit_global{glm::vec3(model * glm::vec4(hit_local, 1.0f))};
 
-    const f32 tW = glm::dot(hitW - ray_world.origin, ray_world.dir);
+    const f32 tW{glm::dot(hit_global - ray_world.origin, ray_world.dir)};
     if (tW <= 0.0f)
     {
         return std::nullopt;

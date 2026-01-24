@@ -1,9 +1,10 @@
 // pba/gl_types.hpp
 #pragma once
 
+#include "pba/core_types.hpp"
+
 #include <cassert>
 #include <cstddef>
-#include <cstdint>
 #include <glad/glad.h>
 
 namespace ds_pba
@@ -17,9 +18,9 @@ struct GLPtr final
         return static_cast<const void*>(nullptr);
     }
 
-    static constexpr const void* offset(std::size_t bytes) noexcept
+    static constexpr const void* offset(usize bytes) noexcept
     {
-        return reinterpret_cast<const void*>(static_cast<std::uintptr_t>(bytes));
+        return reinterpret_cast<const void*>(static_cast<uptr>(bytes));
     }
 };
 

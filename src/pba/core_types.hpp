@@ -11,6 +11,8 @@
 namespace ds_pba
 {
 using usize = std::size_t;
+using isize = std::ptrdiff_t;
+using uptr = std::uintptr_t;
 
 using i64 = std::int64_t;
 using i32 = std::int32_t;
@@ -38,13 +40,14 @@ using Duration = std::chrono::duration<f64>;
 
 using ObjectId = u32;
 inline constexpr ObjectId k_invalid_id{std::numeric_limits<ObjectId>::max()};
-
 inline constexpr usize k_invalid_idx{std::numeric_limits<usize>::max()};
 
 inline ObjectId next_object_id()
 {
-    static ObjectId counter{0u};
-    return counter++;
+    static std::atomic<ObjectId> counter{0};
+    const ObjectId id{counter.fetch_add(1u, std::memory_order_relaxed)};
+    assert(id != k_invalid_id && "ObjectId exhausted (hit k_invalid_id)");
+    return id;
 }
 
 template <typename T>

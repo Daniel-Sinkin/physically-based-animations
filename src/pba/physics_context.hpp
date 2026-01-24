@@ -1,6 +1,7 @@
 // pba/physics_context.hpp
 #pragma once
 
+#include "pba/constants.hpp"
 #include "pba/core_types.hpp"
 #include "pba/math_types.hpp"
 
@@ -12,14 +13,7 @@
 namespace ds_pba
 {
 
-constexpr f32 k_static_mass{0.0f};
-constexpr Direction3 k_gravity{0.0f, 0.0f, -9.81f};
-constexpr int k_contact_points{8};
-
-constexpr f32 friction_static{0.8f};
-constexpr f32 friction_dynamic{0.6f};
-
-f32 center_axis(f32 mn, f32 mx) noexcept;
+inline constexpr f32 k_static_mass{0.0f};
 
 struct RigidBody
 {
@@ -29,15 +23,15 @@ struct RigidBody
     Direction3 half_extents{0.5f, 0.5f, 0.5f};
 
     // Linear
-    Position3 position{0.0f, 0.0f, 0.0f};
-    Direction3 velocity{0.0f, 0.0f, 0.0f};
-    Direction3 force_accum{0.0f, 0.0f, 0.0f};
+    Position3 position{};
+    Direction3 velocity{};
+    Direction3 force_accum{};
     f32 inv_mass{k_static_mass};
 
     // Angular
     Quaternion orientation{1.0f, 0.0f, 0.0f, 0.0f};
-    Direction3 angular_velocity{0.0f, 0.0f, 0.0f};  // omega (world space)
-    Direction3 torque_accum{0.0f, 0.0f, 0.0f};
+    Direction3 angular_velocity{};  // omega (world space)
+    Direction3 torque_accum{};
 
     glm::mat3 inv_inertia_body{0.0f};   // constant
     glm::mat3 inv_inertia_world{0.0f};  // based on orientation
@@ -92,9 +86,9 @@ struct Contact
     usize a_idx{k_invalid_idx};
     usize b_idx{k_invalid_idx};
 
-    Position3 p{0.0f, 0.0f, 0.0f};   // contact point (world)
-    Direction3 n{0.0f, 0.0f, 1.0f};  // unit normal (world), points from B -> A
-    f32 penetration{0.0f};           // >= 0
+    Position3 p{};           // contact point (world)
+    Direction3 n{k_axis_z};  // unit normal (world), b -> a
+    f32 penetration{};       // >= 0
 
     [[nodiscard]] ContactValidity validate() const noexcept
     {
@@ -108,7 +102,7 @@ struct Contact
         {
             std::println(
                 stderr,
-                "Contact invalid: {} (a_id is k_invalid_id)",
+                "Contact invalid: {} (a_idx is k_invalid_idx)",
                 to_string(ContactValidity::InvalidAId)
             );
             return ContactValidity::InvalidAId;
@@ -117,7 +111,7 @@ struct Contact
         {
             std::println(
                 stderr,
-                "Contact invalid: {} (b_id is k_invalid_id)",
+                "Contact invalid: {} (b_idx is k_invalid_idx)",
                 to_string(ContactValidity::InvalidBId)
             );
             return ContactValidity::InvalidBId;
@@ -172,7 +166,7 @@ struct Contact
         }
 
         // Normal must be unit length (within tolerance).
-        const f32 len2 = glm::dot(n, n);
+        const f32 len2{glm::dot(n, n)};
         if (!finite_f32(len2) || len2 <= 1e-12f)
         {
             std::println(
@@ -184,8 +178,8 @@ struct Contact
             return ContactValidity::NonUnitNormal;
         }
 
-        const f32 len = std::sqrt(len2);
-        const f32 err = std::abs(len - 1.0f);
+        const f32 len{std::sqrt(len2)};
+        const f32 err{std::abs(len - 1.0f)};
         if (err > 1e-3f)
         {
             std::println(
@@ -214,9 +208,6 @@ struct PhysicsContext
     TimePoint time{};
     Duration time_step{std::chrono::duration<f64>(1.0 / 120.0)};
 
-    void apply_forces();
-    void update_positions();
-    void solve_collisions();
     void step();
 };
 

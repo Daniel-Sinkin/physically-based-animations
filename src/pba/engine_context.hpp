@@ -8,6 +8,7 @@
 #include "pba/scene_context.hpp"
 
 #include <memory>
+#include <string>
 #include <unordered_map>
 
 namespace ds_pba
@@ -31,7 +32,7 @@ struct EngineContext
     EngineContext();
 
     TimePoint frame_time = Clock::now();
-    Duration accumulator{0.0};
+    Duration accumulator{};
 
     bool paused{true};
     bool prev_space{false};

@@ -9,6 +9,8 @@
 
 #include <chrono>
 #include <glm/vec2.hpp>
+#include <string>
+#include <unordered_map>
 
 struct GLFWwindow;
 
@@ -27,10 +29,6 @@ struct GridSettings
     f32 minor_alpha{0.35f};
     f32 axis_alpha{0.95f};
 };
-
-constexpr f32 zoom_speed{0.12f};
-constexpr f32 sensitivity{0.0050f};
-constexpr f32 pan_sensitivity{1.00f};
 
 struct SceneContext;
 struct Raycast;
@@ -76,9 +74,9 @@ struct RenderContext
 
     int frame_count{0};
 
-    TimePoint run_start = Clock::now();
-    TimePoint last_scene_poll = Clock::now();
-    Duration scene_poll_interval = std::chrono::milliseconds(250);
+    TimePoint run_start{Clock::now()};
+    TimePoint last_scene_poll{Clock::now()};
+    Duration scene_poll_interval{std::chrono::milliseconds(250)};
 
     ViewportFBO viewport_fbo{};
 

@@ -25,13 +25,21 @@ struct formatter<glm::vec3>
     {
         auto out = ctx.out();
         *out++ = '(';
+        ctx.advance_to(out);
         out = float_fmt.format(v.x, ctx);
+        ctx.advance_to(out);
         *out++ = ',';
         *out++ = ' ';
+        ctx.advance_to(out);
+
         out = float_fmt.format(v.y, ctx);
+        ctx.advance_to(out);
         *out++ = ',';
         *out++ = ' ';
+        ctx.advance_to(out);
+
         out = float_fmt.format(v.z, ctx);
+        ctx.advance_to(out);
         *out++ = ')';
         return out;
     }
@@ -52,16 +60,28 @@ struct formatter<glm::quat>
     {
         auto out = ctx.out();
         *out++ = '(';
+        ctx.advance_to(out);
+
         out = float_fmt.format(q.w, ctx);
+        ctx.advance_to(out);
         *out++ = ',';
         *out++ = ' ';
+        ctx.advance_to(out);
+
         out = float_fmt.format(q.x, ctx);
+        ctx.advance_to(out);
         *out++ = ',';
         *out++ = ' ';
+        ctx.advance_to(out);
+
         out = float_fmt.format(q.y, ctx);
+        ctx.advance_to(out);
         *out++ = ',';
         *out++ = ' ';
+        ctx.advance_to(out);
+
         out = float_fmt.format(q.z, ctx);
+        ctx.advance_to(out);
         *out++ = ')';
         return out;
     }
@@ -93,7 +113,9 @@ struct formatter<glm::mat4>
 
             for (int col = 0; col < 4; ++col)
             {
+                ctx.advance_to(out);
                 out = float_fmt.format(m[col][row], ctx);
+                ctx.advance_to(out);
                 if (col != 3)
                 {
                     *out++ = ' ';
@@ -109,11 +131,14 @@ struct formatter<glm::mat4>
 template <>
 struct formatter<ds_pba::Transform>
 {
-    formatter<float> float_fmt;
-
     constexpr auto parse(format_parse_context& ctx)
     {
-        return float_fmt.parse(ctx);
+        auto it = ctx.begin();
+        if (it != ctx.end() && *it != '}')
+        {
+            throw format_error("Invalid format specifier for ds_pba::Transform");
+        }
+        return it;
     }
 
     template <class FormatContext>
@@ -132,11 +157,14 @@ struct formatter<ds_pba::Transform>
 template <>
 struct formatter<ds_pba::Ray>
 {
-    formatter<float> float_fmt;
-
     constexpr auto parse(format_parse_context& ctx)
     {
-        return float_fmt.parse(ctx);
+        auto it = ctx.begin();
+        if (it != ctx.end() && *it != '}')
+        {
+            throw format_error("Invalid format specifier for ds_pba::Ray");
+        }
+        return it;
     }
 
     template <class FormatContext>
@@ -149,17 +177,20 @@ struct formatter<ds_pba::Ray>
 template <>
 struct formatter<ds_pba::Raycast>
 {
-    formatter<float> float_fmt;
-
     constexpr auto parse(format_parse_context& ctx)
     {
-        return float_fmt.parse(ctx);
+        auto it = ctx.begin();
+        if (it != ctx.end() && *it != '}')
+        {
+            throw format_error("Invalid format specifier for ds_pba::Raycast");
+        }
+        return it;
     }
 
     template <class FormatContext>
     auto format(const ds_pba::Raycast& rc, FormatContext& ctx) const
     {
-        const char* type_str = "";
+        const char* type_str{""};
         switch (rc.object_type)
         {
             case ds_pba::ObjectType::Cube:

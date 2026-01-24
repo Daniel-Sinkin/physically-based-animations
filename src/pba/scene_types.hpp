@@ -1,6 +1,7 @@
 // pba/scene_types.hpp
 #pragma once
 
+#include "pba/constants.hpp"
 #include "pba/core_types.hpp"  // IWYU pragma: keep
 #include "pba/math_types.hpp"
 
@@ -13,7 +14,7 @@ namespace ds_pba
 
 struct Transform
 {
-    Position3 position{0.0f, 0.0f, 0.0f};
+    Position3 position{};
     Direction3 scale{1.0f, 1.0f, 1.0f};
     Quaternion orientation{1.0f, 0.0f, 0.0f, 0.0f};
 
@@ -34,11 +35,11 @@ enum class ObjectType
     Hitmarker
 };
 struct Object
-{  // Prolly should be a render type
+{
     ObjectId id{k_invalid_id};
     ObjectType type{ObjectType::Cube};
     Transform transform{};
-    glm::vec3 color{0.8f, 0.8f, 0.8f};
+    ColorRGBf color{k_scene_object_default_color};
 };
 
 }  // namespace ds_pba

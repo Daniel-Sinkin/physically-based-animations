@@ -12,7 +12,9 @@ namespace
 extern "C" void handle_term(int) noexcept
 {
     // Gracefully shut down when terminal sends close request;
-    // this was implemented for proper watcher integration
+    // this was implemented for proper watcher integration with watcher.sh
+    // so we can close the running engine via terminal commands instead
+    // of sending SIGKILL
     ds_pba::g_request_close.store(true, std::memory_order_relaxed);
 }
 }  // namespace

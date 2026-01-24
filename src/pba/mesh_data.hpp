@@ -1,6 +1,8 @@
 // mesh_data.hpp
 #pragma once
-#include "core_types.hpp"
+#include "pba/core_types.hpp"
+
+#include <vector>
 
 namespace ds_pba
 {

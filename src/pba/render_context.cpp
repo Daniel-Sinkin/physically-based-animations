@@ -1,4 +1,5 @@
 // pba/render_context.cpp
+#include "pba/constants.hpp"
 #include "pba/mesh_data.hpp"
 #include "pba/pch.hpp"  // IWYU pragma: keep
 //
@@ -23,6 +24,7 @@
 #include <glm/ext/matrix_float4x4.hpp>
 #include <imgui.h>
 #include <json.hpp>
+#include <utility>
 namespace
 {
 [[nodiscard]] ds_pba::GLMesh upload_mesh_pn(const ds_pba::MeshData& mesh_data)
@@ -265,8 +267,9 @@ void ds_pba::RenderContext::render_to_viewport_pivot(
     pivot_mesh.vao.bind();
 
     const Transform t{.position = pivot_pos, .scale = {0.1f, 0.1f, 0.1f}};
-    set_uniform_mat4(obj_prog.id, "uModel", t.model_matrix());
-    set_uniform_vec3(obj_prog.id, "uColor", {196.0f / 255.0f, 209.0f / 255.0f, 102.0f / 255.0f});
+    set_uniform_mat4(pivot_prog.id, "uModel", t.model_matrix());
+    set_uniform_vec3(pivot_prog.id, "uColor", {196.0f / 255.0f, 209.0f / 255.0f, 102.0f / 255.0f});
+
     glDrawArrays(GL_TRIANGLES, 0, pivot_mesh.vertex_count);
 
     VAO::unbind();
@@ -300,11 +303,11 @@ void ds_pba::RenderContext::render_to_viewport() const
     glBindFramebuffer(GL_FRAMEBUFFER, viewport_fbo.fbo);
     glViewport(0, 0, viewport_fbo.width, viewport_fbo.height);
 
-    auto bg = background_color;
+    ColorRGBAf bg{background_color};
     glClearColor(bg.r(), bg.g(), bg.b(), bg.a());
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-    f32 aspect = viewport_fbo.aspect_ratio();
+    f32 aspect{viewport_fbo.aspect_ratio()};
 
     const Camera& cam{scene_context->camera};
 
@@ -346,7 +349,8 @@ void ds_pba::RenderContext::viewport_window()
         viewport_fb_rect_valid = false;
     }
 
-    int win_w = 1, win_h = 1;
+    int win_w{1};
+    int win_h{1};
     glfwGetWindowSize(window, &win_w, &win_h);
     if (win_w == 0 || win_h == 0)
     {
@@ -380,8 +384,8 @@ void ds_pba::RenderContext::viewport_window()
         viewport_fb_rect.width = std::clamp(vw, 1, fbw - viewport_fb_rect.x);
         viewport_fb_rect.height = std::clamp(vh, 1, fbh - viewport_fb_rect.y);
 
-        const int fbo_w = viewport_fb_rect.width;
-        const int fbo_h = viewport_fb_rect.height;
+        const int fbo_w{viewport_fb_rect.width};
+        const int fbo_h{viewport_fb_rect.height};
         viewport_fb_rect_valid = (fbo_w > 8 && fbo_h > 8) && viewport_fbo.ensure_size(fbo_w, fbo_h);
     }
 
@@ -431,7 +435,7 @@ void ds_pba::RenderContext::hover_interaction_selection(const Raycast& rc) const
     {
         for (usize i{0zu}; i < scene_context->cube_objects.size(); ++i)
         {
-            const Object& obj = scene_context->cube_objects[i];
+            const Object& obj{scene_context->cube_objects[i]};
             if (obj.id == rc.object_id)
             {
                 if (scene_context->selected_index == i)
@@ -444,8 +448,6 @@ void ds_pba::RenderContext::hover_interaction_selection(const Raycast& rc) const
                     scene_context->selected_index = i;
                     scene_context->selected_type = ObjectType::Cube;
                 }
-
-                std::println();
                 log_selected(obj.id, "Cube");
                 found = true;
                 break;
@@ -470,7 +472,6 @@ void ds_pba::RenderContext::hover_interaction_selection(const Raycast& rc) const
                     scene_context->selected_index = i;
                     scene_context->selected_type = ObjectType::Sphere;
                 }
-
                 log_selected(obj.id, "Sphere");
                 found = true;
                 break;
@@ -517,12 +518,12 @@ void ds_pba::RenderContext::hover_interaction_holding_middle(
 
         auto right_offset = (-dx * units_per_px) * cam.right();
         auto up_offset = dy * units_per_px * cam.up();
-        cam.pivot += (right_offset + up_offset) * pan_sensitivity;
+        cam.pivot += (right_offset + up_offset) * k_pan_sensitivity;
     }
     else
     {  // Rotate Around pivot
-        scene_context->camera.yaw += -dx * sensitivity;
-        scene_context->camera.pitch += dy * sensitivity;
+        scene_context->camera.yaw += -dx * k_sensitivity;
+        scene_context->camera.pitch += dy * k_sensitivity;
 
         const f32 lim = glm::radians(89.0f);
         scene_context->camera.pitch = std::clamp(scene_context->camera.pitch, -lim, lim);
@@ -537,10 +538,10 @@ void ds_pba::RenderContext::hover_interaction(
 
     Camera& cam{scene_context->camera};
     assert(viewport_fb_rect_valid && "If viewport hovered then it must be valid");
-    const f32 wheel = io.MouseWheel;
+    const f32 wheel{io.MouseWheel};
     if (wheel != 0.0f)
     {  // Zooming
-        cam.distance *= std::exp(-wheel * zoom_speed);
+        cam.distance *= std::exp(-wheel * k_zoom_speed);
         cam.distance = std::clamp(scene_context->camera.distance, 0.75f, 200.0f);
     }
 
@@ -553,9 +554,9 @@ void ds_pba::RenderContext::hover_interaction(
     const bool spawning{right_down && !prev_right};
     if (selecting || spawning)
     {  // Selecting objects
-        const f32 aspect = viewport_fbo.aspect_ratio();
-        const glm::mat4 camera_view_matrix = scene_context->camera.view_matrix();
-        const glm::mat4 camera_proj_matrix = scene_context->camera.proj_matrix(aspect);
+        const f32 aspect{viewport_fbo.aspect_ratio()};
+        const ViewMatrix camera_view_matrix{scene_context->camera.view_matrix()};
+        const ProjMatrix camera_proj_matrix{scene_context->camera.proj_matrix(aspect)};
 
         const glm::vec2 mouse_pos{glm::vec2{static_cast<f32>(mouse_x), static_cast<f32>(mouse_y)}};
 
@@ -602,7 +603,7 @@ void ds_pba::RenderContext::hover_interaction(
                 scene_context->hitmarker_objects.push_back(
                     Object{
                         .id = next_object_id(),
-                        .type = ObjectType::Sphere,
+                        .type = ObjectType::Hitmarker,
                         .transform = {.position = rc.hit, .scale = {0.05f, 0.05f, 0.05f}},
                         .color = {1.0f, 1.0f, 1.0f},
                     }
@@ -743,7 +744,7 @@ bool ds_pba::RenderContext::create_programs()
         std::println(
             stderr,
             "Failed to load 'pivot' shaders, got error code: {}",
-            static_cast<int>(outline_prog_res.error())
+            std::to_underlying(outline_prog_res.error())
         );
         return false;
     }
@@ -844,8 +845,8 @@ bool ds_pba::RenderContext::setup()
 
     if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)))
     {
-        glfwDestroyWindow(window);
-        glfwTerminate();
+        std::println(stderr, "Failed to init glad");
+        shutdown();
         return false;
     }
     loaded_glad = true;
@@ -930,28 +931,61 @@ void ds_pba::RenderContext::shutdown()
 {
     if (loaded_glad)
     {
+        if (window)
+        {
+            glfwMakeContextCurrent(window);
+        }
+
         viewport_fbo.destroy();
 
         glDeleteProgram(grid_prog.id);
         glDeleteProgram(obj_prog.id);
         glDeleteProgram(outline_prog.id);
-    }
+        glDeleteProgram(pivot_prog.id);
 
+        grid_prog.id = 0;
+        obj_prog.id = 0;
+        outline_prog.id = 0;
+        pivot_prog.id = 0;
+
+        auto destroy_mesh = [](GLMesh& m)
+        {
+            if (m.vbo.id != 0)
+            {
+                glDeleteBuffers(1, &m.vbo.id);
+                m.vbo.id = 0;
+            }
+            if (m.vao.id != 0)
+            {
+                glDeleteVertexArrays(1, &m.vao.id);
+                m.vao.id = 0;
+            }
+            m.vertex_count = 0;
+        };
+
+        destroy_mesh(cube_mesh);
+        destroy_mesh(sphere_mesh);
+        destroy_mesh(grid_mesh);
+        destroy_mesh(marble_bust_mesh);
+        destroy_mesh(pyramid_mesh);
+        destroy_mesh(cylinder_mesh);
+
+        loaded_glad = false;
+    }
     if (initialised_imgui)
     {
+
         ImGui_ImplOpenGL3_Shutdown();
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
         initialised_imgui = false;
     }
-
     if (window_created && window)
     {
         glfwDestroyWindow(window);
         window = nullptr;
         window_created = false;
     }
-
     if (initialised_glfw)
     {
         glfwTerminate();

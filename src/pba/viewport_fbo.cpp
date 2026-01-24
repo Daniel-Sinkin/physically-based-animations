@@ -1,5 +1,7 @@
 // pba/viewport_fbo.cpp
 #include "pba/viewport_fbo.hpp"
+
+#include "pba/core_types.hpp"
 //
 
 #include <algorithm>
@@ -83,7 +85,7 @@ bool ViewportFBO::ensure_size(int w, int h) noexcept
 
 ImTextureID ViewportFBO::imgui_texture_id() const noexcept
 {
-    return static_cast<ImTextureID>(static_cast<std::uintptr_t>(color_tex));
+    return static_cast<ImTextureID>(static_cast<uptr>(color_tex));
 }
 
 }  // namespace ds_pba
