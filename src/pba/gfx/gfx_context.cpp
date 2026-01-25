@@ -1,7 +1,7 @@
 // pba/render/render_context.cpp
 #include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
-#include "pba/gfx/render_context.hpp"
+#include "pba/gfx/gfx_context.hpp"
 //
 #include "pba/assets/gltf_mesh.hpp"
 #include "pba/assets/mesh.hpp"
@@ -110,17 +110,17 @@ upload_mesh_pcolor_lines(const ds_pba::MeshDataPColor& mesh_data)
 }
 }  // namespace
 
-ds_pba::Renderer::~Renderer()
+ds_pba::GfxContext::~GfxContext()
 {
     shutdown();
 }
 
-bool ds_pba::Renderer::is_active() const
+bool ds_pba::GfxContext::is_active() const
 {
     return (window != nullptr) && !glfwWindowShouldClose(window) && is_active_;
 }
 
-void ds_pba::Renderer::request_close() noexcept
+void ds_pba::GfxContext::request_close() noexcept
 {
     is_active_ = false;
     if (window)
@@ -129,7 +129,7 @@ void ds_pba::Renderer::request_close() noexcept
     }
 }
 
-void ds_pba::Renderer::render_to_viewport_objects(
+void ds_pba::GfxContext::render_to_viewport_objects(
     const ds_pba::ViewMatrix& camera_view_matrix, const ds_pba::ProjMatrix& camera_proj_matrix
 ) const
 {  // Objects
@@ -197,7 +197,7 @@ void ds_pba::Renderer::render_to_viewport_objects(
     }
 }
 
-void ds_pba::Renderer::render_to_viewport_outline(
+void ds_pba::GfxContext::render_to_viewport_outline(
     const ds_pba::ViewMatrix& camera_view_matrix, const ds_pba::ProjMatrix& camera_proj_matrix
 ) const
 {
@@ -310,7 +310,7 @@ void ds_pba::Renderer::render_to_viewport_outline(
     }
 }
 
-void ds_pba::Renderer::render_to_viewport_pivot(
+void ds_pba::GfxContext::render_to_viewport_pivot(
     const Position3& pivot_pos,
     const ViewMatrix& camera_view_matrix,
     const ProjMatrix& camera_proj_matrix
@@ -343,7 +343,7 @@ void ds_pba::Renderer::render_to_viewport_pivot(
     VAO::unbind();
 }
 
-void ds_pba::Renderer::render_to_viewport_grid(
+void ds_pba::GfxContext::render_to_viewport_grid(
     const ViewMatrix& camera_view_matrix, const ProjMatrix& camera_proj_matrix
 ) const
 {
@@ -363,7 +363,7 @@ void ds_pba::Renderer::render_to_viewport_grid(
     glDepthMask(GL_TRUE);
 }
 
-void ds_pba::Renderer::render_to_viewport() const
+void ds_pba::GfxContext::render_to_viewport() const
 {
     assert(viewport_fb_rect_valid && "Should only render to valid viewports");
     const ImVec2 content_size{ImGui::GetContentRegionAvail()};
@@ -395,7 +395,7 @@ void ds_pba::Renderer::render_to_viewport() const
     );
 }
 
-void ds_pba::Renderer::viewport_window()
+void ds_pba::GfxContext::viewport_window()
 {
     ImGuiWindowFlags vp_flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse
                                 | ImGuiWindowFlags_NoCollapse;
@@ -477,7 +477,7 @@ void ds_pba::Renderer::viewport_window()
     ImGui::End();
 }
 
-void ds_pba::Renderer::hover_interaction_selection(const Raycast& rc) const
+void ds_pba::GfxContext::hover_interaction_selection(const Raycast& rc) const
 {
     assert(scene_context);
 
@@ -540,7 +540,7 @@ void ds_pba::Renderer::hover_interaction_selection(const Raycast& rc) const
     }
 }
 
-void ds_pba::Renderer::hover_interaction_holding_middle(f64 mouse_x, f64 mouse_y, Camera& cam) const
+void ds_pba::GfxContext::hover_interaction_holding_middle(f64 mouse_x, f64 mouse_y, Camera& cam) const
 {
     const auto dx = static_cast<f32>(mouse_x - prev_mx);
     const auto dy = static_cast<f32>(mouse_y - prev_my);
@@ -567,7 +567,7 @@ void ds_pba::Renderer::hover_interaction_holding_middle(f64 mouse_x, f64 mouse_y
     }
 }
 
-void ds_pba::Renderer::hover_interaction(
+void ds_pba::GfxContext::hover_interaction(
     f64 mouse_x, f64 mouse_y, bool left_down, bool middle_down, bool right_down
 ) const
 {
@@ -664,7 +664,7 @@ void ds_pba::Renderer::hover_interaction(
     }
 }
 
-std::optional<ds_pba::Position3> ds_pba::Renderer::get_object_position(ObjectId id) const
+std::optional<ds_pba::Position3> ds_pba::GfxContext::get_object_position(ObjectId id) const
 {
     if (!scene_context)
     {
@@ -711,7 +711,7 @@ std::optional<ds_pba::Position3> ds_pba::Renderer::get_object_position(ObjectId 
 
     return std::nullopt;
 }
-void ds_pba::Renderer::set_grab_constraint(GrabConstraint c)
+void ds_pba::GfxContext::set_grab_constraint(GrabConstraint c)
 {
     grab.constraint = c;
 
@@ -732,7 +732,7 @@ void ds_pba::Renderer::set_grab_constraint(GrabConstraint c)
     }
 }
 
-void ds_pba::Renderer::begin_grab(f64 mouse_x, f64 mouse_y)
+void ds_pba::GfxContext::begin_grab(f64 mouse_x, f64 mouse_y)
 {
     assert(scene_context);
 
@@ -761,7 +761,7 @@ void ds_pba::Renderer::begin_grab(f64 mouse_x, f64 mouse_y)
     ui_log("Grab: move mouse. X/Y/Z constrain. LMB/Enter confirm. RMB/Esc cancel.");
 }
 
-void ds_pba::Renderer::update_grab(f64 mouse_x, f64 mouse_y)
+void ds_pba::GfxContext::update_grab(f64 mouse_x, f64 mouse_y)
 {
     assert(scene_context);
 
@@ -807,7 +807,7 @@ void ds_pba::Renderer::update_grab(f64 mouse_x, f64 mouse_y)
     }
 }
 
-void ds_pba::Renderer::cancel_grab()
+void ds_pba::GfxContext::cancel_grab()
 {
     if (!grab.active)
     {
@@ -825,7 +825,7 @@ void ds_pba::Renderer::cancel_grab()
     ui_log("Grab cancelled");
 }
 
-void ds_pba::Renderer::confirm_grab()
+void ds_pba::GfxContext::confirm_grab()
 {
     if (!grab.active)
     {
@@ -837,7 +837,7 @@ void ds_pba::Renderer::confirm_grab()
     grab.constraint = GrabConstraint::None;
     ui_log("Grab confirmed");
 }
-void ds_pba::Renderer::set_object_position(ObjectId id, const Position3& p) const
+void ds_pba::GfxContext::set_object_position(ObjectId id, const Position3& p) const
 {
     if (!scene_context)
     {
@@ -892,7 +892,7 @@ void ds_pba::Renderer::set_object_position(ObjectId id, const Position3& p) cons
     }
 }
 
-void ds_pba::Renderer::step()
+void ds_pba::GfxContext::step()
 {
     using namespace ds_pba;
     assert(scene_context && "Scene Context not set for RenderContext");
@@ -1081,7 +1081,7 @@ void ds_pba::Renderer::step()
     ++frame_count;
 }
 
-bool ds_pba::Renderer::create_programs()
+bool ds_pba::GfxContext::create_programs()
 {
     {
         auto grid_prog_res = create_program_from_file("grid");
@@ -1148,7 +1148,7 @@ bool ds_pba::Renderer::create_programs()
     return true;
 }
 
-bool ds_pba::Renderer::create_meshes()
+bool ds_pba::GfxContext::create_meshes()
 {
     auto upload_or_fail_pn = [&](const std::optional<MeshDataPN>& mesh_data,
                                  std::string_view label) -> std::optional<GLMesh>
@@ -1259,7 +1259,7 @@ bool ds_pba::Renderer::create_meshes()
     return true;
 }
 
-bool ds_pba::Renderer::setup()
+bool ds_pba::GfxContext::setup()
 {
     using namespace ds_pba;
 
@@ -1407,7 +1407,7 @@ bool ds_pba::Renderer::setup()
     return true;
 }
 
-bool ds_pba::Renderer::capture_viewport_rgba8(std::vector<u8>& out) const
+bool ds_pba::GfxContext::capture_viewport_rgba8(std::vector<u8>& out) const
 {
     if (!loaded_glad)
     {
@@ -1453,7 +1453,7 @@ bool ds_pba::Renderer::capture_viewport_rgba8(std::vector<u8>& out) const
     return err == GL_NO_ERROR;
 }
 
-void ds_pba::Renderer::start_recording()
+void ds_pba::GfxContext::start_recording()
 {
     if (recorder.is_recording())
     {
@@ -1506,7 +1506,7 @@ void ds_pba::Renderer::start_recording()
     );
 }
 
-void ds_pba::Renderer::stop_recording()
+void ds_pba::GfxContext::stop_recording()
 {
     if (!recorder.is_recording())
     {
@@ -1518,7 +1518,7 @@ void ds_pba::Renderer::stop_recording()
     ui_log(std::format("Recording stopped: {} ({} frames)", out, recorder.frames_written));
 }
 
-void ds_pba::Renderer::toggle_recording()
+void ds_pba::GfxContext::toggle_recording()
 {
     if (recorder.is_recording())
     {
@@ -1530,7 +1530,7 @@ void ds_pba::Renderer::toggle_recording()
     }
 }
 
-void ds_pba::Renderer::shutdown()
+void ds_pba::GfxContext::shutdown()
 {
     if (recorder.is_recording())
     {

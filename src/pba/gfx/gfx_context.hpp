@@ -39,14 +39,14 @@ struct SceneContext;
 struct Raycast;
 struct Camera;
 
-struct Renderer
+struct GfxContext
 {
-    Renderer() = default;
-    ~Renderer();
-    Renderer(const Renderer&) = delete;
-    Renderer& operator=(const Renderer&) = delete;
-    Renderer(Renderer&&) = delete;
-    Renderer& operator=(Renderer&&) = delete;
+    GfxContext() = default;
+    ~GfxContext();
+    GfxContext(const GfxContext&) = delete;
+    GfxContext& operator=(const GfxContext&) = delete;
+    GfxContext(GfxContext&&) = delete;
+    GfxContext& operator=(GfxContext&&) = delete;
 
     void shutdown();
 
