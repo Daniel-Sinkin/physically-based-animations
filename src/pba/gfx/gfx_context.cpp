@@ -1,10 +1,12 @@
 // pba/render/gfx_context.cpp
+#include "pba/core/constants.hpp"
 #include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/gfx/gfx_context.hpp"
 //
 #include "pba/core/core_types.hpp"
 #include "pba/core/format.hpp"  // IWYU pragma: keep
+#include "pba/editor/editor_input.hpp"
 #include "pba/gfx/gl.hpp"
 #include "pba/gfx/gl_types.hpp"
 #include "pba/gfx/video_recorder.hpp"
@@ -115,7 +117,6 @@ void ds_pba::GfxContext::request_close() noexcept
 
 void ds_pba::GfxContext::step()
 {
-
     using namespace ds_pba;
     assert(scene_context && "Scene Context not set for GfxContext");
 
@@ -137,10 +138,15 @@ void ds_pba::GfxContext::step()
 
     glfwPollEvents();
 
-    const ImGuiIO& io{ImGui::GetIO()};
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
+
+    const ImGuiIO& io{ImGui::GetIO()};
+    editor_input.update(window);
+    editor_input.mouse_x = static_cast<f64>(io.MousePos.x);
+    editor_input.mouse_y = static_cast<f64>(io.MousePos.y);
+    const auto& input = editor_input;
 
     if (ImGui::BeginMainMenuBar())
     {
@@ -152,8 +158,7 @@ void ds_pba::GfxContext::step()
 
     viewport_window();
 
-    const bool f1_down{glfwGetKey(window, GLFW_KEY_F1) == GLFW_PRESS};
-    if (f1_down && !prev_f1)
+    if (input.key_pressed(EditorKey::F1))
     {  // Switch pivot off and on
         if (pivot_active)
         {
@@ -166,91 +171,73 @@ void ds_pba::GfxContext::step()
             pivot_active = true;
         }
     }
-    prev_f1 = f1_down;
-
-    const bool f2_down{glfwGetKey(window, GLFW_KEY_F2) == GLFW_PRESS};
-    if (f2_down && !prev_f2)
+    if (input.key_pressed(EditorKey::F2))
     {
         toggle_recording();
     }
-    prev_f2 = f2_down;
 
-    const auto mouse_x = static_cast<f64>(io.MousePos.x);
-    const auto mouse_y = static_cast<f64>(io.MousePos.y);
-
-    const bool left_down{glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS};
-    const bool middle_down{glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS};
-    const bool right_down{glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS};
-    const bool g_down{glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS};
-    const bool esc_down{glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS};
-    const bool enter_down{glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS};
-    const bool kp_enter_down{glfwGetKey(window, GLFW_KEY_KP_ENTER) == GLFW_PRESS};
-
-    const bool g_pressed{g_down && !prev_g};
-
-    const bool esc_pressed{esc_down && !prev_esc};
-    const bool enter_pressed{enter_down && !prev_enter};
-    const bool kp_enter_pressed{kp_enter_down && !prev_kp_enter};
-
-    // Grab mode takes priority
     if (grab.active)
     {
-        update_grab(mouse_x, mouse_y);
-        if (ImGui::IsKeyPressed(ImGuiKey_X))
+        update_grab(input.mouse_x, input.mouse_y);
+        if (input.key_pressed(EditorKey::X))
         {
             set_grab_constraint(GrabConstraint::X);
         }
-        if (ImGui::IsKeyPressed(ImGuiKey_Y))
+        else if (input.key_pressed(EditorKey::Y))
         {
-            set_grab_constraint(GrabConstraint::Y);
+            if (k_is_german_keyboard)
+            {
+                set_grab_constraint(GrabConstraint::Z);
+            }
+            else
+            {
+                set_grab_constraint(GrabConstraint::Y);
+            }
         }
-        if (ImGui::IsKeyPressed(ImGuiKey_Z))
+        else if (input.key_pressed(EditorKey::Z))
         {
-            set_grab_constraint(GrabConstraint::Z);
+            if (k_is_german_keyboard)
+            {
+                set_grab_constraint(GrabConstraint::Y);
+            }
+            else
+            {
+                set_grab_constraint(GrabConstraint::Z);
+            }
         }
 
-        const bool confirm{(left_down && !prev_left) || enter_pressed || kp_enter_pressed};
-        const bool cancel{(right_down && !prev_right) || esc_pressed};
-
-        if (cancel)
+        if (input.mouse_right.pressed() || input.key_pressed(EditorKey::Escape))
         {
             cancel_grab();
         }
-        else if (confirm)
+        else if (input.mouse_left.pressed() || input.key_pressed(EditorKey::Enter))
         {
             confirm_grab();
         }
     }
     else
     {
-        if (viewport_image_hovered && g_pressed && !io.WantCaptureKeyboard)
+        if (viewport_image_hovered && input.key_pressed(EditorKey::G) && !io.WantCaptureKeyboard)
         {
-            begin_grab(mouse_x, mouse_y);
+            begin_grab(input.mouse_x, input.mouse_y);
         }
 
-        if (esc_pressed)
+        if (input.key_pressed(EditorKey::Escape))
         {
             glfwSetWindowShouldClose(window, GLFW_TRUE);
         }
 
         if (viewport_image_hovered)
         {
-            hover_interaction(mouse_x, mouse_y, left_down, middle_down, right_down);
+            hover_interaction(
+                input.mouse_x,
+                input.mouse_y,
+                input.mouse_left.down,
+                input.mouse_middle.down,
+                input.mouse_right.down
+            );
         }
     }
-
-    prev_left = left_down;
-    prev_middle = middle_down;
-    prev_right = right_down;
-
-    prev_g = g_down;
-
-    prev_esc = esc_down;
-    prev_enter = enter_down;
-    prev_kp_enter = kp_enter_down;
-
-    prev_mx = mouse_x;
-    prev_my = mouse_y;
 
     render_imgui_windows(*engine_context);
 
@@ -299,6 +286,10 @@ void ds_pba::GfxContext::step()
             }
         }
     }
+
+    prev_mx = input.mouse_x;
+    prev_my = input.mouse_y;
+
     glfwSwapBuffers(window);
     ++frame_count;
 }

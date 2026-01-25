@@ -5,6 +5,7 @@
 #include "pba/core/core_types.hpp"
 #include "pba/core/math_types.hpp"
 #include "pba/core/render_types.hpp"
+#include "pba/editor/editor_input.hpp"
 #include "pba/gfx/gl_types.hpp"
 #include "pba/gfx/video_recorder.hpp"
 #include "pba/gfx/viewport_fbo.hpp"
@@ -38,6 +39,8 @@ struct GfxContext
     GfxContext& operator=(GfxContext&&) = delete;
 
     void shutdown();
+
+    EditorInput editor_input{};
 
     GLFWwindow* window{};
     ShaderProgram grid_prog{};

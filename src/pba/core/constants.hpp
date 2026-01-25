@@ -9,6 +9,11 @@
 namespace ds_pba
 {
 //
+// Interface
+//
+inline constexpr bool k_is_german_keyboard{true};
+
+//
 // Memory
 //
 inline constexpr usize k_kib{1024zu};
