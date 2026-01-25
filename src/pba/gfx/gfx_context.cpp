@@ -1,30 +1,18 @@
-// pba/render/render_context.cpp
+// pba/render/gfx_context.cpp
 #include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/gfx/gfx_context.hpp"
 //
-#include "pba/assets/gltf_mesh.hpp"
-#include "pba/assets/mesh.hpp"
-#include "pba/assets/mesh_data.hpp"
-#include "pba/core/constants.hpp"
 #include "pba/core/core_types.hpp"
 #include "pba/core/format.hpp"  // IWYU pragma: keep
-#include "pba/core/math_types.hpp"
-#include "pba/engine/engine_context.hpp"
-#include "pba/engine/scene_context.hpp"
-#include "pba/engine/scene_types.hpp"
 #include "pba/gfx/gl.hpp"
 #include "pba/gfx/gl_types.hpp"
-#include "pba/gfx/raycast.hpp"
 #include "pba/gfx/video_recorder.hpp"
 #include "pba/ui/ui.hpp"
 #include "pba/util/shutdown.hpp"
 //
 #include <atomic>
 #include <imgui.h>
-#include <optional>
-#include <print>
-#include <utility>
 //
 #include <GLFW/glfw3.h>
 #include <glm/ext/matrix_float4x4.hpp>
@@ -129,7 +117,7 @@ void ds_pba::GfxContext::step()
 {
 
     using namespace ds_pba;
-    assert(scene_context && "Scene Context not set for RenderContext");
+    assert(scene_context && "Scene Context not set for GfxContext");
 
     if (!is_active())
     {

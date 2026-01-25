@@ -6,21 +6,12 @@
 #include "pba/assets/gltf_mesh.hpp"
 #include "pba/assets/mesh.hpp"
 #include "pba/assets/mesh_data.hpp"
-#include "pba/core/constants.hpp"
 #include "pba/core/core_types.hpp"
 #include "pba/core/format.hpp"  // IWYU pragma: keep
-#include "pba/core/math_types.hpp"
-#include "pba/engine/engine_context.hpp"
-#include "pba/engine/scene_context.hpp"
-#include "pba/engine/scene_types.hpp"
 #include "pba/gfx/gl.hpp"
 #include "pba/gfx/gl_types.hpp"
-#include "pba/gfx/raycast.hpp"
-#include "pba/gfx/video_recorder.hpp"
 #include "pba/ui/ui.hpp"
-#include "pba/util/shutdown.hpp"
 //
-#include <atomic>
 #include <imgui.h>
 #include <optional>
 #include <print>
