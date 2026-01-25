@@ -77,6 +77,9 @@ constexpr f32 k_friction{0.5f};
 
 inline constexpr usize k_physics_step_arena_bytes{1zu * k_mib};
 
+static constexpr f64 k_energy_sample_dt{0.1};
+static constexpr usize k_energy_history_len{600};
+
 //
 // Camera
 //

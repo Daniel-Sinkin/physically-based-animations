@@ -6,6 +6,7 @@
 #include "pba/core/core_types.hpp"
 #include "pba/core/format.hpp"  // IWYU pragma: keep
 #include "pba/core/math_types.hpp"
+#include "pba/engine/engine_context.hpp"
 #include "pba/engine/scene_context.hpp"
 #include "pba/engine/scene_types.hpp"
 #include "pba/gfx/gl.hpp"
@@ -13,6 +14,7 @@
 #include "pba/gfx/raycast.hpp"
 #include "pba/ui/ui.hpp"
 //
+#include <algorithm>
 #include <imgui.h>
 #include <optional>
 #include <print>
@@ -47,7 +49,82 @@ void GfxContext::render_to_viewport_objects(
             assert(o.id != k_invalid_id);
 
             set_uniform_mat4(obj_prog.handle(), "uModel", o.transform.model_matrix());
-            set_uniform_vec3(obj_prog.handle(), "uColor", o.color);
+
+            // TODO: Clean this up
+            {  // Color
+                ColorRGBf color{o.color};
+                if (phys_debug.enabled && engine_context)
+                {
+                    if (auto it = engine_context->obj_map.find(o.id);
+                        it != engine_context->obj_map.end())
+                    {
+                        const usize phys_i = it->second.physics_obj_idx;
+                        if (phys_i < engine_context->physics.bodies.size())
+                        {
+                            const RigidBody& rb = engine_context->physics.bodies[phys_i];
+                            if (!rb.is_static())
+                            {
+                                const auto lerp =
+                                    [](const ColorRGBf& a, const ColorRGBf& b, f32 t) -> ColorRGBf
+                                { return (1.0f - t) * a + t * b; };
+
+                                switch (phys_debug.color_mode)
+                                {
+                                    case PhysicsDebugSettings::ColorMode::Diffuse:
+                                        break;
+
+                                    case PhysicsDebugSettings::ColorMode::SleepState:
+                                        {
+                                            const f32 t =
+                                                rb.asleep
+                                                    ? 1.0f
+                                                    : std::clamp(
+                                                          static_cast<f32>(rb.sleep_frames) / 60.0f,
+                                                          0.0f,
+                                                          1.0f
+                                                      );
+                                            color = lerp(
+                                                phys_debug.sleep_active_color,
+                                                phys_debug.sleep_asleep_color,
+                                                t
+                                            );
+                                        }
+                                        break;
+
+                                    case PhysicsDebugSettings::ColorMode::KineticEnergy:
+                                        {
+                                            const f32 m = 1.0f / rb.inv_mass;
+                                            f32 E = 0.5f * m * glm::dot(rb.velocity, rb.velocity);
+
+                                            if (phys_debug.ke_include_angular)
+                                            {
+                                                // inv_inertia_world is mat3; inverse is OK for a
+                                                // first pass. If this shows up in profiles, store
+                                                // I_world alongside invI.
+                                                const glm::mat3 I_world =
+                                                    glm::inverse(rb.inv_inertia_world);
+                                                E += 0.5f
+                                                     * glm::dot(
+                                                         rb.angular_velocity,
+                                                         I_world * rb.angular_velocity
+                                                     );
+                                            }
+
+                                            const f32 denom = std::max(1e-6f, phys_debug.ke_max);
+                                            const f32 t = std::clamp(E / denom, 0.0f, 1.0f);
+                                            color = lerp(
+                                                phys_debug.ke_low_color, phys_debug.ke_high_color, t
+                                            );
+                                        }
+                                        break;
+                                }
+                            }
+                        }
+                    }
+                }
+                set_uniform_vec3(obj_prog.handle(), "uColor", color);
+            }
+
             glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
         }
         VAO::unbind();
@@ -127,15 +204,17 @@ void GfxContext::render_to_viewport() const
 
     f32 aspect{viewport_fbo.aspect_ratio()};
 
-    const Camera& cam{scene_context->camera};
+    {
+        const Camera& cam{scene_context->camera};
+        const ViewMatrix camera_view_matrix{cam.view_matrix()};
+        const ProjMatrix camera_proj_matrix{cam.proj_matrix(aspect)};
 
-    const ViewMatrix camera_view_matrix{cam.view_matrix()};
-    const ProjMatrix camera_proj_matrix{cam.proj_matrix(aspect)};
-
-    render_to_viewport_grid(camera_view_matrix, camera_proj_matrix);
-    render_to_viewport_objects(camera_view_matrix, camera_proj_matrix);
-    render_to_viewport_pivot(cam.pivot, camera_view_matrix, camera_proj_matrix);
-    render_to_viewport_outline(camera_view_matrix, camera_proj_matrix);
+        render_to_viewport_grid(camera_view_matrix, camera_proj_matrix);
+        render_to_viewport_objects(camera_view_matrix, camera_proj_matrix);
+        render_to_viewport_pivot(cam.pivot, camera_view_matrix, camera_proj_matrix);
+        render_to_viewport_outline(camera_view_matrix, camera_proj_matrix);
+        render_to_viewport_physics_debug(camera_view_matrix, camera_proj_matrix);
+    }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -371,4 +450,249 @@ void GfxContext::viewport_window()
     }
     ImGui::End();
 }
+
+void GfxContext::render_to_viewport_physics_debug(
+    const ViewMatrix& camera_view_matrix, const ProjMatrix& camera_proj_matrix
+) const
+{
+    if (!phys_debug.enabled)
+    {
+        return;
+    }
+    if (!scene_context || !engine_context)
+    {
+        return;
+    }
+    if (!grid_prog.valid() || !loaded_glad)
+    {
+        return;
+    }
+
+    debug_line_vertices.clear();
+
+    auto push_line =
+        [&](const Position3& a, const Position3& b, f32 r, f32 g, f32 bl, f32 al) -> void
+    {
+        debug_line_vertices.push_back(DebugLineV_PColor{a.x, a.y, a.z, r, g, bl, al});
+        debug_line_vertices.push_back(DebugLineV_PColor{b.x, b.y, b.z, r, g, bl, al});
+    };
+
+    if (phys_debug.show_contacts)
+    {
+        const PhysicsContext& phys = engine_context->physics;
+        const f32 s{std::max(0.0f, phys_debug.contact_marker_size)};
+        const f32 nscale{std::max(0.0f, phys_debug.contact_normal_scale)};
+
+        for (const auto& c : phys.debug_contacts)
+        {
+            const Position3 p{c.p};
+
+            push_line(p + Direction3{s, 0.0f, 0.0f}, p - Direction3{s, 0.0f, 0.0f}, 1, 1, 1, 1);
+            push_line(p + Direction3{0.0f, s, 0.0f}, p - Direction3{0.0f, s, 0.0f}, 1, 1, 1, 1);
+            push_line(p + Direction3{0.0f, 0.0f, s}, p - Direction3{0.0f, 0.0f, s}, 1, 1, 1, 1);
+
+            if (phys_debug.show_contact_normals)
+            {
+                push_line(p, p + c.n * nscale, 1.0f, 0.75f, 0.10f, 1.0f);
+            }
+        }
+    }
+
+    auto find_scene_object = [&](ObjectId id) -> const Object*
+    {
+        for (const Object& o : scene_context->cube_objects)
+        {
+            if (o.id == id)
+                return &o;
+        }
+        for (const Object& o : scene_context->sphere_objects)
+        {
+            if (o.id == id)
+                return &o;
+        }
+        for (const Object& o : scene_context->hitmarker_objects)
+        {
+            if (o.id == id)
+                return &o;
+        }
+        return nullptr;
+    };
+
+    for (const ObjectId id : scene_context->selected_ids)
+    {
+        const RigidBody* rb_ptr{nullptr};
+
+        if (auto it = engine_context->obj_map.find(id); it != engine_context->obj_map.end())
+        {
+            const usize phys_i = it->second.physics_obj_idx;
+            if (phys_i < engine_context->physics.bodies.size())
+            {
+                rb_ptr = &engine_context->physics.bodies[phys_i];
+            }
+        }
+
+        Position3 com{};
+        Quaternion ori{};
+        f32 extent{1.0f};
+
+        if (rb_ptr)
+        {
+            const RigidBody& rb{*rb_ptr};
+            com = rb.position;
+            ori = rb.orientation;
+
+            extent = 2.0f * std::max({rb.half_extents.x, rb.half_extents.y, rb.half_extents.z});
+        }
+        else
+        {
+            const Object* o = find_scene_object(id);
+            if (!o)
+            {
+                continue;
+            }
+            com = o->transform.position;
+            ori = o->transform.orientation;
+
+            extent = std::max({o->transform.scale.x, o->transform.scale.y, o->transform.scale.z});
+        }
+
+        const f32 axis_len = std::max(0.0f, extent) * std::max(0.0f, phys_debug.axis_scale);
+
+        const glm::mat3 R{glm::mat3_cast(ori)};
+        const Direction3 ax{glm::normalize(R * k_axis_x)};
+        const Direction3 ay{glm::normalize(R * k_axis_y)};
+        const Direction3 az{glm::normalize(R * k_axis_z)};
+
+        if (phys_debug.show_selected_axes)
+        {
+            push_line(com, com + axis_len * ax, 1, 0, 0, 1);
+            push_line(com, com + axis_len * ay, 0, 1, 0, 1);
+            push_line(com, com + axis_len * az, 0, 0, 1, 1);
+        }
+
+        if (rb_ptr)
+        {
+            const RigidBody& rb{*rb_ptr};
+
+            if (phys_debug.show_selected_velocity)
+            {
+                const f32 v2{glm::dot(rb.velocity, rb.velocity)};
+                if (v2 > 1e-8f)
+                {
+                    push_line(com, com + rb.velocity * phys_debug.vel_scale, 1, 1, 0, 1);
+                }
+            }
+
+            if (phys_debug.show_selected_angular_velocity)
+            {
+                const f32 w2{glm::dot(rb.angular_velocity, rb.angular_velocity)};
+                if (w2 > 1e-8f)
+                {
+                    push_line(
+                        com, com + rb.angular_velocity * phys_debug.ang_vel_scale, 0, 1, 1, 1
+                    );
+                }
+            }
+        }
+    }
+
+    if (debug_line_vertices.empty())
+    {
+        return;
+    }
+
+    if (!debug_line_mesh_created)
+    {
+        GLMesh m{};
+        glGenVertexArrays(1, m.vao.ptr());
+        glGenBuffers(1, m.vbo.ptr());
+        m.vertex_count = 0;
+
+        {
+            const ScopedBufferBinder binder{m};
+
+            const GLsizei stride = static_cast<GLsizei>(sizeof(DebugLineV_PColor));
+            glBufferData(GL_ARRAY_BUFFER, 0, nullptr, GL_DYNAMIC_DRAW);
+
+            glEnableVertexAttribArray(0);
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, GLPtr::offset0());
+
+            glEnableVertexAttribArray(1);
+            glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, stride, GLPtr::offset(3 * sizeof(f32)));
+        }
+
+        debug_line_mesh = m;
+        debug_line_mesh_created = true;
+    }
+
+    debug_line_mesh.vertex_count = static_cast<GLsizei>(debug_line_vertices.size());
+
+    {
+        const ScopedBufferBinder binder{debug_line_mesh};
+        glBufferData(
+            GL_ARRAY_BUFFER,
+            static_cast<GLsizeiptr>(debug_line_vertices.size() * sizeof(DebugLineV_PColor)),
+            debug_line_vertices.data(),
+            GL_DYNAMIC_DRAW
+        );
+    }
+
+    const GLboolean prev_depth_test = glIsEnabled(GL_DEPTH_TEST);
+    const GLboolean prev_cull_face = glIsEnabled(GL_CULL_FACE);
+    const GLboolean prev_stencil_test = glIsEnabled(GL_STENCIL_TEST);
+
+    if (phys_debug.depth_test)
+    {
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LESS);
+    }
+    else
+    {
+        glDisable(GL_DEPTH_TEST);
+    }
+
+    glDisable(GL_CULL_FACE);
+    glEnable(GL_BLEND);
+
+    glDisable(GL_STENCIL_TEST);
+
+    grid_prog.bind();
+    set_uniform_mat4(grid_prog.handle(), "uView", camera_view_matrix);
+    set_uniform_mat4(grid_prog.handle(), "uProj", camera_proj_matrix);
+
+    set_uniform_float(grid_prog.handle(), "uFogStart", 1.0e6f);
+    set_uniform_float(grid_prog.handle(), "uFogEnd", 2.0e6f);
+
+    debug_line_mesh.vao.bind();
+    glDrawArrays(GL_LINES, 0, debug_line_mesh.vertex_count);
+    VAO::unbind();
+
+    if (prev_depth_test)
+    {
+        glEnable(GL_DEPTH_TEST);
+    }
+    else
+    {
+        glDisable(GL_DEPTH_TEST);
+    }
+
+    if (prev_cull_face)
+    {
+        glEnable(GL_CULL_FACE);
+    }
+    else
+    {
+        glDisable(GL_CULL_FACE);
+    }
+
+    if (prev_stencil_test)
+    {
+        glEnable(GL_STENCIL_TEST);
+    }
+    else
+    {
+        glDisable(GL_STENCIL_TEST);
+    }
+}
+
 }  // namespace ds_pba

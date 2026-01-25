@@ -2,6 +2,7 @@
 #pragma once
 
 #include "pba/core/constants.hpp"
+#include "pba/core/core_types.hpp"
 #include "pba/physics/physics_types.hpp"
 
 #include <array>
@@ -23,6 +24,23 @@ struct PhysicsContext
     std::pmr::monotonic_buffer_resource step_arena{
         step_arena_buffer.data(), step_arena_buffer.size()
     };
+
+    struct DebugContact
+    {
+        ObjectId a_id{k_invalid_id};
+        ObjectId b_id{k_invalid_id};
+        Position3 p{};
+        Direction3 n{k_axis_z};
+        f32 penetration{};
+        bool allow_warm_start{true};
+    };
+
+    std::vector<DebugContact> debug_contacts{};
+
+    f32 debug_total_kinetic_energy{0.0f};
+
+    Duration debug_energy_sample_accum{};
+    std::vector<f32> debug_total_kinetic_energy_history{};
 
     void step();
 };

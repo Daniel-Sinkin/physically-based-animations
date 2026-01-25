@@ -23,6 +23,28 @@ namespace
     return static_cast<f32>(dt.count());
 }
 
+[[nodiscard]] f32
+compute_total_kinetic_energy(std::span<const RigidBody> bodies, bool include_angular) noexcept
+{
+    f32 E{0.0f};
+    for (const RigidBody& b : bodies)
+    {
+        if (b.inv_mass <= 0.0f)
+        {
+            continue;
+        }
+        const f32 m = 1.0f / b.inv_mass;
+        E += 0.5f * m * glm::dot(b.velocity, b.velocity);
+
+        if (include_angular)
+        {
+            // TODO: Cache this directly instead of re-inverting every time
+            const glm::mat3 I_world = glm::inverse(b.inv_inertia_world);
+            E += 0.5f * glm::dot(b.angular_velocity, I_world * b.angular_velocity);
+        }
+    }
+    return E;
+}
 }  // namespace
 
 void PhysicsContext::step()
@@ -44,6 +66,26 @@ void PhysicsContext::step()
         for ([[maybe_unused]] const auto& c : contacts)
         {
             assert(c.is_valid());
+        }
+    }
+
+    {  // Setup debug info for this step
+        debug_contacts.clear();
+        debug_contacts.reserve(contacts.size());
+        for (const Contact& c : contacts)
+        {
+            const RigidBody& a = bodies[c.a_idx];
+            const RigidBody& b = bodies[c.b_idx];
+            debug_contacts.push_back(
+                DebugContact{
+                    .a_id = a.id,
+                    .b_id = b.id,
+                    .p = c.p,
+                    .n = c.n,
+                    .penetration = c.penetration,
+                    .allow_warm_start = c.allow_warm_start,
+                }
+            );
         }
     }
 
@@ -110,6 +152,24 @@ void PhysicsContext::step()
     apply_sleep_and_damping(bodies, dt_s);
     clear_accumulators(bodies);
 
+    debug_total_kinetic_energy = compute_total_kinetic_energy(bodies, true);
+
+    debug_energy_sample_accum += dt;
+    while (debug_energy_sample_accum >= Duration{k_energy_sample_dt})
+    {
+        debug_energy_sample_accum -= Duration{k_energy_sample_dt};
+        debug_total_kinetic_energy_history.push_back(debug_total_kinetic_energy);
+
+        if (debug_total_kinetic_energy_history.size() > k_energy_history_len)
+        {
+            const usize overflow{debug_total_kinetic_energy_history.size() - k_energy_history_len};
+            using Diff = std::vector<f32>::difference_type;
+            debug_total_kinetic_energy_history.erase(
+                debug_total_kinetic_energy_history.begin(),
+                debug_total_kinetic_energy_history.begin() + static_cast<Diff>(overflow)
+            );
+        }
+    }
     time = time + std::chrono::duration_cast<Clock::duration>(dt);
 }
 

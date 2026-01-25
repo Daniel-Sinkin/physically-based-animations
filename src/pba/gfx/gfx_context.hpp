@@ -111,6 +111,58 @@ struct GfxContext
 
     GridSettings grid{};
 
+    // --- Physics debug rendering (first pass) ---
+    struct PhysicsDebugSettings
+    {
+        bool enabled{true};
+
+        enum class ColorMode : u8
+        {
+            Diffuse = 0,
+            SleepState,
+            KineticEnergy,
+        };
+
+        ColorMode color_mode{ColorMode::Diffuse};
+
+        ColorRGBf sleep_active_color{1.0f, 0.0f, 0.0f};
+        ColorRGBf sleep_asleep_color{0.0f, 0.0f, 1.0f};
+
+        ColorRGBf ke_low_color{0.0f, 0.0f, 1.0f};
+        ColorRGBf ke_high_color{1.0f, 0.0f, 0.0f};
+        f32 ke_max{100.0f};
+        bool ke_include_angular{true};
+
+        bool show_selected_axes{true};
+        bool show_selected_velocity{true};
+        bool show_selected_angular_velocity{true};
+
+        bool show_contacts{true};
+        bool show_contact_normals{false};
+
+        bool depth_test{false};
+
+        f32 axis_scale{1.25f};
+        f32 vel_scale{0.10f};
+        f32 ang_vel_scale{0.10f};
+        f32 contact_marker_size{0.05f};
+        f32 contact_normal_scale{0.25f};
+    };
+
+    PhysicsDebugSettings phys_debug{};
+
+    struct DebugLineV_PColor
+    {
+        f32 px, py, pz;
+        f32 r, g, b, a;
+    };
+    static_assert(sizeof(DebugLineV_PColor) == 7 * sizeof(f32));
+    static_assert(offsetof(DebugLineV_PColor, r) == 3 * sizeof(f32));
+
+    mutable GLMesh debug_line_mesh{};
+    mutable bool debug_line_mesh_created{false};
+    mutable std::vector<DebugLineV_PColor> debug_line_vertices{};
+
     struct EditorState
     {
         enum class GrabConstraint : u8
@@ -145,6 +197,7 @@ struct GfxContext
     void render_to_viewport_objects(const ViewMatrix&, const ProjMatrix&) const;
     void render_to_viewport_pivot(const Position3&, const ViewMatrix&, const ProjMatrix&) const;
     void render_to_viewport_outline(const ViewMatrix&, const ProjMatrix&) const;
+    void render_to_viewport_physics_debug(const ViewMatrix&, const ProjMatrix&) const;
 
     void viewport_window();
 

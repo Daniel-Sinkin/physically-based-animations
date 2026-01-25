@@ -19,6 +19,117 @@ namespace ds_pba
 {
 namespace
 {
+void render_physics_debug_window(EngineContext& engine_context)
+{
+    PhysicsContext& physics_context = engine_context.physics;
+    GfxContext& gfx_context = engine_context.gfx;
+    SceneContext& scene_context = engine_context.scene;
+
+    auto& dbg = gfx_context.phys_debug;
+
+    ImGui::Begin("Physics Debug");
+
+    ImGui::Checkbox("Enabled", &dbg.enabled);
+
+    ImGui::Separator();
+    ImGui::TextUnformatted("Coloring");
+    {
+        const char* labels[] = {"Diffuse", "Sleep State", "Kinetic Energy"};
+        int mode = static_cast<int>(dbg.color_mode);
+        if (ImGui::Combo("Mode", &mode, labels, IM_ARRAYSIZE(labels)))
+        {
+            dbg.color_mode = static_cast<GfxContext::PhysicsDebugSettings::ColorMode>(mode);
+        }
+    }
+
+    if (dbg.color_mode == GfxContext::PhysicsDebugSettings::ColorMode::SleepState)
+    {
+        ImGui::ColorEdit3("Active color", &dbg.sleep_active_color.x);
+        ImGui::ColorEdit3("Asleep color", &dbg.sleep_asleep_color.x);
+    }
+    else if (dbg.color_mode == GfxContext::PhysicsDebugSettings::ColorMode::KineticEnergy)
+    {
+        ImGui::Checkbox("Include angular", &dbg.ke_include_angular);
+        ImGui::DragFloat("Max KE", &dbg.ke_max, 0.5f, 0.001f, 1e9f, "%.3f");
+        ImGui::ColorEdit3("Low", &dbg.ke_low_color.x);
+        ImGui::ColorEdit3("High", &dbg.ke_high_color.x);
+    }
+
+    ImGui::Separator();
+    ImGui::TextUnformatted("Selected overlays");
+    ImGui::Checkbox("Local axes (RGB)", &dbg.show_selected_axes);
+    ImGui::Checkbox("Velocity", &dbg.show_selected_velocity);
+    ImGui::Checkbox("Angular velocity", &dbg.show_selected_angular_velocity);
+    ImGui::Checkbox("Depth test debug lines", &dbg.depth_test);
+    ImGui::DragFloat("Axis scale", &dbg.axis_scale, 0.01f, 0.01f, 100.0f);
+    ImGui::DragFloat("Velocity scale", &dbg.vel_scale, 0.01f, 0.0f, 100.0f);
+    ImGui::DragFloat("Angular velocity scale", &dbg.ang_vel_scale, 0.01f, 0.0f, 100.0f);
+
+    ImGui::Separator();
+    ImGui::TextUnformatted("Collisions");
+    ImGui::Checkbox("Show contact markers", &dbg.show_contacts);
+    ImGui::Checkbox("Show contact normals", &dbg.show_contact_normals);
+    ImGui::DragFloat("Contact marker size", &dbg.contact_marker_size, 0.001f, 0.0f, 10.0f);
+    ImGui::DragFloat("Contact normal scale", &dbg.contact_normal_scale, 0.01f, 0.0f, 100.0f);
+
+    ImGui::Separator();
+
+    usize dynamic_count{0zu};
+    usize asleep_count{0zu};
+    for (const RigidBody& b : physics_context.bodies)
+    {
+        if (!b.is_static())
+        {
+            ++dynamic_count;
+            if (b.asleep)
+            {
+                ++asleep_count;
+            }
+        }
+    }
+
+    ImGui::Text(
+        "Bodies: %zu (dynamic %zu, asleep %zu)",
+        physics_context.bodies.size(),
+        dynamic_count,
+        asleep_count
+    );
+    ImGui::Text("Contacts (last step): %zu", physics_context.debug_contacts.size());
+    ImGui::Text("Selected: %zu", scene_context.selected_ids.size());
+
+    ImGui::Separator();
+    ImGui::Text(
+        "Total kinetic energy: %.3f",
+        static_cast<double>(physics_context.debug_total_kinetic_energy)
+    );
+
+    if (!physics_context.debug_total_kinetic_energy_history.empty())
+    {
+        const int hz = static_cast<int>(std::lround(1.0 / k_energy_sample_dt));
+        const int seconds = static_cast<int>(k_energy_history_len * k_energy_sample_dt);
+
+        const auto label =
+            std::format("Total kinetic energy history (last {}s, {} Hz)", seconds, hz);
+
+        ImGui::PlotLines(
+            label.c_str(),
+            physics_context.debug_total_kinetic_energy_history.data(),
+            static_cast<int>(physics_context.debug_total_kinetic_energy_history.size()),
+            0,
+            nullptr,
+            std::numeric_limits<float>::max(),
+            std::numeric_limits<float>::max(),
+            ImVec2(0.0f, 90.0f)
+        );
+    }
+    else
+    {
+        ImGui::TextUnformatted("Energy  history: (collecting...)");
+    }
+
+    ImGui::End();
+}
+
 struct TerminalState
 {
     std::vector<std::string> lines{};
@@ -633,6 +744,7 @@ void render_imgui_windows(EngineContext& engine_context)
         ImGui::EndChild();
         ImGui::End();
     }
+    render_physics_debug_window(engine_context);
     render_terminal_window(gfx_context);
 }
 
