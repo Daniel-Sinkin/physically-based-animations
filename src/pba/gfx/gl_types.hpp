@@ -60,6 +60,15 @@ struct VAO final
         return id != 0;
     }
 
+    void destroy()
+    {
+        if (valid())
+        {
+            glDeleteVertexArrays(1, &id);
+            id = 0;
+        }
+    }
+
     void bind() const noexcept
     {
         assert(valid() && "Attempting to bind invalid VAO (id == 0)");
@@ -96,6 +105,15 @@ struct VBO final
     [[nodiscard]] constexpr bool valid() const noexcept
     {
         return id != 0;
+    }
+
+    void destroy()
+    {
+        if (valid())
+        {
+            glDeleteBuffers(1, &id);
+            id = 0;
+        }
     }
 
     void bind_array_buffer() const noexcept
@@ -191,6 +209,13 @@ struct GLMesh final
         vao.bind();
         glDrawArrays(GL_TRIANGLES, 0, vertex_count);
         VAO::bind(prev);
+    }
+
+    void destroy()
+    {
+        vbo.destroy();
+        vao.destroy();
+        vertex_count = 0;
     }
 };
 

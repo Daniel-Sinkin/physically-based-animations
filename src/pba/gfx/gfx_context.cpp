@@ -53,27 +53,13 @@ void GfxContext::shutdown()
         outline_prog.destroy();
         pivot_prog.destroy();
 
-        auto destroy_mesh = [](GLMesh& m)
-        {
-            if (m.vbo.valid())
-            {
-                glDeleteBuffers(1, &m.vbo.id);
-                m.vbo.id = 0;
-            }
-            if (m.vao.id != 0)
-            {
-                glDeleteVertexArrays(1, &m.vao.id);
-                m.vao.id = 0;
-            }
-            m.vertex_count = 0;
-        };
-
-        destroy_mesh(cube_mesh);
-        destroy_mesh(sphere_mesh);
-        destroy_mesh(grid_mesh);
-        destroy_mesh(marble_bust_mesh);
-        destroy_mesh(pyramid_mesh);
-        destroy_mesh(cylinder_mesh);
+        cube_mesh.destroy();
+        sphere_mesh.destroy();
+        grid_mesh.destroy();
+        marble_bust_mesh.destroy();
+        pyramid_mesh.destroy();
+        cylinder_mesh.destroy();
+        debug_line_mesh.destroy();
 
         loaded_glad = false;
     }
