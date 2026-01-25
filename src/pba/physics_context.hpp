@@ -4,11 +4,14 @@
 #include "pba/constants.hpp"
 #include "pba/core_types.hpp"
 #include "pba/math_types.hpp"
-
+#include "pba/util/hash.hpp"
+//
 #include <cmath>
-#include <glm/gtc/quaternion.hpp>
 #include <print>
+#include <unordered_map>
 #include <vector>
+//
+#include <glm/gtc/quaternion.hpp>
 
 namespace ds_pba
 {
@@ -35,6 +38,9 @@ struct RigidBody
 
     glm::mat3 inv_inertia_body{0.0f};   // constant
     glm::mat3 inv_inertia_world{0.0f};  // based on orientation
+
+    bool asleep{false};
+    int sleep_frames{0};
 
     [[nodiscard]] bool is_static() const noexcept
     {
@@ -87,8 +93,14 @@ struct Contact
     usize b_idx{k_invalid_idx};
 
     Position3 p{};           // contact point (world)
-    Direction3 n{k_axis_z};  // unit normal (world), b -> a
+    Direction3 n{k_axis_z};  // unit normal (world), direction is b -> a
     f32 penetration{};       // >= 0
+    f32 lambda_n{};          // Accumulated normal impulse
+    f32 lambda_t{};          // Accumulated friction impulse
+
+    Direction3 t_hat{};     // Tangent direction
+    bool has_t_hat{false};  // Do we have a cached tangent direction?
+    bool allow_warm_start{true};
 
     [[nodiscard]] ContactValidity validate() const noexcept
     {
@@ -200,6 +212,38 @@ struct Contact
         return validate() == ContactValidity::Ok;
     }
 };
+struct ContactCacheEntry
+{
+    f32 lambda_n{};
+    f32 lambda_t{};
+    Direction3 t_hat{};
+    bool has_t_hat{false};
+};
+
+struct ContactKey
+{
+    ObjectId a_id{};
+    ObjectId b_id{};
+    i32 px{};
+    i32 py{};
+    i32 pz{};
+
+    friend bool operator==(const ContactKey&, const ContactKey&) = default;
+};
+
+struct ContactKeyHash
+{
+    usize operator()(const ContactKey& k) const noexcept
+    {
+        usize seed{0zu};
+        seed = hash_combine_seed(seed, static_cast<usize>(k.a_id));
+        seed = hash_combine_seed(seed, static_cast<usize>(k.b_id));
+        seed = hash_combine_seed(seed, static_cast<usize>(static_cast<u32>(k.px)));
+        seed = hash_combine_seed(seed, static_cast<usize>(static_cast<u32>(k.py)));
+        seed = hash_combine_seed(seed, static_cast<usize>(static_cast<u32>(k.pz)));
+        return seed;
+    }
+};
 
 struct PhysicsContext
 {
@@ -208,6 +252,7 @@ struct PhysicsContext
     TimePoint time{};
     Duration time_step{std::chrono::duration<f64>(1.0 / 120.0)};
 
+    std::unordered_map<ContactKey, ContactCacheEntry, ContactKeyHash> contact_cache{};
     void step();
 };
 

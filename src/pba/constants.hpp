@@ -48,14 +48,15 @@ constexpr f32 k_angular_damping{1.5f};
 constexpr f32 k_linear_sleep_speed_threshold{0.25f};
 constexpr f32 k_angular_sleep_speed_threshold{1.0f};
 
-constexpr f32 k_pen_correction_frag{0.25f};
-
-constexpr int k_solver_iterations{8};
-constexpr int k_position_iterations{2};
+constexpr int k_solver_iterations{20};
+constexpr int k_position_iterations{4};
 constexpr f32 k_restitution{0.1f};
 
+constexpr f32 k_pen_percent{0.05f};
+constexpr f32 k_pen_max_correction{0.05f};
 // This corresponds to [Box2D] linearSlop parameter
-constexpr f32 k_pen_tolerance{0.001f};
+constexpr f32 k_pen_tolerance{0.005f};
+constexpr f32 k_pen_correction_frag{0.1f};
 
 constexpr f32 k_friction{0.5f};
 

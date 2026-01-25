@@ -827,6 +827,9 @@ void ds_pba::RenderContext::set_object_position(ObjectId id, const Position3& p)
                 rb.angular_velocity = Direction3{};
                 rb.force_accum = Direction3{};
                 rb.torque_accum = Direction3{};
+
+                rb.asleep = false;
+                rb.sleep_frames = 0;
             }
 
             if (scene_i < scene_context->cube_objects.size())
