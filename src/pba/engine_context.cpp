@@ -54,19 +54,13 @@ void init_box_inertia(RigidBody& b) noexcept
 
 }  // namespace
 
-EngineContext::EngineContext()
-    : scene(std::make_unique<SceneContext>()), renderer(std::make_unique<RenderContext>()),
-      physics(std::make_unique<PhysicsContext>())
-{
-}
-
 void EngineContext::link_latest_objects(ObjectId id)
 {
     obj_map.insert_or_assign(
         id,
         ObjectLink{
-            scene->cube_objects.size() - 1zu,
-            physics->bodies.size() - 1zu,
+            scene.cube_objects.size() - 1zu,
+            physics.bodies.size() - 1zu,
         }
     );
 }
@@ -75,11 +69,11 @@ void EngineContext::add_cube(Position3 position)
 {
     const ObjectId id{next_object_id()};
 
-    scene->cube_objects.push_back(
+    scene.cube_objects.push_back(
         Object{.id = id, .type = ObjectType::Cube, .transform = {.position = position}}
     );
 
-    physics->bodies.push_back(
+    physics.bodies.push_back(
         RigidBody{
             .id = id,
 
@@ -98,13 +92,7 @@ void EngineContext::add_cube(Position3 position)
             .inv_inertia_world = glm::mat3{0.0f},
         }
     );
-    RigidBody& b{physics->bodies.back()};
-    const Quaternion qx{glm::angleAxis(glm::radians(45.0f), k_axis_x)};
-    const Quaternion qy{glm::angleAxis(glm::radians(45.0f), k_axis_y)};
-    b.orientation = glm::normalize(qy * qx);
-
-    init_box_inertia(physics->bodies.back());
-
+    init_box_inertia(physics.bodies.back());
     link_latest_objects(id);
 }
 
@@ -115,7 +103,7 @@ void EngineContext::add_ground()
     constexpr Position3 ground_center{0.0f, 0.0f, -0.5f};
     constexpr Position3 half_extents{10.0f, 10.0f, 0.5f};
 
-    scene->cube_objects.push_back(
+    scene.cube_objects.push_back(
         Object{
             .id = id,
             .type = ObjectType::Cube,
@@ -128,7 +116,7 @@ void EngineContext::add_ground()
         }
     );
 
-    physics->bodies.push_back(
+    physics.bodies.push_back(
         RigidBody{
             .id = id,
 
@@ -148,7 +136,7 @@ void EngineContext::add_ground()
         }
     );
 
-    init_box_inertia(physics->bodies.back());
+    init_box_inertia(physics.bodies.back());
 
     link_latest_objects(id);
     obj_name_map.insert_or_assign(id, "Ground");
@@ -167,14 +155,14 @@ bool EngineContext::setup()
         {
             add_cube(pos);
 
-            RigidBody& rb = physics->bodies.back();
+            RigidBody& rb = physics.bodies.back();
             rb.velocity = vel;
             rb.orientation = ori;
             rb.angular_velocity = Direction3{0.0f, 0.0f, 0.0f};
 
             rb.inv_inertia_world = inv_inertia_world_from_body(rb.orientation, rb.inv_inertia_body);
 
-            Object& o = scene->cube_objects.back();
+            Object& o = scene.cube_objects.back();
             o.transform.orientation = rb.orientation;
             o.color = color;
         };
@@ -184,28 +172,28 @@ bool EngineContext::setup()
             Quaternion{1.0f, 0.0f, 0.0f, 0.0f},
             ColorRGBf{0.90f, 0.35f, 0.35f}
         );
-        obj_name_map.insert_or_assign(scene->cube_objects.back().id, "Projecticle Red");
+        obj_name_map.insert_or_assign(scene.cube_objects.back().id, "Projecticle Red");
         spawn_cube(
             Position3{+14.0f, 0.0f, 2.2f},
             Direction3{-28.0f, 0.0f, 0.0f},
             Quaternion{1.0f, 0.0f, 0.0f, 0.0f},
             ColorRGBf{0.35f, 0.90f, 0.35f}
         );
-        obj_name_map.insert_or_assign(scene->cube_objects.back().id, "Projecticle Green");
+        obj_name_map.insert_or_assign(scene.cube_objects.back().id, "Projecticle Green");
         spawn_cube(
             Position3{0.0f, -14.0f, 2.0f},
             Direction3{0.0f, +28.0f, 0.0f},
             Quaternion{1.0f, 0.0f, 0.0f, 0.0f},
             ColorRGBf{0.35f, 0.55f, 0.95f}
         );
-        obj_name_map.insert_or_assign(scene->cube_objects.back().id, "Projecticle Blue");
+        obj_name_map.insert_or_assign(scene.cube_objects.back().id, "Projecticle Blue");
         spawn_cube(
             Position3{0.0f, +14.0f, 2.4f},
             Direction3{0.0f, -28.0f, -2.0f},
             Quaternion{1.0f, 0.0f, 0.0f, 0.0f},
             ColorRGBf{0.95f, 0.85f, 0.35f}
         );
-        obj_name_map.insert_or_assign(scene->cube_objects.back().id, "Projecticle Yellow");
+        obj_name_map.insert_or_assign(scene.cube_objects.back().id, "Projecticle Yellow");
 
         constexpr f32 cube{1.0f};
         constexpr f32 gap{0.06f};
@@ -233,22 +221,22 @@ bool EngineContext::setup()
                     ColorRGBf{k_scene_object_default_color}
                 );
                 obj_name_map.insert_or_assign(
-                    scene->cube_objects.back().id,
+                    scene.cube_objects.back().id,
                     std::format("Pyramid (layer={}, idx={})", layer, ix)
                 );
             }
         }
     }
 
-    renderer->scene_context = scene.get();
-    renderer->engine_context = this;
-    if (!renderer->setup())
+    renderer.scene_context = &scene;
+    renderer.engine_context = this;
+    if (!renderer.setup())
     {
         return false;
     }
 
     frame_time = Clock::now();
-    physics->time = frame_time;
+    physics.time = frame_time;
     accumulator = Duration{0.0};
 
     return true;
@@ -256,14 +244,14 @@ bool EngineContext::setup()
 
 void EngineContext::run()
 {
-    const Duration fixed_dt{physics->time_step};
+    const Duration fixed_dt{physics.time_step};
     const Duration max_frame_dt{0.25};
 
     frame_time = Clock::now();
-    physics->time = frame_time;
+    physics.time = frame_time;
     accumulator = Duration{0.0};
 
-    while (renderer->is_active())
+    while (renderer.is_active())
     {
         const TimePoint now{Clock::now()};
 
@@ -272,7 +260,7 @@ void EngineContext::run()
 
         frame_dt = std::min(frame_dt, max_frame_dt);
 
-        const bool space_down{glfwGetKey(renderer->window, GLFW_KEY_SPACE) == GLFW_PRESS};
+        const bool space_down{glfwGetKey(renderer.window, GLFW_KEY_SPACE) == GLFW_PRESS};
         if (space_down && !prev_space)
         {
             paused = !paused;
@@ -287,7 +275,7 @@ void EngineContext::run()
 
                 accumulator = Duration{0.0};
                 frame_time = Clock::now();
-                physics->time = frame_time;
+                physics.time = frame_time;
             }
         }
         prev_space = space_down;
@@ -299,7 +287,7 @@ void EngineContext::run()
 
             while (accumulator >= fixed_dt)
             {
-                physics->step();
+                physics.step();
                 accumulator -= fixed_dt;
                 ++n_phys_updates;
             }
@@ -307,12 +295,11 @@ void EngineContext::run()
         for (const auto& [id, idxs] : obj_map)
         {
             const auto [scene_i, phys_i] = idxs;
-            scene->cube_objects[scene_i].transform.position = physics->bodies[phys_i].position;
-            scene->cube_objects[scene_i].transform.orientation =
-                physics->bodies[phys_i].orientation;
+            scene.cube_objects[scene_i].transform.position = physics.bodies[phys_i].position;
+            scene.cube_objects[scene_i].transform.orientation = physics.bodies[phys_i].orientation;
         }
 
-        renderer->step();
+        renderer.step();
     }
 }
 

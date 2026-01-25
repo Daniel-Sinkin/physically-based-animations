@@ -7,7 +7,6 @@
 #include "pba/render_context.hpp"
 #include "pba/scene_context.hpp"
 
-#include <memory>
 #include <string>
 #include <unordered_map>
 
@@ -22,14 +21,12 @@ struct EngineContext
         usize physics_obj_idx;
     };
 
-    std::unique_ptr<SceneContext> scene;
-    std::unique_ptr<RenderContext> renderer;
-    std::unique_ptr<PhysicsContext> physics;
+    SceneContext scene{};
+    RenderContext renderer{};
+    PhysicsContext physics{};
 
     std::unordered_map<ObjectId, ObjectLink> obj_map{};
     std::unordered_map<ObjectId, std::string> obj_name_map{};
-
-    EngineContext();
 
     TimePoint frame_time = Clock::now();
     Duration accumulator{};

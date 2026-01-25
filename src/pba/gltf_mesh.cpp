@@ -163,24 +163,30 @@ read_indices_u32(const tinygltf::Model& model, int accessor_index)
         static_cast<usize>(tinygltf::GetComponentSizeInBytes(static_cast<u32>(a.componentType)))
     };
 
+    // byteStride == 0 is allowed and just means tightly packed
+    // https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#data-alignment
     const usize stride{(bv.byteStride != 0) ? static_cast<usize>(bv.byteStride) : elem_size};
-    if (count > 0)
-    {  // Checks bounds
-        const usize end_off{base_off + (count - 1) * stride + elem_size};
-        if (end_off > buf.data.size())
-        {
-            std::println(
-                stderr,
-                "Index accessor OOB: base_off={}, count={}, stride={}, elem_size={}, "
-                "buffer_size={}",
-                base_off,
-                count,
-                stride,
-                elem_size,
-                buf.data.size()
-            );
-            return std::unexpected(GltfLoadError::ParseError);
-        }
+    const usize buf_size{buf.data.size()};
+    if (count == 0zu)
+    {
+        return std::vector<u32>{};
+    }
+
+    const usize last_off{(count - 1zu) * stride};
+
+    if (base_off > buf_size || last_off > buf_size - base_off
+        || elem_size > buf_size - base_off - last_off)
+    {
+        std::println(
+            stderr,
+            "Index accessor OOB: base_off={}, count={}, stride={}, elem_size={}, buffer_size={}",
+            base_off,
+            count,
+            stride,
+            elem_size,
+            buf_size
+        );
+        return std::unexpected(GltfLoadError::ParseError);
     }
     const std::byte* base{reinterpret_cast<const std::byte*>(buf.data.data() + base_off)};
 
@@ -231,7 +237,7 @@ static glm::mat4 preprocess_matrix(const Transform& t) noexcept
 }
 
 }  // namespace
-std::expected<MeshData, GltfLoadError>
+std::expected<MeshDataPN, GltfLoadError>
 load_gltf_mesh(const std::string& path, const Transform& preprocess)
 {
     const util::ScopeTimer timer{path};
@@ -408,7 +414,7 @@ load_gltf_mesh(const std::string& path, const Transform& preprocess)
         return normalized(n);
     };
 
-    std::vector<MeshV> verts;
+    std::vector<MeshV_PN> verts;
     if (!idx.empty())
     {
         if ((idx.size() % 3u) != 0u)
@@ -482,7 +488,7 @@ load_gltf_mesh(const std::string& path, const Transform& preprocess)
             auto emit = [&](u32 i, const glm::vec3& p)
             {
                 const Direction3 n{has_normals ? read_nrm(i) : fn};
-                verts.push_back(MeshV{p.x, p.y, p.z, n.x, n.y, n.z});
+                verts.push_back(MeshV_PN{p.x, p.y, p.z, n.x, n.y, n.z});
             };
 
             emit(i0, p0);
@@ -491,10 +497,10 @@ load_gltf_mesh(const std::string& path, const Transform& preprocess)
         }
     }
 
-    return MeshData{.vertices = verts};
+    return MeshDataPN{.vertices = verts};
 }
 
-std::expected<MeshData, GltfLoadError> load_model_mesh(const std::string& model_name)
+std::expected<MeshDataPN, GltfLoadError> load_model_mesh(const std::string& model_name)
 {
     namespace fs = std::filesystem;
     const fs::path model_dir{fs::path("assets/models") / model_name};

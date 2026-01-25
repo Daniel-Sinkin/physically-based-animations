@@ -213,10 +213,8 @@ void apply_blender_style()
 
 void render_imgui_windows(EngineContext& engine_context)
 {
-    assert(engine_context.physics);
-    assert(engine_context.renderer);
-    auto& physics_context = *engine_context.physics;
-    auto& render_context = *engine_context.renderer;
+    auto& physics_context = engine_context.physics;
+    auto& render_context = engine_context.renderer;
     assert(render_context.scene_context && "Scene Context of render context not set!");
     auto& scene_context = *render_context.scene_context;
 
@@ -342,24 +340,20 @@ void render_imgui_windows(EngineContext& engine_context)
             ImGui::Text("Output dir: %s", out_dir.c_str());
         }
 
-        if constexpr (!k_on_windows)
+        if (!render_context.recorder.is_recording())
         {
-            assert(render_context.recorder);
-            if (!render_context.recorder->is_recording())
+            if (ImGui::Button("Start Recording (F2)"))
             {
-                if (ImGui::Button("Start Recording (F2)"))
-                {
-                    render_context.start_recording();
-                }
+                render_context.start_recording();
             }
-            else
+        }
+        else
+        {
+            const std::string out = render_context.recorder.output_path.string();
+            ImGui::Text("Recording to: %s", out.c_str());
+            if (ImGui::Button("Stop Recording (F2)"))
             {
-                const std::string out = render_context.recorder->output_path.string();
-                ImGui::Text("Recording to: %s", out.c_str());
-                if (ImGui::Button("Stop Recording (F2)"))
-                {
-                    render_context.stop_recording();
-                }
+                render_context.stop_recording();
             }
         }
 
@@ -642,7 +636,7 @@ void render_menu_bar(RenderContext& render_context)
     assert(render_context.scene_context && "RenderContext has no SceneContext!");
     if (ImGui::BeginMenu("File"))
     {
-        if (!render_context.recorder->is_recording())
+        if (!render_context.recorder.is_recording())
         {
             if (ImGui::MenuItem("Start Recording (F2)"))
             {

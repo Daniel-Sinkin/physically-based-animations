@@ -566,36 +566,28 @@ void apply_impulse_contact(
     const f32 effective_pen{std::max(0.0f, contact.penetration - k_pen_tolerance)};
     const f32 bias_raw{-(k_pen_correction_frag / dt_s) * effective_pen};
     const f32 bias{std::clamp(bias_raw, -k_max_bias_speed, 0.0f)};
-
     f32 delta_lambda_n{-(((1.0f + eps) * v_rel) + bias) / effective_mass};
 
     const f32 new_lambda_n{std::max(old_lambda_n + delta_lambda_n, 0.0f)};
     delta_lambda_n = new_lambda_n - old_lambda_n;
     contact.lambda_n = new_lambda_n;
-    if (delta_lambda_n > 0.0f)
+    if (delta_lambda_n != 0.0f)
     {
         const Direction3 impulse{delta_lambda_n * n_hat};
 
         // Equation (8-5) Delta v = J / M
-        if (!a.is_static())
-        {
-            a.velocity += impulse * a.inv_mass;
-        }
-        if (!b.is_static())
-        {
-            // Recall n^(t_0) points from b to a so we have to reverse impulse direction
-            b.velocity -= impulse * b.inv_mass;
-        }
         // Equation (8-6) tau_impulse = (p - x(t)) x J
         // "The change in angular velocity is simply I^{-1}(t_0)\tau_{impulse}"
         if (!a.is_static())
         {
+            a.velocity += impulse * a.inv_mass;
             const Direction3 tau_a_impulse{glm::cross(r_a, impulse)};
             a.angular_velocity += a.inv_inertia_world * tau_a_impulse;
         }
         if (!b.is_static())
         {
             // Recall n^(t_0) points from b to a so we have to reverse impulse direction
+            b.velocity -= impulse * b.inv_mass;
             const Direction3 tau_b_impulse{glm::cross(r_b, impulse)};
             b.angular_velocity -= b.inv_inertia_world * tau_b_impulse;
         }
@@ -714,9 +706,10 @@ void PhysicsContext::step()
         {
             return;
         }
-        if(a.asleep || b.asleep) {
-                return;
-            }
+        if (a.asleep || b.asleep)
+        {
+            return;
+        }
 
         const Direction3 n_hat{contact.n};
         const Direction3 r_a{contact.p - a.position};
@@ -856,37 +849,37 @@ void PhysicsContext::step()
 
     for (RigidBody& b : bodies)
     {
-    if (b.is_static() || b.asleep)
-    {
-        continue;
-    }
-
-    const f32 v2{glm::dot(b.velocity, b.velocity)};
-    const f32 w2{glm::dot(b.angular_velocity, b.angular_velocity)};
-
-    const bool slow =
-        (v2 < k_linear_sleep_speed_threshold * k_linear_sleep_speed_threshold)
-        && (w2 < k_angular_sleep_speed_threshold * k_angular_sleep_speed_threshold);
-
-    if (slow)
-    {
-        ++b.sleep_frames;
-        if (b.sleep_frames > 60)
+        if (b.is_static() || b.asleep)
         {
-            b.asleep = true;
-            b.velocity = Direction3{};
-            b.angular_velocity = Direction3{};
-            b.force_accum = Direction3{};
-            b.torque_accum = Direction3{};
+            continue;
         }
-    }
-    else
-    {
-        b.sleep_frames = 0;
-    }
 
-    b.velocity *= std::exp(-k_linear_damping * dt_s);
-    b.angular_velocity *= std::exp(-k_angular_damping * dt_s);
+        const f32 v2{glm::dot(b.velocity, b.velocity)};
+        const f32 w2{glm::dot(b.angular_velocity, b.angular_velocity)};
+
+        const bool slow =
+            (v2 < k_linear_sleep_speed_threshold * k_linear_sleep_speed_threshold)
+            && (w2 < k_angular_sleep_speed_threshold * k_angular_sleep_speed_threshold);
+
+        if (slow)
+        {
+            ++b.sleep_frames;
+            if (b.sleep_frames > 60)
+            {
+                b.asleep = true;
+                b.velocity = Direction3{};
+                b.angular_velocity = Direction3{};
+                b.force_accum = Direction3{};
+                b.torque_accum = Direction3{};
+            }
+        }
+        else
+        {
+            b.sleep_frames = 0;
+        }
+
+        b.velocity *= std::exp(-k_linear_damping * dt_s);
+        b.angular_velocity *= std::exp(-k_angular_damping * dt_s);
     }
 
     for (RigidBody& b : bodies)

@@ -17,9 +17,9 @@ enum class GltfLoadError
     UnsupportedAccessorType,
 };
 
-std::expected<MeshData, GltfLoadError>
+std::expected<MeshDataPN, GltfLoadError>
 load_gltf_mesh(const std::string& path, const Transform& preprocess);
 
-std::expected<MeshData, GltfLoadError> load_model_mesh(const std::string& model_name);
+std::expected<MeshDataPN, GltfLoadError> load_model_mesh(const std::string& model_name);
 
 }  // namespace ds_pba

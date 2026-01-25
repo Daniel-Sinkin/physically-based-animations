@@ -33,11 +33,11 @@ struct RigidBody
 
     // Angular
     Quaternion orientation{1.0f, 0.0f, 0.0f, 0.0f};
-    Direction3 angular_velocity{};  // omega (world space)
+    Direction3 angular_velocity{};
     Direction3 torque_accum{};
 
-    glm::mat3 inv_inertia_body{0.0f};   // constant
-    glm::mat3 inv_inertia_world{0.0f};  // based on orientation
+    glm::mat3 inv_inertia_body{0.0f};
+    glm::mat3 inv_inertia_world{0.0f};
 
     bool asleep{false};
     int sleep_frames{0};

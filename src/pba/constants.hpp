@@ -10,12 +10,6 @@ namespace ds_pba
 {
 // Platform specific
 
-#if defined(_WIN32)
-constexpr bool k_on_windows = true;
-#else
-constexpr bool k_on_windows = false;
-#endif
-
 // Development
 constexpr bool k_validate_contacts{false};
 

@@ -109,7 +109,7 @@ struct RenderContext
 
     bool pivot_active{true};
 
-    std::unique_ptr<VideoRecorder> recorder{};
+    VideoRecorder recorder{};
 
     std::vector<u8> capture_rgba{};
     int capture_fps{k_video_recorder_fps};
@@ -117,7 +117,7 @@ struct RenderContext
     usize capture_take_index{0zu};
 
     void start_recording();
-    void stop_recording() const;
+    void stop_recording();
     void toggle_recording();
     [[nodiscard]] bool capture_viewport_rgba8(std::vector<u8>& out) const;
 

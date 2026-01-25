@@ -26,14 +26,53 @@
 #include <glm/ext/matrix_float4x4.hpp>
 #include <imgui.h>
 #include <json.hpp>
-#include <memory>
 #include <optional>
 #include <print>
 #include <utility>
 
 namespace
 {
-[[nodiscard]] std::optional<ds_pba::GLMesh> upload_mesh_pn(const ds_pba::MeshData& mesh_data)
+[[nodiscard]] std::optional<ds_pba::GLMesh>
+upload_mesh_pcolor_lines(const ds_pba::MeshDataPColor& mesh_data)
+{
+    using namespace ds_pba;
+
+    const auto& verts = mesh_data.vertices;
+    if (verts.empty())
+    {
+        std::println(stderr, "Grid mesh data empty!");
+        return std::nullopt;
+    }
+
+    GLMesh mesh{};
+    glGenVertexArrays(1, mesh.vao.ptr());
+    glGenBuffers(1, mesh.vbo.ptr());
+    mesh.vertex_count = static_cast<GLsizei>(verts.size());
+
+    {
+        const ScopedBufferBinder binder{mesh};
+
+        glBufferData(
+            GL_ARRAY_BUFFER,
+            static_cast<GLsizeiptr>(verts.size() * sizeof(MeshV_PColor)),
+            verts.data(),
+            GL_STATIC_DRAW
+        );
+
+        const GLsizei stride = static_cast<GLsizei>(sizeof(MeshV_PColor));
+
+        // location 0: position
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, GLPtr::offset0());
+
+        // location 1: color
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, stride, GLPtr::offset(3 * sizeof(f32)));
+    }
+
+    return mesh;
+}
+[[nodiscard]] std::optional<ds_pba::GLMesh> upload_mesh_pn(const ds_pba::MeshDataPN& mesh_data)
 {
     using namespace ds_pba;
 
@@ -54,12 +93,12 @@ namespace
 
         glBufferData(
             GL_ARRAY_BUFFER,
-            static_cast<GLsizeiptr>(verts.size() * sizeof(MeshV)),
+            static_cast<GLsizeiptr>(verts.size() * sizeof(MeshV_PN)),
             verts.data(),
             GL_STATIC_DRAW
         );
 
-        const auto stride = static_cast<GLsizei>(sizeof(MeshV));
+        const auto stride = static_cast<GLsizei>(sizeof(MeshV_PN));
 
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, GLPtr::offset0());
@@ -428,16 +467,12 @@ void ds_pba::RenderContext::viewport_window()
     }
     else
     {
+        viewport_image_hovered = false;
         if (!viewport_valid_warning_shown)
         {
             std::println("[Warning] Viewport is not valid!");
             viewport_valid_warning_shown = true;
-            assert(
-                !viewport_image_hovered
-                && "If viewport was already invalid then hovered must have been set to false"
-            );
         }
-        viewport_image_hovered = false;
     }
     ImGui::End();
 }
@@ -643,9 +678,9 @@ std::optional<ds_pba::Position3> ds_pba::RenderContext::get_object_position(Obje
         if (auto it = engine_context->obj_map.find(id); it != engine_context->obj_map.end())
         {
             const auto [scene_i, phys_i] = it->second;
-            if (engine_context->physics && phys_i < engine_context->physics->bodies.size())
+            if (phys_i < engine_context->physics.bodies.size())
             {
-                return engine_context->physics->bodies[phys_i].position;
+                return engine_context->physics.bodies[phys_i].position;
             }
             if (scene_i < scene_context->cube_objects.size())
             {
@@ -818,9 +853,9 @@ void ds_pba::RenderContext::set_object_position(ObjectId id, const Position3& p)
         {
             const auto [scene_i, phys_i] = it->second;
 
-            if (engine_context->physics && phys_i < engine_context->physics->bodies.size())
+            if (phys_i < engine_context->physics.bodies.size())
             {
-                RigidBody& rb = engine_context->physics->bodies[phys_i];
+                RigidBody& rb = engine_context->physics.bodies[phys_i];
                 rb.position = p;
 
                 rb.velocity = Direction3{};
@@ -1011,7 +1046,7 @@ void ds_pba::RenderContext::step()
         glfwMakeContextCurrent(backup_current_context);
     }
 
-    if (recorder->is_recording())
+    if (recorder.is_recording())
     {
         const int w{viewport_fbo.width};
         const int h{viewport_fbo.height};
@@ -1021,7 +1056,7 @@ void ds_pba::RenderContext::step()
             ui_log("Recording stopped: viewport became invalid");
             stop_recording();
         }
-        else if (w != recorder->width || h != recorder->height)
+        else if (w != recorder.width || h != recorder.height)
         {
             ui_log("Recording stopped: viewport size changed during recording");
             stop_recording();
@@ -1036,7 +1071,7 @@ void ds_pba::RenderContext::step()
             else
             {
                 const std::span<const u8> frame{capture_rgba.data(), capture_rgba.size()};
-                if (!recorder->write_frame(frame))
+                if (!recorder.write_frame(frame))
                 {
                     ui_log("Recording stopped: failed to write frame to ffmpeg");
                     stop_recording();
@@ -1117,7 +1152,25 @@ bool ds_pba::RenderContext::create_programs()
 
 bool ds_pba::RenderContext::create_meshes()
 {
-    auto upload_or_fail = [&](MeshData mesh_data, std::string_view label) -> std::optional<GLMesh>
+    auto upload_or_fail_pn = [&](const std::optional<MeshDataPN>& mesh_data,
+                                 std::string_view label) -> std::optional<GLMesh>
+    {
+        if (!mesh_data)
+        {
+            std::println(stderr, "Failed to create mesh '{}'", label);
+            return std::nullopt;
+        }
+
+        auto mesh_res = upload_mesh_pn(*mesh_data);
+        if (!mesh_res)
+        {
+            std::println(stderr, "Failed to upload mesh '{}'", label);
+        }
+        return mesh_res;
+    };
+
+    auto upload_or_fail_pn_value = [&](MeshDataPN mesh_data,
+                                       std::string_view label) -> std::optional<GLMesh>
     {
         auto mesh_res = upload_mesh_pn(mesh_data);
         if (!mesh_res)
@@ -1127,8 +1180,25 @@ bool ds_pba::RenderContext::create_meshes()
         return mesh_res;
     };
 
+    auto upload_or_fail_grid = [&](const std::optional<MeshDataPColor>& mesh_data,
+                                   std::string_view label) -> std::optional<GLMesh>
     {
-        auto mesh_res = upload_or_fail(create_cube_mesh(), "cube");
+        if (!mesh_data)
+        {
+            std::println(stderr, "Failed to create mesh '{}'", label);
+            return std::nullopt;
+        }
+
+        auto mesh_res = upload_mesh_pcolor_lines(*mesh_data);
+        if (!mesh_res)
+        {
+            std::println(stderr, "Failed to upload mesh '{}'", label);
+        }
+        return mesh_res;
+    };
+
+    {
+        auto mesh_res = upload_or_fail_pn_value(create_cube_mesh(), "cube");
         if (!mesh_res)
         {
             return false;
@@ -1136,18 +1206,23 @@ bool ds_pba::RenderContext::create_meshes()
         cube_mesh = *mesh_res;
     }
     {
-        auto mesh_res = upload_or_fail(create_sphere_mesh(32, 24, 1.0f), "sphere");
+        auto mesh_res = upload_or_fail_pn(create_sphere_mesh(32, 24, 1.0f), "sphere");
         if (!mesh_res)
         {
             return false;
         }
         sphere_mesh = *mesh_res;
     }
-
-    grid_mesh = create_grid_mesh(grid);  // TODO: Make this also GL independent
-
     {
-        auto mesh_res = upload_or_fail(create_cylinder_mesh(24, 0.5f, 1.0f), "cylinder");
+        auto mesh_res = upload_or_fail_grid(create_grid_mesh(grid), "grid");
+        if (!mesh_res)
+        {
+            return false;
+        }
+        grid_mesh = *mesh_res;
+    }
+    {
+        auto mesh_res = upload_or_fail_pn(create_cylinder_mesh(24, 0.5f, 1.0f), "cylinder");
         if (!mesh_res)
         {
             return false;
@@ -1155,14 +1230,13 @@ bool ds_pba::RenderContext::create_meshes()
         cylinder_mesh = *mesh_res;
     }
     {
-        auto mesh_res = upload_or_fail(create_pyramid_mesh(), "pyramid");
+        auto mesh_res = upload_or_fail_pn_value(create_pyramid_mesh(), "pyramid");
         if (!mesh_res)
         {
             return false;
         }
         pyramid_mesh = *mesh_res;
     }
-
     {
         auto mesh_res = ds_pba::load_model_mesh("marble_bust_01");
         if (!mesh_res)
@@ -1332,15 +1406,6 @@ bool ds_pba::RenderContext::setup()
         return false;
     }
     last_scene_poll = std::chrono::steady_clock::now();
-
-    if constexpr (k_on_windows)
-    {
-        recorder = nullptr;
-    }
-    else
-    {
-        recorder = std::make_unique<VideoRecorder>();
-    }
     return true;
 }
 
@@ -1392,8 +1457,7 @@ bool ds_pba::RenderContext::capture_viewport_rgba8(std::vector<u8>& out) const
 
 void ds_pba::RenderContext::start_recording()
 {
-    assert(!k_on_windows && recorder);
-    if (recorder->is_recording())
+    if (recorder.is_recording())
     {
         return;
     }
@@ -1431,10 +1495,10 @@ void ds_pba::RenderContext::start_recording()
         return;
     }
 
-    recorder->width = w;
-    recorder->height = h;
-    recorder->fps = capture_fps;
-    if (!recorder->start(out_path))
+    recorder.width = w;
+    recorder.height = h;
+    recorder.fps = capture_fps;
+    if (!recorder.start(out_path))
     {
         ui_log("Recording start failed: could not start ffmpeg");
         return;
@@ -1444,22 +1508,21 @@ void ds_pba::RenderContext::start_recording()
     );
 }
 
-void ds_pba::RenderContext::stop_recording() const
+void ds_pba::RenderContext::stop_recording()
 {
-    assert(!k_on_windows && recorder);
-    if (!recorder->is_recording())
+    if (!recorder.is_recording())
     {
         return;
     }
 
-    const std::string out = recorder->output_path.string();
-    recorder->stop();
-    ui_log(std::format("Recording stopped: {} ({} frames)", out, recorder->frames_written));
+    const std::string out = recorder.output_path.string();
+    recorder.stop();
+    ui_log(std::format("Recording stopped: {} ({} frames)", out, recorder.frames_written));
 }
 
 void ds_pba::RenderContext::toggle_recording()
 {
-    if (recorder->is_recording())
+    if (recorder.is_recording())
     {
         stop_recording();
     }
@@ -1471,9 +1534,9 @@ void ds_pba::RenderContext::toggle_recording()
 
 void ds_pba::RenderContext::shutdown()
 {
-    if (recorder->is_recording())
+    if (recorder.is_recording())
     {
-        recorder->stop();
+        recorder.stop();
     }
 
     if (loaded_glad)
