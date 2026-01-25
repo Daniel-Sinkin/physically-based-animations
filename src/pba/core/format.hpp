@@ -1,8 +1,8 @@
-// pba/format.hpp
+// pba/core/format.hpp
 #pragma once
 
-#include "pba/raycast.hpp"
-#include "pba/scene_types.hpp"
+#include "pba/engine/scene_types.hpp"
+#include "pba/render/raycast.hpp"
 
 #include <format>
 #include <glm/glm.hpp>

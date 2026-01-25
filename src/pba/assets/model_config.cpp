@@ -1,8 +1,8 @@
-// pba/model_config.cpp
-#include "pba/pch.hpp"  // IWYU pragma: keep
+// pba/assets/model_config.cpp
+#include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
-#include "pba/model_config.hpp"
-#include "pba/serialization.hpp"  // IWYU pragma: keep
+#include "pba/assets/model_config.hpp"
+#include "pba/assets/serialization.hpp"  // IWYU pragma: keep
 //
 
 #include <json.hpp>

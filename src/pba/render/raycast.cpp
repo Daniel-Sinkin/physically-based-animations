@@ -1,10 +1,9 @@
-// pba/raycast.cpp
-#include "pba/math_types.hpp"
-#include "pba/pch.hpp"  // IWYU pragma: keep
+// pba/render/raycast.cpp
+#include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
-#include "pba/raycast.hpp"
-//
-#include "pba/scene_context.hpp"
+#include "pba/core/math_types.hpp"
+#include "pba/engine/scene_context.hpp"
+#include "pba/render/raycast.hpp"
 
 namespace ds_pba
 {

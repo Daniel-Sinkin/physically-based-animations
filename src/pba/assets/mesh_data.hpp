@@ -1,7 +1,7 @@
-// pba/mesh_data.hpp
+// pba/assets/mesh_data.hpp
 #pragma once
 
-#include "pba/core_types.hpp"
+#include "pba/core/core_types.hpp"
 
 #include <vector>
 

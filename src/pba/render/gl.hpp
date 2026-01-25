@@ -1,8 +1,8 @@
-// pba/gl.hpp
+// pba/render/gl.hpp
 #pragma once
 
-#include "pba/core_types.hpp"
-#include "pba/gl_types.hpp"
+#include "pba/core/core_types.hpp"
+#include "pba/render/gl_types.hpp"
 //
 #include <cassert>
 #include <expected>

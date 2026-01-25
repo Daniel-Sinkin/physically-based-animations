@@ -1,9 +1,9 @@
-// pba/video_recorder.hpp
+// pba/render/video_recorder.hpp
 #pragma once
 
-#include "pba/constants.hpp"
-#include "pba/core_types.hpp"
-
+#include "pba/core/constants.hpp"
+#include "pba/core/core_types.hpp"
+//
 #include <cstdio>
 #include <filesystem>
 #include <span>

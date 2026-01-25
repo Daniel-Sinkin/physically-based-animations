@@ -1,9 +1,9 @@
-// pba/mesh.hpp
+// pba/assets/mesh.hpp
 #pragma once
 
-#include "pba/core_types.hpp"
-#include "pba/mesh_data.hpp"
-#include "pba/render_context.hpp"
+#include "pba/assets/mesh_data.hpp"
+#include "pba/core/core_types.hpp"
+#include "pba/render/render_context.hpp"
 
 #include <optional>
 

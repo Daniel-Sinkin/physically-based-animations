@@ -1,4 +1,4 @@
-// pba/math_types.hpp
+// pba/core/math_types.hpp
 #pragma once
 
 #include <glm/ext/matrix_float4x4.hpp>

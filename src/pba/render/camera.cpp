@@ -1,9 +1,9 @@
-// pba/camera.cpp
-#include "pba/pch.hpp"  // IWYU pragma: keep
+// pba/render/camera.cpp
+#include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
-#include "pba/camera.hpp"
+#include "pba/render/camera.hpp"
 //
-#include "pba/math_types.hpp"
+#include "pba/core/math_types.hpp"
 
 namespace ds_pba
 {

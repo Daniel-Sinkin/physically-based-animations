@@ -1,9 +1,9 @@
-// pba/physics_context.hpp
+// pba/physics/physics_context.hpp
 #pragma once
 
-#include "pba/constants.hpp"
-#include "pba/core_types.hpp"
-#include "pba/math_types.hpp"
+#include "pba/core/constants.hpp"
+#include "pba/core/core_types.hpp"
+#include "pba/core/math_types.hpp"
 #include "pba/util/hash.hpp"
 //
 #include <cmath>

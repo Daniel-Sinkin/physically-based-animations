@@ -1,7 +1,7 @@
-// pba/model_config.hpp
+// pba/assets/model_config.hpp
 #pragma once
 
-#include "pba/scene_types.hpp"
+#include "pba/engine/scene_types.hpp"
 
 #include <expected>
 #include <filesystem>

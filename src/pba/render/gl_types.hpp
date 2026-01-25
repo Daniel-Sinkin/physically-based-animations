@@ -1,8 +1,8 @@
-// pba/gl_types.hpp
+// pba/render/gl_types.hpp
 #pragma once
 
-#include "pba/core_types.hpp"
-
+#include "pba/core/core_types.hpp"
+//
 #include <cassert>
 #include <cstddef>
 #include <glad/glad.h>

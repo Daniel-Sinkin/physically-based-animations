@@ -1,13 +1,13 @@
-// pba/render_context.hpp
+// pba/render/render_context.hpp
 #pragma once
 
-#include "pba/constants.hpp"
-#include "pba/core_types.hpp"
-#include "pba/gl_types.hpp"
-#include "pba/math_types.hpp"
-#include "pba/ui_theme.hpp"
-#include "pba/video_recorder.hpp"
-#include "pba/viewport_fbo.hpp"
+#include "pba/core/constants.hpp"
+#include "pba/core/core_types.hpp"
+#include "pba/core/math_types.hpp"
+#include "pba/render/gl_types.hpp"
+#include "pba/render/video_recorder.hpp"
+#include "pba/render/viewport_fbo.hpp"
+#include "pba/ui/ui_theme.hpp"
 
 #include <chrono>
 #include <filesystem>

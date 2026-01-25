@@ -1,6 +1,6 @@
 // pba/util/scope_timer.cpp
-#include "pba/core_types.hpp"
-#include "pba/pch.hpp"  // IWYU pragma: keep
+#include "pba/core/core_types.hpp"
+#include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/util/scope_timer.hpp"
 //

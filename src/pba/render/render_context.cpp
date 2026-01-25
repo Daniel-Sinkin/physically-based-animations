@@ -1,34 +1,34 @@
-// pba/render_context.cpp
-#include "pba/constants.hpp"
-#include "pba/mesh_data.hpp"
-#include "pba/pch.hpp"  // IWYU pragma: keep
+// pba/render/render_context.cpp
+#include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
-#include "pba/render_context.hpp"
+#include "pba/render/render_context.hpp"
 //
-#include "pba/format.hpp"  // IWYU pragma: keep
-//
-#include "pba/core_types.hpp"
-#include "pba/engine_context.hpp"
-#include "pba/gl.hpp"
-#include "pba/gl_types.hpp"
-#include "pba/gltf_mesh.hpp"
-#include "pba/math_types.hpp"
-#include "pba/mesh.hpp"
-#include "pba/raycast.hpp"
-#include "pba/scene_context.hpp"
-#include "pba/scene_types.hpp"
-#include "pba/ui.hpp"
+#include "pba/assets/gltf_mesh.hpp"
+#include "pba/assets/mesh.hpp"
+#include "pba/assets/mesh_data.hpp"
+#include "pba/core/constants.hpp"
+#include "pba/core/core_types.hpp"
+#include "pba/core/format.hpp"  // IWYU pragma: keep
+#include "pba/core/math_types.hpp"
+#include "pba/engine/engine_context.hpp"
+#include "pba/engine/scene_context.hpp"
+#include "pba/engine/scene_types.hpp"
+#include "pba/render/gl.hpp"
+#include "pba/render/gl_types.hpp"
+#include "pba/render/raycast.hpp"
+#include "pba/render/video_recorder.hpp"
+#include "pba/ui/ui.hpp"
 #include "pba/util/shutdown.hpp"
-#include "pba/video_recorder.hpp"
-
-#include <GLFW/glfw3.h>
+//
 #include <atomic>
-#include <glm/ext/matrix_float4x4.hpp>
 #include <imgui.h>
-#include <json.hpp>
 #include <optional>
 #include <print>
 #include <utility>
+//
+#include <GLFW/glfw3.h>
+#include <glm/ext/matrix_float4x4.hpp>
+#include <json.hpp>
 
 namespace
 {

@@ -1,7 +1,7 @@
-// pba/serialization.hpp
+// pba/assets/serialization.hpp
 #pragma once
 
-#include "pba/scene_types.hpp"
+#include "pba/engine/scene_types.hpp"
 
 #include <json.hpp>
 

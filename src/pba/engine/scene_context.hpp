@@ -1,9 +1,9 @@
-// pba/scene_context.hpp
+// pba/engine/scene_context.hpp
 #pragma once
 
-#include "pba/camera.hpp"
-#include "pba/core_types.hpp"
-#include "pba/scene_types.hpp"
+#include "pba/core/core_types.hpp"
+#include "pba/engine/scene_types.hpp"
+#include "pba/render/camera.hpp"
 
 #include <algorithm>
 #include <optional>

@@ -1,8 +1,8 @@
-// pba/gltf_mesh.hpp
+// pba/assets/gltf_mesh.hpp
 #pragma once
 
-#include "pba/mesh_data.hpp"
-#include "pba/scene_types.hpp"
+#include "pba/assets/mesh_data.hpp"
+#include "pba/engine/scene_types.hpp"
 
 #include <expected>
 #include <string>

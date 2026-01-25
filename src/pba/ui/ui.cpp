@@ -1,15 +1,16 @@
-// pba/ui.cpp
+// pba/ui/ui.cpp
+//
+#include "pba/ui/ui.hpp"
+//
 #include "glm/gtc/quaternion.hpp"
 #include "glm/trigonometric.hpp"
-#include "imgui.h"
-#include "pba/constants.hpp"
-#include "pba/core_types.hpp"
-#include "pba/math_types.hpp"
-#include "pba/pch.hpp"  // IWYU pragma: keep
+#include "pba/core/constants.hpp"
+#include "pba/core/core_types.hpp"
+#include "pba/core/math_types.hpp"
+#include "pba/core/pch.hpp"  // IWYU pragma: keep
+#include "pba/engine/engine_context.hpp"
 //
-#include "pba/ui.hpp"
-//
-#include "pba/engine_context.hpp"
+#include <imgui.h>
 
 namespace ds_pba
 {

@@ -1,9 +1,9 @@
-// pba/gl_shader.hpp
+// pba/render/gl_shader.hpp
 #pragma once
 
-#include "pba/core_types.hpp"
-#include "pba/gl_types.hpp"
-
+#include "pba/core/core_types.hpp"
+#include "pba/render/gl_types.hpp"
+//
 #include <algorithm>
 #include <cassert>
 #include <glad/glad.h>

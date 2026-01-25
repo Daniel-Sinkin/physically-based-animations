@@ -1,7 +1,7 @@
-// pba/ui_theme.hpp
+// pba/ui/ui_theme.hpp
 #pragma once
 
-#include "pba/core_types.hpp"
+#include "pba/core/core_types.hpp"
 
 #include <expected>
 #include <filesystem>

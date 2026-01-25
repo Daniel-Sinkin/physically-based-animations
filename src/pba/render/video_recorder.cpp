@@ -1,9 +1,9 @@
-// pba/video_recorder.cpp
-#include "pba/pch.hpp"  // IWYU pragma: keep
-
-#include <print>
+// pba/render/video_recorder.cpp
+#include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
-#include "pba/video_recorder.hpp"
+#include "pba/render/video_recorder.hpp"
+//
+#include <print>
 
 #ifndef DS_PBA_FFMPEG_EXECUTABLE
 #    define DS_PBA_FFMPEG_EXECUTABLE "ffmpeg"

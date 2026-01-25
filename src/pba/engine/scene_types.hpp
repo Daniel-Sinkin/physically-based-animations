@@ -1,9 +1,9 @@
-// pba/scene_types.hpp
+// pba/engine/scene_types.hpp
 #pragma once
 
-#include "pba/constants.hpp"
-#include "pba/core_types.hpp"  // IWYU pragma: keep
-#include "pba/math_types.hpp"
+#include "pba/core/constants.hpp"
+#include "pba/core/core_types.hpp"  // IWYU pragma: keep
+#include "pba/core/math_types.hpp"
 
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/glm.hpp>

@@ -1,11 +1,11 @@
-// pba/engine_context.hpp
+// pba/engine/engine_context.hpp
 #pragma once
 
-#include "pba/core_types.hpp"
-#include "pba/math_types.hpp"
-#include "pba/physics_context.hpp"
-#include "pba/render_context.hpp"
-#include "pba/scene_context.hpp"
+#include "pba/core/core_types.hpp"
+#include "pba/core/math_types.hpp"
+#include "pba/engine/scene_context.hpp"
+#include "pba/physics/physics_context.hpp"
+#include "pba/render/render_context.hpp"
 
 #include <string>
 #include <unordered_map>

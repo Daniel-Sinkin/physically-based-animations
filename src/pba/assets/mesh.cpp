@@ -1,10 +1,10 @@
-// pba/mesh.cpp
-#include "pba/pch.hpp"  // IWYU pragma: keep
+// pba/assets/mesh.cpp
+#include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
-#include "pba/mesh.hpp"
+#include "pba/assets/mesh.hpp"
 //
-#include "pba/constants.hpp"
-#include "pba/math_types.hpp"
+#include "pba/core/constants.hpp"
+#include "pba/core/math_types.hpp"
 
 #include <optional>
 #include <print>

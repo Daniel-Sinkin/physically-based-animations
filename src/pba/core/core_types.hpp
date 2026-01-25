@@ -1,4 +1,4 @@
-// pba/core_types.hpp
+// pba/core/core_types.hpp
 #pragma once
 
 #include <array>

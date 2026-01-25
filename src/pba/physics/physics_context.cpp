@@ -1,12 +1,12 @@
-// pba/physics_context.cpp
-#include "pba/math_types.hpp"
-#include "pba/pch.hpp"  // IWYU pragma: keep
+// pba/physics/physics_context.cpp
+#include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
-#include "pba/physics_context.hpp"
+#include "pba/physics/physics_context.hpp"
 //
-#include "pba/constants.hpp"
-#include "pba/core_types.hpp"
-#include "pba/format.hpp"  // IWYU pragma: keep
+#include "pba/core/constants.hpp"
+#include "pba/core/core_types.hpp"
+#include "pba/core/format.hpp"  // IWYU pragma: keep
+#include "pba/core/math_types.hpp"
 
 #include <glm/geometric.hpp>
 

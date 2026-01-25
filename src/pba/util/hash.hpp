@@ -1,7 +1,7 @@
 // hash.hpp
 #pragma once
 
-#include "pba/core_types.hpp"
+#include "pba/core/core_types.hpp"
 
 namespace ds_pba
 {

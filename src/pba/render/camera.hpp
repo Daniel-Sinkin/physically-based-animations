@@ -1,10 +1,10 @@
-// pba/camera.hpp
+// pba/render/camera.hpp
 #pragma once
 
-#include "pba/constants.hpp"
-#include "pba/core_types.hpp"
-#include "pba/math_types.hpp"
-
+#include "pba/core/constants.hpp"
+#include "pba/core/core_types.hpp"
+#include "pba/core/math_types.hpp"
+//
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
 #include <glm/gtc/matrix_transform.hpp>

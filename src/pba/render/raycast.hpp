@@ -1,10 +1,10 @@
-// pba/raycast.hpp
+// pba/render/raycast.hpp
 #pragma once
 
-#include "pba/core_types.hpp"
-#include "pba/math_types.hpp"
-#include "pba/scene_types.hpp"
-
+#include "pba/core/core_types.hpp"
+#include "pba/core/math_types.hpp"
+#include "pba/engine/scene_types.hpp"
+//
 #include <cmath>
 #include <glm/glm.hpp>
 #include <optional>

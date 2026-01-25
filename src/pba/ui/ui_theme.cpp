@@ -1,7 +1,7 @@
-// pba/ui_theme.cpp
-#include "pba/pch.hpp"  // IWYU pragma: keep
+// pba/ui/ui_theme.cpp
+#include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
-#include "pba/ui_theme.hpp"
+#include "pba/ui/ui_theme.hpp"
 //
 
 #include <cctype>

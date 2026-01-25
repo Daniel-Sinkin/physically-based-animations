@@ -1,11 +1,11 @@
-// pba/gltf_mesh.cpp
-#include "pba/pch.hpp"  // IWYU pragma: keep
+// pba/assets/gltf_mesh.cpp
+#include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
-#include "pba/core_types.hpp"
-#include "pba/gltf_mesh.hpp"
-#include "pba/math_types.hpp"
-#include "pba/mesh_data.hpp"
-#include "pba/model_config.hpp"
+#include "pba/assets/gltf_mesh.hpp"
+#include "pba/assets/mesh_data.hpp"
+#include "pba/assets/model_config.hpp"
+#include "pba/core/core_types.hpp"
+#include "pba/core/math_types.hpp"
 #include "pba/util/scope_timer.hpp"
 
 #include <glm/gtc/quaternion.hpp>

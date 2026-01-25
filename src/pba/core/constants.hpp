@@ -1,8 +1,8 @@
-// pba/constants.hpp
+// pba/core/constants.hpp
 #pragma once
 
-#include "pba/core_types.hpp"
-#include "pba/math_types.hpp"
+#include "pba/core/core_types.hpp"
+#include "pba/core/math_types.hpp"
 
 #include <numbers>
 

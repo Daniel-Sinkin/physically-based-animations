@@ -1,7 +1,7 @@
 // pba_util/scope_timer.hpp
 #pragma once
 
-#include "pba/core_types.hpp"
+#include "pba/core/core_types.hpp"
 
 #include <string_view>
 
