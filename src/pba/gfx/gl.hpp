@@ -2,7 +2,7 @@
 #pragma once
 
 #include "pba/core/core_types.hpp"
-#include "pba/render/gl_types.hpp"
+#include "pba/gfx/gl_types.hpp"
 //
 #include <cassert>
 #include <expected>

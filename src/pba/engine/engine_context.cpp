@@ -228,9 +228,9 @@ bool EngineContext::setup()
         }
     }
 
-    renderer.scene_context = &scene;
-    renderer.engine_context = this;
-    if (!renderer.setup())
+    gfx.scene_context = &scene;
+    gfx.engine_context = this;
+    if (!gfx.setup())
     {
         return false;
     }
@@ -251,7 +251,7 @@ void EngineContext::run()
     physics.time = frame_time;
     accumulator = Duration{0.0};
 
-    while (renderer.is_active())
+    while (gfx.is_active())
     {
         const TimePoint now{Clock::now()};
 
@@ -260,7 +260,7 @@ void EngineContext::run()
 
         frame_dt = std::min(frame_dt, max_frame_dt);
 
-        const bool space_down{glfwGetKey(renderer.window, GLFW_KEY_SPACE) == GLFW_PRESS};
+        const bool space_down{glfwGetKey(gfx.window, GLFW_KEY_SPACE) == GLFW_PRESS};
         if (space_down && !prev_space)
         {
             paused = !paused;
@@ -299,7 +299,7 @@ void EngineContext::run()
             scene.cube_objects[scene_i].transform.orientation = physics.bodies[phys_i].orientation;
         }
 
-        renderer.step();
+        gfx.step();
     }
 }
 

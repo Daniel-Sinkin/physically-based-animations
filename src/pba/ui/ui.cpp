@@ -9,6 +9,9 @@
 #include "pba/core/math_types.hpp"
 #include "pba/core/pch.hpp"  // IWYU pragma: keep
 #include "pba/engine/engine_context.hpp"
+#include "pba/engine/scene_context.hpp"
+#include "pba/gfx/gfx_context.hpp"
+#include "pba/physics/physics_context.hpp"
 //
 #include <imgui.h>
 
@@ -53,7 +56,7 @@ constexpr ImVec4 rgba_u32(u32 rgba) noexcept
     return ImVec4(r * inv, g * inv, b * inv, a * inv);
 }
 
-void render_terminal_window(RenderContext& render_context)
+void render_terminal_window(GfxContext& render_context)
 {
     TerminalState& t = terminal();
 
@@ -214,10 +217,9 @@ void apply_blender_style()
 
 void render_imgui_windows(EngineContext& engine_context)
 {
-    auto& physics_context = engine_context.physics;
-    auto& render_context = engine_context.renderer;
-    assert(render_context.scene_context && "Scene Context of render context not set!");
-    auto& scene_context = *render_context.scene_context;
+    PhysicsContext& physics_context = engine_context.physics;
+    GfxContext& gfx_context = engine_context.gfx;
+    SceneContext& scene_context = engine_context.scene;
 
     auto object_label = [&](ObjectId id, std::string_view type, usize ui_idx) -> std::string
     {
@@ -250,14 +252,14 @@ void render_imgui_windows(EngineContext& engine_context)
         ImGui::Text("  pivot:     (%.2f, %.2f, %.2f)", pivot_x_d, pivot_y_d, pivot_z_d);
         ImGui::Separator();
 
-        ImGui::Text("Frame Counter: %d", render_context.frame_count);
+        ImGui::Text("Frame Counter: %d", gfx_context.frame_count);
 
         const TimePoint now{std::chrono::steady_clock::now()};
-        const auto dur{now - render_context.run_start};
+        const auto dur{now - gfx_context.run_start};
 
         const double seconds{std::chrono::duration<double>(dur).count()};
 
-        const double frame_count_d{static_cast<double>(render_context.frame_count)};
+        const double frame_count_d{static_cast<double>(gfx_context.frame_count)};
         const double fps{(seconds > 0.0) ? frame_count_d / seconds : 0.0};
 
         ImGui::Text("Total Runtime: %.2f s", seconds);
@@ -272,12 +274,12 @@ void render_imgui_windows(EngineContext& engine_context)
             ui_theme::apply_theme(t);
 
             ImGuiIO& io = ImGui::GetIO();
-            ImFont* chosen = render_context.default_font;
+            ImFont* chosen = gfx_context.default_font;
 
             if (t.font_id)
             {
-                if (auto it = render_context.fonts_by_id.find(*t.font_id);
-                    it != render_context.fonts_by_id.end())
+                if (auto it = gfx_context.fonts_by_id.find(*t.font_id);
+                    it != gfx_context.fonts_by_id.end())
                 {
                     chosen = it->second;
                 }
@@ -295,23 +297,23 @@ void render_imgui_windows(EngineContext& engine_context)
             io.FontDefault = chosen;
         };
 
-        auto& grid = render_context.grid;
+        auto& grid = gfx_context.grid;
         ImGui::Begin("Render");
-        const auto& themes = render_context.theme_pack.themes;
-        if (render_context.theme_loaded && !themes.empty())
+        const auto& themes = gfx_context.theme_pack.themes;
+        if (gfx_context.theme_loaded && !themes.empty())
         {
-            auto theme_name = themes[render_context.theme_index].name.c_str();
+            auto theme_name = themes[gfx_context.theme_index].name.c_str();
             if (ImGui::BeginCombo("Theme", theme_name))
             {
-                for (usize i{0zu}; i < render_context.theme_pack.themes.size(); ++i)
+                for (usize i{0zu}; i < gfx_context.theme_pack.themes.size(); ++i)
                 {
-                    const bool selected{i == render_context.theme_index};
+                    const bool selected{i == gfx_context.theme_index};
                     if (ImGui::Selectable(
-                            render_context.theme_pack.themes[i].name.c_str(), selected
+                            gfx_context.theme_pack.themes[i].name.c_str(), selected
                         ))
                     {
-                        render_context.theme_index = i;
-                        apply_theme_with_font(render_context.theme_pack.themes[i]);
+                        gfx_context.theme_index = i;
+                        apply_theme_with_font(gfx_context.theme_pack.themes[i]);
                     }
                     if (selected)
                     {
@@ -325,7 +327,7 @@ void render_imgui_windows(EngineContext& engine_context)
         {
             ImGui::TextUnformatted("Theme: (not loaded)");
         }
-        ImGui::ColorEdit4("Background", render_context.background_color.data());
+        ImGui::ColorEdit4("Background", gfx_context.background_color.data());
         ImGui::Separator();
         ImGui::Text("Grid");
         ImGui::DragFloat("Fog start", &grid.fog_start, 0.25f, 0.0f, 1e6f);
@@ -335,26 +337,26 @@ void render_imgui_windows(EngineContext& engine_context)
 
         ImGui::Separator();
         ImGui::TextUnformatted("Capture");
-        ImGui::DragInt("FPS##capture_fps", &render_context.capture_fps, 1.0f, 1, 240);
+        ImGui::DragInt("FPS##capture_fps", &gfx_context.capture_fps, 1.0f, 1, 240);
         {
-            const std::string out_dir = render_context.capture_output_dir.string();
+            const std::string out_dir = gfx_context.capture_output_dir.string();
             ImGui::Text("Output dir: %s", out_dir.c_str());
         }
 
-        if (!render_context.recorder.is_recording())
+        if (!gfx_context.recorder.is_recording())
         {
             if (ImGui::Button("Start Recording (F2)"))
             {
-                render_context.start_recording();
+                gfx_context.start_recording();
             }
         }
         else
         {
-            const std::string out = render_context.recorder.output_path.string();
+            const std::string out = gfx_context.recorder.output_path.string();
             ImGui::Text("Recording to: %s", out.c_str());
             if (ImGui::Button("Stop Recording (F2)"))
             {
-                render_context.stop_recording();
+                gfx_context.stop_recording();
             }
         }
 
@@ -629,26 +631,25 @@ void render_imgui_windows(EngineContext& engine_context)
         ImGui::EndChild();
         ImGui::End();
     }
-    render_terminal_window(render_context);
+    render_terminal_window(gfx_context);
 }
 
-void render_menu_bar(RenderContext& render_context)
+void render_menu_bar(GfxContext& gfx_context)
 {
-    assert(render_context.scene_context && "RenderContext has no SceneContext!");
     if (ImGui::BeginMenu("File"))
     {
-        if (!render_context.recorder.is_recording())
+        if (!gfx_context.recorder.is_recording())
         {
             if (ImGui::MenuItem("Start Recording (F2)"))
             {
-                render_context.start_recording();
+                gfx_context.start_recording();
             }
         }
         else
         {
             if (ImGui::MenuItem("Stop Recording (F2)"))
             {
-                render_context.stop_recording();
+                gfx_context.stop_recording();
             }
         }
 

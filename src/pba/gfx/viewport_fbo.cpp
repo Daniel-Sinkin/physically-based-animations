@@ -1,7 +1,7 @@
 // pba/render/viewport_fbo.cpp
 #include "pba/core/pch.hpp"
 //
-#include "pba/render/viewport_fbo.hpp"
+#include "pba/gfx/viewport_fbo.hpp"
 //
 #include "pba/core/core_types.hpp"
 //
