@@ -1,7 +1,7 @@
 // pba/main.cpp
-#include "pba/pch.hpp"  // IWYU pragma: keep
+#include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
-#include "pba/engine_context.hpp"
+#include "pba/engine/engine_context.hpp"
 #include "pba/util/scope_timer.hpp"
 #include "pba/util/shutdown.hpp"
 
