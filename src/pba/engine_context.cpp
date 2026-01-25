@@ -211,7 +211,7 @@ bool EngineContext::setup()
         constexpr f32 gap{0.06f};
         constexpr f32 step{cube + gap};
 
-        constexpr int base_n{8};
+        constexpr int base_n{5};
         constexpr f32 base_z{0.5f};
 
         for (int layer{0}; layer < base_n; ++layer)
