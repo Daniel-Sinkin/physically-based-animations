@@ -102,7 +102,7 @@ struct GfxContext
     bool viewport_image_hovered{false};
 
     SceneContext* scene_context{};
-    // This is only intended for ImGUI don't access values for the renderer through it
+    // This is only intended for ImGUI don't access values for the GfxContext through it
     EngineContext* engine_context{};
 
     bool is_active_{true};
