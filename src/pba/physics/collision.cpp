@@ -275,7 +275,7 @@ ContactKey make_contact_key(const RigidBody& a, const RigidBody& b, const Positi
     };
 }
 
-void generate_obb_contacts(std::span<const RigidBody> bodies, std::vector<Contact>& out)
+void generate_obb_contacts(std::span<const RigidBody> bodies, std::pmr::vector<Contact>& out)
 {
     out.clear();
     out.reserve(bodies.size() * 8zu);  // TODO: Profile what a good default would be

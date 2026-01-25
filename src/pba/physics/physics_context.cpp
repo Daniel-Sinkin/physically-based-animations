@@ -27,15 +27,17 @@ namespace
 
 void PhysicsContext::step()
 {
+    step_arena.release();
+    Contacts contacts{&step_arena};
+
     const Duration dt{time_step};
     const f32 dt_s{dt_f32(dt)};
 
-    physics_update_inv_inertia_world(bodies);
+    update_inv_inertia_world(bodies);
 
-    physics_integrate_forces(bodies, dt_s);
-    physics_integrate_velocities(bodies, dt_s);
+    integrate_forces(bodies, dt_s);
+    integrate_velocities(bodies, dt_s);
 
-    std::vector<Contact> contacts{};
     generate_obb_contacts(bodies, contacts);
     if constexpr (k_validate_contacts)
     {
@@ -65,11 +67,20 @@ void PhysicsContext::step()
         }
     }
 
-    physics_warm_start_contacts(bodies, contacts);
+    for (Contact& contact : contacts)
+    {
+        if (!contact.allow_warm_start)
+        {
+            continue;
+        }
+        if (contact.penetration < 0.05f)
+        {
+            warm_start_contact(bodies, contact);
+        }
+    }
 
-    physics_solve_velocity_constraints(bodies, contacts, dt_s);
-
-    physics_solve_position_constraints(bodies, contacts);
+    solve_velocity_constraints(bodies, contacts, dt_s);
+    solve_position_constraints(bodies, contacts);
 
     contact_cache.clear();
     contact_cache.reserve(contacts.size() * 2zu);
@@ -96,8 +107,8 @@ void PhysicsContext::step()
         );
     }
 
-    physics_apply_sleep_and_damping(bodies, dt_s);
-    physics_clear_accumulators(bodies);
+    apply_sleep_and_damping(bodies, dt_s);
+    clear_accumulators(bodies);
 
     time = time + std::chrono::duration_cast<Clock::duration>(dt);
 }

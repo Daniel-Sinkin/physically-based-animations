@@ -207,6 +207,7 @@ struct Contact
         return validate() == ContactValidity::Ok;
     }
 };
+using Contacts = std::pmr::vector<Contact>;
 
 struct ContactCacheEntry
 {

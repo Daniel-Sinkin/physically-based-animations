@@ -244,7 +244,7 @@ void apply_impulse_contact(
 }
 
 void positional_correction_contacts(
-    std::vector<RigidBody>& bodies, const std::vector<Contact>& contacts
+    std::vector<RigidBody>& bodies, const Contacts& contacts
 ) noexcept
 {
     for (const Contact& c : contacts)
@@ -290,7 +290,7 @@ void positional_correction_contacts(
 
 }  // namespace
 
-void physics_update_inv_inertia_world(std::vector<RigidBody>& bodies) noexcept
+void update_inv_inertia_world(std::vector<RigidBody>& bodies) noexcept
 {
     for (RigidBody& b : bodies)
     {
@@ -303,7 +303,7 @@ void physics_update_inv_inertia_world(std::vector<RigidBody>& bodies) noexcept
     }
 }
 
-void physics_integrate_forces(std::vector<RigidBody>& bodies, f32 dt_s) noexcept
+void integrate_forces(std::vector<RigidBody>& bodies, f32 dt_s) noexcept
 {
     for (RigidBody& b : bodies)
     {
@@ -323,7 +323,7 @@ void physics_integrate_forces(std::vector<RigidBody>& bodies, f32 dt_s) noexcept
     }
 }
 
-void physics_integrate_velocities(std::vector<RigidBody>& bodies, f32 dt_s) noexcept
+void integrate_velocities(std::vector<RigidBody>& bodies, f32 dt_s) noexcept
 {
     for (RigidBody& b : bodies)
     {
@@ -339,81 +339,63 @@ void physics_integrate_velocities(std::vector<RigidBody>& bodies, f32 dt_s) noex
     }
 }
 
-void physics_warm_start_contacts(
-    std::vector<RigidBody>& bodies, std::vector<Contact>& contacts
-) noexcept
+void warm_start_contact(std::vector<RigidBody>& bodies, Contact& contact) noexcept
 {
-    auto warm_start_contact = [&](Contact& contact) noexcept
+
+    RigidBody& a = bodies[contact.a_idx];
+    RigidBody& b = bodies[contact.b_idx];
+
+    if (a.is_static() && b.is_static())
     {
-        RigidBody& a = bodies[contact.a_idx];
-        RigidBody& b = bodies[contact.b_idx];
-
-        if (a.is_static() && b.is_static())
-        {
-            return;
-        }
-        if (a.asleep || b.asleep)
-        {
-            return;
-        }
-
-        const Direction3 n_hat{contact.n};
-        const Direction3 r_a{contact.p - a.position};
-        const Direction3 r_b{contact.p - b.position};
-
-        constexpr f32 warmstart_scale{1.0f};
-        contact.lambda_n = std::clamp(contact.lambda_n, 0.0f, 50.0f);
-        contact.lambda_t = std::clamp(contact.lambda_t, -50.0f, 50.0f);
-        // Normal warm start
-        if (contact.lambda_n > 0.0f)
-        {
-            const Direction3 Jn{warmstart_scale * contact.lambda_n * n_hat};
-
-            if (!a.is_static())
-            {
-                a.velocity += Jn * a.inv_mass;
-                a.angular_velocity += a.inv_inertia_world * glm::cross(r_a, Jn);
-            }
-            if (!b.is_static())
-            {
-                b.velocity -= Jn * b.inv_mass;
-                b.angular_velocity -= b.inv_inertia_world * glm::cross(r_b, Jn);
-            }
-        }
-
-        // Tangential warm start (only if we have a cached tangent direction)
-        if (contact.lambda_t != 0.0f && contact.has_t_hat)
-        {
-            const Direction3 Jt{warmstart_scale * contact.lambda_t * contact.t_hat};
-
-            if (!a.is_static())
-            {
-                a.velocity += Jt * a.inv_mass;
-                a.angular_velocity += a.inv_inertia_world * glm::cross(r_a, Jt);
-            }
-            if (!b.is_static())
-            {
-                b.velocity -= Jt * b.inv_mass;
-                b.angular_velocity -= b.inv_inertia_world * glm::cross(r_b, Jt);
-            }
-        }
-    };
-
-    for (Contact& c : contacts)
+        return;
+    }
+    if (a.asleep || b.asleep)
     {
-        if (!c.allow_warm_start)
+        return;
+    }
+
+    const Direction3 n_hat{contact.n};
+    const Direction3 r_a{contact.p - a.position};
+    const Direction3 r_b{contact.p - b.position};
+
+    constexpr f32 warmstart_scale{1.0f};
+    contact.lambda_n = std::clamp(contact.lambda_n, 0.0f, 50.0f);
+    contact.lambda_t = std::clamp(contact.lambda_t, -50.0f, 50.0f);
+    if (contact.lambda_n > 0.0f)
+    {
+        const Direction3 Jn{warmstart_scale * contact.lambda_n * n_hat};
+
+        if (!a.is_static())
         {
-            continue;
+            a.velocity += Jn * a.inv_mass;
+            a.angular_velocity += a.inv_inertia_world * glm::cross(r_a, Jn);
         }
-        if (c.penetration < 0.05f)
+        if (!b.is_static())
         {
-            warm_start_contact(c);
+            b.velocity -= Jn * b.inv_mass;
+            b.angular_velocity -= b.inv_inertia_world * glm::cross(r_b, Jn);
+        }
+    }
+
+    if (contact.lambda_t != 0.0f && contact.has_t_hat)
+    {
+        const Direction3 Jt{warmstart_scale * contact.lambda_t * contact.t_hat};
+
+        if (!a.is_static())
+        {
+            a.velocity += Jt * a.inv_mass;
+            a.angular_velocity += a.inv_inertia_world * glm::cross(r_a, Jt);
+        }
+        if (!b.is_static())
+        {
+            b.velocity -= Jt * b.inv_mass;
+            b.angular_velocity -= b.inv_inertia_world * glm::cross(r_b, Jt);
         }
     }
 }
 
-void physics_solve_velocity_constraints(
-    std::vector<RigidBody>& bodies, std::vector<Contact>& contacts, f32 dt_s
+void solve_velocity_constraints(
+    std::vector<RigidBody>& bodies, Contacts& contacts, f32 dt_s
 ) noexcept
 {
     for (usize i{0zu}; i < k_solver_iterations; ++i)
@@ -469,9 +451,7 @@ void physics_solve_velocity_constraints(
     }
 }
 
-void physics_solve_position_constraints(
-    std::vector<RigidBody>& bodies, const std::vector<Contact>& contacts
-) noexcept
+void solve_position_constraints(std::vector<RigidBody>& bodies, const Contacts& contacts) noexcept
 {
     for (usize i{0zu}; i < k_position_iterations; ++i)
     {
@@ -479,7 +459,7 @@ void physics_solve_position_constraints(
     }
 }
 
-void physics_apply_sleep_and_damping(std::vector<RigidBody>& bodies, f32 dt_s) noexcept
+void apply_sleep_and_damping(std::vector<RigidBody>& bodies, f32 dt_s) noexcept
 {
     for (RigidBody& b : bodies)
     {
@@ -517,7 +497,7 @@ void physics_apply_sleep_and_damping(std::vector<RigidBody>& bodies, f32 dt_s) n
     }
 }
 
-void physics_clear_accumulators(std::vector<RigidBody>& bodies) noexcept
+void clear_accumulators(std::vector<RigidBody>& bodies) noexcept
 {
     for (RigidBody& b : bodies)
     {
