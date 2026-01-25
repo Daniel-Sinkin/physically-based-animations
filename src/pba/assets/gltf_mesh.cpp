@@ -1,7 +1,6 @@
 // pba/gltf_mesh.cpp
 #include "pba/pch.hpp"  // IWYU pragma: keep
 //
-#include "glm/gtc/quaternion.hpp"
 #include "pba/core_types.hpp"
 #include "pba/gltf_mesh.hpp"
 #include "pba/math_types.hpp"
@@ -9,6 +8,7 @@
 #include "pba/model_config.hpp"
 #include "pba/util/scope_timer.hpp"
 
+#include <glm/gtc/quaternion.hpp>
 #include <print>
 #include <tiny_gltf.h>
 
