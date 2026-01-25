@@ -16,6 +16,7 @@ namespace ds_pba
 {
 namespace
 {
+
 static std::optional<std::filesystem::path>
 find_model_gltf_file(const std::filesystem::path& model_dir)
 {
@@ -64,32 +65,9 @@ find_model_gltf_file(const std::filesystem::path& model_dir)
     return pick(gltf);
 }
 
-static const std::byte* accessor_data_begin(
-    const tinygltf::Model& model,
-    const tinygltf::Accessor& accessor,
-    const tinygltf::BufferView& view
-)
-{
-    const tinygltf::Buffer& buf{model.buffers[static_cast<usize>(view.buffer)]};
-    const usize off{static_cast<usize>(view.byteOffset + accessor.byteOffset)};
-    return reinterpret_cast<const std::byte*>(buf.data.data() + off);
-}
-
-static usize
-accessor_stride_bytes(const tinygltf::Accessor& accessor, const tinygltf::BufferView& view)
-{
-    const usize default_stride{
-        static_cast<usize>(
-            tinygltf::GetComponentSizeInBytes(static_cast<u32>(accessor.componentType))
-        )
-        * static_cast<usize>(tinygltf::GetNumComponentsInType(static_cast<u32>(accessor.type)))
-    };
-
-    return (view.byteStride != 0) ? static_cast<usize>(view.byteStride) : default_stride;
-}
-
 static glm::vec3 read_vec3_f32_strided(const std::byte* base, usize stride, usize stride_offset)
 {
+    assert(stride >= 12zu);
     const std::byte* loc{base + stride_offset * stride};
     f32 x{}, y{}, z{};
     std::memcpy(&x, loc + 0, 4);
@@ -113,8 +91,6 @@ static glm::vec3 face_normal(const glm::vec3& p0, const glm::vec3& p1, const glm
     return safe_normalize(glm::cross(p1 - p0, p2 - p0));
 }
 
-namespace
-{
 template <class T>
 [[nodiscard]] static T read_unaligned(const std::byte* p) noexcept
 {
@@ -122,7 +98,6 @@ template <class T>
     std::memcpy(&v, p, sizeof(T));
     return v;
 }
-}  // namespace
 
 static std::expected<std::vector<u32>, GltfLoadError>
 read_indices_u32(const tinygltf::Model& model, int accessor_index)
@@ -222,11 +197,6 @@ read_indices_u32(const tinygltf::Model& model, int accessor_index)
     return out;
 }
 
-static bool validate_vec3_f32(const tinygltf::Accessor& a)
-{
-    return (a.type == TINYGLTF_TYPE_VEC3 && a.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
-}
-
 static glm::mat4 preprocess_matrix(const Transform& t) noexcept
 {
     glm::mat4 M(1.0f);
@@ -236,11 +206,71 @@ static glm::mat4 preprocess_matrix(const Transform& t) noexcept
     return M;
 }
 
+static std::expected<AccessorView, GltfLoadError>
+get_vec3_f32_view(const tinygltf::Model& m, int accessor_index)
+{
+    if (accessor_index < 0 || accessor_index >= static_cast<int>(m.accessors.size()))
+    {
+        return std::unexpected(GltfLoadError::ParseError);
+    }
+
+    const tinygltf::Accessor& a{m.accessors[static_cast<usize>(accessor_index)]};
+    if (a.type != TINYGLTF_TYPE_VEC3 || a.componentType != TINYGLTF_COMPONENT_TYPE_FLOAT)
+    {
+        return std::unexpected(GltfLoadError::UnsupportedAccessorType);
+    }
+
+    if (a.bufferView < 0 || a.bufferView >= static_cast<int>(m.bufferViews.size()))
+    {
+        return std::unexpected(GltfLoadError::ParseError);
+    }
+
+    const tinygltf::BufferView& bv{m.bufferViews[static_cast<usize>(a.bufferView)]};
+    if (bv.buffer < 0 || bv.buffer >= static_cast<int>(m.buffers.size()))
+    {
+        return std::unexpected(GltfLoadError::ParseError);
+    }
+
+    const tinygltf::Buffer& buf{m.buffers[static_cast<usize>(bv.buffer)]};
+
+    constexpr usize elem{12zu};  // vec3<f32>
+    const usize stride{(bv.byteStride != 0) ? static_cast<usize>(bv.byteStride) : elem};
+    if (stride < elem)
+    {
+        return std::unexpected(GltfLoadError::ParseError);
+    }
+
+    const usize base_off{static_cast<usize>(bv.byteOffset) + static_cast<usize>(a.byteOffset)};
+    const usize count{static_cast<usize>(a.count)};
+
+    if (base_off > buf.data.size())
+    {
+        return std::unexpected(GltfLoadError::ParseError);
+    }
+
+    if (count != 0zu)
+    {
+        const usize last{(count - 1zu) * stride};
+        if (base_off + last + elem > buf.data.size())
+        {
+            return std::unexpected(GltfLoadError::ParseError);
+        }
+    }
+
+    return AccessorView{
+        .base = reinterpret_cast<const std::byte*>(buf.data.data() + base_off),
+        .stride = stride,
+        .count = count,
+    };
+}
+
 }  // namespace
+
 std::expected<MeshDataPN, GltfLoadError>
 load_gltf_mesh(const std::string& path, const Transform& preprocess)
 {
     const util::ScopeTimer timer{path};
+
     tinygltf::Model model;
     std::string err;
     std::string warn;
@@ -298,53 +328,23 @@ load_gltf_mesh(const std::string& path, const Transform& preprocess)
         return std::unexpected(GltfLoadError::MissingPosition);
     }
 
-    const int pos_idx_i{it_pos->second};
-    if (pos_idx_i < 0)
+    const int pos_accessor_index{it_pos->second};
+    if (pos_accessor_index < 0)
     {
-        std::println(stderr, "pos accessor must be positive");
-        return std::unexpected(GltfLoadError::ParseError);
-    }
-    const auto pos_idx = static_cast<usize>(pos_idx_i);
-    if (pos_idx >= model.accessors.size())
-    {
-        std::println(
-            stderr,
-            "Malformed Position Accessor, is {} but there are only {} accessors",
-            pos_idx,
-            model.accessors.size()
-        );
+        std::println(stderr, "pos accessor must be non-negative");
         return std::unexpected(GltfLoadError::ParseError);
     }
 
-    const tinygltf::Accessor& pos_accessor{model.accessors[pos_idx]};
-    if (!validate_vec3_f32(pos_accessor))
+    auto pos_view_res = get_vec3_f32_view(model, pos_accessor_index);
+    if (!pos_view_res)
     {
-        return std::unexpected(GltfLoadError::UnsupportedAccessorType);
+        return std::unexpected(pos_view_res.error());
     }
+    const AccessorView pos_view{*pos_view_res};
 
-    const int buffer_view_i{pos_accessor.bufferView};
-    if (buffer_view_i < 0)
-    {
-        std::println(stderr, "bufferView must not be negative");
-        return std::unexpected(GltfLoadError::ParseError);
-    }
-    auto buffer_view = static_cast<usize>(buffer_view_i);
-    if (buffer_view >= model.bufferViews.size())
-    {
-        std::println(
-            stderr,
-            "bufferView OOB, has index {} but there are only {} bufferViews",
-            buffer_view,
-            model.bufferViews.size()
-        );
-        return std::unexpected(GltfLoadError::ParseError);
-    }
-
-    const tinygltf::BufferView& pos_bv{model.bufferViews[buffer_view]};
-    const std::byte* pos_base{accessor_data_begin(model, pos_accessor, pos_bv)};
-    const usize pos_stride{accessor_stride_bytes(pos_accessor, pos_bv)};
-
-    const usize vertex_count{pos_accessor.count};
+    const std::byte* pos_base{pos_view.base};
+    const usize pos_stride{pos_view.stride};
+    const usize vertex_count{pos_view.count};
 
     bool has_normals{false};
     const std::byte* nrm_base{};
@@ -352,35 +352,19 @@ load_gltf_mesh(const std::string& path, const Transform& preprocess)
 
     if (auto it_n = prim.attributes.find("NORMAL"); it_n != prim.attributes.end())
     {
-        const int normal_idx_i{it_n->second};
-        if (normal_idx_i < 0)
+        const int nrm_accessor_index{it_n->second};
+        if (nrm_accessor_index >= 0)
         {
-            std::println(stderr, "Malformed Normal Accessor, shouldn't be negative");
-            return std::unexpected(GltfLoadError::ParseError);
-        }
-        const auto normal_idx = static_cast<usize>(normal_idx_i);
-        if (normal_idx >= model.accessors.size())
-        {
-            std::println(
-                stderr,
-                "Malformed Normal Accessor, is {} but there are only {} accessors",
-                normal_idx,
-                model.accessors.size()
-            );
-            return std::unexpected(GltfLoadError::ParseError);
-        }
-        const tinygltf::Accessor& normal_accessor{model.accessors[normal_idx]};
-        if (validate_vec3_f32(normal_accessor))
-        {
-            if (normal_accessor.count == pos_accessor.count && normal_accessor.bufferView >= 0
-                && normal_accessor.bufferView < static_cast<int>(model.bufferViews.size()))
+            auto nrm_view_res = get_vec3_f32_view(model, nrm_accessor_index);
+            if (nrm_view_res)
             {
-                const tinygltf::BufferView& nrm_bv_local{
-                    model.bufferViews[static_cast<usize>(normal_accessor.bufferView)]
-                };
-                nrm_base = accessor_data_begin(model, normal_accessor, nrm_bv_local);
-                nrm_stride = accessor_stride_bytes(normal_accessor, nrm_bv_local);
-                has_normals = true;
+                const AccessorView nrm_view{*nrm_view_res};
+                if (nrm_view.count == vertex_count)
+                {
+                    has_normals = true;
+                    nrm_base = nrm_view.base;
+                    nrm_stride = nrm_view.stride;
+                }
             }
         }
     }
@@ -408,6 +392,7 @@ load_gltf_mesh(const std::string& path, const Transform& preprocess)
 
     auto read_nrm = [&](u32 i) -> glm::vec3
     {
+        assert(has_normals);
         const glm::vec3 n{
             safe_normalize(read_vec3_f32_strided(nrm_base, nrm_stride, static_cast<usize>(i)))
         };
@@ -432,7 +417,7 @@ load_gltf_mesh(const std::string& path, const Transform& preprocess)
 
             if (i0 >= vertex_count || i1 >= vertex_count || i2 >= vertex_count)
             {
-                std::println("Invalid ij counts");
+                std::println(stderr, "Invalid index in glTF primitive");
                 return std::unexpected(GltfLoadError::ParseError);
             }
 
@@ -442,7 +427,7 @@ load_gltf_mesh(const std::string& path, const Transform& preprocess)
 
             if (has_normals)
             {
-                auto emit = [&](u32 i, const glm::vec3& p)
+                auto emit = [&](u32 i, const glm::vec3& p) -> void
                 {
                     const Direction3 n{read_nrm(i)};
                     verts.emplace_back(p.x, p.y, p.z, n.x, n.y, n.z);
@@ -454,7 +439,7 @@ load_gltf_mesh(const std::string& path, const Transform& preprocess)
             else
             {
                 const Direction3 fn{face_normal(p0, p1, p2)};
-                auto emit = [&](const glm::vec3& p, const glm::vec3& n)
+                auto emit = [&](const glm::vec3& p, const glm::vec3& n) -> void
                 { verts.emplace_back(p.x, p.y, p.z, n.x, n.y, n.z); };
 
                 emit(p0, fn);
@@ -485,7 +470,7 @@ load_gltf_mesh(const std::string& path, const Transform& preprocess)
 
             const Direction3 fn{has_normals ? glm::vec3{} : face_normal(p0, p1, p2)};
 
-            auto emit = [&](u32 i, const glm::vec3& p)
+            auto emit = [&](u32 i, const glm::vec3& p) -> void
             {
                 const Direction3 n{has_normals ? read_nrm(i) : fn};
                 verts.push_back(MeshV_PN{p.x, p.y, p.z, n.x, n.y, n.z});
@@ -523,6 +508,7 @@ std::expected<MeshDataPN, GltfLoadError> load_model_mesh(const std::string& mode
         std::println(stderr, "Model file error for '{}'", model_name);
         return std::unexpected(GltfLoadError::ParseError);
     }
+
     const std::string path{file_res->string()};
     return load_gltf_mesh(path, cfg_res->transform);
 }
