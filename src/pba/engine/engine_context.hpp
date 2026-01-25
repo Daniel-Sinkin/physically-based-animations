@@ -5,7 +5,7 @@
 #include "pba/core/math_types.hpp"
 #include "pba/engine/scene_context.hpp"
 #include "pba/physics/physics_context.hpp"
-#include "pba/render/render_context.hpp"
+#include "pba/gfx/render_context.hpp"
 
 #include <string>
 #include <unordered_map>
@@ -22,7 +22,7 @@ struct EngineContext
     };
 
     SceneContext scene{};
-    RenderContext renderer{};
+    Renderer renderer{};
     PhysicsContext physics{};
 
     std::unordered_map<ObjectId, ObjectLink> obj_map{};

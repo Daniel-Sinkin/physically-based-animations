@@ -3,7 +3,7 @@
 
 #include "pba/assets/mesh_data.hpp"
 #include "pba/core/core_types.hpp"
-#include "pba/render/render_context.hpp"
+#include "pba/gfx/render_context.hpp"
 
 #include <optional>
 

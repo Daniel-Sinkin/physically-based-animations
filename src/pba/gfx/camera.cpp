@@ -1,7 +1,7 @@
 // pba/render/camera.cpp
 #include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
-#include "pba/render/camera.hpp"
+#include "pba/gfx/camera.hpp"
 //
 #include "pba/core/math_types.hpp"
 

@@ -4,9 +4,9 @@
 #include "pba/core/constants.hpp"
 #include "pba/core/core_types.hpp"
 #include "pba/core/math_types.hpp"
-#include "pba/render/gl_types.hpp"
-#include "pba/render/video_recorder.hpp"
-#include "pba/render/viewport_fbo.hpp"
+#include "pba/gfx/gl_types.hpp"
+#include "pba/gfx/video_recorder.hpp"
+#include "pba/gfx/viewport_fbo.hpp"
 #include "pba/ui/ui_theme.hpp"
 
 #include <chrono>
@@ -39,14 +39,14 @@ struct SceneContext;
 struct Raycast;
 struct Camera;
 
-struct RenderContext
+struct Renderer
 {
-    RenderContext() = default;
-    ~RenderContext();
-    RenderContext(const RenderContext&) = delete;
-    RenderContext& operator=(const RenderContext&) = delete;
-    RenderContext(RenderContext&&) = delete;
-    RenderContext& operator=(RenderContext&&) = delete;
+    Renderer() = default;
+    ~Renderer();
+    Renderer(const Renderer&) = delete;
+    Renderer& operator=(const Renderer&) = delete;
+    Renderer(Renderer&&) = delete;
+    Renderer& operator=(Renderer&&) = delete;
 
     void shutdown();
 

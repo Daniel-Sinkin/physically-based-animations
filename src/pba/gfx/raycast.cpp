@@ -3,7 +3,7 @@
 //
 #include "pba/core/math_types.hpp"
 #include "pba/engine/scene_context.hpp"
-#include "pba/render/raycast.hpp"
+#include "pba/gfx/raycast.hpp"
 
 namespace ds_pba
 {

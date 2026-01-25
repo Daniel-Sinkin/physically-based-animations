@@ -1,9 +1,9 @@
 // pba/render/gl.cpp
 #include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
-#include "pba/render/gl.hpp"
+#include "pba/gfx/gl.hpp"
 //
-#include "pba/render/gl_shader.hpp"
+#include "pba/gfx/gl_shader.hpp"
 
 namespace ds_pba
 {

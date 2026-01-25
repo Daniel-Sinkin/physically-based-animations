@@ -2,7 +2,7 @@
 #pragma once
 
 #include "pba/engine/scene_types.hpp"
-#include "pba/render/raycast.hpp"
+#include "pba/gfx/raycast.hpp"
 
 #include <format>
 #include <glm/glm.hpp>

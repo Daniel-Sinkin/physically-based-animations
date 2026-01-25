@@ -53,7 +53,7 @@ constexpr ImVec4 rgba_u32(u32 rgba) noexcept
     return ImVec4(r * inv, g * inv, b * inv, a * inv);
 }
 
-void render_terminal_window(RenderContext& render_context)
+void render_terminal_window(Renderer& render_context)
 {
     TerminalState& t = terminal();
 
@@ -632,7 +632,7 @@ void render_imgui_windows(EngineContext& engine_context)
     render_terminal_window(render_context);
 }
 
-void render_menu_bar(RenderContext& render_context)
+void render_menu_bar(Renderer& render_context)
 {
     assert(render_context.scene_context && "RenderContext has no SceneContext!");
     if (ImGui::BeginMenu("File"))

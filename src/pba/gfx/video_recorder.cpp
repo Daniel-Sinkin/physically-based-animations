@@ -1,7 +1,7 @@
 // pba/render/video_recorder.cpp
 #include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
-#include "pba/render/video_recorder.hpp"
+#include "pba/gfx/video_recorder.hpp"
 //
 #include <print>
 
