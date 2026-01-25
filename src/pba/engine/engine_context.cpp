@@ -102,7 +102,7 @@ void EngineContext::add_ground()
 {
     const ObjectId id{next_object_id()};
 
-    constexpr Position3 ground_center{0.0f, 0.0f, -0.5f};
+    constexpr Position3 ground_center{0.0f, 0.0f, -3.5f};
     constexpr Position3 half_extents{10.0f, 10.0f, 0.5f};
 
     scene.cube_objects.push_back(
@@ -125,9 +125,9 @@ void EngineContext::add_ground()
             .half_extents = half_extents,
 
             .position = ground_center,
-            .velocity = Direction3{},
+            .velocity = Direction3{0.0f, 0.0f, 30.0f},
             .force_accum = Direction3{},
-            .inv_mass = k_static_mass,
+            .inv_mass = 1.0f / 50.0f,
 
             .orientation = Quaternion{1.0f, 0.0f, 0.0f, 0.0f},
             .angular_velocity = Direction3{},

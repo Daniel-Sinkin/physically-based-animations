@@ -485,10 +485,10 @@ load_gltf_mesh(const std::string& path, const Transform& preprocess)
     return MeshDataPN{.vertices = verts};
 }
 
-std::expected<MeshDataPN, GltfLoadError> load_model_mesh(const std::string& model_name)
+std::expected<MeshDataPN, GltfLoadError> load_model_mesh(std::string_view model_name)
 {
     namespace fs = std::filesystem;
-    const fs::path model_dir{fs::path("assets/models") / model_name};
+    const fs::path model_dir = fs::path{k_fp_assets} / k_fp_assets_models / model_name;
 
     auto cfg_res = load_or_create_model_config(model_dir);
     if (!cfg_res)

@@ -6,6 +6,7 @@
 #include "pba/core/math_types.hpp"
 #include "pba/core/render_types.hpp"
 #include "pba/editor/editor_input.hpp"
+#include "pba/gfx/gl_texture.hpp"
 #include "pba/gfx/gl_types.hpp"
 #include "pba/gfx/video_recorder.hpp"
 #include "pba/gfx/viewport_fbo.hpp"
@@ -43,10 +44,22 @@ struct GfxContext
     EditorInput editor_input{};
 
     GLFWwindow* window{};
-    ShaderProgram grid_prog{};
-    ShaderProgram obj_prog{};
-    ShaderProgram outline_prog{};
-    ShaderProgram pivot_prog{};
+    struct ShaderPrograms
+    {
+        ShaderProgram grid{};
+        ShaderProgram obj{};
+        ShaderProgram outline{};
+        ShaderProgram pivot{};
+
+        void destroy()
+        {
+            grid.destroy();
+            obj.destroy();
+            outline.destroy();
+            pivot.destroy();
+        }
+    };
+    ShaderPrograms shader_programs{};
 
     bool initialised_glfw{false};
     bool window_created{false};
@@ -102,16 +115,38 @@ struct GfxContext
     void toggle_recording();
     [[nodiscard]] bool capture_viewport_rgba8(std::vector<u8>& out) const;
 
-    GLMesh cube_mesh{};
-    GLMesh sphere_mesh{};
-    GLMesh grid_mesh{};
-    GLMesh marble_bust_mesh{};
-    GLMesh pyramid_mesh{};
-    GLMesh cylinder_mesh{};
+    struct Textures
+    {
+        GLTexture2D clean_asphalt_diffuse{};
+        GLTexture2D clean_asphalt_normal{};
+    };
+    Textures textures{};
+
+    struct Meshes
+    {
+        GLMesh cube{};
+        GLMesh sphere{};
+        GLMesh grid{};
+        GLMesh marble_bust{};
+        GLMesh pyramid{};
+        GLMesh cylinder{};
+        GLMesh debug_line{};
+
+        void destroy()
+        {
+            cube.destroy();
+            sphere.destroy();
+            grid.destroy();
+            marble_bust.destroy();
+            pyramid.destroy();
+            cylinder.destroy();
+            debug_line.destroy();
+        }
+    };
+    Meshes meshes{};
 
     GridSettings grid{};
 
-    // --- Physics debug rendering (first pass) ---
     struct PhysicsDebugSettings
     {
         bool enabled{true};
@@ -159,9 +194,8 @@ struct GfxContext
     static_assert(sizeof(DebugLineV_PColor) == 7 * sizeof(f32));
     static_assert(offsetof(DebugLineV_PColor, r) == 3 * sizeof(f32));
 
-    mutable GLMesh debug_line_mesh{};
-    mutable bool debug_line_mesh_created{false};
-    mutable std::vector<DebugLineV_PColor> debug_line_vertices{};
+    bool debug_line_created{false};
+    std::vector<DebugLineV_PColor> debug_line_vertices{};
 
     struct EditorState
     {
@@ -192,12 +226,12 @@ struct GfxContext
     void confirm_grab();
     void set_grab_constraint(EditorState::GrabConstraint c);
 
-    void render_to_viewport() const;
+    void render_to_viewport();
     void render_to_viewport_grid(const ViewMatrix&, const ProjMatrix&) const;
     void render_to_viewport_objects(const ViewMatrix&, const ProjMatrix&) const;
     void render_to_viewport_pivot(const Position3&, const ViewMatrix&, const ProjMatrix&) const;
     void render_to_viewport_outline(const ViewMatrix&, const ProjMatrix&) const;
-    void render_to_viewport_physics_debug(const ViewMatrix&, const ProjMatrix&) const;
+    void render_to_viewport_physics_debug(const ViewMatrix&, const ProjMatrix&);
 
     void viewport_window();
 

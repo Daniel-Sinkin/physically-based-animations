@@ -37,18 +37,18 @@ void GfxContext::render_to_viewport_objects(
     glStencilMask(0x00);
     glStencilFunc(GL_ALWAYS, 0, 0xFF);
 
-    obj_prog.bind();
-    set_uniform_mat4(obj_prog.handle(), "uView", camera_view_matrix);
-    set_uniform_mat4(obj_prog.handle(), "uProj", camera_proj_matrix);
+    shader_programs.obj.bind();
+    set_uniform_mat4(shader_programs.obj.handle(), "uView", camera_view_matrix);
+    set_uniform_mat4(shader_programs.obj.handle(), "uProj", camera_proj_matrix);
 
     {  // Cubes
-        cube_mesh.vao.bind();
+        meshes.cube.vao.bind();
         for (usize i{0zu}; i < scene_context->cube_objects.size(); ++i)
         {
             const Object& o{scene_context->cube_objects[i]};
             assert(o.id != k_invalid_id);
 
-            set_uniform_mat4(obj_prog.handle(), "uModel", o.transform.model_matrix());
+            set_uniform_mat4(shader_programs.obj.handle(), "uModel", o.transform.model_matrix());
 
             // TODO: Clean this up
             {  // Color
@@ -122,10 +122,10 @@ void GfxContext::render_to_viewport_objects(
                         }
                     }
                 }
-                set_uniform_vec3(obj_prog.handle(), "uColor", color);
+                set_uniform_vec3(shader_programs.obj.handle(), "uColor", color);
             }
 
-            glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
+            glDrawArrays(GL_TRIANGLES, 0, meshes.cube.vertex_count);
         }
         VAO::unbind();
     }
@@ -133,26 +133,26 @@ void GfxContext::render_to_viewport_objects(
     constexpr const bool render_general_mesh{false};
     if constexpr (!render_general_mesh)
     {  // Spheres
-        sphere_mesh.vao.bind();
+        meshes.sphere.vao.bind();
         for (usize i{0zu}; i < scene_context->sphere_objects.size(); ++i)
         {
             const Object& o{scene_context->sphere_objects[i]};
             assert(o.id != k_invalid_id);
 
-            set_uniform_mat4(obj_prog.handle(), "uModel", o.transform.model_matrix());
-            set_uniform_vec3(obj_prog.handle(), "uColor", o.color);
+            set_uniform_mat4(shader_programs.obj.handle(), "uModel", o.transform.model_matrix());
+            set_uniform_vec3(shader_programs.obj.handle(), "uColor", o.color);
 
-            glDrawArrays(GL_TRIANGLES, 0, sphere_mesh.vertex_count);
+            glDrawArrays(GL_TRIANGLES, 0, meshes.sphere.vertex_count);
         }
         for (usize i{0zu}; i < scene_context->hitmarker_objects.size(); ++i)
         {
             const Object& o{scene_context->hitmarker_objects[i]};
             assert(o.id != k_invalid_id);
 
-            set_uniform_mat4(obj_prog.handle(), "uModel", o.transform.model_matrix());
-            set_uniform_vec3(obj_prog.handle(), "uColor", o.color);
+            set_uniform_mat4(shader_programs.obj.handle(), "uModel", o.transform.model_matrix());
+            set_uniform_vec3(shader_programs.obj.handle(), "uColor", o.color);
 
-            glDrawArrays(GL_TRIANGLES, 0, sphere_mesh.vertex_count);
+            glDrawArrays(GL_TRIANGLES, 0, meshes.sphere.vertex_count);
         }
         VAO::unbind();
     }
@@ -160,12 +160,12 @@ void GfxContext::render_to_viewport_objects(
     {  // Currently no generic mesh support, this just spawns in first sphere pos and assumes
        // spheres are not rendered, so need to disable the previous scope
         assert(!scene_context->sphere_objects.empty());
-        marble_bust_mesh.vao.bind();
+        meshes.marble_bust.vao.bind();
         const Object& o{scene_context->sphere_objects[0]};
-        set_uniform_mat4(obj_prog.handle(), "uModel", o.transform.model_matrix());
-        set_uniform_vec3(obj_prog.handle(), "uColor", o.color);
+        set_uniform_mat4(shader_programs.obj.handle(), "uModel", o.transform.model_matrix());
+        set_uniform_vec3(shader_programs.obj.handle(), "uColor", o.color);
 
-        glDrawArrays(GL_TRIANGLES, 0, marble_bust_mesh.vertex_count);
+        glDrawArrays(GL_TRIANGLES, 0, meshes.marble_bust.vertex_count);
         VAO::unbind();
     }
 }
@@ -176,20 +176,20 @@ void GfxContext::render_to_viewport_grid(
     // Grid
     glDepthMask(GL_FALSE);
 
-    grid_prog.bind();
-    set_uniform_mat4(grid_prog.handle(), "uView", camera_view_matrix);
-    set_uniform_mat4(grid_prog.handle(), "uProj", camera_proj_matrix);
-    set_uniform_float(grid_prog.handle(), "uFogStart", grid.fog_start);
-    set_uniform_float(grid_prog.handle(), "uFogEnd", grid.fog_end);
+    shader_programs.grid.bind();
+    set_uniform_mat4(shader_programs.grid.handle(), "uView", camera_view_matrix);
+    set_uniform_mat4(shader_programs.grid.handle(), "uProj", camera_proj_matrix);
+    set_uniform_float(shader_programs.grid.handle(), "uFogStart", grid.fog_start);
+    set_uniform_float(shader_programs.grid.handle(), "uFogEnd", grid.fog_end);
 
-    grid_mesh.vao.bind();
-    glDrawArrays(GL_LINES, 0, grid_mesh.vertex_count);
+    meshes.grid.vao.bind();
+    glDrawArrays(GL_LINES, 0, meshes.grid.vertex_count);
     VAO::unbind();
 
     glDepthMask(GL_TRUE);
 }
 
-void GfxContext::render_to_viewport() const
+void GfxContext::render_to_viewport()
 {
     assert(viewport_fb_rect_valid && "Should only render to valid viewports");
     const ImVec2 content_size{ImGui::GetContentRegionAvail()};
@@ -263,11 +263,11 @@ void GfxContext::render_to_viewport_outline(
         switch (type)
         {
             case ds_pba::ObjectType::Cube:
-                cube_mesh.instantiate_once();
+                meshes.cube.instantiate_once();
                 break;
             case ds_pba::ObjectType::Sphere:
             case ds_pba::ObjectType::Hitmarker:
-                sphere_mesh.instantiate_once();
+                meshes.sphere.instantiate_once();
                 break;
         }
     };
@@ -296,10 +296,10 @@ void GfxContext::render_to_viewport_outline(
             glStencilFunc(GL_ALWAYS, 1, 0xFF);
             glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
-            obj_prog.bind();
-            set_uniform_mat4(obj_prog.handle(), "uView", camera_view_matrix);
-            set_uniform_mat4(obj_prog.handle(), "uProj", camera_proj_matrix);
-            set_uniform_mat4(obj_prog.handle(), "uModel", M);
+            shader_programs.obj.bind();
+            set_uniform_mat4(shader_programs.obj.handle(), "uView", camera_view_matrix);
+            set_uniform_mat4(shader_programs.obj.handle(), "uProj", camera_proj_matrix);
+            set_uniform_mat4(shader_programs.obj.handle(), "uModel", M);
 
             instantiate_mesh_for_type(type);
 
@@ -318,11 +318,11 @@ void GfxContext::render_to_viewport_outline(
 
             const ModelMatrix M_outline = M * glm::scale(glm::mat4(1.0f), glm::vec3(1.04f));
 
-            outline_prog.bind();
-            set_uniform_mat4(outline_prog.handle(), "uModel", M_outline);
-            set_uniform_mat4(outline_prog.handle(), "uView", camera_view_matrix);
-            set_uniform_mat4(outline_prog.handle(), "uProj", camera_proj_matrix);
-            set_uniform_vec3(outline_prog.handle(), "uColor", glm::vec3(1.0f, 0.55f, 0.0f));
+            shader_programs.outline.bind();
+            set_uniform_mat4(shader_programs.outline.handle(), "uModel", M_outline);
+            set_uniform_mat4(shader_programs.outline.handle(), "uView", camera_view_matrix);
+            set_uniform_mat4(shader_programs.outline.handle(), "uProj", camera_proj_matrix);
+            set_uniform_vec3(shader_programs.outline.handle(), "uColor", glm::vec3(1.0f, 0.55f, 0.0f));
 
             instantiate_mesh_for_type(type);
 
@@ -350,18 +350,18 @@ void GfxContext::render_to_viewport_pivot(
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
 
-    const GLMesh& pivot_mesh{sphere_mesh};
+    const GLMesh& pivot_mesh{meshes.sphere};
 
-    pivot_prog.bind();
-    set_uniform_mat4(pivot_prog.handle(), "uView", camera_view_matrix);
-    set_uniform_mat4(pivot_prog.handle(), "uProj", camera_proj_matrix);
+    shader_programs.pivot.bind();
+    set_uniform_mat4(shader_programs.pivot.handle(), "uView", camera_view_matrix);
+    set_uniform_mat4(shader_programs.pivot.handle(), "uProj", camera_proj_matrix);
 
     pivot_mesh.vao.bind();
 
     const Transform t{.position = pivot_pos, .scale = {0.1f, 0.1f, 0.1f}};
-    set_uniform_mat4(pivot_prog.handle(), "uModel", t.model_matrix());
+    set_uniform_mat4(shader_programs.pivot.handle(), "uModel", t.model_matrix());
     set_uniform_vec3(
-        pivot_prog.handle(), "uColor", {196.0f / 255.0f, 209.0f / 255.0f, 102.0f / 255.0f}
+        shader_programs.pivot.handle(), "uColor", {196.0f / 255.0f, 209.0f / 255.0f, 102.0f / 255.0f}
     );
 
     glDrawArrays(GL_TRIANGLES, 0, pivot_mesh.vertex_count);
@@ -453,7 +453,7 @@ void GfxContext::viewport_window()
 
 void GfxContext::render_to_viewport_physics_debug(
     const ViewMatrix& camera_view_matrix, const ProjMatrix& camera_proj_matrix
-) const
+)
 {
     if (!phys_debug.enabled)
     {
@@ -463,7 +463,7 @@ void GfxContext::render_to_viewport_physics_debug(
     {
         return;
     }
-    if (!grid_prog.valid() || !loaded_glad)
+    if (!shader_programs.grid.valid() || !loaded_glad)
     {
         return;
     }
@@ -601,7 +601,7 @@ void GfxContext::render_to_viewport_physics_debug(
         return;
     }
 
-    if (!debug_line_mesh_created)
+    if (!debug_line_created)
     {
         GLMesh m{};
         glGenVertexArrays(1, m.vao.ptr());
@@ -621,14 +621,14 @@ void GfxContext::render_to_viewport_physics_debug(
             glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, stride, GLPtr::offset(3 * sizeof(f32)));
         }
 
-        debug_line_mesh = m;
-        debug_line_mesh_created = true;
+        meshes.debug_line = m;
+        debug_line_created = true;
     }
 
-    debug_line_mesh.vertex_count = static_cast<GLsizei>(debug_line_vertices.size());
+    meshes.debug_line.vertex_count = static_cast<GLsizei>(debug_line_vertices.size());
 
     {
-        const ScopedBufferBinder binder{debug_line_mesh};
+        const ScopedBufferBinder binder{meshes.debug_line};
         glBufferData(
             GL_ARRAY_BUFFER,
             static_cast<GLsizeiptr>(debug_line_vertices.size() * sizeof(DebugLineV_PColor)),
@@ -656,15 +656,15 @@ void GfxContext::render_to_viewport_physics_debug(
 
     glDisable(GL_STENCIL_TEST);
 
-    grid_prog.bind();
-    set_uniform_mat4(grid_prog.handle(), "uView", camera_view_matrix);
-    set_uniform_mat4(grid_prog.handle(), "uProj", camera_proj_matrix);
+    shader_programs.grid.bind();
+    set_uniform_mat4(shader_programs.grid.handle(), "uView", camera_view_matrix);
+    set_uniform_mat4(shader_programs.grid.handle(), "uProj", camera_proj_matrix);
 
-    set_uniform_float(grid_prog.handle(), "uFogStart", 1.0e6f);
-    set_uniform_float(grid_prog.handle(), "uFogEnd", 2.0e6f);
+    set_uniform_float(shader_programs.grid.handle(), "uFogStart", 1.0e6f);
+    set_uniform_float(shader_programs.grid.handle(), "uFogEnd", 2.0e6f);
 
-    debug_line_mesh.vao.bind();
-    glDrawArrays(GL_LINES, 0, debug_line_mesh.vertex_count);
+    meshes.debug_line.vao.bind();
+    glDrawArrays(GL_LINES, 0, meshes.debug_line.vertex_count);
     VAO::unbind();
 
     if (prev_depth_test)

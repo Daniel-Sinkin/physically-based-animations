@@ -43,23 +43,17 @@ void GfxContext::shutdown()
 
         viewport_fbo.destroy();
 
-        invalidate_uniform_cache_for_program(grid_prog.handle());
-        invalidate_uniform_cache_for_program(obj_prog.handle());
-        invalidate_uniform_cache_for_program(outline_prog.handle());
-        invalidate_uniform_cache_for_program(pivot_prog.handle());
+        invalidate_uniform_cache_for_program(shader_programs.grid.handle());
+        invalidate_uniform_cache_for_program(shader_programs.obj.handle());
+        invalidate_uniform_cache_for_program(shader_programs.outline.handle());
+        invalidate_uniform_cache_for_program(shader_programs.pivot.handle());
 
-        grid_prog.destroy();
-        obj_prog.destroy();
-        outline_prog.destroy();
-        pivot_prog.destroy();
+        shader_programs.grid.destroy();
+        shader_programs.obj.destroy();
+        shader_programs.outline.destroy();
+        shader_programs.pivot.destroy();
 
-        cube_mesh.destroy();
-        sphere_mesh.destroy();
-        grid_mesh.destroy();
-        marble_bust_mesh.destroy();
-        pyramid_mesh.destroy();
-        cylinder_mesh.destroy();
-        debug_line_mesh.destroy();
+        meshes.destroy();
 
         loaded_glad = false;
     }

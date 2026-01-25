@@ -103,6 +103,19 @@ inline constexpr f32 k_minor_alpha{0.35f};
 inline constexpr f32 k_axis_alpha{0.95f};
 
 //
+// Paths
+//
+inline constexpr std::string_view k_fp_assets{"assets"};
+
+inline constexpr std::string_view k_fp_assets_models{"models"};
+inline constexpr std::string_view k_model_marble_bust{"marble_bust_01"};
+
+inline constexpr std::string_view k_fp_assets_textures{"textures"};
+inline constexpr std::string_view k_texture_clean_asphalt{"clean_asphalt_1k"};
+inline constexpr std::string_view k_texture_clean_asphalt_diffuse{"clean_asphalt_diff_1k.jpg"};
+inline constexpr std::string_view k_texture_clean_asphalt_normal{"clean_asphalt_nor_gl_1k.jpg"};
+
+//
 //
 //
 //

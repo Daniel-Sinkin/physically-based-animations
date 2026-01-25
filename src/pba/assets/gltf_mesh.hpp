@@ -6,6 +6,7 @@
 
 #include <expected>
 #include <string>
+#include <string_view>
 
 namespace ds_pba
 {
@@ -20,7 +21,7 @@ enum class GltfLoadError
 std::expected<MeshDataPN, GltfLoadError>
 load_gltf_mesh(const std::string& path, const Transform& preprocess);
 
-std::expected<MeshDataPN, GltfLoadError> load_model_mesh(const std::string& model_name);
+std::expected<MeshDataPN, GltfLoadError> load_model_mesh(std::string_view model_name);
 struct AccessorView
 {
     const std::byte* base{};

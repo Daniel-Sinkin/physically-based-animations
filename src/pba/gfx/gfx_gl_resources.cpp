@@ -1,4 +1,5 @@
 // pba/gfx/gfx_gl_resources.cpp
+#include "pba/core/constants.hpp"
 #include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/gfx/gfx_context.hpp"
@@ -152,7 +153,7 @@ bool GfxContext::create_meshes()
         {
             return false;
         }
-        cube_mesh = *mesh_res;
+        meshes.cube = *mesh_res;
     }
     {
         auto mesh_res = upload_or_fail_pn(create_sphere_mesh(32, 24, 1.0f), "sphere");
@@ -160,7 +161,7 @@ bool GfxContext::create_meshes()
         {
             return false;
         }
-        sphere_mesh = *mesh_res;
+        meshes.sphere = *mesh_res;
     }
     {
         auto mesh_res = upload_or_fail_grid(create_grid_mesh(grid), "grid");
@@ -168,7 +169,7 @@ bool GfxContext::create_meshes()
         {
             return false;
         }
-        grid_mesh = *mesh_res;
+        meshes.grid = *mesh_res;
     }
     {
         auto mesh_res = upload_or_fail_pn(create_cylinder_mesh(24, 0.5f, 1.0f), "cylinder");
@@ -176,7 +177,7 @@ bool GfxContext::create_meshes()
         {
             return false;
         }
-        cylinder_mesh = *mesh_res;
+        meshes.cylinder = *mesh_res;
     }
     {
         auto mesh_res = upload_or_fail_pn_value(create_pyramid_mesh(), "pyramid");
@@ -184,10 +185,10 @@ bool GfxContext::create_meshes()
         {
             return false;
         }
-        pyramid_mesh = *mesh_res;
+        meshes.pyramid = *mesh_res;
     }
     {
-        auto mesh_res = ds_pba::load_model_mesh("marble_bust_01");
+        auto mesh_res = ds_pba::load_model_mesh(k_model_marble_bust);
         if (!mesh_res)
         {
             std::println(
@@ -204,7 +205,7 @@ bool GfxContext::create_meshes()
             std::println(stderr, "Failed to upload mesh 'marble_bust_01'");
             return false;
         }
-        marble_bust_mesh = *m;
+        meshes.marble_bust = *m;
     }
 
     return true;
@@ -214,62 +215,62 @@ bool GfxContext::create_programs()
 {
 
     {
-        auto grid_prog_res = create_program_from_file("grid");
-        if (!grid_prog_res)
+        auto grid_res = create_program_from_file("grid");
+        if (!grid_res)
         {
             std::println(
                 stderr,
                 "Failed to load 'grid' shaders, got error code: {}",
-                std::to_underlying(grid_prog_res.error())
+                std::to_underlying(grid_res.error())
             );
             return false;
         }
-        grid_prog = *grid_prog_res;
+        shader_programs.grid = *grid_res;
     }
 
     {
-        auto obj_prog_res = create_program_from_file("object");
-        if (!obj_prog_res)
+        auto obj_res = create_program_from_file("object");
+        if (!obj_res)
         {
             std::println(
                 stderr,
                 "Failed to load 'object' shaders, got error code: {}",
-                static_cast<int>(obj_prog_res.error())
+                static_cast<int>(obj_res.error())
             );
             return false;
         }
-        obj_prog = *obj_prog_res;
+        shader_programs.obj = *obj_res;
     }
 
     {
-        auto outline_prog_res = create_program_from_file("outline");
-        if (!outline_prog_res)
+        auto outline_res = create_program_from_file("outline");
+        if (!outline_res)
         {
             std::println(
                 stderr,
                 "Failed to load 'outline' shaders, got error code: {}",
-                static_cast<int>(outline_prog_res.error())
+                static_cast<int>(outline_res.error())
             );
             return false;
         }
-        outline_prog = *outline_prog_res;
+        shader_programs.outline = *outline_res;
     }
 
     {
-        auto pivot_prog_res = create_program_from_file("pivot");
-        if (!pivot_prog_res)
+        auto pivot_res = create_program_from_file("pivot");
+        if (!pivot_res)
         {
             std::println(
                 stderr,
                 "Failed to load 'pivot' shaders, got error code: {}",
-                std::to_underlying(pivot_prog_res.error())
+                std::to_underlying(pivot_res.error())
             );
             return false;
         }
-        pivot_prog = *pivot_prog_res;
+        shader_programs.pivot = *pivot_res;
     }
 
-    if (!grid_prog.valid() || !obj_prog.valid() || !outline_prog.valid() || !pivot_prog.valid())
+    if (!shader_programs.grid.valid() || !shader_programs.obj.valid() || !shader_programs.outline.valid() || !shader_programs.pivot.valid())
     {
         std::println(stderr, "At least one of the shader programs is invalid");
         return false;

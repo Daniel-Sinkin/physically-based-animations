@@ -147,7 +147,28 @@ bool GfxContext::setup()
     {
         return false;
     }
+    {
+        namespace fs = std::filesystem;
+        const fs::path texture_dir =
+            fs::path{k_fp_assets} / k_fp_assets_textures / k_texture_clean_asphalt;
+
+        const fs::path diffuse_path = texture_dir / k_texture_clean_asphalt_diffuse;
+        const fs::path normal_path = texture_dir / k_texture_clean_asphalt_normal;
+
+        auto diffuse_img_res = load_image_rgba8(diffuse_path);
+        if (!diffuse_img_res)
+        {
+            return false;
+        }
+        auto diffuse_img_upload_res =
+            upload_texture_2d_rgba8(*diffuse_img_res, {.generate_mips = true, .srgb = true});
+        if (!diffuse_img_res)
+        {
+            return false;
+        }
+        textures.clean_asphalt_diffuse = *diffuse_img_upload_res;
+    }
     last_scene_poll = std::chrono::steady_clock::now();
     return true;
 }
-}
+}  // namespace ds_pba
