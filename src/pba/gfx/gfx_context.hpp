@@ -1,4 +1,4 @@
-// pba/render/gfx_context.hpp
+// pba/gfx/gfx_context.hpp
 #pragma once
 
 #include "pba/core/constants.hpp"
@@ -61,6 +61,9 @@ struct GfxContext
 
     bool viewport_valid_warning_shown{false};
 
+    bool imgui_uses_keyboard{};
+    bool imgui_uses_mouse{};
+
     std::unordered_map<std::string, ImFont*> fonts_by_id{};
     ImFont* default_font{};
 
@@ -108,27 +111,34 @@ struct GfxContext
 
     GridSettings grid{};
 
-    enum class GrabConstraint : u8
+    struct EditorState
     {
-        None,
-        X,
-        Y,
-        Z,
+        enum class GrabConstraint : u8
+        {
+            None,
+            X,
+            Y,
+            Z
+        };
+
+        struct Grab
+        {
+            bool active{false};
+            f64 start_mouse_x{0.0};
+            f64 start_mouse_y{0.0};
+            GrabConstraint constraint{GrabConstraint::None};
+            std::vector<std::pair<ObjectId, Position3>> start_positions{};
+        };
+
+        Grab grab{};
     };
+    EditorState editor{};
 
-    struct GrabState
-    {
-        bool active{false};
-
-        f64 start_mouse_x{0.0};
-        f64 start_mouse_y{0.0};
-
-        GrabConstraint constraint{GrabConstraint::None};
-
-        std::vector<std::pair<ObjectId, Position3>> start_positions{};
-    };
-
-    GrabState grab{};
+    void begin_grab(const EditorInput& input);
+    void update_grab(const EditorInput& input);
+    void cancel_grab();
+    void confirm_grab();
+    void set_grab_constraint(EditorState::GrabConstraint c);
 
     void render_to_viewport() const;
     void render_to_viewport_grid(const ViewMatrix&, const ProjMatrix&) const;
@@ -148,11 +158,6 @@ struct GfxContext
     void hover_interaction_holding_middle(const EditorInput& input, Camera& cam) const;
     void hover_interaction_selection(const EditorInput& input, const Raycast& rc) const;
 
-    void begin_grab(f64 mouse_x, f64 mouse_y);
-    void update_grab(f64 mouse_x, f64 mouse_y);
-    void cancel_grab();
-    void confirm_grab();
-    void set_grab_constraint(GrabConstraint c);
     void set_object_position(ObjectId id, const Position3& p) const;
     [[nodiscard]] std::optional<Position3> get_object_position(ObjectId id) const;
 

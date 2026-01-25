@@ -3,6 +3,7 @@
 
 #include "pba/core/core_types.hpp"
 
+#include <GLFW/glfw3.h>
 #include <array>
 
 struct GLFWwindow;
@@ -74,7 +75,6 @@ constexpr int to_glfw_key(EditorKey k) noexcept
         case EditorKey::Tab:       return GLFW_KEY_TAB;
 
         case EditorKey::Shift:     return -1;
-
         case EditorKey::F1:  return GLFW_KEY_F1;
         case EditorKey::F2:  return GLFW_KEY_F2;
         case EditorKey::F3:  return GLFW_KEY_F3;

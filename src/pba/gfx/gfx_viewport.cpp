@@ -24,7 +24,7 @@
 
 namespace ds_pba
 {
-void ds_pba::GfxContext::render_to_viewport_objects(
+void GfxContext::render_to_viewport_objects(
     const ds_pba::ViewMatrix& camera_view_matrix, const ds_pba::ProjMatrix& camera_proj_matrix
 ) const
 {
@@ -92,7 +92,7 @@ void ds_pba::GfxContext::render_to_viewport_objects(
         VAO::unbind();
     }
 }
-void ds_pba::GfxContext::render_to_viewport_grid(
+void GfxContext::render_to_viewport_grid(
     const ViewMatrix& camera_view_matrix, const ProjMatrix& camera_proj_matrix
 ) const
 {
@@ -112,7 +112,7 @@ void ds_pba::GfxContext::render_to_viewport_grid(
     glDepthMask(GL_TRUE);
 }
 
-void ds_pba::GfxContext::render_to_viewport() const
+void GfxContext::render_to_viewport() const
 {
     assert(viewport_fb_rect_valid && "Should only render to valid viewports");
     const ImVec2 content_size{ImGui::GetContentRegionAvail()};
@@ -144,7 +144,7 @@ void ds_pba::GfxContext::render_to_viewport() const
     );
 }
 
-void ds_pba::GfxContext::render_to_viewport_outline(
+void GfxContext::render_to_viewport_outline(
     const ds_pba::ViewMatrix& camera_view_matrix, const ds_pba::ProjMatrix& camera_proj_matrix
 ) const
 {
@@ -257,7 +257,7 @@ void ds_pba::GfxContext::render_to_viewport_outline(
     }
 }
 
-void ds_pba::GfxContext::render_to_viewport_pivot(
+void GfxContext::render_to_viewport_pivot(
     const Position3& pivot_pos,
     const ViewMatrix& camera_view_matrix,
     const ProjMatrix& camera_proj_matrix
@@ -290,7 +290,7 @@ void ds_pba::GfxContext::render_to_viewport_pivot(
     VAO::unbind();
 }
 
-void ds_pba::GfxContext::viewport_window()
+void GfxContext::viewport_window()
 {
     ImGuiWindowFlags vp_flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse
                                 | ImGuiWindowFlags_NoCollapse;

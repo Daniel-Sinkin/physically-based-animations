@@ -1,4 +1,4 @@
-// pba/render/gl.hpp
+// pba/gfx/gl.hpp
 #pragma once
 
 #include "pba/core/core_types.hpp"

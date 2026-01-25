@@ -1,4 +1,4 @@
-// pba/render/raycast.hpp
+// pba/gfx/raycast.hpp
 #pragma once
 
 #include "pba/core/core_types.hpp"

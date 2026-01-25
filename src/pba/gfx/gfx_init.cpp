@@ -3,7 +3,7 @@
 
 namespace ds_pba
 {
-bool ds_pba::GfxContext::setup()
+bool GfxContext::setup()
 {
     using namespace ds_pba;
 

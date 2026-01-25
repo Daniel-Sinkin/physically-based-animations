@@ -308,9 +308,7 @@ void render_imgui_windows(EngineContext& engine_context)
                 for (usize i{0zu}; i < gfx_context.theme_pack.themes.size(); ++i)
                 {
                     const bool selected{i == gfx_context.theme_index};
-                    if (ImGui::Selectable(
-                            gfx_context.theme_pack.themes[i].name.c_str(), selected
-                        ))
+                    if (ImGui::Selectable(gfx_context.theme_pack.themes[i].name.c_str(), selected))
                     {
                         gfx_context.theme_index = i;
                         apply_theme_with_font(gfx_context.theme_pack.themes[i]);
@@ -450,7 +448,11 @@ void render_imgui_windows(EngineContext& engine_context)
             if (physics_index)
             {
                 RigidBody& rb = physics_context.bodies[*physics_index];
-                ImGui::DragFloat3("Position", &rb.position.x, 0.01f);
+                Position3 p = rb.position;
+                if (ImGui::DragFloat3("Position", &p.x, 0.01f))
+                {
+                    gfx_context.set_object_position(o.id, p);
+                }
 
                 Quaternion& ori = rb.orientation;
                 const EulerDeg3& rot{glm::degrees(glm::eulerAngles(ori))};

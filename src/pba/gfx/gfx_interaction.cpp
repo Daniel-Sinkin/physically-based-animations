@@ -25,7 +25,7 @@
 namespace ds_pba
 {
 
-void ds_pba::GfxContext::hover_interaction(const EditorInput& input) const
+void GfxContext::hover_interaction(const EditorInput& input) const
 {
     const ImGuiIO& io{ImGui::GetIO()};
 
@@ -58,10 +58,6 @@ void ds_pba::GfxContext::hover_interaction(const EditorInput& input) const
         const Ray mouse_ray{ray_from_imgui_rect(
             mouse_pos, viewport_img_pos, viewport_img_size, camera_view_matrix, camera_proj_matrix
         )};
-
-        const bool left_shift_down = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS;
-        const bool right_shift_down = glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS;
-        const bool shift_down{left_shift_down || right_shift_down};
 
         auto rc_res = raycast(*scene_context, mouse_ray);
         if (rc_res)
@@ -109,7 +105,7 @@ void ds_pba::GfxContext::hover_interaction(const EditorInput& input) const
                 );
             }
         }
-        else if (selecting && !shift_down)
+        else if (selecting && input.key_down(EditorKey::Shift))
         {
             // Deselect on clicking on background
             if (!scene_context->selected_ids.empty())
@@ -122,9 +118,7 @@ void ds_pba::GfxContext::hover_interaction(const EditorInput& input) const
     }
 }
 
-void ds_pba::GfxContext::hover_interaction_holding_middle(
-    const EditorInput& input, Camera& cam
-) const
+void GfxContext::hover_interaction_holding_middle(const EditorInput& input, Camera& cam) const
 {
     const auto dx = static_cast<f32>(input.ui_dx());
     const auto dy = static_cast<f32>(input.ui_dy());
@@ -148,9 +142,7 @@ void ds_pba::GfxContext::hover_interaction_holding_middle(
         scene_context->camera.pitch = std::clamp(scene_context->camera.pitch, -lim, lim);
     }
 }
-void ds_pba::GfxContext::hover_interaction_selection(
-    const EditorInput& input, const Raycast& rc
-) const
+void GfxContext::hover_interaction_selection(const EditorInput& input, const Raycast& rc) const
 {
     auto log_action = [&](std::string_view action, ObjectId id, const char* kind) -> void
     {

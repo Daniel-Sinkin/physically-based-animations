@@ -1,4 +1,4 @@
-// pba/render/camera.hpp
+// pba/gfx/camera.hpp
 #pragma once
 
 #include "pba/core/constants.hpp"

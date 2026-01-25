@@ -1,4 +1,4 @@
-// pba/render/camera.cpp
+// pba/gfx/camera.cpp
 #include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/gfx/camera.hpp"

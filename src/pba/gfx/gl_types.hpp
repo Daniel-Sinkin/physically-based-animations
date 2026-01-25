@@ -48,7 +48,7 @@ struct ShaderHandle final
 
 struct VAO final
 {
-    GLuint id{};
+    GLuint id{0};
 
     constexpr GLuint* ptr() noexcept
     {
@@ -65,10 +65,12 @@ struct VAO final
         assert(valid() && "Attempting to bind invalid VAO (id == 0)");
         glBindVertexArray(id);
     }
+
     static void bind(GLuint v) noexcept
     {
         glBindVertexArray(v);
     }
+
     [[nodiscard]] static GLuint current_binding() noexcept
     {
         GLint v{0};
@@ -84,7 +86,7 @@ struct VAO final
 
 struct VBO final
 {
-    GLuint id{};
+    GLuint id{0};
 
     constexpr GLuint* ptr() noexcept
     {
@@ -106,6 +108,7 @@ struct VBO final
     {
         glBindBuffer(GL_ARRAY_BUFFER, v);
     }
+
     [[nodiscard]] static GLuint current_array_buffer_binding() noexcept
     {
         GLint v{0};
@@ -119,8 +122,9 @@ struct VBO final
     }
 };
 
+// Strong-typed program handle (useful for uniform cache keys)
 struct ProgramHandle final
-{  // This is probably completely overkill regarding strong typing
+{
     GLuint id{0};
 
     constexpr ProgramHandle() = default;
@@ -138,9 +142,10 @@ struct ProgramHandle final
         return a.id == b.id;
     }
 };
-struct ShaderProgram
+
+struct ShaderProgram final
 {
-    GLuint id{};
+    GLuint id{0};
 
     [[nodiscard]] constexpr bool valid() const noexcept
     {
@@ -162,13 +167,24 @@ struct ShaderProgram
     {
         glUseProgram(0);
     }
+
+    void destroy() noexcept
+    {
+        if (id == 0)
+        {
+            return;
+        }
+        glDeleteProgram(id);
+        id = 0;
+    }
 };
 
 struct GLMesh final
 {
     VAO vao{};
     VBO vbo{};
-    GLsizei vertex_count{};
+    GLsizei vertex_count{0};
+
     void instantiate_once() const noexcept
     {
         const GLuint prev{VAO::current_binding()};
@@ -180,8 +196,7 @@ struct GLMesh final
 
 class ScopedBufferBinder final
 {
-    // The 'current_binding()' functions of VAO and VBO are expensive, don't use this in
-    // a hot path.
+    // The 'current_binding()' functions of VAO and VBO are expensive, don't use this in a hot path.
   public:
     explicit ScopedBufferBinder(const GLMesh& mesh) noexcept
         : prev_vao_{VAO::current_binding()}, prev_vbo_{VBO::current_array_buffer_binding()}

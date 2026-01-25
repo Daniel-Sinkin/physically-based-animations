@@ -1,4 +1,4 @@
-// pba/render/video_recorder.hpp
+// pba/gfx/video_recorder.hpp
 #pragma once
 
 #include "pba/core/constants.hpp"

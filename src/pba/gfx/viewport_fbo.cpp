@@ -1,4 +1,4 @@
-// pba/render/viewport_fbo.cpp
+// pba/gfx/viewport_fbo.cpp
 #include "pba/core/pch.hpp"
 //
 #include "pba/gfx/viewport_fbo.hpp"

@@ -1,4 +1,4 @@
-// pba/render/video_recorder.cpp
+// pba/gfx/video_recorder.cpp
 #include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/gfx/video_recorder.hpp"

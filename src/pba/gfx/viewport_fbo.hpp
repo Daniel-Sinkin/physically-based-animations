@@ -1,4 +1,4 @@
-// pba/render/viewport_fbo.hpp
+// pba/gfx/viewport_fbo.hpp
 #pragma once
 #include "pba/core/core_types.hpp"
 //

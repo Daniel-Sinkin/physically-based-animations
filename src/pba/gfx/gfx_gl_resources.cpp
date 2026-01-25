@@ -21,6 +21,8 @@
 #include <glm/ext/matrix_float4x4.hpp>
 #include <json.hpp>
 
+namespace ds_pba
+{
 [[nodiscard]] std::optional<ds_pba::GLMesh>
 upload_mesh_pcolor_lines(const ds_pba::MeshDataPColor& mesh_data)
 {
@@ -97,7 +99,7 @@ upload_mesh_pcolor_lines(const ds_pba::MeshDataPColor& mesh_data)
     }
     return mesh;
 }
-bool ds_pba::GfxContext::create_meshes()
+bool GfxContext::create_meshes()
 {
     auto upload_or_fail_pn = [&](const std::optional<MeshDataPN>& mesh_data,
                                  std::string_view label) -> std::optional<GLMesh>
@@ -208,7 +210,7 @@ bool ds_pba::GfxContext::create_meshes()
     return true;
 }
 
-bool ds_pba::GfxContext::create_programs()
+bool GfxContext::create_programs()
 {
 
     {
@@ -275,3 +277,4 @@ bool ds_pba::GfxContext::create_programs()
 
     return true;
 }
+}  // namespace ds_pba

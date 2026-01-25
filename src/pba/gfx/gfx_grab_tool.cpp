@@ -7,21 +7,41 @@
 #include "pba/core/format.hpp"  // IWYU pragma: keep
 #include "pba/core/math_types.hpp"
 #include "pba/engine/scene_context.hpp"
-#include "pba/gfx/raycast.hpp"
 #include "pba/ui/ui.hpp"
 //
-#include <imgui.h>
 #include <optional>
-//
-#include <GLFW/glfw3.h>
-#include <glm/ext/matrix_float4x4.hpp>
-#include <json.hpp>
 
 namespace ds_pba
 {
-
-void ds_pba::GfxContext::cancel_grab()
+namespace
 {
+[[nodiscard]] static GfxContext::EditorState::GrabConstraint
+grab_constraint_from_key(const EditorInput& in) noexcept
+{
+    using GC = GfxContext::EditorState::GrabConstraint;
+
+    if (in.key_pressed(EditorKey::X))
+    {
+        return GC::X;
+    }
+
+    if (in.key_pressed(EditorKey::Y))
+    {
+        return k_is_german_keyboard ? GC::Z : GC::Y;
+    }
+
+    if (in.key_pressed(EditorKey::Z))
+    {
+        return k_is_german_keyboard ? GC::Y : GC::Z;
+    }
+
+    return GC::None;
+}
+}  // namespace
+
+void GfxContext::cancel_grab()
+{
+    auto& grab = editor.grab;
     if (!grab.active)
     {
         return;
@@ -34,12 +54,13 @@ void ds_pba::GfxContext::cancel_grab()
 
     grab.active = false;
     grab.start_positions.clear();
-    grab.constraint = GrabConstraint::None;
+    grab.constraint = EditorState::GrabConstraint::None;
     ui_log("Grab cancelled");
 }
 
-void ds_pba::GfxContext::confirm_grab()
+void GfxContext::confirm_grab()
 {
+    auto& grab = editor.grab;
     if (!grab.active)
     {
         return;
@@ -47,76 +68,34 @@ void ds_pba::GfxContext::confirm_grab()
 
     grab.active = false;
     grab.start_positions.clear();
-    grab.constraint = GrabConstraint::None;
+    grab.constraint = EditorState::GrabConstraint::None;
     ui_log("Grab confirmed");
 }
-void ds_pba::GfxContext::update_grab(f64 mouse_x, f64 mouse_y)
+
+void GfxContext::set_grab_constraint(EditorState::GrabConstraint c)
 {
-    assert(scene_context);
-
-    if (!grab.active)
-    {
-        return;
-    }
-
-    const Camera& cam{scene_context->camera};
-
-    const f32 vp_h{std::max(1.0f, viewport_img_size.y)};
-    const f32 units_per_px{(2.0f * cam.distance * std::tan(0.5f * cam.fov_y)) / vp_h};
-
-    const auto dx = static_cast<f32>(mouse_x - grab.start_mouse_x);
-    const auto dy = static_cast<f32>(mouse_y - grab.start_mouse_y);
-
-    // Mouse up = Look down
-    const Direction3 v = (dx * units_per_px) * cam.right() + (-dy * units_per_px) * cam.up();
-
-    Direction3 delta = v;
-
-    switch (grab.constraint)
-    {
-        case GrabConstraint::None:
-            break;
-
-        case GrabConstraint::X:
-            delta = Direction3{delta.x, 0.0f, 0.0f};
-            break;
-
-        case GrabConstraint::Y:
-            delta = Direction3{0.0f, delta.y, 0.0f};
-            break;
-
-        case GrabConstraint::Z:
-            delta = Direction3{0.0f, 0.0f, delta.z};
-            break;
-    }
-
-    for (const auto& [id, start_pos] : grab.start_positions)
-    {
-        set_object_position(id, start_pos + delta);
-    }
-}
-void ds_pba::GfxContext::set_grab_constraint(GrabConstraint c)
-{
+    auto& grab = editor.grab;
     grab.constraint = c;
 
+    using GC = EditorState::GrabConstraint;
     switch (c)
     {
-        case GrabConstraint::None:
+        case GC::None:
             ui_log("Grab: unconstrained");
             break;
-        case GrabConstraint::X:
+        case GC::X:
             ui_log("Grab: constrain X");
             break;
-        case GrabConstraint::Y:
+        case GC::Y:
             ui_log("Grab: constrain Y");
             break;
-        case GrabConstraint::Z:
+        case GC::Z:
             ui_log("Grab: constrain Z");
             break;
     }
 }
 
-void ds_pba::GfxContext::begin_grab(f64 mouse_x, f64 mouse_y)
+void GfxContext::begin_grab(const EditorInput& input)
 {
     assert(scene_context);
 
@@ -126,10 +105,12 @@ void ds_pba::GfxContext::begin_grab(f64 mouse_x, f64 mouse_y)
         return;
     }
 
+    auto& grab = editor.grab;
+
     grab.active = true;
-    grab.start_mouse_x = mouse_x;
-    grab.start_mouse_y = mouse_y;
-    grab.constraint = GrabConstraint::None;
+    grab.start_mouse_x = input.ui_mouse_x;
+    grab.start_mouse_y = input.ui_mouse_y;
+    grab.constraint = EditorState::GrabConstraint::None;
 
     grab.start_positions.clear();
     grab.start_positions.reserve(scene_context->selected_ids.size());
@@ -144,4 +125,54 @@ void ds_pba::GfxContext::begin_grab(f64 mouse_x, f64 mouse_y)
 
     ui_log("Grab: move mouse. X/Y/Z constrain. LMB/Enter confirm. RMB/Esc cancel.");
 }
+
+void GfxContext::update_grab(const EditorInput& input)
+{
+    assert(scene_context);
+
+    auto& grab = editor.grab;
+    if (!grab.active)
+    {
+        return;
+    }
+
+    if (const auto c = grab_constraint_from_key(input); c != EditorState::GrabConstraint::None)
+    {
+        set_grab_constraint(c);
+    }
+
+    const Camera& cam{scene_context->camera};
+
+    const f32 vp_h{std::max(1.0f, viewport_img_size.y)};
+    const f32 units_per_px{(2.0f * cam.distance * std::tan(0.5f * cam.fov_y)) / vp_h};
+
+    const f32 dx{static_cast<f32>(input.ui_mouse_x - grab.start_mouse_x)};
+    const f32 dy{static_cast<f32>(input.ui_mouse_y - grab.start_mouse_y)};
+
+    // Mouse up = look down
+    const Direction3 v{(dx * units_per_px) * cam.right() + (-dy * units_per_px) * cam.up()};
+    Direction3 delta{v};
+
+    using GC = EditorState::GrabConstraint;
+    switch (grab.constraint)
+    {
+        case GC::None:
+            break;
+        case GC::X:
+            delta = Direction3{delta.x, 0.0f, 0.0f};
+            break;
+        case GC::Y:
+            delta = Direction3{0.0f, delta.y, 0.0f};
+            break;
+        case GC::Z:
+            delta = Direction3{0.0f, 0.0f, delta.z};
+            break;
+    }
+
+    for (const auto& [id, start_pos] : grab.start_positions)
+    {
+        set_object_position(id, start_pos + delta);
+    }
+}
+
 }  // namespace ds_pba

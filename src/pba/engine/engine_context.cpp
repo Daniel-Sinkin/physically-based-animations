@@ -1,10 +1,12 @@
 // pba/engine/engine_context.cpp
+#include "pba/core/core_types.hpp"
 #include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/engine/engine_context.hpp"
 //
 #include "pba/core/constants.hpp"
 #include "pba/core/format.hpp"  // IWYU pragma: keep
+#include "pba/engine/scene_types.hpp"
 #include "pba/ui/ui.hpp"
 #include "pba/util/scope_timer.hpp"
 
@@ -226,6 +228,8 @@ bool EngineContext::setup()
                 );
             }
         }
+        // scene.sphere_objects.push_back(Object{.id = next_object_id(), .type =
+        // ObjectType::Sphere});
     }
 
     gfx.scene_context = &scene;
@@ -255,9 +259,9 @@ void EngineContext::run()
     while (gfx.is_active())
     {
         gfx.step();
-
-        if (gfx.editor_input.key_pressed(EditorKey::Space))
+        if (!gfx.imgui_uses_keyboard && gfx.editor_input.key_pressed(EditorKey::Space))
         {
+
             paused = !paused;
         }
 

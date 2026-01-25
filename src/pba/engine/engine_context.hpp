@@ -32,7 +32,6 @@ struct EngineContext
     Duration accumulator{};
 
     bool paused{true};
-    bool prev_space{false};
 
     void link_latest_objects(ObjectId id);
 

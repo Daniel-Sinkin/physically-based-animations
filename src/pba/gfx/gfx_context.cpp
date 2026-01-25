@@ -1,4 +1,4 @@
-// pba/render/gfx_context.cpp
+// pba/gfx/gfx_context.cpp
 #include "pba/core/constants.hpp"
 #include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
@@ -19,14 +19,15 @@
 #include <GLFW/glfw3.h>
 #include <glm/ext/matrix_float4x4.hpp>
 #include <json.hpp>
-#include <ranges>
 
-ds_pba::GfxContext::~GfxContext()
+namespace ds_pba
+{
+GfxContext::~GfxContext()
 {
     shutdown();
 }
 
-void ds_pba::GfxContext::shutdown()
+void GfxContext::shutdown()
 {
     if (recorder.is_recording())
     {
@@ -47,19 +48,14 @@ void ds_pba::GfxContext::shutdown()
         invalidate_uniform_cache_for_program(outline_prog.handle());
         invalidate_uniform_cache_for_program(pivot_prog.handle());
 
-        glDeleteProgram(grid_prog.id);
-        glDeleteProgram(obj_prog.id);
-        glDeleteProgram(outline_prog.id);
-        glDeleteProgram(pivot_prog.id);
-
-        grid_prog.id = 0;
-        obj_prog.id = 0;
-        outline_prog.id = 0;
-        pivot_prog.id = 0;
+        grid_prog.destroy();
+        obj_prog.destroy();
+        outline_prog.destroy();
+        pivot_prog.destroy();
 
         auto destroy_mesh = [](GLMesh& m)
         {
-            if (m.vbo.id != 0)
+            if (m.vbo.valid())
             {
                 glDeleteBuffers(1, &m.vbo.id);
                 m.vbo.id = 0;
@@ -102,12 +98,12 @@ void ds_pba::GfxContext::shutdown()
     }
 }
 
-bool ds_pba::GfxContext::is_active() const
+bool GfxContext::is_active() const
 {
     return (window != nullptr) && !glfwWindowShouldClose(window) && is_active_;
 }
 
-void ds_pba::GfxContext::request_close() noexcept
+void GfxContext::request_close() noexcept
 {
     is_active_ = false;
     if (window)
@@ -116,7 +112,7 @@ void ds_pba::GfxContext::request_close() noexcept
     }
 }
 
-void ds_pba::GfxContext::step()
+void GfxContext::step()
 {
     using namespace ds_pba;
     assert(scene_context && "Scene Context not set for GfxContext");
@@ -148,6 +144,8 @@ void ds_pba::GfxContext::step()
 
     const ImGuiIO& io{ImGui::GetIO()};
     const auto& input = editor_input;
+    imgui_uses_keyboard = io.WantCaptureKeyboard;
+    imgui_uses_mouse = io.WantCaptureMouse;
 
     if (ImGui::BeginMainMenuBar())
     {
@@ -177,33 +175,33 @@ void ds_pba::GfxContext::step()
         toggle_recording();
     }
 
-    if (grab.active)
+    if (editor.grab.active)
     {
-        update_grab(input.ui_mouse_x, input.ui_mouse_y);
+        update_grab(input);
         if (input.key_pressed(EditorKey::X))
         {
-            set_grab_constraint(GrabConstraint::X);
+            set_grab_constraint(EditorState::GrabConstraint::X);
         }
         else if (input.key_pressed(EditorKey::Y))
         {
             if (k_is_german_keyboard)
             {
-                set_grab_constraint(GrabConstraint::Z);
+                set_grab_constraint(EditorState::GrabConstraint::Z);
             }
             else
             {
-                set_grab_constraint(GrabConstraint::Y);
+                set_grab_constraint(EditorState::GrabConstraint::Y);
             }
         }
         else if (input.key_pressed(EditorKey::Z))
         {
             if (k_is_german_keyboard)
             {
-                set_grab_constraint(GrabConstraint::Y);
+                set_grab_constraint(EditorState::GrabConstraint::Y);
             }
             else
             {
-                set_grab_constraint(GrabConstraint::Z);
+                set_grab_constraint(EditorState::GrabConstraint::Z);
             }
         }
 
@@ -220,7 +218,7 @@ void ds_pba::GfxContext::step()
     {
         if (viewport_image_hovered && input.key_pressed(EditorKey::G) && !io.WantCaptureKeyboard)
         {
-            begin_grab(input.ui_mouse_x, input.ui_mouse_y);
+            begin_grab(input);
         }
 
         if (input.key_pressed(EditorKey::Escape))
@@ -285,3 +283,4 @@ void ds_pba::GfxContext::step()
     glfwSwapBuffers(window);
     ++frame_count;
 }
+}  // namespace ds_pba

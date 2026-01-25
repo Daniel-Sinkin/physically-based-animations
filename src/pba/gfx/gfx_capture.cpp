@@ -17,7 +17,7 @@
 namespace ds_pba
 {
 
-bool ds_pba::GfxContext::capture_viewport_rgba8(std::vector<u8>& out) const
+bool GfxContext::capture_viewport_rgba8(std::vector<u8>& out) const
 {
     if (!loaded_glad)
     {
@@ -62,7 +62,7 @@ bool ds_pba::GfxContext::capture_viewport_rgba8(std::vector<u8>& out) const
     const GLenum err = glGetError();
     return err == GL_NO_ERROR;
 }
-void ds_pba::GfxContext::start_recording()
+void GfxContext::start_recording()
 {
     if (recorder.is_recording())
     {
@@ -114,7 +114,7 @@ void ds_pba::GfxContext::start_recording()
         std::format("Recording started: {} ({}x{} @ {} fps)", out_path.string(), w, h, capture_fps)
     );
 }
-void ds_pba::GfxContext::stop_recording()
+void GfxContext::stop_recording()
 {
     if (!recorder.is_recording())
     {
@@ -126,7 +126,7 @@ void ds_pba::GfxContext::stop_recording()
     ui_log(std::format("Recording stopped: {} ({} frames)", out, recorder.frames_written));
 }
 
-void ds_pba::GfxContext::toggle_recording()
+void GfxContext::toggle_recording()
 {
     if (recorder.is_recording())
     {
