@@ -29,8 +29,6 @@ struct VideoRecorder
     int fps{k_video_recorder_fps};
     int frames_written{};
 
-    std::filesystem::path output_path_{};
-
     FILE* pipe{nullptr};
 
     [[nodiscard]] bool is_recording() const noexcept;

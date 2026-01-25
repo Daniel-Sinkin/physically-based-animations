@@ -81,16 +81,16 @@ bool VideoRecorder::start(std::filesystem::path path)
     output_path = std::move(path);
 
     frames_written = 0;
-    if (output_path_.has_parent_path())
+    if (output_path.has_parent_path())
     {
         std::error_code ec{};
-        std::filesystem::create_directories(output_path_.parent_path(), ec);
+        std::filesystem::create_directories(output_path.parent_path(), ec);
 
         if (ec)
         {
             std::println(
                 "[Warning] Failed to create directories for output path '{}': {}",
-                output_path_.string(),
+                output_path.string(),
                 ec.message()
             );
             assert(!pipe);
@@ -99,7 +99,8 @@ bool VideoRecorder::start(std::filesystem::path path)
     }
 
     const std::string ffmpeg{quote_arg(std::string_view{DS_PBA_FFMPEG_EXECUTABLE})};
-    const std::string out{quote_arg(output_path_.string())};
+    const std::string out{quote_arg(output_path.string())};
+    assert(!out.empty());
 
     const std::string cmd = std::format(
         "{} -y -hide_banner -loglevel error "
