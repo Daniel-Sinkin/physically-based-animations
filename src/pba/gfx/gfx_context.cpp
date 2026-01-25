@@ -19,6 +19,7 @@
 #include <GLFW/glfw3.h>
 #include <glm/ext/matrix_float4x4.hpp>
 #include <json.hpp>
+#include <ranges>
 
 ds_pba::GfxContext::~GfxContext()
 {
@@ -137,15 +138,15 @@ void ds_pba::GfxContext::step()
     }
 
     glfwPollEvents();
+    editor_input.update(window);
 
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
+    editor_input.sync_imgui_mouse();
+
     const ImGuiIO& io{ImGui::GetIO()};
-    editor_input.update(window);
-    editor_input.mouse_x = static_cast<f64>(io.MousePos.x);
-    editor_input.mouse_y = static_cast<f64>(io.MousePos.y);
     const auto& input = editor_input;
 
     if (ImGui::BeginMainMenuBar())
@@ -178,7 +179,7 @@ void ds_pba::GfxContext::step()
 
     if (grab.active)
     {
-        update_grab(input.mouse_x, input.mouse_y);
+        update_grab(input.ui_mouse_x, input.ui_mouse_y);
         if (input.key_pressed(EditorKey::X))
         {
             set_grab_constraint(GrabConstraint::X);
@@ -219,7 +220,7 @@ void ds_pba::GfxContext::step()
     {
         if (viewport_image_hovered && input.key_pressed(EditorKey::G) && !io.WantCaptureKeyboard)
         {
-            begin_grab(input.mouse_x, input.mouse_y);
+            begin_grab(input.ui_mouse_x, input.ui_mouse_y);
         }
 
         if (input.key_pressed(EditorKey::Escape))
@@ -229,13 +230,7 @@ void ds_pba::GfxContext::step()
 
         if (viewport_image_hovered)
         {
-            hover_interaction(
-                input.mouse_x,
-                input.mouse_y,
-                input.mouse_left.down,
-                input.mouse_middle.down,
-                input.mouse_right.down
-            );
+            hover_interaction(input);
         }
     }
 
@@ -286,9 +281,6 @@ void ds_pba::GfxContext::step()
             }
         }
     }
-
-    prev_mx = input.mouse_x;
-    prev_my = input.mouse_y;
 
     glfwSwapBuffers(window);
     ++frame_count;

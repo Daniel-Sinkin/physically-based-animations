@@ -1,6 +1,7 @@
 // pba/gfx/gfx_interaction.cpp
 #include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
+#include "pba/editor/editor_input.hpp"
 #include "pba/gfx/gfx_context.hpp"
 //
 #include "pba/core/constants.hpp"
@@ -24,9 +25,7 @@
 namespace ds_pba
 {
 
-void ds_pba::GfxContext::hover_interaction(
-    f64 mouse_x, f64 mouse_y, bool left_down, bool middle_down, bool right_down
-) const
+void ds_pba::GfxContext::hover_interaction(const EditorInput& input) const
 {
     const ImGuiIO& io{ImGui::GetIO()};
 
@@ -39,20 +38,22 @@ void ds_pba::GfxContext::hover_interaction(
         cam.distance = std::clamp(scene_context->camera.distance, 0.75f, 200.0f);
     }
 
-    if (middle_down)
+    if (input.mouse_middle.down)
     {
-        hover_interaction_holding_middle(mouse_x, mouse_y, cam);
+        hover_interaction_holding_middle(input, cam);
     }
 
-    const bool selecting{left_down && !prev_left};
-    const bool spawning{right_down && !prev_right};
+    const bool selecting{input.mouse_left.pressed()};
+    const bool spawning{input.mouse_right.pressed()};
     if (selecting || spawning)
     {  // Selecting objects
         const f32 aspect{viewport_fbo.aspect_ratio()};
         const ViewMatrix camera_view_matrix{scene_context->camera.view_matrix()};
         const ProjMatrix camera_proj_matrix{scene_context->camera.proj_matrix(aspect)};
 
-        const glm::vec2 mouse_pos{glm::vec2{static_cast<f32>(mouse_x), static_cast<f32>(mouse_y)}};
+        const glm::vec2 mouse_pos{
+            static_cast<f32>(input.ui_mouse_x), static_cast<f32>(input.ui_mouse_y)
+        };
 
         const Ray mouse_ray{ray_from_imgui_rect(
             mouse_pos, viewport_img_pos, viewport_img_size, camera_view_matrix, camera_proj_matrix
@@ -68,7 +69,7 @@ void ds_pba::GfxContext::hover_interaction(
             const Raycast rc = *rc_res;
             if (selecting)
             {
-                hover_interaction_selection(rc);
+                hover_interaction_selection(input, rc);
             }
             if (spawning)
             {
@@ -122,15 +123,13 @@ void ds_pba::GfxContext::hover_interaction(
 }
 
 void ds_pba::GfxContext::hover_interaction_holding_middle(
-    f64 mouse_x, f64 mouse_y, Camera& cam
+    const EditorInput& input, Camera& cam
 ) const
 {
-    const auto dx = static_cast<f32>(mouse_x - prev_mx);
-    const auto dy = static_cast<f32>(mouse_y - prev_my);
+    const auto dx = static_cast<f32>(input.ui_dx());
+    const auto dy = static_cast<f32>(input.ui_dy());
 
-    const bool left_shift_down = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS;
-    const bool right_shift_down = glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS;
-    if (left_shift_down || right_shift_down)
+    if (input.key_down(EditorKey::Shift))
     {  // Move Pivot
         const f32 vp_h{std::max(1.0f, viewport_img_size.y)};
 
@@ -149,14 +148,10 @@ void ds_pba::GfxContext::hover_interaction_holding_middle(
         scene_context->camera.pitch = std::clamp(scene_context->camera.pitch, -lim, lim);
     }
 }
-void ds_pba::GfxContext::hover_interaction_selection(const Raycast& rc) const
+void ds_pba::GfxContext::hover_interaction_selection(
+    const EditorInput& input, const Raycast& rc
+) const
 {
-    assert(scene_context);
-
-    const bool left_shift_down = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS;
-    const bool right_shift_down = glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS;
-    const bool shift_down = left_shift_down || right_shift_down;
-
     auto log_action = [&](std::string_view action, ObjectId id, const char* kind) -> void
     {
         if (engine_context)
@@ -187,7 +182,7 @@ void ds_pba::GfxContext::hover_interaction_selection(const Raycast& rc) const
 
     const bool was_selected = scene_context->is_selected(rc.object_id);
 
-    if (shift_down)
+    if (input.key_down(EditorKey::Shift))
     {
         scene_context->toggle_selection(rc.object_id);
     }

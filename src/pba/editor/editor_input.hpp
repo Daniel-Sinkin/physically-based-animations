@@ -111,15 +111,40 @@ struct ButtonState
 struct EditorInput
 {
     std::array<ButtonState, k_editor_key_count> keys{};
-
     ButtonState mouse_left{};
     ButtonState mouse_middle{};
     ButtonState mouse_right{};
 
-    f64 mouse_x{};
-    f64 mouse_y{};
+    f64 win_mouse_x{};
+    f64 win_mouse_y{};
+    f64 prev_win_mouse_x{};
+    f64 prev_win_mouse_y{};
+
+    [[nodiscard]] f64 win_dx() const noexcept
+    {
+        return win_mouse_x - prev_win_mouse_x;
+    }
+    [[nodiscard]] f64 win_dy() const noexcept
+    {
+        return win_mouse_y - prev_win_mouse_y;
+    }
+
+    f64 ui_mouse_x{};
+    f64 ui_mouse_y{};
+    f64 prev_ui_mouse_x{};
+    f64 prev_ui_mouse_y{};
+
+    [[nodiscard]] f64 ui_dx() const noexcept
+    {
+        return ui_mouse_x - prev_ui_mouse_x;
+    }
+    [[nodiscard]] f64 ui_dy() const noexcept
+    {
+        return ui_mouse_y - prev_ui_mouse_y;
+    }
 
     void update(GLFWwindow* window) noexcept;
+    void sync_imgui_mouse() noexcept;
 
     [[nodiscard]] bool key_down(EditorKey k) const noexcept;
     [[nodiscard]] bool key_pressed(EditorKey k) const noexcept;

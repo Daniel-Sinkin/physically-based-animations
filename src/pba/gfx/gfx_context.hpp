@@ -67,20 +67,6 @@ struct GfxContext
     glm::vec2 viewport_img_pos{};
     glm::vec2 viewport_img_size{};
 
-    bool prev_left{false};
-    bool prev_middle{false};
-    bool prev_right{false};
-    bool prev_f1{false};
-    bool prev_f2{false};
-
-    bool prev_g{false};
-    bool prev_esc{false};
-    bool prev_enter{false};
-    bool prev_kp_enter{false};
-
-    f64 prev_mx{};
-    f64 prev_my{};
-
     int frame_count{};
 
     TimePoint run_start{Clock::now()};
@@ -143,9 +129,6 @@ struct GfxContext
     };
 
     GrabState grab{};
-    bool prev_x{false};
-    bool prev_y{false};
-    bool prev_z{false};
 
     void render_to_viewport() const;
     void render_to_viewport_grid(const ViewMatrix&, const ProjMatrix&) const;
@@ -161,11 +144,9 @@ struct GfxContext
     bool create_programs();
     bool create_meshes();
 
-    void hover_interaction(
-        f64 mouse_x, f64 mouse_y, bool left_down, bool middle_down, bool right_down
-    ) const;
-    void hover_interaction_selection(const Raycast& rc) const;
-    void hover_interaction_holding_middle(f64 mouse_x, f64 mouse_y, Camera& cam) const;
+    void hover_interaction(const EditorInput& input) const;
+    void hover_interaction_holding_middle(const EditorInput& input, Camera& cam) const;
+    void hover_interaction_selection(const EditorInput& input, const Raycast& rc) const;
 
     void begin_grab(f64 mouse_x, f64 mouse_y);
     void update_grab(f64 mouse_x, f64 mouse_y);
