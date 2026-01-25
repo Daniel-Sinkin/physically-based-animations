@@ -26,7 +26,7 @@ struct GLPtr final
     }
 };
 
-struct ShaderHandle
+struct ShaderHandle final
 {
     GLuint id{0};
 
@@ -46,7 +46,7 @@ struct ShaderHandle
     }
 };
 
-struct VAO
+struct VAO final
 {
     GLuint id{};
 
@@ -65,6 +65,16 @@ struct VAO
         assert(valid() && "Attempting to bind invalid VAO (id == 0)");
         glBindVertexArray(id);
     }
+    static void bind(GLuint v) noexcept
+    {
+        glBindVertexArray(v);
+    }
+    [[nodiscard]] static GLuint current_binding() noexcept
+    {
+        GLint v{0};
+        glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &v);
+        return static_cast<GLuint>(v);
+    }
 
     static void unbind() noexcept
     {
@@ -72,7 +82,7 @@ struct VAO
     }
 };
 
-struct VBO
+struct VBO final
 {
     GLuint id{};
 
@@ -92,13 +102,24 @@ struct VBO
         glBindBuffer(GL_ARRAY_BUFFER, id);
     }
 
+    static void bind_array_buffer(GLuint v) noexcept
+    {
+        glBindBuffer(GL_ARRAY_BUFFER, v);
+    }
+    [[nodiscard]] static GLuint current_array_buffer_binding() noexcept
+    {
+        GLint v{0};
+        glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &v);
+        return static_cast<GLuint>(v);
+    }
+
     static void unbind() noexcept
     {
         glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
 };
 
-struct ProgramHandle
+struct ProgramHandle final
 {  // This is probably completely overkill regarding strong typing
     GLuint id{0};
 
@@ -143,39 +164,46 @@ struct ShaderProgram
     }
 };
 
-struct GLMesh
+struct GLMesh final
 {
     VAO vao{};
     VBO vbo{};
     GLsizei vertex_count{};
-
     void instantiate_once() const noexcept
     {
+        const GLuint prev{VAO::current_binding()};
         vao.bind();
         glDrawArrays(GL_TRIANGLES, 0, vertex_count);
-        VAO::unbind();
+        VAO::bind(prev);
     }
 };
 
-class ScopedBufferBinder
+class ScopedBufferBinder final
 {
+    // The 'current_binding()' functions of VAO and VBO are expensive, don't use this in
+    // a hot path.
   public:
-    ScopedBufferBinder(GLMesh& mesh)
+    explicit ScopedBufferBinder(const GLMesh& mesh) noexcept
+        : prev_vao_{VAO::current_binding()}, prev_vbo_{VBO::current_array_buffer_binding()}
     {
         mesh.vao.bind();
         mesh.vbo.bind_array_buffer();
     }
-    ~ScopedBufferBinder()
+
+    ~ScopedBufferBinder() noexcept
     {
-        VBO::unbind();
-        VAO::unbind();
+        VAO::bind(prev_vao_);
+        VBO::bind_array_buffer(prev_vbo_);
     }
 
     ScopedBufferBinder(const ScopedBufferBinder&) = delete;
     ScopedBufferBinder& operator=(const ScopedBufferBinder&) = delete;
-
     ScopedBufferBinder(ScopedBufferBinder&&) = delete;
     ScopedBufferBinder& operator=(ScopedBufferBinder&&) = delete;
+
+  private:
+    GLuint prev_vao_{0};
+    GLuint prev_vbo_{0};
 };
 
 }  // namespace ds_pba
@@ -185,7 +213,7 @@ namespace std
 template <>
 struct hash<ds_pba::ProgramHandle>
 {
-    size_t operator()(ds_pba::ProgramHandle h) const noexcept
+    ds_pba::usize operator()(ds_pba::ProgramHandle h) const noexcept
     {
         return std::hash<GLuint>{}(h.id);
     }

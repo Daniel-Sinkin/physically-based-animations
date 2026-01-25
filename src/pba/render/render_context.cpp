@@ -59,7 +59,7 @@ upload_mesh_pcolor_lines(const ds_pba::MeshDataPColor& mesh_data)
             GL_STATIC_DRAW
         );
 
-        const GLsizei stride = static_cast<GLsizei>(sizeof(MeshV_PColor));
+        const auto stride = static_cast<GLsizei>(sizeof(MeshV_PColor));
 
         // location 0: position
         glEnableVertexAttribArray(0);

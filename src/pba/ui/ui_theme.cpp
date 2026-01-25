@@ -427,7 +427,7 @@ std::expected<UiThemePack, UiThemeError> load_theme_pack_json(const std::filesys
         }
         else if (const auto* u = it_def->get_ptr<const nlohmann::json::number_unsigned_t*>())
         {
-            const usize idx = static_cast<usize>(*u);
+            const auto idx = static_cast<usize>(*u);
             if (idx < pack.themes.size())
             {
                 pack.default_index = idx;

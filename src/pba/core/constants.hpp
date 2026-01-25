@@ -72,4 +72,42 @@ inline constexpr f32 k_fog_start{12.0f};
 inline constexpr f32 k_fog_end{30.0f};
 inline constexpr f32 k_minor_alpha{0.35f};
 inline constexpr f32 k_axis_alpha{0.95f};
+
+namespace detail
+{  // Guardrails and invariants
+static_assert(k_video_recorder_fps > 0);
+
+static_assert(k_zoom_speed > 0.0f);
+static_assert(k_sensitivity > 0.0f);
+static_assert(k_pan_sensitivity > 0.0f);
+
+static_assert(k_contact_points > 0zu);
+static_assert(k_collision_reduced_num > 0zu);
+
+static_assert(k_linear_damping >= 0.0f);
+static_assert(k_angular_damping >= 0.0f);
+static_assert(k_linear_sleep_speed_threshold >= 0.0f);
+static_assert(k_angular_sleep_speed_threshold >= 0.0f);
+
+static_assert(k_solver_iterations > 0);
+static_assert(k_position_iterations > 0);
+
+static_assert(k_restitution >= 0.0f && k_restitution <= 1.0f);
+
+static_assert(k_pen_percent > 0.0f && k_pen_percent <= 1.0f);
+static_assert(k_pen_max_correction > 0.0f);
+static_assert(k_pen_tolerance >= 0.0f);
+static_assert(k_pen_correction_frag >= 0.0f && k_pen_correction_frag <= 1.0f);
+
+static_assert(k_friction >= 0.0f);
+
+static_assert(k_camera_distance > 0.0f);
+static_assert(k_camera_fov_y > 0.0f && k_camera_fov_y < 180.0f);
+static_assert(k_camera_z_near > 0.0f);
+static_assert(k_camera_z_far > k_camera_z_near);
+
+static_assert(k_fog_end > k_fog_start);
+static_assert(k_minor_alpha >= 0.0f && k_minor_alpha <= 1.0f);
+static_assert(k_axis_alpha >= 0.0f && k_axis_alpha <= 1.0f);
+}  // namespace detail
 }  // namespace ds_pba
