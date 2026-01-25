@@ -3,8 +3,8 @@
 //
 #include "pba/engine/engine_context.hpp"
 //
-#include "pba/core/format.hpp"  // IWYU pragma: keep
 #include "pba/core/constants.hpp"
+#include "pba/core/format.hpp"  // IWYU pragma: keep
 #include "pba/ui/ui.hpp"
 #include "pba/util/scope_timer.hpp"
 
@@ -251,20 +251,18 @@ void EngineContext::run()
     physics.time = frame_time;
     accumulator = Duration{0.0};
 
+    bool prev_paused{paused};
     while (gfx.is_active())
     {
-        const TimePoint now{Clock::now()};
+        gfx.step();
 
-        Duration frame_dt{std::chrono::duration_cast<Duration>(now - frame_time)};
-        frame_time = now;
-
-        frame_dt = std::min(frame_dt, max_frame_dt);
-
-        const bool space_down{glfwGetKey(gfx.window, GLFW_KEY_SPACE) == GLFW_PRESS};
-        if (space_down && !prev_space)
+        if (gfx.editor_input.key_pressed(EditorKey::Space))
         {
             paused = !paused;
+        }
 
+        if (paused != prev_paused)
+        {
             if (paused)
             {
                 ui_log("Paused (SPACE to resume)");
@@ -272,34 +270,35 @@ void EngineContext::run()
             else
             {
                 ui_log("Running (SPACE to pause)");
-
                 accumulator = Duration{0.0};
                 frame_time = Clock::now();
                 physics.time = frame_time;
             }
+            prev_paused = paused;
         }
-        prev_space = space_down;
+
+        const TimePoint now{Clock::now()};
+        Duration frame_dt{std::chrono::duration_cast<Duration>(now - frame_time)};
+        frame_time = now;
+        frame_dt = std::min(frame_dt, max_frame_dt);
 
         if (!paused)
         {
-            [[maybe_unused]] int n_phys_updates{0};
             accumulator += frame_dt;
-
             while (accumulator >= fixed_dt)
             {
                 physics.step();
                 accumulator -= fixed_dt;
-                ++n_phys_updates;
+            }
+
+            for (const auto& [id, idxs] : obj_map)
+            {
+                const auto [scene_i, phys_i] = idxs;
+                scene.cube_objects[scene_i].transform.position = physics.bodies[phys_i].position;
+                scene.cube_objects[scene_i].transform.orientation =
+                    physics.bodies[phys_i].orientation;
             }
         }
-        for (const auto& [id, idxs] : obj_map)
-        {
-            const auto [scene_i, phys_i] = idxs;
-            scene.cube_objects[scene_i].transform.position = physics.bodies[phys_i].position;
-            scene.cube_objects[scene_i].transform.orientation = physics.bodies[phys_i].orientation;
-        }
-
-        gfx.step();
     }
 }
 
