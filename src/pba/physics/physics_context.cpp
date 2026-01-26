@@ -55,7 +55,13 @@ void PhysicsContext::step()
     const Duration dt{time_step};
     const f32 dt_s{dt_f32(dt)};
 
+    // Update inertia based on  sg
     update_inv_inertia_world(bodies);
+
+    for (const auto& f : external_forces)
+    {
+        f.fn(bodies, dt_s, f.user);
+    }
 
     integrate_forces(bodies, dt_s);
     integrate_velocities(bodies, dt_s);

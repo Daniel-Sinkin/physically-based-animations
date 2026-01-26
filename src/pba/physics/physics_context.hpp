@@ -3,6 +3,7 @@
 
 #include "pba/core/constants.hpp"
 #include "pba/core/core_types.hpp"
+#include "pba/physics/forces.hpp"
 #include "pba/physics/physics_types.hpp"
 
 #include <array>
@@ -14,6 +15,7 @@ namespace ds_pba
 struct PhysicsContext
 {
     std::vector<RigidBody> bodies;
+    std::vector<ExternalForce> external_forces{};
 
     TimePoint time{};
     Duration time_step{std::chrono::duration<f64>(1.0 / 120.0)};

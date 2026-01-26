@@ -17,4 +17,7 @@ using EulerDeg3 = glm::vec3;
 using Quaternion = glm::quat;
 
 using ColorRGBf = glm::vec3;
+
+inline constexpr Direction3 k_zero_dir{0.0f, 0.0f, 0.0f};
+inline constexpr Quaternion k_quaternion_id{1.0f, 0.0f, 0.0f, 0.0f};
 }  // namespace ds_pba

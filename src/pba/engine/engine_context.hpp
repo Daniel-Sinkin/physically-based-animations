@@ -36,8 +36,16 @@ struct EngineContext
     void link_latest_objects(ObjectId id);
 
     void add_cube(Position3 position);
+    void spawn_cube(
+        Position3 pos,
+        Direction3 vel = Direction3{0.0f, 0.0f, 0.0f},
+        Quaternion ori = Quaternion{1.0f, 0.0f, 0.0f, 0.0f},
+        ColorRGBf color = ColorRGBf{0.80f, 0.80f, 0.80f}
+    );
+
     void add_ground();
 
+    void create_pyramid(int base_n, f32 step_size = 1.06f, f32 base_z = 0.5f);
     bool setup();
     void run();
 };

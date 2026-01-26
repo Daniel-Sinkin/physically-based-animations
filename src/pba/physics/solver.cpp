@@ -311,13 +311,11 @@ void integrate_forces(std::vector<RigidBody>& bodies, f32 dt_s) noexcept
         {
             continue;
         }
-
-        const f32 m{1.0f / b.inv_mass};
-        b.force_accum += (m * k_gravity);
-
+        // (linear) velocity' = F / m
         const Direction3 a{b.force_accum * b.inv_mass};
         b.velocity += a * dt_s;
 
+        // omega' = angular velocity' = I^-1 * torque
         const Direction3 alpha{b.inv_inertia_world * b.torque_accum};
         b.angular_velocity += alpha * dt_s;
     }
