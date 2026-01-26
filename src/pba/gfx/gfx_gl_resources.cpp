@@ -137,6 +137,105 @@ namespace ds_pba
     }
     return mesh;
 }
+
+bool GfxContext::create_textures()
+{
+    namespace fs = std::filesystem;
+
+    {  // Asphalt
+        const fs::path texture_dir =
+            fs::path{k_fp_assets} / k_fp_assets_textures / k_texture_clean_asphalt;
+
+        const fs::path diffuse_path = texture_dir / k_texture_clean_asphalt_diffuse;
+        const fs::path normal_path = texture_dir / k_texture_clean_asphalt_normal;
+
+        {
+            auto img = load_image_rgba8(diffuse_path);
+            if (!img)
+            {
+                std::println(stderr, "Failed to load '{}'", diffuse_path.string());
+                return false;
+            }
+
+            auto tex = upload_texture_2d_rgba8(*img, {.generate_mips = true, .srgb = true});
+            if (!tex)
+            {
+                std::println(stderr, "Failed to upload '{}'", diffuse_path.string());
+                return false;
+            }
+
+            textures.clean_asphalt_diffuse = *tex;
+        }
+
+        {
+            auto img = load_image_rgba8(normal_path);
+            if (!img)
+            {
+                std::println(stderr, "Failed to load '{}'", normal_path.string());
+                return false;
+            }
+
+            auto tex = upload_texture_2d_rgba8(*img, {.generate_mips = true, .srgb = false});
+            if (!tex)
+            {
+                std::println(stderr, "Failed to upload '{}'", normal_path.string());
+                return false;
+            }
+
+            textures.clean_asphalt_normal = *tex;
+        }
+    }
+
+    {  // Marble Bust
+        const fs::path texture_dir =
+            fs::path{k_fp_assets} / k_fp_assets_textures / k_texture_marble_bust_2k;
+
+        const fs::path diffuse_path = texture_dir / k_texture_marble_bust_diffuse;
+        const fs::path normal_path = texture_dir / k_texture_marble_bust_normal;
+
+        {
+            auto img = load_image_rgba8(
+                diffuse_path, TextureLoadOptions{.flip_y = false, .force_rgba = true}
+            );
+            if (!img)
+            {
+                std::println(stderr, "Failed to load '{}'", diffuse_path.string());
+                return false;
+            }
+
+            auto tex = upload_texture_2d_rgba8(*img, {.generate_mips = true, .srgb = true});
+            if (!tex)
+            {
+                std::println(stderr, "Failed to upload '{}'", diffuse_path.string());
+                return false;
+            }
+
+            textures.marble_bust_diffuse = *tex;
+        }
+
+        {
+            auto img = load_image_rgba8(
+                normal_path, TextureLoadOptions{.flip_y = false, .force_rgba = true}
+            );
+            if (!img)
+            {
+                std::println(stderr, "Failed to load '{}'", normal_path.string());
+                return false;
+            }
+
+            auto tex = upload_texture_2d_rgba8(*img, {.generate_mips = true, .srgb = false});
+            if (!tex)
+            {
+                std::println(stderr, "Failed to upload '{}'", normal_path.string());
+                return false;
+            }
+
+            textures.marble_bust_normal = *tex;
+        }
+    }
+    return true;
+}
+
 bool GfxContext::create_meshes()
 {
     auto upload_or_fail_pn = [&](const std::optional<MeshDataPN>& mesh_data,

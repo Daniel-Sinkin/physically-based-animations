@@ -116,6 +116,11 @@ inline constexpr std::string_view k_texture_clean_asphalt{"clean_asphalt_1k"};
 inline constexpr std::string_view k_texture_clean_asphalt_diffuse{"clean_asphalt_diff_1k.jpg"};
 inline constexpr std::string_view k_texture_clean_asphalt_normal{"clean_asphalt_nor_gl_1k.jpg"};
 
+inline constexpr std::string_view k_texture_marble_bust_2k{"marble_bust_2k"};
+inline constexpr std::string_view k_texture_marble_bust_diffuse{"marble_bust_01_diff_2k.jpg"};
+inline constexpr std::string_view k_texture_marble_bust_normal{"marble_bust_01_nor_gl_2k.jpg"};
+inline constexpr std::string_view k_texture_marble_bust_roughness{"marble_bust_01_rough_2k.jpg"};
+
 struct FontMetadata
 {
     std::string_view filename{};

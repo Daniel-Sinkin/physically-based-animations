@@ -128,10 +128,16 @@ struct GfxContext
         GLTexture2D clean_asphalt_diffuse{};
         GLTexture2D clean_asphalt_normal{};
 
+        GLTexture2D marble_bust_diffuse{};
+        GLTexture2D marble_bust_normal{};
+
         void destroy()
         {
             clean_asphalt_diffuse.destroy();
             clean_asphalt_normal.destroy();
+
+            marble_bust_diffuse.destroy();
+            marble_bust_normal.destroy();
         }
     };
     Textures textures{};
@@ -254,6 +260,7 @@ struct GfxContext
 
     bool create_programs();
     bool create_meshes();
+    bool create_textures();
 
     void hover_interaction(const EditorInput& input) const;
     void hover_interaction_holding_middle(const EditorInput& input, Camera& cam) const;

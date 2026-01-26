@@ -139,58 +139,11 @@ bool GfxContext::setup()
     glEnable(GL_STENCIL_TEST);
     glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
-    if (!create_programs())
-    {
-        return false;
-    }
-    if (!create_meshes())
-    {
-        return false;
-    }
-    {
-        namespace fs = std::filesystem;
-        const fs::path texture_dir =
-            fs::path{k_fp_assets} / k_fp_assets_textures / k_texture_clean_asphalt;
-
-        const fs::path diffuse_path = texture_dir / k_texture_clean_asphalt_diffuse;
-        const fs::path normal_path = texture_dir / k_texture_clean_asphalt_normal;
-
-        {  // Diffuse
-            auto diffuse_img = load_image_rgba8(diffuse_path);
-            if (!diffuse_img)
-            {
-                std::println(stderr, "Failed to load diffuse image '{}'", diffuse_path.string());
-                return false;
-            }
-            auto diffuse_tex =
-                upload_texture_2d_rgba8(*diffuse_img, {.generate_mips = true, .srgb = true});
-            if (!diffuse_tex)
-            {
-                std::println(
-                    stderr, "Failed to upload diffuse texture '{}'", diffuse_path.string()
-                );
-                return false;
-            }
-            textures.clean_asphalt_diffuse = *diffuse_tex;
-        }
-
-        {  // Normal
-            auto normal_img = load_image_rgba8(normal_path);
-            if (!normal_img)
-            {
-                std::println(stderr, "Failed to load normal image '{}'", normal_path.string());
-                return false;
-            }
-            auto normal_tex =
-                upload_texture_2d_rgba8(*normal_img, {.generate_mips = true, .srgb = false});
-            if (!normal_tex)
-            {
-                std::println(stderr, "Failed to upload normal texture '{}'", normal_path.string());
-                return false;
-            }
-            textures.clean_asphalt_normal = *normal_tex;
-        }
-    }
+    // clang-format off
+    if (!create_programs()) { return false; }
+    if (!create_meshes())   { return false; }
+    if (!create_textures()) { return false; }
+    //clang-format on
     last_scene_poll = std::chrono::steady_clock::now();
     return true;
 }

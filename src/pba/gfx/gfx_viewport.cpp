@@ -170,11 +170,11 @@ void GfxContext::render_to_viewport_objects(
         set_uniform_mat4(shader_programs.obj_tex.handle(), "uProj", camera_proj_matrix);
 
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, textures.clean_asphalt_diffuse.id);
+        glBindTexture(GL_TEXTURE_2D, textures.marble_bust_diffuse.id);
         set_uniform_int(shader_programs.obj_tex.handle(), "uDiffuseTex", 0);
 
         glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, textures.clean_asphalt_normal.id);
+        glBindTexture(GL_TEXTURE_2D, textures.marble_bust_normal.id);
         set_uniform_int(shader_programs.obj_tex.handle(), "uNormalTex", 1);
 
         meshes.marble_bust.vao.bind();
