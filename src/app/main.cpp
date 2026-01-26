@@ -18,8 +18,8 @@ extern "C" void handle_term(int) noexcept
 
 int main()
 {
-    const ds_pba::util::ScopeTimer timer{"Total Runtime"};
     using namespace ds_pba;
+    const ScopeTimer timer{"Total Runtime"};
 
     std::signal(SIGTERM, handle_term);
     std::signal(SIGINT, handle_term);

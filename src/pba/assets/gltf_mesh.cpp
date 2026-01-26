@@ -455,7 +455,7 @@ static std::optional<tinygltf::Model> load_tinygltf_model(const std::string& pat
 
 std::optional<MeshDataPN> load_gltf_mesh(const std::string& path, const Transform& preprocess)
 {
-    const util::ScopeTimer timer{path};
+    const ScopeTimer timer{path};
 
     auto model_opt = load_tinygltf_model(path);
     if (!model_opt)
@@ -684,7 +684,7 @@ std::optional<MeshDataPN> load_model_mesh(std::string_view model_name)
 
 std::optional<MeshDataPNT> load_gltf_mesh_pnt(const std::string& path, const Transform& preprocess)
 {
-    const util::ScopeTimer timer{path};
+    const ScopeTimer timer{path};
 
     auto model_opt = load_tinygltf_model(path);
     if (!model_opt)
@@ -714,7 +714,7 @@ std::optional<MeshDataPNT> load_gltf_mesh_pnt(const std::string& path, const Tra
         return std::nullopt;
     }
 
-    // POSITION
+    // Position
     const auto it_pos = prim.attributes.find("POSITION");
     if (it_pos == prim.attributes.end())
     {
@@ -741,7 +741,7 @@ std::optional<MeshDataPNT> load_gltf_mesh_pnt(const std::string& path, const Tra
     const usize pos_stride{pos_view.stride};
     const usize vertex_count{pos_view.count};
 
-    // NORMAL (optional, will compute flat normals if missing)
+    // Normal
     bool has_normals{false};
     const std::byte* nrm_base{};
     usize nrm_stride{0};
@@ -764,7 +764,7 @@ std::optional<MeshDataPNT> load_gltf_mesh_pnt(const std::string& path, const Tra
         }
     }
 
-    // TEXCOORD_0 (required for this mesh type)
+    // TexCoord_0
     const auto it_uv = prim.attributes.find("TEXCOORD_0");
     if (it_uv == prim.attributes.end())
     {

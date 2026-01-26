@@ -10,7 +10,7 @@
 #include <string>
 #include <vector>
 
-namespace ds_pba::ui_theme
+namespace ds_pba
 {
 
 enum class ThemeBase
@@ -88,4 +88,4 @@ std::expected<UiThemePack, UiThemeError> load_theme_pack_json(const std::filesys
 
 void apply_theme(const UiTheme& theme);
 
-}  // namespace ds_pba::ui_theme
+}  // namespace ds_pba

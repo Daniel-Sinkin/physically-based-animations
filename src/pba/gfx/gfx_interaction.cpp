@@ -169,6 +169,9 @@ void GfxContext::hover_interaction_selection(const EditorInput& input, const Ray
         case ObjectType::Hitmarker:
             kind = "Hitmarker";
             break;
+        case ObjectType::MarbleBust:
+            kind = "MarbleBust";
+            break;
     }
 
     const bool was_selected = scene_context->is_selected(rc.object_id);

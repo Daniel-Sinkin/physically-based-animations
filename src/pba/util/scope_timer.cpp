@@ -5,7 +5,7 @@
 #include "pba/util/scope_timer.hpp"
 //
 
-namespace ds_pba::util
+namespace ds_pba
 {
 
 ScopeTimer::ScopeTimer(std::string_view label) noexcept : label_(label), start_(Clock::now())
@@ -29,4 +29,4 @@ ScopeTimer::~ScopeTimer() noexcept
     }
 }
 
-}  // namespace ds_pba::util
+}  // namespace ds_pba

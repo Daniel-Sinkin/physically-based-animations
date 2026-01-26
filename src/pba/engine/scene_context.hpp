@@ -17,6 +17,7 @@ struct SceneContext
     std::vector<Object> cube_objects{};
     std::vector<Object> sphere_objects{};
     std::vector<Object> hitmarker_objects{};
+    std::vector<Object> marble_bust_objects{};
 
     std::vector<ObjectId> selected_ids{};
     std::optional<ObjectId> active_id{};

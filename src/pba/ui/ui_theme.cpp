@@ -8,7 +8,7 @@
 #include <fstream>
 #include <json.hpp>
 
-namespace ds_pba::ui_theme
+namespace ds_pba
 {
 namespace
 {
@@ -505,4 +505,4 @@ void apply_theme(const UiTheme& theme)
         c[ImGuiCol_WindowBg].w = 1.0f;
     }
 }
-}  // namespace ds_pba::ui_theme
+}  // namespace ds_pba

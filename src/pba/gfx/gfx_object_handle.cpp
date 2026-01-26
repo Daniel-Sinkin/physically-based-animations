@@ -23,7 +23,7 @@
 namespace ds_pba
 {
 
-std::optional<ds_pba::Position3> GfxContext::get_object_position(ObjectId id) const
+std::optional<Position3> GfxContext::get_object_position(ObjectId id) const
 {
     if (!scene_context)
     {

@@ -5,7 +5,7 @@
 
 #include <string_view>
 
-namespace ds_pba::util
+namespace ds_pba
 {
 
 class ScopeTimer
@@ -25,4 +25,4 @@ class ScopeTimer
     Clock::time_point start_;
 };
 
-}  // namespace ds_pba::util
+}  // namespace ds_pba

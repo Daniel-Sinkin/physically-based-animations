@@ -146,7 +146,7 @@ void EngineContext::add_ground()
 
 bool EngineContext::setup()
 {
-    const util::ScopeTimer timer{"Engine setup"};
+    const ScopeTimer timer{"Engine setup"};
     {
         add_ground();
 
@@ -228,9 +228,10 @@ bool EngineContext::setup()
                 );
             }
         }
-        // scene.sphere_objects.push_back(Object{.id = next_object_id(), .type =
-        // ObjectType::Sphere});
     }
+    scene.marble_bust_objects.push_back(
+        Object{.id = next_object_id(), .type = ObjectType::MarbleBust}
+    );
 
     gfx.scene_context = &scene;
     gfx.engine_context = this;

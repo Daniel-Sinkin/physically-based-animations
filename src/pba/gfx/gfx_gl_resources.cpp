@@ -16,7 +16,6 @@
 #include <imgui.h>
 #include <optional>
 #include <print>
-#include <utility>
 //
 #include <GLFW/glfw3.h>
 #include <glm/ext/matrix_float4x4.hpp>
@@ -24,11 +23,8 @@
 
 namespace ds_pba
 {
-[[nodiscard]] std::optional<ds_pba::GLMesh>
-upload_mesh_pcolor_lines(const ds_pba::MeshDataPColor& mesh_data)
+[[nodiscard]] std::optional<GLMesh> upload_mesh_pcolor_lines(const MeshDataPColor& mesh_data)
 {
-    using namespace ds_pba;
-
     const auto& verts = mesh_data.vertices;
     if (verts.empty())
     {
@@ -65,10 +61,8 @@ upload_mesh_pcolor_lines(const ds_pba::MeshDataPColor& mesh_data)
     return mesh;
 }
 
-[[nodiscard]] std::optional<ds_pba::GLMesh> upload_mesh_pnt(const ds_pba::MeshDataPNT& mesh_data)
+[[nodiscard]] std::optional<GLMesh> upload_mesh_pnt(const MeshDataPNT& mesh_data)
 {
-    using namespace ds_pba;
-
     const auto& verts = mesh_data.vertices;
     if (verts.empty())
     {
@@ -109,10 +103,8 @@ upload_mesh_pcolor_lines(const ds_pba::MeshDataPColor& mesh_data)
     return mesh;
 }
 
-[[nodiscard]] std::optional<ds_pba::GLMesh> upload_mesh_pn(const ds_pba::MeshDataPN& mesh_data)
+[[nodiscard]] std::optional<GLMesh> upload_mesh_pn(const MeshDataPN& mesh_data)
 {
-    using namespace ds_pba;
-
     const auto& verts = mesh_data.vertices;
     if (verts.empty())
     {
@@ -233,7 +225,7 @@ bool GfxContext::create_meshes()
         meshes.pyramid = *mesh_res;
     }
     {
-        auto mesh_res = ds_pba::load_model_mesh_pnt(k_model_marble_bust);
+        auto mesh_res = load_model_mesh_pnt(k_model_marble_bust);
         if (!mesh_res)
         {
             std::println(stderr, "Failed to load '{}' mesh (PNT)", k_model_marble_bust);

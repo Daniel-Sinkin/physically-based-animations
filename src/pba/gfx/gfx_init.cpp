@@ -101,7 +101,7 @@ bool GfxContext::setup()
         }
     }
     {  // Load Themes
-        auto res = ui_theme::load_theme_pack_json("assets/ui/themes.json");
+        auto res = load_theme_pack_json("assets/ui/themes.json");
         if (res)
         {
             theme_pack = std::move(*res);
@@ -110,7 +110,7 @@ bool GfxContext::setup()
             theme_index = theme_pack.default_index.value_or(0zu);
             theme_index = std::min(theme_index, theme_pack.themes.size() - 1zu);
 
-            ui_theme::apply_theme(theme_pack.themes[theme_index]);
+            apply_theme(theme_pack.themes[theme_index]);
         }
         else
         {

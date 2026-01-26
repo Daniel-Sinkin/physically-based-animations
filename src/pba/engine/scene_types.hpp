@@ -32,7 +32,8 @@ enum class ObjectType
 {
     Cube,
     Sphere,
-    Hitmarker
+    Hitmarker,
+    MarbleBust
 };
 struct Object
 {

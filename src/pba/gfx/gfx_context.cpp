@@ -100,12 +100,12 @@ void GfxContext::step()
         return;
     }
     {  // See shutdown.hpp for details on our signal handling
-        if (ds_pba::g_request_close_sig)
+        if (g_request_close_sig)
         {
-            ds_pba::g_request_close.store(true, std::memory_order_relaxed);
-            ds_pba::g_request_close_sig = 0;
+            g_request_close.store(true, std::memory_order_relaxed);
+            g_request_close_sig = 0;
         }
-        if (ds_pba::g_request_close.load(std::memory_order_relaxed))
+        if (g_request_close.load(std::memory_order_relaxed))
         {
             request_close();
         }

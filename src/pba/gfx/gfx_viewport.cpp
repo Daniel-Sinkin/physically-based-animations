@@ -27,7 +27,7 @@
 namespace ds_pba
 {
 void GfxContext::render_to_viewport_objects(
-    const ds_pba::ViewMatrix& camera_view_matrix, const ds_pba::ProjMatrix& camera_proj_matrix
+    const ViewMatrix& camera_view_matrix, const ProjMatrix& camera_proj_matrix
 ) const
 {
     // Objects
@@ -130,8 +130,6 @@ void GfxContext::render_to_viewport_objects(
         VAO::unbind();
     }
 
-    constexpr const bool render_general_mesh{false};
-    if constexpr (!render_general_mesh)
     {  // Spheres
         meshes.sphere.vao.bind();
         for (usize i{0zu}; i < scene_context->sphere_objects.size(); ++i)
@@ -156,11 +154,8 @@ void GfxContext::render_to_viewport_objects(
         }
         VAO::unbind();
     }
-    if constexpr (render_general_mesh)
-    {  // Currently no generic mesh support, this just spawns in first sphere pos and assumes
-       // spheres are not rendered, so need to disable the previous scope
-        assert(!scene_context->sphere_objects.empty());
 
+    {  // Marble Bust
         if (!textures.clean_asphalt_diffuse.valid() || !textures.clean_asphalt_normal.valid())
         {
             std::println(
@@ -184,7 +179,7 @@ void GfxContext::render_to_viewport_objects(
 
         meshes.marble_bust.vao.bind();
 
-        const Object& o{scene_context->sphere_objects[0]};
+        const Object& o{scene_context->marble_bust_objects[0]};
         set_uniform_mat4(shader_programs.obj_tex.handle(), "uModel", o.transform.model_matrix());
 
         glDrawArrays(GL_TRIANGLES, 0, meshes.marble_bust.vertex_count);
@@ -252,7 +247,7 @@ void GfxContext::render_to_viewport()
 }
 
 void GfxContext::render_to_viewport_outline(
-    const ds_pba::ViewMatrix& camera_view_matrix, const ds_pba::ProjMatrix& camera_proj_matrix
+    const ViewMatrix& camera_view_matrix, const ProjMatrix& camera_proj_matrix
 ) const
 {
     if (!scene_context || scene_context->selected_ids.empty())
@@ -290,12 +285,15 @@ void GfxContext::render_to_viewport_outline(
     {
         switch (type)
         {
-            case ds_pba::ObjectType::Cube:
+            case ObjectType::Cube:
                 meshes.cube.instantiate_once();
                 break;
-            case ds_pba::ObjectType::Sphere:
-            case ds_pba::ObjectType::Hitmarker:
+            case ObjectType::Sphere:
+            case ObjectType::Hitmarker:
                 meshes.sphere.instantiate_once();
+                break;
+            case ObjectType::MarbleBust:
+                meshes.marble_bust.instantiate_once();
                 break;
         }
     };

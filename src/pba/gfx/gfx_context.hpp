@@ -76,7 +76,7 @@ struct GfxContext
 
     ColorRGBAf background_color{0.255f, 0.255f, 0.255f, 1.0f};
 
-    ui_theme::UiThemePack theme_pack{};
+    UiThemePack theme_pack{};
     usize theme_index{0zu};
     bool theme_loaded{false};
 

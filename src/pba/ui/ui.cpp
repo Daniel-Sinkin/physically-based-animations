@@ -10,6 +10,7 @@
 #include "pba/core/pch.hpp"  // IWYU pragma: keep
 #include "pba/engine/engine_context.hpp"
 #include "pba/engine/scene_context.hpp"
+#include "pba/engine/scene_types.hpp"
 #include "pba/gfx/gfx_context.hpp"
 #include "pba/physics/physics_context.hpp"
 //
@@ -380,9 +381,9 @@ void render_imgui_windows(EngineContext& engine_context)
     }
 
     {
-        auto apply_theme_with_font = [&](const ui_theme::UiTheme& t)
+        auto apply_theme_with_font = [&](const UiTheme& t)
         {
-            ui_theme::apply_theme(t);
+            apply_theme(t);
 
             ImGuiIO& io = ImGui::GetIO();
             ImFont* chosen = gfx_context.default_font;
@@ -531,14 +532,17 @@ void render_imgui_windows(EngineContext& engine_context)
             const char* type_str{""};
             switch (type)
             {
-                case ds_pba::ObjectType::Cube:
+                case ObjectType::Cube:
                     type_str = "Cube";
                     break;
-                case ds_pba::ObjectType::Sphere:
+                case ObjectType::Sphere:
                     type_str = "Sphere";
                     break;
-                case ds_pba::ObjectType::Hitmarker:
+                case ObjectType::Hitmarker:
                     type_str = "Hitmarker";
+                    break;
+                case ObjectType::MarbleBust:
+                    type_str = "MarbleBust";
                     break;
             }
 
@@ -770,11 +774,11 @@ void render_menu_bar(GfxContext& gfx_context)
         ImGui::Separator();
         if (ImGui::MenuItem("Save Scene"))
         {
-            ds_pba::ui_log("Save Scene (not implemented)");
+            ui_log("Save Scene (not implemented)");
         }
         if (ImGui::MenuItem("Load Scene"))
         {
-            ds_pba::ui_log("Load Scene (not implemented)");
+            ui_log("Load Scene (not implemented)");
         }
 
         ImGui::EndMenu();
@@ -784,11 +788,11 @@ void render_menu_bar(GfxContext& gfx_context)
     {
         if (ImGui::MenuItem("Undo"))
         {
-            ds_pba::ui_log("Undo (not implemented)");
+            ui_log("Undo (not implemented)");
         }
         if (ImGui::MenuItem("Redo"))
         {
-            ds_pba::ui_log("Redo (not implemented)");
+            ui_log("Redo (not implemented)");
         }
         ImGui::EndMenu();
     }
