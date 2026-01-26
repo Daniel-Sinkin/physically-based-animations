@@ -1,4 +1,5 @@
 // pba/physics/collision.cpp
+#include "glm/gtc/quaternion.hpp"
 #include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/physics/collision.hpp"
@@ -24,11 +25,11 @@ namespace
     return static_cast<i32>(std::lround(static_cast<f64>(x / cell)));
 }
 
-static void reduce_contact_points_4(
-    std::array<Position3, k_contact_points>& pts, usize& pt_count, const Direction3& n
+static void reduce_contact_points_to_4(
+    std::array<Position3, k_contact_points>& pts, usize& new_pt_count, const Direction3& n
 ) noexcept
 {
-    if (pt_count <= 4)
+    if (new_pt_count <= 4)
     {
         return;
     }
@@ -48,7 +49,7 @@ static void reduce_contact_points_4(
         f32 mn = glm::dot(pts[0], axis);
         f32 mx = mn;
 
-        for (usize i{1zu}; i < pt_count; ++i)
+        for (usize i{1zu}; i < new_pt_count; ++i)
         {
             const f32 d{glm::dot(pts[i], axis)};
             if (d < mn)
@@ -102,28 +103,27 @@ static void reduce_contact_points_4(
     {
         pts[i] = reduced[i];
     }
-    pt_count = reduced_count;
-}
-
-[[nodiscard]] glm::mat3 R_from_q(const Quaternion& q) noexcept
-{
-    return glm::mat3_cast(q);
+    new_pt_count = reduced_count;
 }
 
 [[nodiscard]] std::array<Direction3, 3> obb_axes_world(const RigidBody& b) noexcept
 {
-    const glm::mat3 R{R_from_q(b.orientation)};
-
+    // In an AABB the faces are already aligned with the standard basis so rotating
+    // an AABB and rotating the local axis is the same thing.
+    const glm::mat3 R{glm::mat3_cast(b.orientation)};
+    // GLM (and OpenGL) store array in column major
     return {
-        glm::normalize(R * k_axis_x),
-        glm::normalize(R * k_axis_y),
-        glm::normalize(R * k_axis_z),
+        Direction3{R[0]},
+        Direction3{R[1]},
+        Direction3{R[2]},
     };
 }
 
 [[nodiscard]] std::array<Position3, 8> box_world_corners(const RigidBody& b) noexcept
 {
     const auto [ax, ay, az] = obb_axes_world(b);
+    // From center of mass move towards one of the faces == move along rotated axis
+    // so we just need to do one step of length of the half extent.
     const Direction3 ex{ax * b.half_extents.x};
     const Direction3 ey{ay * b.half_extents.y};
     const Direction3 ez{az * b.half_extents.z};
@@ -154,7 +154,6 @@ static void reduce_contact_points_4(
     const bool inside_x{std::abs(lx) <= he.x + eps};
     const bool inside_y{std::abs(ly) <= he.y + eps};
     const bool inside_z{std::abs(lz) <= he.z + eps};
-
     return inside_x && inside_y && inside_z;
 }
 
@@ -176,14 +175,14 @@ void project_obb_on_axis(
     out_max = center_proj + radius_proj;
 }
 
-[[nodiscard]] bool sat_obb_obb(
+[[nodiscard]] bool obb_obb_overlap(
     const RigidBody& a,
     const RigidBody& b,
     Direction3& out_n,
     f32& out_penetration,
     int& out_axis_index
 ) noexcept
-{
+{  // Uses Seperating Axis Theorem (SAT)
     const auto ax = obb_axes_world(a);
     const auto bx = obb_axes_world(b);
 
@@ -213,9 +212,9 @@ void project_obb_on_axis(
     Direction3 best_axis{0.0f, 0.0f, 1.0f};
     int best_i{-1};
 
-    for (int i{0}; i < static_cast<int>(axes.size()); ++i)
+    for (usize i{0}; i < axes.size(); ++i)
     {
-        const Direction3 raw_axis{axes[static_cast<usize>(i)]};
+        const Direction3 raw_axis{axes[i]};
         const f32 len2 = glm::dot(raw_axis, raw_axis);
         if (len2 <= 1e-10f)
         {
@@ -225,8 +224,8 @@ void project_obb_on_axis(
         const Direction3 axis = raw_axis / std::sqrt(len2);
 
         f32 a_min{}, a_max{};
-        f32 b_min{}, b_max{};
         project_obb_on_axis(a, axis, a_min, a_max);
+        f32 b_min{}, b_max{};
         project_obb_on_axis(b, axis, b_min, b_max);
 
         const f32 overlap{std::min(a_max, b_max) - std::max(a_min, b_min)};
@@ -238,12 +237,10 @@ void project_obb_on_axis(
         if (overlap < best_overlap)
         {
             best_overlap = overlap;
-
-            // Ensure normal points from b -> a
+            // Assure b -> a orientation
             const f32 s{glm::dot(d, axis)};
             best_axis = (s >= 0.0f) ? axis : -axis;
-
-            best_i = i;
+            best_i = static_cast<int>(i);
         }
     }
     if (best_i < 0)
@@ -277,7 +274,7 @@ ContactKey make_contact_key(const RigidBody& a, const RigidBody& b, const Positi
 
 void generate_obb_contacts(std::span<const RigidBody> bodies, std::pmr::vector<Contact>& out)
 {
-    out.clear();
+    assert(out.empty() && "arena allocator should be wiped at start of iteration");
     out.reserve(bodies.size() * 8zu);  // TODO: Profile what a good default would be
 
     for (usize i{0zu}; i < bodies.size(); ++i)
@@ -286,79 +283,92 @@ void generate_obb_contacts(std::span<const RigidBody> bodies, std::pmr::vector<C
         {
             const RigidBody& a{bodies[i]};
             const RigidBody& b{bodies[j]};
-
+            // Static & Static might intersect but there is no force being generated
             if (a.is_static() && b.is_static())
             {
                 continue;
             }
 
-            Direction3 n{0.0f, 0.0f, 1.0f};
+            Direction3 n{k_axis_z};
             f32 penetration{0.0f};
             int axis_index{-1};
-            if (!sat_obb_obb(a, b, n, penetration, axis_index))
+            if (!obb_obb_overlap(a, b, n, penetration, axis_index))
             {
                 continue;
             }
             const bool cross_axis{axis_index >= 6};
 
+            // More contact points are more expensive
             std::array<Position3, k_contact_points> pts{};
             usize pt_count{0};
 
+            // Get the obb corner positions
             const std::array<Position3, 8> a_corners{box_world_corners(a)};
             for (const Position3& p : a_corners)
             {
+                if (pt_count >= pts.size())
+                {
+                    break;
+                }
                 if (point_in_obb(p, b))
                 {
-                    if (pt_count < pts.size())
-                    {
-                        pts[pt_count++] = p;
-                    }
+                    pts[pt_count++] = p;
                 }
             }
 
             const std::array<Position3, 8> b_corners{box_world_corners(b)};
             for (const Position3& p : b_corners)
             {
+                if (pt_count >= pts.size())
+                {
+                    break;
+                }
                 if (point_in_obb(p, a))
                 {
-                    if (pt_count < pts.size())
-                    {
-                        pts[pt_count++] = p;
-                    }
+                    pts[pt_count++] = p;
                 }
             }
 
             if (pt_count == 0)
             {
+                // TODO: Replace this by a better wa
+
+                // If we don't find any contact points we create a
+                // virtual contact point in the middle of the two
+                // center of masses. This is a pretty bad heuristic
+                // in particular if one of (or both) the objects
+                // is scaled very large as the mid point can be quite
+                // far away.
                 const Position3 mid{0.5f * (a.position + b.position)};
                 const Position3 p{mid - 0.5f * penetration * n};
-                Contact c{
-                    .a_idx = i,
-                    .b_idx = j,
-                    .p = p,
-                    .n = n,
-                    .penetration = penetration,
-                    .allow_warm_start = false,
-                };
-
-                out.push_back(c);
+                out.push_back(
+                    Contact{
+                        .a_idx = i,
+                        .b_idx = j,
+                        .p = p,
+                        .n = n,
+                        .penetration = penetration,
+                        .allow_warm_start = false,
+                    }
+                );
                 continue;
             }
-
-            reduce_contact_points_4(pts, pt_count, n);
+            reduce_contact_points_to_4(pts, pt_count, n);
 
             for (usize k{0zu}; k < pt_count; ++k)
             {
-                Contact c{
-                    .a_idx = i,
-                    .b_idx = j,
-                    .p = pts[k],  // TODO: This is not entirey stable after reducing, replace
-                                  // once stable manifold ids are implemented
-                    .n = n,
-                    .penetration = penetration,
-                    .allow_warm_start = !cross_axis,
-                };
-                out.push_back(c);
+                // TODO: This is not entirey stable after reducing, replace
+                // once stable manifold ids are implemented
+                out.push_back(
+                    Contact{
+                        .a_idx = i,
+                        .b_idx = j,
+                        .p = pts[k],
+                        .n = n,
+                        .penetration = penetration,
+                        .allow_warm_start = !cross_axis,
+                    }
+                );
             }
         }
     }

@@ -49,31 +49,30 @@ compute_total_kinetic_energy(std::span<const RigidBody> bodies, bool include_ang
 
 void PhysicsContext::step()
 {
+    // Per step arena allocator is very cheap to reset
     step_arena.release();
     Contacts contacts{&step_arena};
 
+    // How long the frame lasted, we do physics processing
+    // until physics time reaches that time.
     const Duration dt{time_step};
     const f32 dt_s{dt_f32(dt)};
 
-    // Update inertia based on  sg
     update_inv_inertia_world(bodies);
 
+    // TODO: Should also have parallelizable "single body"
+    // forces that don't need information about the other
+    // bodies, those I could easily split into seperate
+    // threads using OpenMP and applying "batched" multiple
+    // forces per body is more cache friendly
     for (const auto& f : external_forces)
-    {
+    {  // Apply all registered external forces
         f.fn(bodies, dt_s, f.user);
     }
 
     integrate_forces(bodies, dt_s);
     integrate_velocities(bodies, dt_s);
-
     generate_obb_contacts(bodies, contacts);
-    if constexpr (k_validate_contacts)
-    {
-        for ([[maybe_unused]] const auto& c : contacts)
-        {
-            assert(c.is_valid());
-        }
-    }
 
     {  // Setup debug info for this step
         debug_contacts.clear();
