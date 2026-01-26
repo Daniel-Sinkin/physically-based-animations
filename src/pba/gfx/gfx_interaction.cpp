@@ -105,12 +105,11 @@ void GfxContext::hover_interaction(const EditorInput& input) const
                 );
             }
         }
-        else if (selecting && input.key_down(EditorKey::Shift))
+        else if (!scene_context->selected_ids.empty() && !input.key_down(EditorKey::Shift))
         {
             // Deselect on clicking on background
             if (!scene_context->selected_ids.empty())
             {
-
                 scene_context->clear_selection();
                 ui_log("Deselected all");
             }
@@ -177,26 +176,27 @@ void GfxContext::hover_interaction_selection(const EditorInput& input, const Ray
     if (input.key_down(EditorKey::Shift))
     {
         scene_context->toggle_selection(rc.object_id);
-    }
-    else
-    {
-        scene_context->select_single(rc.object_id);
+        const bool now_selected = scene_context->is_selected(rc.object_id);
+        if (now_selected)
+        {
+            log_action("Selected", rc.object_id, kind);
+        }
+        else
+        {
+            log_action("Deselected", rc.object_id, kind);
+        }
+        return;
     }
 
-    const bool now_selected = scene_context->is_selected(rc.object_id);
-    if (now_selected && !was_selected)
+    if (was_selected)
     {
-        log_action("Selected", rc.object_id, kind);
-    }
-    else if (!now_selected && was_selected)
-    {
+        scene_context->toggle_selection(rc.object_id);
         log_action("Deselected", rc.object_id, kind);
+        return;
     }
-    else
-    {
-        // e.g. clicking already selected without shift -> still selected
-        log_action("Selected", rc.object_id, kind);
-    }
+
+    scene_context->select_single(rc.object_id);
+    log_action("Selected", rc.object_id, kind);
 }
 
 }  // namespace ds_pba

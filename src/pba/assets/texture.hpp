@@ -3,8 +3,8 @@
 
 #include "pba/core/core_types.hpp"
 
-#include <expected>
 #include <filesystem>
+#include <optional>
 #include <span>
 #include <vector>
 
@@ -65,7 +65,7 @@ struct TextureLoadOptions
     bool force_rgba{true};
 };
 
-[[nodiscard]] std::expected<ImageRGBA8, TextureLoadError>
+[[nodiscard]] std::optional<ImageRGBA8>
 load_image_rgba8(const std::filesystem::path& path, TextureLoadOptions opt = {});
 
 }  // namespace ds_pba

@@ -5,6 +5,7 @@
 #include "pba/core/math_types.hpp"
 
 #include <numbers>
+#include <string_view>
 
 namespace ds_pba
 {
@@ -114,6 +115,19 @@ inline constexpr std::string_view k_fp_assets_textures{"textures"};
 inline constexpr std::string_view k_texture_clean_asphalt{"clean_asphalt_1k"};
 inline constexpr std::string_view k_texture_clean_asphalt_diffuse{"clean_asphalt_diff_1k.jpg"};
 inline constexpr std::string_view k_texture_clean_asphalt_normal{"clean_asphalt_nor_gl_1k.jpg"};
+
+struct FontMetadata
+{
+    std::string_view filename{};
+    f32 fontsize{};
+};
+
+inline constexpr FontMetadata k_font_monaspace_krypton_regular{
+    .filename = "MonaspaceKrypton-Regular.otf", .fontsize = 14.0f
+};
+inline constexpr FontMetadata k_font_monaspace_argon_regular{
+    .filename = "MonaspaceArgon-Regular.otf", .fontsize = 14.0f
+};
 
 //
 //

@@ -1,9 +1,9 @@
 // pba/gfx/gfx_context.cpp
-#include "pba/core/constants.hpp"
 #include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/gfx/gfx_context.hpp"
 //
+#include "pba/core/constants.hpp"
 #include "pba/core/core_types.hpp"
 #include "pba/core/format.hpp"  // IWYU pragma: keep
 #include "pba/editor/editor_input.hpp"
@@ -45,15 +45,13 @@ void GfxContext::shutdown()
 
         invalidate_uniform_cache_for_program(shader_programs.grid.handle());
         invalidate_uniform_cache_for_program(shader_programs.obj.handle());
+        invalidate_uniform_cache_for_program(shader_programs.obj_tex.handle());
         invalidate_uniform_cache_for_program(shader_programs.outline.handle());
         invalidate_uniform_cache_for_program(shader_programs.pivot.handle());
 
-        shader_programs.grid.destroy();
-        shader_programs.obj.destroy();
-        shader_programs.outline.destroy();
-        shader_programs.pivot.destroy();
-
+        shader_programs.destroy();
         meshes.destroy();
+        textures.destroy();
 
         loaded_glad = false;
     }

@@ -65,15 +65,4 @@ upload_texture_2d_rgba8(const ImageRGBA8& img, GLTextureUploadOptions opt)
     return GLTexture2D{.id = tex, .width = img.width, .height = img.height};
 }
 
-void destroy_texture(GLTexture2D& tex) noexcept
-{
-    if (tex.id != 0)
-    {
-        glDeleteTextures(1, &tex.id);
-        tex.id = 0;
-        tex.width = 0;
-        tex.height = 0;
-    }
-}
-
 }  // namespace ds_pba

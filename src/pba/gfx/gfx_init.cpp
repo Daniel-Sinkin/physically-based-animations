@@ -155,18 +155,41 @@ bool GfxContext::setup()
         const fs::path diffuse_path = texture_dir / k_texture_clean_asphalt_diffuse;
         const fs::path normal_path = texture_dir / k_texture_clean_asphalt_normal;
 
-        auto diffuse_img_res = load_image_rgba8(diffuse_path);
-        if (!diffuse_img_res)
-        {
-            return false;
+        {  // Diffuse
+            auto diffuse_img = load_image_rgba8(diffuse_path);
+            if (!diffuse_img)
+            {
+                std::println(stderr, "Failed to load diffuse image '{}'", diffuse_path.string());
+                return false;
+            }
+            auto diffuse_tex =
+                upload_texture_2d_rgba8(*diffuse_img, {.generate_mips = true, .srgb = true});
+            if (!diffuse_tex)
+            {
+                std::println(
+                    stderr, "Failed to upload diffuse texture '{}'", diffuse_path.string()
+                );
+                return false;
+            }
+            textures.clean_asphalt_diffuse = *diffuse_tex;
         }
-        auto diffuse_img_upload_res =
-            upload_texture_2d_rgba8(*diffuse_img_res, {.generate_mips = true, .srgb = true});
-        if (!diffuse_img_res)
-        {
-            return false;
+
+        {  // Normal
+            auto normal_img = load_image_rgba8(normal_path);
+            if (!normal_img)
+            {
+                std::println(stderr, "Failed to load normal image '{}'", normal_path.string());
+                return false;
+            }
+            auto normal_tex =
+                upload_texture_2d_rgba8(*normal_img, {.generate_mips = true, .srgb = false});
+            if (!normal_tex)
+            {
+                std::println(stderr, "Failed to upload normal texture '{}'", normal_path.string());
+                return false;
+            }
+            textures.clean_asphalt_normal = *normal_tex;
         }
-        textures.clean_asphalt_diffuse = *diffuse_img_upload_res;
     }
     last_scene_poll = std::chrono::steady_clock::now();
     return true;

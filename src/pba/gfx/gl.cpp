@@ -48,12 +48,13 @@ create_program(const std::string& vert_src, const std::string& frag_src)
     return prog;
 }
 
-std::expected<std::string, ShaderCreateError> read_text_file(const std::string& path)
+std::optional<std::string> read_text_file(const std::string& path)
 {
     const std::ifstream file(path, std::ios::in);
     if (!file.is_open())
     {
-        return std::unexpected(ShaderCreateError::FileNotFound);
+        std::println(stderr, "Shader file not found: '{}'", path);
+        return std::nullopt;
     }
 
     std::ostringstream ss;
@@ -61,49 +62,49 @@ std::expected<std::string, ShaderCreateError> read_text_file(const std::string& 
 
     if (file.fail() && !file.eof())
     {
-        return std::unexpected(ShaderCreateError::IOError);
+        std::println(stderr, "Shader file IO error while reading: '{}'", path);
+        return std::nullopt;
     }
 
     std::string contents = ss.str();
     if (contents.empty())
     {
-        return std::unexpected(ShaderCreateError::EmptyFile);
+        std::println(stderr, "Shader file is empty: '{}'", path);
+        return std::nullopt;
     }
 
     return contents;
 }
 
-std::expected<std::string, ShaderCreateError> load_shader_sources(const std::string& shader_name)
+std::optional<std::string> load_shader_sources(const std::string& shader_name)
 {
     const std::string path{"assets/shaders/" + shader_name};
-    auto shader = read_text_file(path);
-    if (!shader)
-    {
-        return std::unexpected(shader.error());
-    }
-    return std::move(*shader);
+    return read_text_file(path);
 }
 
-std::expected<ShaderProgram, ShaderCreateError> create_program_from_file(std::string shader_name)
+std::optional<ShaderProgram> create_program_from_file(std::string shader_name)
 {
     auto frag = load_shader_sources(shader_name + ".frag");
     if (!frag)
     {
-        return std::unexpected(frag.error());
+        std::println(stderr, "Failed to load fragment shader source for '{}'", shader_name);
+        return std::nullopt;
     }
 
     auto vert = load_shader_sources(shader_name + ".vert");
     if (!vert)
     {
-        return std::unexpected(vert.error());
+        std::println(stderr, "Failed to load vertex shader source for '{}'", shader_name);
+        return std::nullopt;
     }
 
     auto out = create_program(*vert, *frag);
-    if (!out.has_value())
+    if (!out)
     {
-        return std::unexpected(ShaderCreateError::CompilationError);
+        std::println(stderr, "Failed to compile/link shader program '{}'", shader_name);
+        return std::nullopt;
     }
-    return *out;
+    return out;
 }
 
 }  // namespace ds_pba

@@ -16,22 +16,14 @@
 
 namespace ds_pba
 {
-enum class ShaderCreateError
-{
-    FileNotFound,
-    IOError,
-    EmptyFile,
-    CompilationError
-};
 
 std::optional<ShaderProgram>
 create_program(const std::string& vert_src, const std::string& frag_src);
 
-std::expected<ShaderProgram, ShaderCreateError> create_program_from_file(std::string shader_name);
+std::optional<ShaderProgram> create_program_from_file(std::string shader_name);
 
-std::expected<std::string, ShaderCreateError> read_text_file(const std::string& path);
-
-std::expected<std::string, ShaderCreateError> load_shader_sources(const std::string& shader_name);
+std::optional<std::string> read_text_file(const std::string& path);
+std::optional<std::string> load_shader_sources(const std::string& shader_name);
 
 namespace detail
 {
@@ -126,6 +118,16 @@ inline void set_uniform_mat4(ProgramHandle program, const char* name, const glm:
         return;
     }
     glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(m));
+}
+
+inline void set_uniform_int(ProgramHandle program, const char* name, int v) noexcept
+{
+    const UniformLocation loc{detail::uniform_loc_or_warn(program, name)};
+    if (loc < 0)
+    {
+        return;
+    }
+    glUniform1i(loc, v);
 }
 
 inline void set_uniform_vec3(ProgramHandle program, const char* name, const glm::vec3& v) noexcept

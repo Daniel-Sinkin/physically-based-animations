@@ -26,18 +26,23 @@ namespace
 }
 }  // namespace
 
-std::expected<ImageRGBA8, TextureLoadError>
+std::optional<ImageRGBA8>
 load_image_rgba8(const std::filesystem::path& path, TextureLoadOptions opt)
 {
+    namespace fs = std::filesystem;
+
     if (!file_exists_regular(path))
     {
-        namespace fs = std::filesystem;
         std::error_code ec{};
         if (!fs::exists(path, ec) || ec)
         {
-            return std::unexpected(TextureLoadError::FileNotFound);
+            std::println(stderr, "Texture file not found: '{}'", path.string());
         }
-        return std::unexpected(TextureLoadError::NotAFile);
+        else
+        {
+            std::println(stderr, "Texture path is not a regular file: '{}'", path.string());
+        }
+        return std::nullopt;
     }
 
     stbi_set_flip_vertically_on_load(opt.flip_y ? 1 : 0);
@@ -52,21 +57,24 @@ load_image_rgba8(const std::filesystem::path& path, TextureLoadOptions opt)
     if (!data)
     {
         std::println(stderr, "stbi_load failed for '{}': {}", path.string(), stbi_failure_reason());
-        return std::unexpected(TextureLoadError::DecodeFailed);
+        return std::nullopt;
     }
 
     if (w <= 0 || h <= 0)
     {
         stbi_image_free(data);
-        return std::unexpected(TextureLoadError::InvalidDimensions);
+        std::println(stderr, "Invalid image dimensions for '{}': {}x{}", path.string(), w, h);
+        return std::nullopt;
     }
 
     const int out_comp = opt.force_rgba ? 4 : comp_in_file;
     if (out_comp != 4)
     {
         stbi_image_free(data);
-        std::println(stderr, "Only support RBA8 but got {}", out_comp);
-        return std::unexpected(TextureLoadError::DecodeFailed);
+        std::println(
+            stderr, "Only support RGBA8 but got {} channels for '{}'", out_comp, path.string()
+        );
+        return std::nullopt;
     }
 
     const usize nbytes =
@@ -83,7 +91,8 @@ load_image_rgba8(const std::filesystem::path& path, TextureLoadOptions opt)
 
     if (!out.valid())
     {
-        return std::unexpected(TextureLoadError::DecodeFailed);
+        std::println(stderr, "Decoded image invalid for '{}'", path.string());
+        return std::nullopt;
     }
 
     return out;

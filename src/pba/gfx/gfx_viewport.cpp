@@ -160,13 +160,41 @@ void GfxContext::render_to_viewport_objects(
     {  // Currently no generic mesh support, this just spawns in first sphere pos and assumes
        // spheres are not rendered, so need to disable the previous scope
         assert(!scene_context->sphere_objects.empty());
+
+        if (!textures.clean_asphalt_diffuse.valid() || !textures.clean_asphalt_normal.valid())
+        {
+            std::println(
+                stderr, "Textured mesh render requires diffuse+normal textures to be loaded"
+            );
+            VAO::unbind();
+            return;
+        }
+
+        shader_programs.obj_tex.bind();
+        set_uniform_mat4(shader_programs.obj_tex.handle(), "uView", camera_view_matrix);
+        set_uniform_mat4(shader_programs.obj_tex.handle(), "uProj", camera_proj_matrix);
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, textures.clean_asphalt_diffuse.id);
+        set_uniform_int(shader_programs.obj_tex.handle(), "uDiffuseTex", 0);
+
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, textures.clean_asphalt_normal.id);
+        set_uniform_int(shader_programs.obj_tex.handle(), "uNormalTex", 1);
+
         meshes.marble_bust.vao.bind();
+
         const Object& o{scene_context->sphere_objects[0]};
-        set_uniform_mat4(shader_programs.obj.handle(), "uModel", o.transform.model_matrix());
-        set_uniform_vec3(shader_programs.obj.handle(), "uColor", o.color);
+        set_uniform_mat4(shader_programs.obj_tex.handle(), "uModel", o.transform.model_matrix());
 
         glDrawArrays(GL_TRIANGLES, 0, meshes.marble_bust.vertex_count);
+
         VAO::unbind();
+
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, 0);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, 0);
     }
 }
 void GfxContext::render_to_viewport_grid(
@@ -322,7 +350,9 @@ void GfxContext::render_to_viewport_outline(
             set_uniform_mat4(shader_programs.outline.handle(), "uModel", M_outline);
             set_uniform_mat4(shader_programs.outline.handle(), "uView", camera_view_matrix);
             set_uniform_mat4(shader_programs.outline.handle(), "uProj", camera_proj_matrix);
-            set_uniform_vec3(shader_programs.outline.handle(), "uColor", glm::vec3(1.0f, 0.55f, 0.0f));
+            set_uniform_vec3(
+                shader_programs.outline.handle(), "uColor", glm::vec3(1.0f, 0.55f, 0.0f)
+            );
 
             instantiate_mesh_for_type(type);
 
@@ -361,7 +391,9 @@ void GfxContext::render_to_viewport_pivot(
     const Transform t{.position = pivot_pos, .scale = {0.1f, 0.1f, 0.1f}};
     set_uniform_mat4(shader_programs.pivot.handle(), "uModel", t.model_matrix());
     set_uniform_vec3(
-        shader_programs.pivot.handle(), "uColor", {196.0f / 255.0f, 209.0f / 255.0f, 102.0f / 255.0f}
+        shader_programs.pivot.handle(),
+        "uColor",
+        {196.0f / 255.0f, 209.0f / 255.0f, 102.0f / 255.0f}
     );
 
     glDrawArrays(GL_TRIANGLES, 0, pivot_mesh.vertex_count);

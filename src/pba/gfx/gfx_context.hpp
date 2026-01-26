@@ -48,6 +48,7 @@ struct GfxContext
     {
         ShaderProgram grid{};
         ShaderProgram obj{};
+        ShaderProgram obj_tex{};
         ShaderProgram outline{};
         ShaderProgram pivot{};
 
@@ -55,8 +56,15 @@ struct GfxContext
         {
             grid.destroy();
             obj.destroy();
+            obj_tex.destroy();
             outline.destroy();
             pivot.destroy();
+        }
+
+        [[nodiscard]] bool all_valid() const
+        {
+            return grid.valid() || obj.valid() || obj_tex.valid() || outline.valid()
+                   || pivot.valid();
         }
     };
     ShaderPrograms shader_programs{};
@@ -119,6 +127,12 @@ struct GfxContext
     {
         GLTexture2D clean_asphalt_diffuse{};
         GLTexture2D clean_asphalt_normal{};
+
+        void destroy()
+        {
+            clean_asphalt_diffuse.destroy();
+            clean_asphalt_normal.destroy();
+        }
     };
     Textures textures{};
 

@@ -7,6 +7,9 @@
 
 namespace ds_pba
 {
+// P == Position
+// N == Normal
+// T == TexCoord (UV)
 
 struct MeshV_PN
 {
@@ -19,6 +22,22 @@ static_assert(offsetof(MeshV_PN, nx) == 3 * sizeof(f32));
 struct MeshDataPN
 {
     std::vector<MeshV_PN> vertices{};
+    std::vector<u32> indices{};
+};
+
+struct MeshV_PNT
+{
+    f32 px, py, pz;
+    f32 nx, ny, nz;
+    f32 u, v;
+};
+static_assert(sizeof(MeshV_PNT) == 8 * sizeof(f32));
+static_assert(offsetof(MeshV_PNT, nx) == 3 * sizeof(f32));
+static_assert(offsetof(MeshV_PNT, u) == 6 * sizeof(f32));
+
+struct MeshDataPNT
+{
+    std::vector<MeshV_PNT> vertices{};
     std::vector<u32> indices{};
 };
 

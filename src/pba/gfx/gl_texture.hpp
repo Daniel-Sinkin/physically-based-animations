@@ -25,6 +25,17 @@ struct GLTexture2D
     {
         return id != 0 && width > 0 && height > 0;
     }
+
+    void destroy()
+    {
+        if (id != 0)
+        {
+            glDeleteTextures(1, &id);
+            id = 0;
+            width = 0;
+            height = 0;
+        }
+    }
 };
 
 struct GLTextureUploadOptions

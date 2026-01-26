@@ -64,6 +64,51 @@ upload_mesh_pcolor_lines(const ds_pba::MeshDataPColor& mesh_data)
 
     return mesh;
 }
+
+[[nodiscard]] std::optional<ds_pba::GLMesh> upload_mesh_pnt(const ds_pba::MeshDataPNT& mesh_data)
+{
+    using namespace ds_pba;
+
+    const auto& verts = mesh_data.vertices;
+    if (verts.empty())
+    {
+        std::println(stderr, "Mesh (PNT) data empty!");
+        return std::nullopt;
+    }
+
+    GLMesh mesh{};
+    glGenVertexArrays(1, mesh.vao.ptr());
+    glGenBuffers(1, mesh.vbo.ptr());
+    mesh.vertex_count = static_cast<GLsizei>(verts.size());
+
+    {
+        const ScopedBufferBinder binder{mesh};
+
+        glBufferData(
+            GL_ARRAY_BUFFER,
+            static_cast<GLsizeiptr>(verts.size() * sizeof(MeshV_PNT)),
+            verts.data(),
+            GL_STATIC_DRAW
+        );
+
+        const auto stride = static_cast<GLsizei>(sizeof(MeshV_PNT));
+
+        // location 0: position
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, GLPtr::offset0());
+
+        // location 1: normal
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, GLPtr::offset(3 * sizeof(f32)));
+
+        // location 2: texcoord
+        glEnableVertexAttribArray(2);
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride, GLPtr::offset(6 * sizeof(f32)));
+    }
+
+    return mesh;
+}
+
 [[nodiscard]] std::optional<ds_pba::GLMesh> upload_mesh_pn(const ds_pba::MeshDataPN& mesh_data)
 {
     using namespace ds_pba;
@@ -188,21 +233,17 @@ bool GfxContext::create_meshes()
         meshes.pyramid = *mesh_res;
     }
     {
-        auto mesh_res = ds_pba::load_model_mesh(k_model_marble_bust);
+        auto mesh_res = ds_pba::load_model_mesh_pnt(k_model_marble_bust);
         if (!mesh_res)
         {
-            std::println(
-                stderr,
-                "Failed to load marble bust mesh (err={})",
-                std::to_underlying(mesh_res.error())
-            );
+            std::println(stderr, "Failed to load '{}' mesh (PNT)", k_model_marble_bust);
             return false;
         }
 
-        auto m = upload_mesh_pn(*mesh_res);
+        auto m = upload_mesh_pnt(*mesh_res);
         if (!m)
         {
-            std::println(stderr, "Failed to upload mesh 'marble_bust_01'");
+            std::println(stderr, "Failed to upload mesh '{}' (PNT)", k_model_marble_bust);
             return false;
         }
         meshes.marble_bust = *m;
@@ -213,69 +254,31 @@ bool GfxContext::create_meshes()
 
 bool GfxContext::create_programs()
 {
-
+    const auto load_prog = [&](std::string_view name, ShaderProgram& out) -> bool
     {
-        auto grid_res = create_program_from_file("grid");
-        if (!grid_res)
+        auto res = create_program_from_file(std::string{name});
+        if (!res)
         {
-            std::println(
-                stderr,
-                "Failed to load 'grid' shaders, got error code: {}",
-                std::to_underlying(grid_res.error())
-            );
+            std::println(stderr, "Failed to load '{}' shaders", name);
             return false;
         }
-        shader_programs.grid = *grid_res;
-    }
+        out = *res;
+        return true;
+    };
 
-    {
-        auto obj_res = create_program_from_file("object");
-        if (!obj_res)
-        {
-            std::println(
-                stderr,
-                "Failed to load 'object' shaders, got error code: {}",
-                static_cast<int>(obj_res.error())
-            );
-            return false;
-        }
-        shader_programs.obj = *obj_res;
-    }
+    // clang-format off
+    if (!load_prog("grid",       shader_programs.grid))    return false;
+    if (!load_prog("object",     shader_programs.obj))     return false;
+    if (!load_prog("object_tex", shader_programs.obj_tex)) return false;
+    if (!load_prog("outline",    shader_programs.outline)) return false;
+    if (!load_prog("pivot",      shader_programs.pivot))   return false;
+    // clang-format on
 
-    {
-        auto outline_res = create_program_from_file("outline");
-        if (!outline_res)
-        {
-            std::println(
-                stderr,
-                "Failed to load 'outline' shaders, got error code: {}",
-                static_cast<int>(outline_res.error())
-            );
-            return false;
-        }
-        shader_programs.outline = *outline_res;
-    }
-
-    {
-        auto pivot_res = create_program_from_file("pivot");
-        if (!pivot_res)
-        {
-            std::println(
-                stderr,
-                "Failed to load 'pivot' shaders, got error code: {}",
-                std::to_underlying(pivot_res.error())
-            );
-            return false;
-        }
-        shader_programs.pivot = *pivot_res;
-    }
-
-    if (!shader_programs.grid.valid() || !shader_programs.obj.valid() || !shader_programs.outline.valid() || !shader_programs.pivot.valid())
+    if (!shader_programs.all_valid())
     {
         std::println(stderr, "At least one of the shader programs is invalid");
         return false;
     }
-
     return true;
 }
 }  // namespace ds_pba
