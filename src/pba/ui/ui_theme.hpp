@@ -3,9 +3,9 @@
 
 #include "pba/core/core_types.hpp"
 
-#include <expected>
 #include <filesystem>
 #include <imgui.h>
+#include <json.hpp>
 #include <optional>
 #include <string>
 #include <vector>
@@ -102,9 +102,14 @@ struct UiThemePack
     std::optional<usize> default_index{};
 };
 
-[[nodiscard]] std::expected<UiThemePack, UiThemeError>
-load_theme_pack_json(const std::filesystem::path& path);
+[[nodiscard]] std::optional<UiThemePack> load_theme_pack_json(const std::filesystem::path& path);
 
 void apply_theme(const UiTheme& theme);
+
+void to_json(nlohmann::json& j, const UiTheme& theme);
+void from_json(const nlohmann::json& j, UiTheme& theme);
+
+void to_json(nlohmann::json& j, const UiThemePack& pack);
+void from_json(const nlohmann::json& j, UiThemePack& pack);
 
 }  // namespace ds_pba

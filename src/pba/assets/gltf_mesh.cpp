@@ -667,12 +667,10 @@ std::optional<MeshDataPN> load_model_mesh(std::string_view model_name)
     namespace fs = std::filesystem;
     const fs::path model_dir = fs::path{k_fp_assets} / k_fp_assets_models / model_name;
 
-    auto cfg_res = load_or_create_model_config(model_dir);
-    if (!cfg_res)
+    auto cfg_opt = load_or_create_model_config(model_dir);
+    if (!cfg_opt)
     {
-        std::println(
-            stderr, "Model config error for '{}': {}", model_name, to_string(cfg_res.error())
-        );
+        std::println(stderr, "Model config error for '{}'", model_name);
         return std::nullopt;
     }
 
@@ -684,7 +682,7 @@ std::optional<MeshDataPN> load_model_mesh(std::string_view model_name)
     }
 
     const std::string path{file_res->string()};
-    return load_gltf_mesh(path, cfg_res->transform);
+    return load_gltf_mesh(path, cfg_opt->transform);
 }
 
 std::optional<MeshDataPNT> load_gltf_mesh_pnt(const std::string& path, const Transform& preprocess)
@@ -943,9 +941,7 @@ std::optional<MeshDataPNT> load_model_mesh_pnt(std::string_view model_name)
     auto cfg_res = load_or_create_model_config(model_dir);
     if (!cfg_res)
     {
-        std::println(
-            stderr, "Model config error for '{}': {}", model_name, to_string(cfg_res.error())
-        );
+        std::println(stderr, "Model config error for '{}'", model_name);
         return std::nullopt;
     }
 

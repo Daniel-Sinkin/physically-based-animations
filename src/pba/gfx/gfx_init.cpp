@@ -1,5 +1,6 @@
 // pba/gfx/gfx_init.cpp
 #include "pba/gfx/gfx_context.hpp"
+#include "pba/util/scope_timer.hpp"
 
 namespace ds_pba
 {
@@ -7,16 +8,19 @@ namespace ds_pba
 {
     using namespace ds_pba;
 
-    auto glfw_error_callback = [](int error, const char* description)
-    { std::println(stderr, "GLFW Error {}: {}", error, description); };
-
-    glfwSetErrorCallback(glfw_error_callback);
-    if (!glfwInit())
     {
-        std::println(stderr, "Failed to init glfw");
-        return false;
+        ScopeTimer st_glfw{"init glfw"};
+        auto glfw_error_callback = [](int error, const char* description)
+        { std::println(stderr, "GLFW Error {}: {}", error, description); };
+
+        glfwSetErrorCallback(glfw_error_callback);
+        if (!glfwInit())
+        {
+            std::println(stderr, "Failed to init glfw");
+            return false;
+        }
+        initialised_glfw = true;
     }
-    initialised_glfw = true;
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
@@ -26,13 +30,16 @@ namespace ds_pba
     // No focus on startup
     glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
 
-    window = glfwCreateWindow(1600, 900, "Physically Based Animations", nullptr, nullptr);
-    if (!window)
     {
-        std::println(stderr, "Failed to create window");
-        return false;
+        ScopeTimer st_glfw{"create window glfw"};
+        window = glfwCreateWindow(1600, 900, "Physically Based Animations", nullptr, nullptr);
+        if (!window)
+        {
+            std::println(stderr, "Failed to create window");
+            return false;
+        }
+        window_created = true;
     }
-    window_created = true;
     {  // Place on 2nd monitor with correct sizing for mixed-DPI
         int monitor_count{0};
         GLFWmonitor* const* monitors = glfwGetMonitors(&monitor_count);
@@ -137,11 +144,14 @@ namespace ds_pba
     glEnable(GL_STENCIL_TEST);
     glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
-    // clang-format off
+    {
+        // clang-format off
     if (!create_programs()) { return false; }
     if (!create_meshes())   { return false; }
     if (!create_textures()) { return false; }
     //clang-format on
+    }
+
     last_scene_poll = std::chrono::steady_clock::now();
     return true;
 }

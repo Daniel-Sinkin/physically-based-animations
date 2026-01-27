@@ -12,6 +12,7 @@
 #include "pba/gfx/gl.hpp"
 #include "pba/gfx/gl_types.hpp"
 #include "pba/ui/ui.hpp"
+#include "pba/util/scope_timer.hpp"
 //
 #include <imgui.h>
 #include <optional>
@@ -140,8 +141,10 @@ namespace ds_pba
 
 bool GfxContext::create_textures()
 {
+    ScopeTimer timer{"create_textures"};
     namespace fs = std::filesystem;
 
+    if constexpr (false)
     {  // Asphalt
         const fs::path texture_dir =
             fs::path{k_fp_assets} / k_fp_assets_textures / k_texture_clean_asphalt;
@@ -186,6 +189,7 @@ bool GfxContext::create_textures()
         }
     }
 
+    if constexpr (false)
     {  // Marble Bust
         const fs::path texture_dir =
             fs::path{k_fp_assets} / k_fp_assets_textures / k_texture_marble_bust_2k;
@@ -238,6 +242,7 @@ bool GfxContext::create_textures()
 
 bool GfxContext::create_meshes()
 {
+    ScopeTimer t{"create_meshes"};
     const auto upload_pn_or_fail =
         [&](const MeshDataPN& mesh_data, std::string_view label, GLMesh& dst) -> bool
     {
@@ -309,6 +314,7 @@ bool GfxContext::create_meshes()
             return false;
         }
     }
+    if constexpr (false)
     {  // Marble Bust
         auto mesh_res = load_model_mesh_pnt(k_model_marble_bust);
         if (!mesh_res)
@@ -327,6 +333,7 @@ bool GfxContext::create_meshes()
 
 bool GfxContext::create_programs()
 {
+    ScopeTimer timer{"create_programs"};
     const auto load_prog = [&](std::string_view name, ShaderProgram& out) -> bool
     {
         auto res = create_program_from_file(std::string{name});

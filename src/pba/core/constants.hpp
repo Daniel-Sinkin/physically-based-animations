@@ -4,7 +4,6 @@
 #include "pba/core/core_types.hpp"
 #include "pba/core/math_types.hpp"
 
-#include <numbers>
 #include <string_view>
 
 namespace ds_pba
@@ -40,12 +39,13 @@ inline constexpr f32 k_pan_sensitivity{1.00f};
 //
 // Ui
 //
-inline constexpr usize k_max_terminal_lines{2000};
+inline constexpr usize k_max_terminal_lines{2000zu};
 
 //
 // Physics
 //
-inline constexpr usize k_contact_points{8};
+inline constexpr Direction3 k_gravity{0.0f, 0.0f, -9.81f};
+inline constexpr usize k_contact_points{8zu};
 inline constexpr usize k_collision_reduced_num{4zu};
 
 inline constexpr f32 k_linear_damping{0.2f};
@@ -68,7 +68,7 @@ inline constexpr f32 k_friction{0.5f};
 inline constexpr usize k_physics_step_arena_bytes{1zu * k_mib};
 
 inline constexpr f64 k_energy_sample_dt{0.1};
-inline constexpr usize k_energy_history_len{600};
+inline constexpr usize k_energy_history_len{600zu};
 
 //
 // Camera
@@ -117,10 +117,12 @@ struct FontMetadata
 };
 
 inline constexpr FontMetadata k_font_monaspace_krypton_regular{
-    .filename = "MonaspaceKrypton-Regular.otf", .fontsize = 14.0f
+    .filename = "MonaspaceKrypton-Regular.otf",
+    .fontsize = 14.0f,
 };
 inline constexpr FontMetadata k_font_monaspace_argon_regular{
-    .filename = "MonaspaceArgon-Regular.otf", .fontsize = 14.0f
+    .filename = "MonaspaceArgon-Regular.otf",
+    .fontsize = 14.0f,
 };
 
 //
@@ -132,14 +134,26 @@ inline constexpr FontMetadata k_font_monaspace_argon_regular{
 
 namespace detail
 {  // Guardrails and invariants
+static_assert(k_kib > 0zu);
+static_assert(k_mib > 0zu);
+static_assert((k_mib % k_kib) == 0zu);
+
 static_assert(k_video_recorder_fps > 0);
 
 static_assert(k_zoom_speed > 0.0f);
 static_assert(k_sensitivity > 0.0f);
 static_assert(k_pan_sensitivity > 0.0f);
 
+static_assert(k_max_terminal_lines > 0zu);
+
 static_assert(k_contact_points > 0zu);
 static_assert(k_collision_reduced_num > 0zu);
+
+static_assert(k_physics_step_arena_bytes > 0zu);
+static_assert((k_physics_step_arena_bytes % k_kib) == 0zu);
+
+static_assert(k_energy_sample_dt > 0.0);
+static_assert(k_energy_history_len > 0zu);
 
 static_assert(k_linear_damping >= 0.0f);
 static_assert(k_angular_damping >= 0.0f);
@@ -166,5 +180,28 @@ static_assert(k_camera_z_far > k_camera_z_near);
 static_assert(k_fog_end > k_fog_start);
 static_assert(k_minor_alpha >= 0.0f && k_minor_alpha <= 1.0f);
 static_assert(k_axis_alpha >= 0.0f && k_axis_alpha <= 1.0f);
+
+static_assert(k_num_lines_per_side > 0);
+static_assert(k_spacing > 0.0f);
+
+// Paths / asset identifiers should not be empty
+static_assert(!k_fp_assets.empty());
+static_assert(!k_fp_assets_models.empty());
+static_assert(!k_model_marble_bust.empty());
+static_assert(!k_fp_assets_textures.empty());
+static_assert(!k_texture_clean_asphalt.empty());
+static_assert(!k_texture_clean_asphalt_diffuse.empty());
+static_assert(!k_texture_clean_asphalt_normal.empty());
+static_assert(!k_texture_marble_bust_2k.empty());
+static_assert(!k_texture_marble_bust_diffuse.empty());
+static_assert(!k_texture_marble_bust_normal.empty());
+static_assert(!k_texture_marble_bust_roughness.empty());
+
+// Fonts
+static_assert(!k_font_monaspace_krypton_regular.filename.empty());
+static_assert(k_font_monaspace_krypton_regular.fontsize > 0.0f);
+static_assert(!k_font_monaspace_argon_regular.filename.empty());
+static_assert(k_font_monaspace_argon_regular.fontsize > 0.0f);
+
 }  // namespace detail
 }  // namespace ds_pba

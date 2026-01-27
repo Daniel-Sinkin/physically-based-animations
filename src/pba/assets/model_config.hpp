@@ -3,9 +3,9 @@
 
 #include "pba/engine/scene_types.hpp"
 
-#include <expected>
 #include <filesystem>
 #include <json.hpp>
+#include <optional>
 #include <string>
 
 namespace ds_pba
@@ -46,7 +46,8 @@ struct ModelConfig
 void to_json(nlohmann::json& j, const ModelConfig& c);
 void from_json(const nlohmann::json& j, ModelConfig& c);
 
-[[nodiscard]] std::expected<ModelConfig, ModelConfigError>
+// Returns nullopt on any error (logs internally)
+[[nodiscard]] std::optional<ModelConfig>
 load_or_create_model_config(const std::filesystem::path& model_dir);
 
 }  // namespace ds_pba

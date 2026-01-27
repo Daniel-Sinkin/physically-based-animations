@@ -24,79 +24,97 @@ void from_json(const nlohmann::json& j, ModelConfig& c)
 
 namespace
 {
-static std::filesystem::path config_path(const std::filesystem::path& model_dir)
+[[nodiscard]] std::filesystem::path config_path(const std::filesystem::path& model_dir)
 {
     return model_dir / "config.json";
 }
 
-static std::expected<nlohmann::json, ModelConfigError>
-read_json_file(const std::filesystem::path& p)
+[[nodiscard]] std::optional<nlohmann::json> read_json_file(const std::filesystem::path& p)
 {
     std::ifstream f(p);
     if (!f.is_open())
     {
-        return std::unexpected(ModelConfigError::ConfigReadError);
+        std::println(stderr, "[ModelConfig] Failed to open '{}'", p.string());
+        return std::nullopt;
     }
 
-    try
+    nlohmann::json j = nlohmann::json::parse(f, nullptr, false);
+    if (j.is_discarded())
     {
-        nlohmann::json j;
-        f >> j;
-        return j;
+        std::println(stderr, "[ModelConfig] JSON parse error in '{}'", p.string());
+        return std::nullopt;
     }
-    catch (...)
-    {
-        return std::unexpected(ModelConfigError::ConfigParseError);
-    }
+
+    return j;
 }
 
-static std::expected<void, ModelConfigError>
-write_json_file(const std::filesystem::path& p, const nlohmann::json& j)
+[[nodiscard]] bool write_json_file(const std::filesystem::path& p, const nlohmann::json& j)
 {
     std::ofstream f(p);
     if (!f.is_open())
     {
-        return std::unexpected(ModelConfigError::ConfigWriteError);
+        std::println(stderr, "[ModelConfig] Failed to write '{}'", p.string());
+        return false;
     }
 
-    f << j.dump(4) << "\n";
+    try
+    {
+        f << j.dump(4) << "\n";
+    }
+    catch (const std::exception& e)
+    {
+        std::println(stderr, "[ModelConfig] JSON dump failed for '{}': {}", p.string(), e.what());
+        return false;
+    }
+    catch (...)
+    {
+        std::println(
+            stderr, "[ModelConfig] JSON dump failed for '{}': (unknown error)", p.string()
+        );
+        return false;
+    }
+
     if (f.fail())
     {
-        return std::unexpected(ModelConfigError::ConfigWriteError);
+        std::println(stderr, "[ModelConfig] Write failed for '{}'", p.string());
+        return false;
     }
-    return {};
+    return true;
 }
 
-static std::string model_name_from_dir(const std::filesystem::path& model_dir)
+[[nodiscard]] std::string model_name_from_dir(const std::filesystem::path& model_dir)
 {
     return model_dir.filename().string();
 }
 
 }  // namespace
 
-std::expected<ModelConfig, ModelConfigError>
-load_or_create_model_config(const std::filesystem::path& model_dir)
+std::optional<ModelConfig> load_or_create_model_config(const std::filesystem::path& model_dir)
 {
     namespace fs = std::filesystem;
-    if (!fs::exists(model_dir) || !fs::is_directory(model_dir))
+
+    std::error_code ec{};
+    const bool exists = fs::exists(model_dir, ec);
+    if (ec || !exists || !fs::is_directory(model_dir, ec) || ec)
     {
-        return std::unexpected(ModelConfigError::ModelDirNotFound);
+        std::println(stderr, "[ModelConfig] Model directory not found: '{}'", model_dir.string());
+        return std::nullopt;
     }
 
     const fs::path cfg_path{config_path(model_dir)};
     const std::string model_name{model_name_from_dir(model_dir)};
 
-    if (!fs::exists(cfg_path))
+    if (!fs::exists(cfg_path, ec) || ec)
     {
         ModelConfig cfg{};
         cfg.name = model_name;
         cfg.transform = Transform{};
 
         const nlohmann::json j{cfg};
-        auto wr = write_json_file(cfg_path, j);
-        if (!wr)
+        if (!write_json_file(cfg_path, j))
         {
-            return std::unexpected(wr.error());
+            std::println(stderr, "[ModelConfig] Failed to create config: '{}'", cfg_path.string());
+            return std::nullopt;
         }
         return cfg;
     }
@@ -104,7 +122,7 @@ load_or_create_model_config(const std::filesystem::path& model_dir)
     auto jr = read_json_file(cfg_path);
     if (!jr)
     {
-        return std::unexpected(jr.error());
+        return std::nullopt;
     }
 
     try
@@ -113,9 +131,17 @@ load_or_create_model_config(const std::filesystem::path& model_dir)
         cfg.name = model_name;
         return cfg;
     }
+    catch (const std::exception& e)
+    {
+        std::println(stderr, "[ModelConfig] Invalid config '{}': {}", cfg_path.string(), e.what());
+        return std::nullopt;
+    }
     catch (...)
     {
-        return std::unexpected(ModelConfigError::ConfigParseError);
+        std::println(
+            stderr, "[ModelConfig] Invalid config '{}': (unknown error)", cfg_path.string()
+        );
+        return std::nullopt;
     }
 }
 

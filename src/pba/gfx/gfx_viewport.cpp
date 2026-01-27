@@ -162,7 +162,7 @@ void GfxContext::render_to_viewport_objects(
         VAO::unbind();
     }
 
-    if (!scene_context->marble_bust_objects.empty())
+    if (false && !scene_context->marble_bust_objects.empty())
     {  // Marble Bust
         if (!textures.marble_bust_diffuse.valid() || !textures.marble_bust_normal.valid())
         {

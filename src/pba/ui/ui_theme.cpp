@@ -147,59 +147,71 @@ std::optional<ThemeBase> parse_base(std::string_view s) noexcept
     return std::nullopt;
 }
 
+[[nodiscard]] constexpr const char* base_to_string(ThemeBase b) noexcept
+{
+    switch (b)
+    {
+        case ThemeBase::Dark:
+            return "dark";
+        case ThemeBase::Light:
+            return "light";
+        case ThemeBase::Classic:
+            return "classic";
+    }
+    return "dark";
+}
+
+struct ColEntry
+{
+    std::string_view key;
+    ImGuiCol col;
+};
+
+// Keep this list explicit and extend as needed.
+// Names match ImGuiCol enum tokens without the "ImGuiCol_" prefix.
+static constexpr ColEntry kColMap[] = {
+    {"Text", ImGuiCol_Text},
+    {"TextDisabled", ImGuiCol_TextDisabled},
+    {"WindowBg", ImGuiCol_WindowBg},
+    {"ChildBg", ImGuiCol_ChildBg},
+    {"PopupBg", ImGuiCol_PopupBg},
+    {"Border", ImGuiCol_Border},
+    {"BorderShadow", ImGuiCol_BorderShadow},
+    {"FrameBg", ImGuiCol_FrameBg},
+    {"FrameBgHovered", ImGuiCol_FrameBgHovered},
+    {"FrameBgActive", ImGuiCol_FrameBgActive},
+    {"TitleBg", ImGuiCol_TitleBg},
+    {"TitleBgActive", ImGuiCol_TitleBgActive},
+    {"TitleBgCollapsed", ImGuiCol_TitleBgCollapsed},
+    {"MenuBarBg", ImGuiCol_MenuBarBg},
+    {"Button", ImGuiCol_Button},
+    {"ButtonHovered", ImGuiCol_ButtonHovered},
+    {"ButtonActive", ImGuiCol_ButtonActive},
+    {"Header", ImGuiCol_Header},
+    {"HeaderHovered", ImGuiCol_HeaderHovered},
+    {"HeaderActive", ImGuiCol_HeaderActive},
+    {"Separator", ImGuiCol_Separator},
+    {"SeparatorHovered", ImGuiCol_SeparatorHovered},
+    {"SeparatorActive", ImGuiCol_SeparatorActive},
+    {"Tab", ImGuiCol_Tab},
+    {"TabHovered", ImGuiCol_TabHovered},
+    {"TabActive", ImGuiCol_TabActive},
+    {"TabUnfocused", ImGuiCol_TabUnfocused},
+    {"TabUnfocusedActive", ImGuiCol_TabUnfocusedActive},
+    {"ScrollbarBg", ImGuiCol_ScrollbarBg},
+    {"ScrollbarGrab", ImGuiCol_ScrollbarGrab},
+    {"ScrollbarGrabHovered", ImGuiCol_ScrollbarGrabHovered},
+    {"ScrollbarGrabActive", ImGuiCol_ScrollbarGrabActive},
+    {"CheckMark", ImGuiCol_CheckMark},
+    {"SliderGrab", ImGuiCol_SliderGrab},
+    {"SliderGrabActive", ImGuiCol_SliderGrabActive},
+    {"TableRowBg", ImGuiCol_TableRowBg},
+    {"TableRowBgAlt", ImGuiCol_TableRowBgAlt},
+};
+
 std::optional<ImGuiCol> col_from_name(std::string_view name) noexcept
 {
-    // Keep this list explicit and extend as needed.
-    // Names match ImGuiCol enum tokens without the "ImGuiCol_" prefix.
-    struct Entry
-    {
-        std::string_view key;
-        ImGuiCol col;
-    };
-
-    // clang-format off
-    static constexpr Entry kMap[] = {
-        {"Text",                  ImGuiCol_Text},
-        {"TextDisabled",          ImGuiCol_TextDisabled},
-        {"WindowBg",              ImGuiCol_WindowBg},
-        {"ChildBg",               ImGuiCol_ChildBg},
-        {"PopupBg",               ImGuiCol_PopupBg},
-        {"Border",                ImGuiCol_Border},
-        {"BorderShadow",          ImGuiCol_BorderShadow},
-        {"FrameBg",               ImGuiCol_FrameBg},
-        {"FrameBgHovered",        ImGuiCol_FrameBgHovered},
-        {"FrameBgActive",         ImGuiCol_FrameBgActive},
-        {"TitleBg",               ImGuiCol_TitleBg},
-        {"TitleBgActive",         ImGuiCol_TitleBgActive},
-        {"TitleBgCollapsed",      ImGuiCol_TitleBgCollapsed},
-        {"MenuBarBg",             ImGuiCol_MenuBarBg},
-        {"Button",                ImGuiCol_Button},
-        {"ButtonHovered",         ImGuiCol_ButtonHovered},
-        {"ButtonActive",          ImGuiCol_ButtonActive},
-        {"Header",                ImGuiCol_Header},
-        {"HeaderHovered",         ImGuiCol_HeaderHovered},
-        {"HeaderActive",          ImGuiCol_HeaderActive},
-        {"Separator",             ImGuiCol_Separator},
-        {"SeparatorHovered",      ImGuiCol_SeparatorHovered},
-        {"SeparatorActive",       ImGuiCol_SeparatorActive},
-        {"Tab",                   ImGuiCol_Tab},
-        {"TabHovered",            ImGuiCol_TabHovered},
-        {"TabActive",             ImGuiCol_TabActive},
-        {"TabUnfocused",          ImGuiCol_TabUnfocused},
-        {"TabUnfocusedActive",    ImGuiCol_TabUnfocusedActive},
-        {"ScrollbarBg",           ImGuiCol_ScrollbarBg},
-        {"ScrollbarGrab",         ImGuiCol_ScrollbarGrab},
-        {"ScrollbarGrabHovered",  ImGuiCol_ScrollbarGrabHovered},
-        {"ScrollbarGrabActive",   ImGuiCol_ScrollbarGrabActive},
-        {"CheckMark",             ImGuiCol_CheckMark},
-        {"SliderGrab",            ImGuiCol_SliderGrab},
-        {"SliderGrabActive",      ImGuiCol_SliderGrabActive},
-        {"TableRowBg",            ImGuiCol_TableRowBg},
-        {"TableRowBgAlt",         ImGuiCol_TableRowBgAlt},
-    };
-    // clang-format on
-
-    for (const auto& e : kMap)
+    for (const auto& e : kColMap)
     {
         if (e.key == name)
         {
@@ -209,233 +221,57 @@ std::optional<ImGuiCol> col_from_name(std::string_view name) noexcept
     return std::nullopt;
 }
 
-std::expected<UiTheme, UiThemeError> parse_theme(const nlohmann::json& j)
+std::optional<std::string_view> name_from_col(ImGuiCol col) noexcept
 {
-    if (!j.is_object())
+    for (const auto& e : kColMap)
     {
-        return std::unexpected(UiThemeError::InvalidFormat);
-    }
-
-    const auto* name = j.find("name") != j.end()
-                           ? j.at("name").get_ptr<const nlohmann::json::string_t*>()
-                           : nullptr;
-    if (!name)
-    {
-        return std::unexpected(UiThemeError::InvalidFormat);
-    }
-
-    UiTheme out{};
-    out.name = *name;
-
-    if (auto it = j.find("base"); it != j.end())
-    {
-        if (const auto* s = it->get_ptr<const nlohmann::json::string_t*>())
+        if (e.col == col)
         {
-            if (auto b = parse_base(*s))
-            {
-                out.base = *b;
-            }
-            else
-            {
-                return std::unexpected(UiThemeError::InvalidFormat);
-            }
-        }
-        else
-        {
-            return std::unexpected(UiThemeError::InvalidFormat);
+            return e.key;
         }
     }
+    return std::nullopt;
+}
 
-    // colors: object { "Text": "0xE6E6E6FF", ... }
-    if (auto it = j.find("colors"); it != j.end())
-    {
-        if (!it->is_object())
-        {
-            return std::unexpected(UiThemeError::InvalidFormat);
-        }
-
-        for (auto kv = it->begin(); kv != it->end(); ++kv)
-        {
-            const std::string& key{kv.key()};
-            const nlohmann::json& val{kv.value()};
-
-            const auto col = col_from_name(key);
-            if (!col)
-            {
-                return std::unexpected(UiThemeError::UnknownColorKey);
-            }
-
-            const auto rgba = parse_rgba_u32(val);
-            if (!rgba)
-            {
-                return std::unexpected(UiThemeError::InvalidColorValue);
-            }
-
-            out.colors.push_back(ColorAssign{.slot = *col, .rgba = *rgba});
-        }
-    }
-
-    if (auto it = j.find("style"); it != j.end())
-    {
-        if (!it->is_object())
-        {
-            return std::unexpected(UiThemeError::InvalidFormat);
-        }
-        const auto& s = *it;
-
-        auto set_scalar =
-            [&](const char* key, bool& has, f32& dst) -> std::expected<void, UiThemeError>
-        {
-            if (auto jt = s.find(key); jt != s.end())
-            {
-                auto v = get_f32(*jt);
-                if (!v)
-                {
-                    return std::unexpected(UiThemeError::InvalidFormat);
-                }
-                has = true;
-                dst = *v;
-            }
-            return {};
-        };
-
-        auto set_vec2 =
-            [&](const char* key, bool& has, ImVec2& dst) -> std::expected<void, UiThemeError>
-        {
-            if (auto jt = s.find(key); jt != s.end())
-            {
-                auto v = get_vec2(*jt);
-                if (!v)
-                {
-                    return std::unexpected(UiThemeError::InvalidFormat);
-                }
-                has = true;
-                dst = *v;
-            }
-            return {};
-        };
-
-        if (!set_scalar("WindowRounding", out.has_window_rounding, out.window_rounding))
-            return std::unexpected(UiThemeError::InvalidFormat);
-        if (!set_scalar("ChildRounding", out.has_child_rounding, out.child_rounding))
-            return std::unexpected(UiThemeError::InvalidFormat);
-        if (!set_scalar("PopupRounding", out.has_popup_rounding, out.popup_rounding))
-            return std::unexpected(UiThemeError::InvalidFormat);
-        if (!set_scalar("FrameRounding", out.has_frame_rounding, out.frame_rounding))
-            return std::unexpected(UiThemeError::InvalidFormat);
-        if (!set_scalar("TabRounding", out.has_tab_rounding, out.tab_rounding))
-            return std::unexpected(UiThemeError::InvalidFormat);
-        if (!set_scalar("GrabRounding", out.has_grab_rounding, out.grab_rounding))
-            return std::unexpected(UiThemeError::InvalidFormat);
-        if (!set_scalar("ScrollbarRounding", out.has_scrollbar_rounding, out.scrollbar_rounding))
-            return std::unexpected(UiThemeError::InvalidFormat);
-
-        if (!set_scalar("WindowBorderSize", out.has_window_border_size, out.window_border_size))
-            return std::unexpected(UiThemeError::InvalidFormat);
-        if (!set_scalar("ChildBorderSize", out.has_child_border_size, out.child_border_size))
-            return std::unexpected(UiThemeError::InvalidFormat);
-        if (!set_scalar("PopupBorderSize", out.has_popup_border_size, out.popup_border_size))
-            return std::unexpected(UiThemeError::InvalidFormat);
-        if (!set_scalar("FrameBorderSize", out.has_frame_border_size, out.frame_border_size))
-            return std::unexpected(UiThemeError::InvalidFormat);
-
-        if (!set_vec2("FramePadding", out.has_frame_padding, out.frame_padding))
-            return std::unexpected(UiThemeError::InvalidFormat);
-        if (!set_vec2("ItemSpacing", out.has_item_spacing, out.item_spacing))
-            return std::unexpected(UiThemeError::InvalidFormat);
-        if (!set_vec2("ItemInnerSpacing", out.has_item_inner_spacing, out.item_inner_spacing))
-            return std::unexpected(UiThemeError::InvalidFormat);
-    }
-    if (auto it_font = j.find("font"); it_font != j.end())
-    {
-        if (!it_font->is_object())
-        {
-            return std::unexpected(UiThemeError::InvalidFormat);
-        }
-
-        if (auto it_id = it_font->find("id"); it_id != it_font->end())
-        {
-            if (const auto* s = it_id->get_ptr<const nlohmann::json::string_t*>())
-            {
-                out.font_id = *s;
-            }
-            else
-            {
-                return std::unexpected(UiThemeError::InvalidFormat);
-            }
-        }
-    }
-
-    return out;
+[[nodiscard]] std::string rgba_to_hex(u32 rgba)
+{
+    // 0xRRGGBBAA
+    return std::format("0x{:08X}", rgba);
 }
 
 }  // namespace
 
-std::expected<UiThemePack, UiThemeError> load_theme_pack_json(const std::filesystem::path& path)
+std::optional<UiThemePack> load_theme_pack_json(const std::filesystem::path& path)
 {
     std::ifstream f(path);
     if (!f.is_open())
     {
-        return std::unexpected(UiThemeError::FileOpenFailed);
+        std::println(stderr, "[UiTheme] Failed to open theme pack: '{}'", path.string());
+        return std::nullopt;
     }
 
     nlohmann::json root = nlohmann::json::parse(f, nullptr, false);
     if (root.is_discarded())
     {
-        return std::unexpected(UiThemeError::JsonParseError);
+        std::println(stderr, "[UiTheme] JSON parse error in '{}'", path.string());
+        return std::nullopt;
     }
-    if (!root.is_object())
+
+    try
     {
-        return std::unexpected(UiThemeError::InvalidFormat);
+        UiThemePack pack = root.get<UiThemePack>();
+        return pack;
     }
-
-    UiThemePack pack{};
-
-    const auto it_themes = root.find("themes");
-    if (it_themes == root.end() || !it_themes->is_array())
+    catch (const std::exception& e)
     {
-        return std::unexpected(UiThemeError::InvalidFormat);
+        std::println(stderr, "[UiTheme] Invalid theme pack '{}': {}", path.string(), e.what());
+        return std::nullopt;
     }
-
-    for (const auto& t : *it_themes)
+    catch (...)
     {
-        auto parsed = parse_theme(t);
-        if (!parsed)
-        {
-            return std::unexpected(parsed.error());
-        }
-        pack.themes.push_back(std::move(*parsed));
+        std::println(stderr, "[UiTheme] Invalid theme pack '{}': (unknown error)", path.string());
+        return std::nullopt;
     }
-
-    if (pack.themes.empty())
-    {
-        return std::unexpected(UiThemeError::InvalidFormat);
-    }
-
-    if (auto it_def = root.find("default"); it_def != root.end())
-    {
-        if (const auto* s = it_def->get_ptr<const nlohmann::json::string_t*>())
-        {
-            for (usize i{0}; i < pack.themes.size(); ++i)
-            {
-                if (pack.themes[i].name == *s)
-                {
-                    pack.default_index = i;
-                    break;
-                }
-            }
-        }
-        else if (const auto* u = it_def->get_ptr<const nlohmann::json::number_unsigned_t*>())
-        {
-            const auto idx = static_cast<usize>(*u);
-            if (idx < pack.themes.size())
-            {
-                pack.default_index = idx;
-            }
-        }
-    }
-
-    return pack;
 }
 
 void apply_theme(const UiTheme& theme)
@@ -505,4 +341,299 @@ void apply_theme(const UiTheme& theme)
         c[ImGuiCol_WindowBg].w = 1.0f;
     }
 }
+
+void to_json(nlohmann::json& j, const UiTheme& theme)
+{
+    j = nlohmann::json::object();
+    j["name"] = theme.name;
+    j["base"] = base_to_string(theme.base);
+
+    if (!theme.colors.empty())
+    {
+        nlohmann::json colors = nlohmann::json::object();
+        for (const auto& a : theme.colors)
+        {
+            const auto name = name_from_col(a.slot);
+            if (!name)
+            {
+                std::println(
+                    stderr,
+                    "[UiTheme] Serialization: unsupported ImGuiCol slot={}, skipping",
+                    static_cast<int>(a.slot)
+                );
+                continue;
+            }
+            colors[std::string(*name)] = rgba_to_hex(a.rgba);
+        }
+        if (!colors.empty())
+        {
+            j["colors"] = std::move(colors);
+        }
+    }
+
+    nlohmann::json style = nlohmann::json::object();
+
+    if (theme.has_window_rounding)
+        style["WindowRounding"] = theme.window_rounding;
+    if (theme.has_child_rounding)
+        style["ChildRounding"] = theme.child_rounding;
+    if (theme.has_popup_rounding)
+        style["PopupRounding"] = theme.popup_rounding;
+    if (theme.has_frame_rounding)
+        style["FrameRounding"] = theme.frame_rounding;
+    if (theme.has_tab_rounding)
+        style["TabRounding"] = theme.tab_rounding;
+    if (theme.has_grab_rounding)
+        style["GrabRounding"] = theme.grab_rounding;
+    if (theme.has_scrollbar_rounding)
+        style["ScrollbarRounding"] = theme.scrollbar_rounding;
+
+    if (theme.has_window_border_size)
+        style["WindowBorderSize"] = theme.window_border_size;
+    if (theme.has_child_border_size)
+        style["ChildBorderSize"] = theme.child_border_size;
+    if (theme.has_popup_border_size)
+        style["PopupBorderSize"] = theme.popup_border_size;
+    if (theme.has_frame_border_size)
+        style["FrameBorderSize"] = theme.frame_border_size;
+
+    if (theme.has_frame_padding)
+        style["FramePadding"] =
+            nlohmann::json::array({theme.frame_padding.x, theme.frame_padding.y});
+    if (theme.has_item_spacing)
+        style["ItemSpacing"] = nlohmann::json::array({theme.item_spacing.x, theme.item_spacing.y});
+    if (theme.has_item_inner_spacing)
+        style["ItemInnerSpacing"] =
+            nlohmann::json::array({theme.item_inner_spacing.x, theme.item_inner_spacing.y});
+
+    if (!style.empty())
+    {
+        j["style"] = std::move(style);
+    }
+
+    if (theme.font_id)
+    {
+        j["font"] = nlohmann::json::object();
+        j["font"]["id"] = *theme.font_id;
+    }
+}
+
+void from_json(const nlohmann::json& j, UiTheme& theme)
+{
+    if (!j.is_object())
+    {
+        throw nlohmann::json::type_error::create(302, "UiTheme must be object", j);
+    }
+
+    UiTheme out{};
+
+    out.name = j.at("name").get<std::string>();
+
+    if (auto it = j.find("base"); it != j.end())
+    {
+        if (const auto* s = it->get_ptr<const nlohmann::json::string_t*>())
+        {
+            auto b = parse_base(*s);
+            if (!b)
+            {
+                throw nlohmann::json::type_error::create(302, "UiTheme.base invalid", j);
+            }
+            out.base = *b;
+        }
+        else
+        {
+            throw nlohmann::json::type_error::create(302, "UiTheme.base must be string", j);
+        }
+    }
+
+    if (auto it = j.find("colors"); it != j.end())
+    {
+        if (!it->is_object())
+        {
+            throw nlohmann::json::type_error::create(302, "UiTheme.colors must be object", j);
+        }
+
+        for (auto kv = it->begin(); kv != it->end(); ++kv)
+        {
+            const std::string& key{kv.key()};
+            const nlohmann::json& val{kv.value()};
+
+            const auto col = col_from_name(key);
+            if (!col)
+            {
+                throw nlohmann::json::type_error::create(302, "UiTheme.colors has unknown key", j);
+            }
+
+            const auto rgba = parse_rgba_u32(val);
+            if (!rgba)
+            {
+                throw nlohmann::json::type_error::create(
+                    302, "UiTheme.colors invalid rgba value", j
+                );
+            }
+
+            out.colors.push_back(ColorAssign{.slot = *col, .rgba = *rgba});
+        }
+    }
+
+    if (auto it = j.find("style"); it != j.end())
+    {
+        if (!it->is_object())
+        {
+            throw nlohmann::json::type_error::create(302, "UiTheme.style must be object", j);
+        }
+        const auto& s = *it;
+
+        auto read_scalar = [&](const char* key, bool& has, f32& dst) -> void
+        {
+            if (auto jt = s.find(key); jt != s.end())
+            {
+                auto v = get_f32(*jt);
+                if (!v)
+                {
+                    throw nlohmann::json::type_error::create(
+                        302, "UiTheme.style scalar invalid", j
+                    );
+                }
+                has = true;
+                dst = *v;
+            }
+        };
+
+        auto read_vec2 = [&](const char* key, bool& has, ImVec2& dst) -> void
+        {
+            if (auto jt = s.find(key); jt != s.end())
+            {
+                auto v = get_vec2(*jt);
+                if (!v)
+                {
+                    throw nlohmann::json::type_error::create(302, "UiTheme.style vec2 invalid", j);
+                }
+                has = true;
+                dst = *v;
+            }
+        };
+
+        read_scalar("WindowRounding", out.has_window_rounding, out.window_rounding);
+        read_scalar("ChildRounding", out.has_child_rounding, out.child_rounding);
+        read_scalar("PopupRounding", out.has_popup_rounding, out.popup_rounding);
+        read_scalar("FrameRounding", out.has_frame_rounding, out.frame_rounding);
+        read_scalar("TabRounding", out.has_tab_rounding, out.tab_rounding);
+        read_scalar("GrabRounding", out.has_grab_rounding, out.grab_rounding);
+        read_scalar("ScrollbarRounding", out.has_scrollbar_rounding, out.scrollbar_rounding);
+
+        read_scalar("WindowBorderSize", out.has_window_border_size, out.window_border_size);
+        read_scalar("ChildBorderSize", out.has_child_border_size, out.child_border_size);
+        read_scalar("PopupBorderSize", out.has_popup_border_size, out.popup_border_size);
+        read_scalar("FrameBorderSize", out.has_frame_border_size, out.frame_border_size);
+
+        read_vec2("FramePadding", out.has_frame_padding, out.frame_padding);
+        read_vec2("ItemSpacing", out.has_item_spacing, out.item_spacing);
+        read_vec2("ItemInnerSpacing", out.has_item_inner_spacing, out.item_inner_spacing);
+    }
+
+    if (auto it_font = j.find("font"); it_font != j.end())
+    {
+        if (!it_font->is_object())
+        {
+            throw nlohmann::json::type_error::create(302, "UiTheme.font must be object", j);
+        }
+
+        if (auto it_id = it_font->find("id"); it_id != it_font->end())
+        {
+            if (const auto* s = it_id->get_ptr<const nlohmann::json::string_t*>())
+            {
+                out.font_id = *s;
+            }
+            else
+            {
+                throw nlohmann::json::type_error::create(302, "UiTheme.font.id must be string", j);
+            }
+        }
+    }
+
+    theme = std::move(out);
+}
+
+void to_json(nlohmann::json& j, const UiThemePack& pack)
+{
+    j = nlohmann::json::object();
+    j["themes"] = pack.themes;
+
+    if (pack.default_index)
+    {
+        const usize idx = *pack.default_index;
+        if (idx < pack.themes.size())
+        {
+            j["default"] = pack.themes[idx].name;
+        }
+        else
+        {
+            j["default"] = idx;
+        }
+    }
+}
+
+void from_json(const nlohmann::json& j, UiThemePack& pack)
+{
+    if (!j.is_object())
+    {
+        throw nlohmann::json::type_error::create(302, "UiThemePack must be object", j);
+    }
+
+    UiThemePack out{};
+
+    const auto it_themes = j.find("themes");
+    if (it_themes == j.end() || !it_themes->is_array())
+    {
+        throw nlohmann::json::type_error::create(302, "UiThemePack.themes must be array", j);
+    }
+
+    for (const auto& t : *it_themes)
+    {
+        out.themes.push_back(t.get<UiTheme>());
+    }
+
+    if (out.themes.empty())
+    {
+        throw nlohmann::json::type_error::create(302, "UiThemePack.themes must be non-empty", j);
+    }
+
+    if (auto it_def = j.find("default"); it_def != j.end())
+    {
+        if (const auto* s = it_def->get_ptr<const nlohmann::json::string_t*>())
+        {
+            for (usize i{0zu}; i < out.themes.size(); ++i)
+            {
+                if (out.themes[i].name == *s)
+                {
+                    out.default_index = i;
+                    break;
+                }
+            }
+        }
+        else if (const auto* u = it_def->get_ptr<const nlohmann::json::number_unsigned_t*>())
+        {
+            const usize idx = static_cast<usize>(*u);
+            if (idx < out.themes.size())
+            {
+                out.default_index = idx;
+            }
+        }
+        else if (const auto* i = it_def->get_ptr<const nlohmann::json::number_integer_t*>())
+        {
+            if (*i >= 0)
+            {
+                const usize idx = static_cast<usize>(*i);
+                if (idx < out.themes.size())
+                {
+                    out.default_index = idx;
+                }
+            }
+        }
+    }
+
+    pack = std::move(out);
+}
+
 }  // namespace ds_pba
