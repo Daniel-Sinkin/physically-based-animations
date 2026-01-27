@@ -52,7 +52,7 @@ struct GfxContext
         ShaderProgram outline{};
         ShaderProgram pivot{};
 
-        void destroy()
+        void destroy() noexcept
         {
             grid.destroy();
             obj.destroy();
@@ -61,10 +61,10 @@ struct GfxContext
             pivot.destroy();
         }
 
-        [[nodiscard]] bool all_valid() const
+        [[nodiscard]] bool all_valid() const noexcept
         {
-            return grid.valid() || obj.valid() || obj_tex.valid() || outline.valid()
-                   || pivot.valid();
+            return grid.valid() && obj.valid() && obj_tex.valid() && outline.valid()
+                   && pivot.valid();
         }
     };
     ShaderPrograms shader_programs{};
@@ -131,7 +131,7 @@ struct GfxContext
         GLTexture2D marble_bust_diffuse{};
         GLTexture2D marble_bust_normal{};
 
-        void destroy()
+        void destroy() noexcept
         {
             clean_asphalt_diffuse.destroy();
             clean_asphalt_normal.destroy();
@@ -152,7 +152,7 @@ struct GfxContext
         GLMesh cylinder{};
         GLMesh debug_line{};
 
-        void destroy()
+        void destroy() noexcept
         {
             cube.destroy();
             sphere.destroy();
@@ -256,11 +256,11 @@ struct GfxContext
     void viewport_window();
 
     void step();
-    bool setup();
+    [[nodiscard]] bool setup();
 
-    bool create_programs();
-    bool create_meshes();
-    bool create_textures();
+    [[nodiscard]] bool create_programs();
+    [[nodiscard]] bool create_meshes();
+    [[nodiscard]] bool create_textures();
 
     void hover_interaction(const EditorInput& input) const;
     void hover_interaction_holding_middle(const EditorInput& input, Camera& cam) const;

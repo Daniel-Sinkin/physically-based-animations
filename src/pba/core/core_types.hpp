@@ -7,7 +7,9 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <limits>
+#include <print>
 
 namespace ds_pba
 {
@@ -43,11 +45,15 @@ using ObjectId = u32;
 inline constexpr ObjectId k_invalid_id{std::numeric_limits<ObjectId>::max()};
 inline constexpr usize k_invalid_idx{std::numeric_limits<usize>::max()};
 
-inline ObjectId next_object_id()
+[[nodiscard]] inline ObjectId next_object_id() noexcept
 {
     static std::atomic<ObjectId> counter{0};
     const ObjectId id{counter.fetch_add(1u, std::memory_order_relaxed)};
-    assert(id != k_invalid_id && "ObjectId exhausted (hit k_invalid_id)");
+    if (id == k_invalid_id)
+    {
+        std::println(stderr, "Generated invalid id");
+        std::abort();
+    }
     return id;
 }
 
@@ -56,7 +62,7 @@ struct Rect
 {
     T x{}, y{}, width{}, height{};
 
-    f32 aspect_ratio() const noexcept
+    [[nodiscard]] f32 aspect_ratio() const noexcept
     {
         if (height == 0)
         {

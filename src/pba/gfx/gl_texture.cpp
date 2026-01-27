@@ -33,8 +33,7 @@ upload_texture_2d_rgba8(const ImageRGBA8& img, GLTextureUploadOptions opt)
     glGetIntegerv(GL_UNPACK_ALIGNMENT, &prev_unpack);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
-    const GLint internal_fmt = opt.srgb ? GL_SRGB8_ALPHA8 : GL_RGBA8;
-
+    const GLint internal_fmt{opt.srgb ? GL_SRGB8_ALPHA8 : GL_RGBA8};
     glTexImage2D(
         GL_TEXTURE_2D,
         0,

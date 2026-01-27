@@ -35,9 +35,9 @@ void render_physics_debug_window(EngineContext& engine_context)
     ImGui::Separator();
     ImGui::TextUnformatted("Coloring");
     {
-        const char* labels[] = {"Diffuse", "Sleep State", "Kinetic Energy"};
-        int mode = static_cast<int>(dbg.color_mode);
-        if (ImGui::Combo("Mode", &mode, labels, IM_ARRAYSIZE(labels)))
+        constexpr std::array<const char*, 3> labels{"Diffuse", "Sleep State", "Kinetic Energy"};
+        auto mode = static_cast<int>(dbg.color_mode);
+        if (ImGui::Combo("Mode", &mode, labels.data(), static_cast<int>(labels.size())))
         {
             dbg.color_mode = static_cast<GfxContext::PhysicsDebugSettings::ColorMode>(mode);
         }
@@ -125,7 +125,7 @@ void render_physics_debug_window(EngineContext& engine_context)
     }
     else
     {
-        ImGui::TextUnformatted("Energy  history: (collecting...)");
+        ImGui::TextUnformatted("Energy history: (collecting...)");
     }
 
     ImGui::End();
@@ -139,7 +139,6 @@ struct TerminalState
 
     void add_line(std::string s)
     {
-
         lines.push_back(std::move(s));
         scroll_to_bottom = true;
 
@@ -503,6 +502,14 @@ void render_imgui_windows(EngineContext& engine_context)
                     if (o.id == id)
                     {
                         return std::pair<ObjectType, Object*>{ObjectType::Hitmarker, &o};
+                    }
+                }
+                for (usize i{0zu}; i < scene_context.marble_bust_objects.size(); ++i)
+                {
+                    Object& o = scene_context.marble_bust_objects[i];
+                    if (o.id == id)
+                    {
+                        return std::pair<ObjectType, Object*>{ObjectType::MarbleBust, &o};
                     }
                 }
                 return std::nullopt;

@@ -15,7 +15,7 @@ namespace ds_pba
 {
 namespace
 {
-[[nodiscard]] static GfxContext::EditorState::GrabConstraint
+[[nodiscard]] GfxContext::EditorState::GrabConstraint
 grab_constraint_from_key(const EditorInput& in) noexcept
 {
     using GC = GfxContext::EditorState::GrabConstraint;
@@ -97,7 +97,9 @@ void GfxContext::set_grab_constraint(EditorState::GrabConstraint c)
 
 void GfxContext::begin_grab(const EditorInput& input)
 {
-    assert(scene_context);
+    {
+        Expects(scene_context);
+    }
 
     if (scene_context->selected_ids.empty())
     {
@@ -143,15 +145,14 @@ void GfxContext::update_grab(const EditorInput& input)
 
     const Camera& cam{scene_context->camera};
 
-    const f32 vp_h{std::max(1.0f, viewport_img_size.y)};
-    const f32 units_per_px{(2.0f * cam.distance * std::tan(0.5f * cam.fov_y)) / vp_h};
+    const auto vp_h = std::max(1.0f, viewport_img_size.y);
+    const auto units_per_px = (2.0f * cam.distance * std::tan(0.5f * cam.fov_y)) / vp_h;
 
-    const f32 dx{static_cast<f32>(input.ui_mouse_x - grab.start_mouse_x)};
-    const f32 dy{static_cast<f32>(input.ui_mouse_y - grab.start_mouse_y)};
+    const auto dx = narrow_cast<f32>(input.ui_mouse_x - grab.start_mouse_x);
+    const auto dy = narrow_cast<f32>(input.ui_mouse_y - grab.start_mouse_y);
 
     // Mouse up = look down
-    const Direction3 v{(dx * units_per_px) * cam.right() + (-dy * units_per_px) * cam.up()};
-    Direction3 delta{v};
+    Direction3 delta{(dx * units_per_px) * cam.right() + (-dy * units_per_px) * cam.up()};
 
     using GC = EditorState::GrabConstraint;
     switch (grab.constraint)
@@ -168,7 +169,6 @@ void GfxContext::update_grab(const EditorInput& input)
             delta = Direction3{0.0f, 0.0f, delta.z};
             break;
     }
-
     for (const auto& [id, start_pos] : grab.start_positions)
     {
         set_object_position(id, start_pos + delta);

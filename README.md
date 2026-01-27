@@ -8,6 +8,14 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
 cmake --build build -j
 ```
 
+## Coding Standard
+This is a solo dev project but I still try to stick to high coding standards and to keep stylistic consistentcy. General rules:
+* Compile with all compiler flags set in the CMakeLists.
+* Every variable should be brace initialised unless it has an auto type then it must be assignment initialised (TODO: Insert reference to that initialiser list bug / weird behavior on auto x{...})
+  * This also applies to loop variables, e.g. use for(usize x{0zu}; ...) instead of for(usize x = 0; ...)
+* Implicit conversions are to be avoided as much as possible (for example use correct string literals `usize x{0zu}` instead of `usize x{zu}`)
+* To be more aligned with fstring formatting use `zu` instead of `uz` string literal (although if I wouldn't need that for ImGui I'd probably go for the latter)
+
 ## Notes
 ### NLohnman ADL serializer
 When I want to serialise a type that I didn't define (e.g. glm::vec3) then the lookup on `to_json(glm::vec3)` is going to look at the glm namespace and never see mine. For that reason NLohmann uses a trick to make the ADL (Argument Dependent Lookup) work. See 

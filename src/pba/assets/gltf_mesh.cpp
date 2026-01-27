@@ -13,6 +13,8 @@
 #include <glm/gtc/quaternion.hpp>
 #include <tiny_gltf.h>
 
+// TODO: Rewrite this, this whole file is a mess
+
 namespace ds_pba
 {
 namespace
@@ -66,10 +68,13 @@ find_model_gltf_file(const std::filesystem::path& model_dir)
     return pick(gltf);
 }
 
-static glm::vec3 read_vec3_f32_strided(const std::byte* base, usize stride, usize stride_offset)
+static glm::vec3
+read_vec3_f32_strided(not_null<const std::byte*> base, usize stride, usize stride_offset) noexcept
 {
-    assert(stride >= 12zu);
-    const std::byte* loc{base + stride_offset * stride};
+    {
+        Expects(stride >= 12zu);
+    }
+    const std::byte* loc{base.get() + stride_offset * stride};
     f32 x{}, y{}, z{};
     std::memcpy(&x, loc + 0, 4);
     std::memcpy(&y, loc + 4, 4);
@@ -79,7 +84,7 @@ static glm::vec3 read_vec3_f32_strided(const std::byte* base, usize stride, usiz
 
 static glm::vec3 safe_normalize(glm::vec3 v) noexcept
 {
-    const f32 len{glm::length(v)};
+    const auto len = glm::length(v);
     if (len <= 1e-12f)
     {
         return glm::vec3{0.0f, 0.0f, 1.0f};
@@ -93,10 +98,10 @@ static glm::vec3 face_normal(const glm::vec3& p0, const glm::vec3& p1, const glm
 }
 
 template <class T>
-[[nodiscard]] static T read_unaligned(const std::byte* p) noexcept
+[[nodiscard]] static T read_unaligned(not_null<const std::byte*> p) noexcept
 {
     T v{};
-    std::memcpy(&v, p, sizeof(T));
+    std::memcpy(&v, p.get(), sizeof(T));
     return v;
 }
 
@@ -178,21 +183,23 @@ read_indices_u32(const tinygltf::Model& model, int accessor_index)
         case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:
             for (usize i = 0; i < count; ++i)
             {
-                out[i] = static_cast<u32>(read_unaligned<std::uint8_t>(base + i * stride));
+                out[i] =
+                    static_cast<u32>(read_unaligned<std::uint8_t>(not_null{base + i * stride}));
             }
             break;
 
         case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:
             for (usize i = 0; i < count; ++i)
             {
-                out[i] = static_cast<u32>(read_unaligned<std::uint16_t>(base + i * stride));
+                out[i] =
+                    static_cast<u32>(read_unaligned<std::uint16_t>(not_null{base + i * stride}));
             }
             break;
 
         case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:
             for (usize i = 0; i < count; ++i)
             {
-                out[i] = read_unaligned<std::uint32_t>(base + i * stride);
+                out[i] = read_unaligned<std::uint32_t>(not_null{base + i * stride});
             }
             break;
 
@@ -206,7 +213,7 @@ read_indices_u32(const tinygltf::Model& model, int accessor_index)
 
 static glm::mat4 preprocess_matrix(const Transform& t) noexcept
 {
-    glm::mat4 M(1.0f);
+    auto M = glm::identity<glm::mat4>();
     M = glm::translate(M, t.position);
     M *= glm::mat4_cast(t.orientation);
     M = glm::scale(M, t.scale);
@@ -328,9 +335,10 @@ static std::optional<Vec2AccessorView> get_vec2_view(const tinygltf::Model& m, i
 
     const tinygltf::Buffer& buf{m.buffers[static_cast<usize>(bv.buffer)]};
 
-    const usize comp_size =
+    const auto comp_size =
         static_cast<usize>(tinygltf::GetComponentSizeInBytes(static_cast<u32>(a.componentType)));
-    const usize elem = 2zu * comp_size;  // vec2<component>
+
+    const usize elem = 2zu * comp_size;
     const usize stride{(bv.byteStride != 0) ? static_cast<usize>(bv.byteStride) : elem};
     if (stride < elem)
     {
@@ -557,7 +565,7 @@ std::optional<MeshDataPN> load_gltf_mesh(const std::string& path, const Transfor
 
     auto read_nrm = [&](u32 i) -> glm::vec3
     {
-        assert(has_normals);
+        Expects(has_normals);
         const glm::vec3 n{
             safe_normalize(read_vec3_f32_strided(nrm_base, nrm_stride, static_cast<usize>(i)))
         };
@@ -663,10 +671,7 @@ std::optional<MeshDataPN> load_model_mesh(std::string_view model_name)
     if (!cfg_res)
     {
         std::println(
-            stderr,
-            "Model config error for '{}': {}",
-            model_name,
-            std::to_underlying(cfg_res.error())
+            stderr, "Model config error for '{}': {}", model_name, to_string(cfg_res.error())
         );
         return std::nullopt;
     }
@@ -824,7 +829,7 @@ std::optional<MeshDataPNT> load_gltf_mesh_pnt(const std::string& path, const Tra
 
     auto read_nrm = [&](u32 i) -> glm::vec3
     {
-        assert(has_normals);
+        Expects(has_normals);
         const glm::vec3 n{
             safe_normalize(read_vec3_f32_strided(nrm_base, nrm_stride, static_cast<usize>(i)))
         };
@@ -939,10 +944,7 @@ std::optional<MeshDataPNT> load_model_mesh_pnt(std::string_view model_name)
     if (!cfg_res)
     {
         std::println(
-            stderr,
-            "Model config error for '{}': {}",
-            model_name,
-            std::to_underlying(cfg_res.error())
+            stderr, "Model config error for '{}': {}", model_name, to_string(cfg_res.error())
         );
         return std::nullopt;
     }

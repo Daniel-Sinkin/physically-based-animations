@@ -1,22 +1,22 @@
 // pba/editor/editor_input.cpp
 #include "pba/editor/editor_input.hpp"
-
+//
 #include <GLFW/glfw3.h>
+#include <gsl/pointers>
 #include <imgui.h>
 
 namespace ds_pba
 {
 
-void EditorInput::update(GLFWwindow* w) noexcept
+void EditorInput::update(not_null<GLFWwindow*> w) noexcept
 {
     for (usize i{0zu}; i < k_editor_key_count; ++i)
     {
         auto& s = keys[i];
         s.prev = s.down;
 
-        const EditorKey k = static_cast<EditorKey>(i);
-        const int glfw_k = to_glfw_key(k);
-
+        const auto k = static_cast<EditorKey>(i);
+        const int glfw_k{to_glfw_key(k)};
         if (k == EditorKey::Shift)
         {
             s.down = (glfwGetKey(w, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)

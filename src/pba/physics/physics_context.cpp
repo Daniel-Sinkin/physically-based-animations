@@ -67,7 +67,11 @@ void PhysicsContext::step()
     // forces per body is more cache friendly
     for (const auto& f : external_forces)
     {  // Apply all registered external forces
-        f.fn(bodies, dt_s, f.user);
+        assert(f.fn);
+        if (f.fn)
+        {
+            f.fn(bodies, dt_s, f.user);
+        }
     }
 
     integrate_forces(bodies, dt_s);
@@ -77,40 +81,40 @@ void PhysicsContext::step()
     {  // Setup debug info for this step
         debug_contacts.clear();
         debug_contacts.reserve(contacts.size());
-        for (const Contact& c : contacts)
+        for (const Contact& contact : contacts)
         {
-            const RigidBody& a = bodies[c.a_idx];
-            const RigidBody& b = bodies[c.b_idx];
+            const RigidBody& a = bodies[contact.a_idx];
+            const RigidBody& b = bodies[contact.b_idx];
             debug_contacts.push_back(
                 DebugContact{
                     .a_id = a.id,
                     .b_id = b.id,
-                    .p = c.p,
-                    .n = c.n,
-                    .penetration = c.penetration,
-                    .allow_warm_start = c.allow_warm_start,
+                    .p = contact.p,
+                    .n = contact.n,
+                    .penetration = contact.penetration,
+                    .allow_warm_start = contact.allow_warm_start,
                 }
             );
         }
     }
 
     // Pull warm-start state from cache into contacts before warm start + solve.
-    for (Contact& c : contacts)
+    for (Contact& contact : contacts)
     {
-        if (!c.allow_warm_start)
+        if (!contact.allow_warm_start)
         {
             continue;
         }
-        const RigidBody& a = bodies[c.a_idx];
-        const RigidBody& b = bodies[c.b_idx];
+        const RigidBody& a = bodies[contact.a_idx];
+        const RigidBody& b = bodies[contact.b_idx];
 
-        const ContactKey key = make_contact_key(a, b, c.p);
+        const ContactKey key = make_contact_key(a, b, contact.p);
         if (auto it = contact_cache.find(key); it != contact_cache.end())
         {
-            c.lambda_n = it->second.lambda_n;
-            c.lambda_t = it->second.lambda_t;
-            c.t_hat = it->second.t_hat;
-            c.has_t_hat = it->second.has_t_hat;
+            contact.lambda_n = it->second.lambda_n;
+            contact.lambda_t = it->second.lambda_t;
+            contact.t_hat = it->second.t_hat;
+            contact.has_t_hat = it->second.has_t_hat;
         }
     }
 
@@ -132,24 +136,24 @@ void PhysicsContext::step()
     contact_cache.clear();
     contact_cache.reserve(contacts.size() * 2zu);
 
-    for (const Contact& c : contacts)
+    for (const Contact& contact : contacts)
     {
-        if (!c.allow_warm_start)
+        if (!contact.allow_warm_start)
         {
             continue;
         }
-        const RigidBody& a = bodies[c.a_idx];
-        const RigidBody& b = bodies[c.b_idx];
+        const RigidBody& a = bodies[contact.a_idx];
+        const RigidBody& b = bodies[contact.b_idx];
 
-        const ContactKey key = make_contact_key(a, b, c.p);
+        const ContactKey key = make_contact_key(a, b, contact.p);
 
         contact_cache.insert_or_assign(
             key,
             ContactCacheEntry{
-                .lambda_n = c.lambda_n,
-                .lambda_t = c.lambda_t,
-                .t_hat = c.t_hat,
-                .has_t_hat = c.has_t_hat,
+                .lambda_n = contact.lambda_n,
+                .lambda_t = contact.lambda_t,
+                .t_hat = contact.t_hat,
+                .has_t_hat = contact.has_t_hat,
             }
         );
     }

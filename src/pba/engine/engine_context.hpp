@@ -46,7 +46,7 @@ struct EngineContext
     void add_ground();
 
     void create_pyramid(int base_n, f32 step_size = 1.06f, f32 base_z = 0.5f);
-    bool setup();
+    [[nodiscard]] bool setup();
     void run();
 };
 

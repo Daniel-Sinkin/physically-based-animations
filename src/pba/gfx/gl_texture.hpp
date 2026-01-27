@@ -26,7 +26,7 @@ struct GLTexture2D
         return id != 0 && width > 0 && height > 0;
     }
 
-    void destroy()
+    void destroy() noexcept
     {
         if (id != 0)
         {
@@ -46,7 +46,5 @@ struct GLTextureUploadOptions
 
 [[nodiscard]] std::expected<GLTexture2D, GLTextureError>
 upload_texture_2d_rgba8(const ImageRGBA8& img, GLTextureUploadOptions opt = {});
-
-void destroy_texture(GLTexture2D& tex) noexcept;
 
 }  // namespace ds_pba

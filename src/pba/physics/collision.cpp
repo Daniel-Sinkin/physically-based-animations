@@ -110,7 +110,7 @@ static void reduce_contact_points_to_4(
 {
     // In an AABB the faces are already aligned with the standard basis so rotating
     // an AABB and rotating the local axis is the same thing.
-    const glm::mat3 R{glm::mat3_cast(b.orientation)};
+    const auto R = glm::mat3_cast(b.orientation);
     // GLM (and OpenGL) store array in column major
     return {
         Direction3{R[0]},
@@ -237,7 +237,6 @@ void project_obb_on_axis(
         if (overlap < best_overlap)
         {
             best_overlap = overlap;
-            // Assure b -> a orientation
             const f32 s{glm::dot(d, axis)};
             best_axis = (s >= 0.0f) ? axis : -axis;
             best_i = static_cast<int>(i);
@@ -274,7 +273,7 @@ ContactKey make_contact_key(const RigidBody& a, const RigidBody& b, const Positi
 
 void generate_obb_contacts(std::span<const RigidBody> bodies, std::pmr::vector<Contact>& out)
 {
-    assert(out.empty() && "arena allocator should be wiped at start of iteration");
+    Expects(out.empty() && "arena allocator should be wiped at start of iteration");
     out.reserve(bodies.size() * 8zu);  // TODO: Profile what a good default would be
 
     for (usize i{0zu}; i < bodies.size(); ++i)
@@ -331,7 +330,7 @@ void generate_obb_contacts(std::span<const RigidBody> bodies, std::pmr::vector<C
 
             if (pt_count == 0)
             {
-                // TODO: Replace this by a better wa
+                // TODO: Replace this by a more sophisticated heuristic
 
                 // If we don't find any contact points we create a
                 // virtual contact point in the middle of the two

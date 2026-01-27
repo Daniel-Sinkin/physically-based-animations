@@ -3,6 +3,7 @@
 
 #include "pba/core/core_types.hpp"
 #include "pba/core/math_types.hpp"
+#include "pba/physics/constants.hpp"
 #include "pba/physics/physics_types.hpp"
 
 #include <vector>
@@ -20,7 +21,7 @@ struct ExternalForce
 
 struct UniformForce
 {
-    Direction3 accel{};
+    Direction3 accel{k_earth_gravity};
 };
 inline void apply_uniform_force(std::vector<RigidBody>& bodies, f32, void* user) noexcept
 {
@@ -153,7 +154,7 @@ inline void apply_motor_torque(std::vector<RigidBody>& bodies, f32, void* user) 
 
 struct NBodyParams
 {
-    f32 G{1.0f};
+    f32 G{1.0f};  // Gravitational Constant
     f32 softening{1e-3f};
 };
 
@@ -162,16 +163,21 @@ inline void apply_nbody_gravity(std::vector<RigidBody>& bodies, f32, void* user)
     auto& p = *static_cast<NBodyParams*>(user);
     const usize n = bodies.size();
 
-    for (usize i = 0; i < n; ++i)
+    for (usize i{0zu}; i < n; ++i)
     {
         RigidBody& a = bodies[i];
         if (a.is_static() || a.asleep)
+        {
             continue;
+        }
 
-        for (usize j = 0; j < n; ++j)
+        const f32 m_a = 1.0f / a.inv_mass;
+        for (usize j{0zu}; j < n; ++j)
         {
             if (i == j)
+            {
                 continue;
+            }
             const RigidBody& b = bodies[j];
 
             const Direction3 r = b.position - a.position;
@@ -179,8 +185,9 @@ inline void apply_nbody_gravity(std::vector<RigidBody>& bodies, f32, void* user)
             const f32 inv_r = 1.0f / std::sqrt(r2);
             const f32 inv_r3 = inv_r * inv_r * inv_r;
 
-            const f32 mb = b.is_static() ? 0.0f : (1.0f / b.inv_mass);
-            a.force_accum += (p.G * mb) * r * inv_r3;
+            const f32 m_b = b.is_static() ? 0.0f : (1.0f / b.inv_mass);
+            a.force_accum += (p.G * m_b) * r * inv_r3;
+            a.force_accum += (p.G * m_a * m_b) * r * inv_r3;
         }
     }
 }

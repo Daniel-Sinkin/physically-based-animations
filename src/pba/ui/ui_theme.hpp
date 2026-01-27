@@ -29,6 +29,24 @@ enum class UiThemeError
     InvalidColorValue,
 };
 
+[[nodiscard]] constexpr const char* to_string(UiThemeError e) noexcept
+{
+    switch (e)
+    {
+        case UiThemeError::FileOpenFailed:
+            return "FileOpenFailed";
+        case UiThemeError::JsonParseError:
+            return "JsonParseError";
+        case UiThemeError::InvalidFormat:
+            return "InvalidFormat";
+        case UiThemeError::UnknownColorKey:
+            return "UnknownColorKey";
+        case UiThemeError::InvalidColorValue:
+            return "InvalidColorValue";
+    }
+    return "Unknown";
+}
+
 struct ColorAssign
 {
     ImGuiCol slot{};
@@ -84,7 +102,8 @@ struct UiThemePack
     std::optional<usize> default_index{};
 };
 
-std::expected<UiThemePack, UiThemeError> load_theme_pack_json(const std::filesystem::path& path);
+[[nodiscard]] std::expected<UiThemePack, UiThemeError>
+load_theme_pack_json(const std::filesystem::path& path);
 
 void apply_theme(const UiTheme& theme);
 

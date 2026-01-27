@@ -41,6 +41,7 @@ void GfxContext::render_to_viewport_objects(
     set_uniform_mat4(shader_programs.obj.handle(), "uView", camera_view_matrix);
     set_uniform_mat4(shader_programs.obj.handle(), "uProj", camera_proj_matrix);
 
+    if (!scene_context->cube_objects.empty())
     {  // Cubes
         meshes.cube.vao.bind();
         for (usize i{0zu}; i < scene_context->cube_objects.size(); ++i)
@@ -51,6 +52,13 @@ void GfxContext::render_to_viewport_objects(
             set_uniform_mat4(shader_programs.obj.handle(), "uModel", o.transform.model_matrix());
 
             // TODO: Clean this up
+            // TODO: Clean this up
+            // TODO: Clean this up
+            // TODO: Clean this up
+            // TODO: Clean this up
+            // TODO: Clean this up
+            // TODO: Clean this up
+            // TODO: Clean this up
             {  // Color
                 ColorRGBf color{o.color};
                 if (phys_debug.enabled && engine_context)
@@ -58,7 +66,7 @@ void GfxContext::render_to_viewport_objects(
                     if (auto it = engine_context->obj_map.find(o.id);
                         it != engine_context->obj_map.end())
                     {
-                        const usize phys_i = it->second.physics_obj_idx;
+                        const usize phys_i{it->second.physics_obj_idx};
                         if (phys_i < engine_context->physics.bodies.size())
                         {
                             const RigidBody& rb = engine_context->physics.bodies[phys_i];
@@ -93,8 +101,8 @@ void GfxContext::render_to_viewport_objects(
 
                                     case PhysicsDebugSettings::ColorMode::KineticEnergy:
                                         {
-                                            const f32 m = 1.0f / rb.inv_mass;
-                                            f32 E = 0.5f * m * glm::dot(rb.velocity, rb.velocity);
+                                            const auto m = 1.0f / rb.inv_mass;
+                                            auto E = 0.5f * m * glm::dot(rb.velocity, rb.velocity);
 
                                             if (phys_debug.ke_include_angular)
                                             {
@@ -110,8 +118,8 @@ void GfxContext::render_to_viewport_objects(
                                                      );
                                             }
 
-                                            const f32 denom = std::max(1e-6f, phys_debug.ke_max);
-                                            const f32 t = std::clamp(E / denom, 0.0f, 1.0f);
+                                            const auto denom = std::max(1e-6f, phys_debug.ke_max);
+                                            const auto t = std::clamp(E / denom, 0.0f, 1.0f);
                                             color = lerp(
                                                 phys_debug.ke_low_color, phys_debug.ke_high_color, t
                                             );
@@ -130,6 +138,7 @@ void GfxContext::render_to_viewport_objects(
         VAO::unbind();
     }
 
+    if (!scene_context->sphere_objects.empty())
     {  // Spheres
         meshes.sphere.vao.bind();
         for (usize i{0zu}; i < scene_context->sphere_objects.size(); ++i)
@@ -142,11 +151,9 @@ void GfxContext::render_to_viewport_objects(
 
             glDrawArrays(GL_TRIANGLES, 0, meshes.sphere.vertex_count);
         }
-        for (usize i{0zu}; i < scene_context->hitmarker_objects.size(); ++i)
+        for (const auto& o : scene_context->hitmarker_objects)
         {
-            const Object& o{scene_context->hitmarker_objects[i]};
             assert(o.id != k_invalid_id);
-
             set_uniform_mat4(shader_programs.obj.handle(), "uModel", o.transform.model_matrix());
             set_uniform_vec3(shader_programs.obj.handle(), "uColor", o.color);
 
@@ -155,8 +162,9 @@ void GfxContext::render_to_viewport_objects(
         VAO::unbind();
     }
 
+    if (!scene_context->marble_bust_objects.empty())
     {  // Marble Bust
-        if (!textures.clean_asphalt_diffuse.valid() || !textures.clean_asphalt_normal.valid())
+        if (!textures.marble_bust_diffuse.valid() || !textures.marble_bust_normal.valid())
         {
             std::println(
                 stderr, "Textured mesh render requires diffuse+normal textures to be loaded"
@@ -179,10 +187,14 @@ void GfxContext::render_to_viewport_objects(
 
         meshes.marble_bust.vao.bind();
 
-        const Object& o{scene_context->marble_bust_objects[0]};
-        set_uniform_mat4(shader_programs.obj_tex.handle(), "uModel", o.transform.model_matrix());
-
-        glDrawArrays(GL_TRIANGLES, 0, meshes.marble_bust.vertex_count);
+        for (const auto& o : scene_context->marble_bust_objects)
+        {
+            assert(o.id != k_invalid_id);
+            set_uniform_mat4(
+                shader_programs.obj_tex.handle(), "uModel", o.transform.model_matrix()
+            );
+            glDrawArrays(GL_TRIANGLES, 0, meshes.marble_bust.vertex_count);
+        }
 
         VAO::unbind();
 
@@ -214,7 +226,7 @@ void GfxContext::render_to_viewport_grid(
 
 void GfxContext::render_to_viewport()
 {
-    assert(viewport_fb_rect_valid && "Should only render to valid viewports");
+    Expects(viewport_fb_rect_valid && "Should only render to valid viewports");
     const ImVec2 content_size{ImGui::GetContentRegionAvail()};
 
     glBindFramebuffer(GL_FRAMEBUFFER, viewport_fbo.fbo);
@@ -276,6 +288,13 @@ void GfxContext::render_to_viewport_outline(
             if (o.id == id)
             {
                 return std::pair<ObjectType, const Object*>{ObjectType::Hitmarker, &o};
+            }
+        }
+        for (const Object& o : scene_context->marble_bust_objects)
+        {
+            if (o.id == id)
+            {
+                return std::pair<ObjectType, const Object*>{ObjectType::MarbleBust, &o};
             }
         }
         return std::nullopt;

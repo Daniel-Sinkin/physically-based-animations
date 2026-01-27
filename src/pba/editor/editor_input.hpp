@@ -5,6 +5,7 @@
 
 #include <GLFW/glfw3.h>
 #include <array>
+#include <utility>
 
 struct GLFWwindow;
 
@@ -32,7 +33,7 @@ enum class EditorKey : u8
     Count
     // clang-format on
 };
-constexpr usize k_editor_key_count = static_cast<usize>(EditorKey::Count);
+constexpr auto k_editor_key_count = static_cast<usize>(std::to_underlying(EditorKey::Count));
 
 constexpr int to_glfw_key(EditorKey k) noexcept
 {
@@ -143,7 +144,7 @@ struct EditorInput
         return ui_mouse_y - prev_ui_mouse_y;
     }
 
-    void update(GLFWwindow* window) noexcept;
+    void update(not_null<GLFWwindow*> window) noexcept;
     void sync_imgui_mouse() noexcept;
 
     [[nodiscard]] bool key_down(EditorKey k) const noexcept;

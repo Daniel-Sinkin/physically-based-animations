@@ -18,13 +18,15 @@ namespace ds_pba
 namespace
 {
 
-inline void wake_up(RigidBody& b) noexcept
-{
+[[nodiscard]] inline bool wake_up(RigidBody& b) noexcept
+{  // Returns true if we woke the model up
     if (!b.is_static() && b.asleep)
     {
         b.asleep = false;
         b.sleep_frames = 0;
+        return true;
     }
+    return false;
 }
 
 [[nodiscard]] Quaternion
@@ -43,9 +45,13 @@ inv_inertia_world_from_body(const Quaternion& q, const glm::mat3& inv_inertia_bo
 }
 
 void apply_impulse_contact_friction(
-    RigidBody& a, RigidBody& b, Contact& contact, Direction3 r_a, Direction3 r_b, Direction3 n_hat
+    RigidBody& a, RigidBody& b, Contact& contact, Direction3 r_a, Direction3 r_b, Direction3 n
 ) noexcept
 {
+    {
+        Expects(!a.is_static() || !b.is_static());
+        Expects(!a.asleep || !b.asleep);
+    }
     // This section adapted from [Catto05] (4.3) Friction Constraints.
     // The paper explicitly uses a orthonormal tangent basis {u1, u2} with
     // u1 x u2 = n and computes (v_rel.u1) and (v_rel.u2) seperately.
@@ -61,9 +67,9 @@ void apply_impulse_contact_friction(
 
     // Projection onto the tangent
     // v_rel.n
-    const f32 vrel_dot_n{glm::dot(v_rel_w, n_hat)};
+    const auto vrel_dot_n = glm::dot(v_rel_w, n);
     // v_rel - (v_rel.n) * n
-    const Direction3 v_t{v_rel_w - vrel_dot_n * n_hat};
+    const Direction3 v_t{v_rel_w - vrel_dot_n * n};
     // Equation (21) would be C_{u1}' = v_rel_w . u1
     // Equation (22) would be C_{u2}' = v_rel_w . u2
 
@@ -98,25 +104,25 @@ void apply_impulse_contact_friction(
     const Direction3 invI_r_bxt{b.inv_inertia_world * r_b_cross_t};
 
     // Computes effective mass along t_hat, often denoted by just k
-    const f32 k2a{a.inv_mass + glm::dot(t_hat, glm::cross(invI_r_axt, r_a))};
-    const f32 k2b{b.inv_mass + glm::dot(t_hat, glm::cross(invI_r_bxt, r_b))};
-    const f32 effective_mass{k2a + k2b};
+    const auto k2a = a.inv_mass + glm::dot(t_hat, glm::cross(invI_r_axt, r_a));
+    const auto k2b = b.inv_mass + glm::dot(t_hat, glm::cross(invI_r_bxt, r_b));
+    const auto effective_mass = k2a + k2b;
     if (effective_mass <= 1e-12f)
     {
         return;
     }
 
-    const f32 old_lambda_t{contact.lambda_t};
+    const auto old_lambda_t = contact.lambda_t;
 
-    f32 delta_lambda_t{-glm::dot(v_rel_w, t_hat) / effective_mass};
-    const f32 max_jt{k_friction * contact.lambda_n};
+    auto delta_lambda_t = -glm::dot(v_rel_w, t_hat) / effective_mass;
+    const auto max_jt = k_friction * contact.lambda_n;
     if (max_jt <= 0.0f)
     {
         contact.lambda_t = 0.0f;
         return;
     }
 
-    const f32 new_lambda_t{std::clamp(old_lambda_t + delta_lambda_t, -max_jt, +max_jt)};
+    const auto new_lambda_t = std::clamp(old_lambda_t + delta_lambda_t, -max_jt, +max_jt);
     delta_lambda_t = new_lambda_t - old_lambda_t;
     contact.lambda_t = new_lambda_t;
 
@@ -135,14 +141,17 @@ void apply_impulse_contact_friction(
 }
 
 void apply_impulse_contact(
-    RigidBody& a, RigidBody& b, Contact& contact, f32 restitution, [[maybe_unused]] f32 dt_s
+    RigidBody& a, RigidBody& b, Contact& contact, f32 restitution, f32 dt_s
 ) noexcept
 {
-    // This is based on [Baraff97]
-    if (a.is_static() && b.is_static())
     {
-        return;
+        Expects(!a.is_static() || !b.is_static());
+        Expects(!a.asleep || !b.asleep);
+        Expects(restitution > 0.0f && restitution <= 1.0f);
+        Expects(std::abs(glm::length(contact.n) - 1.0f) < 1e-5f);
     }
+    // This is based on [Baraff97]
+
     // "The quantity eps is called the coefficient of restitution (...)"
     constexpr f32 k_restitution_threshold{2.0f};
     f32 eps{restitution};
@@ -150,16 +159,12 @@ void apply_impulse_contact(
     // and the collision is perfectly 'bouncy'; in particular, no kinetic energy is lost.
     // At the other end of the spectrum, eps = 0 results in v_rel^+ = 0, and a maxium
     // of kinetic energy is lost.
-    assert(((eps >= 0.0f) && (eps <= 1.0f)) && "Coefficient of restitution must be in [0, 1]");
 
     // n^(t_0) the unit surface normal. Points from b to a
-    const Direction3 n_hat{contact.n};
-    assert(std::abs(glm::length(n_hat) - 1.0f) < 1e-4f && "Contact normal must be unit length");
+    const Direction3 n{contact.n};
 
     // Contact Point
-    const Position3 p_a{contact.p};
-    const Position3 p_b{contact.p};
-    assert(p_a == p_b);
+    const Position3 p{contact.p};
 
     // Center of mass
     const Position3 x_a{a.position};
@@ -170,8 +175,8 @@ void apply_impulse_contact(
     const Direction3 v_b{b.velocity};
 
     // Displacement from center of mass
-    const Direction3 r_a{p_a - x_a};
-    const Direction3 r_b{p_b - x_b};
+    const Direction3 r_a{p - x_a};
+    const Direction3 r_b{p - x_b};
 
     // Angular velocities are denoted by omega_a and omega_b respectively
     // (8-1) p_a'(t_0) = v_a(t_0) + omega_a(t_0) x (p_a(t_0) - x_a(t_0))
@@ -180,7 +185,7 @@ void apply_impulse_contact(
     const Direction3 p_b_dot{v_b + glm::cross(b.angular_velocity, r_b)};
 
     // (8-3) v_rel = n^ . (p_a'(t_0) - p_b'(t_0)) // Normal Relative Velocity
-    const f32 v_rel = glm::dot(n_hat, p_a_dot - p_b_dot);
+    const f32 v_rel = glm::dot(n, p_a_dot - p_b_dot);
 
     // Impulse is given by J = j * n^ where we can derive j based on constraints.
     // Will omit the derivation, can express the v_a^+ and v_a^- as well as omega_a^+ and
@@ -188,15 +193,15 @@ void apply_impulse_contact(
     // and solve for the magnitude j
 
     // Angular impulse direction
-    const Direction3 r_a_cross_n{glm::cross(r_a, n_hat)};
-    const Direction3 r_b_cross_n{glm::cross(r_b, n_hat)};
+    const Direction3 r_a_cross_n{glm::cross(r_a, n)};
+    const Direction3 r_b_cross_n{glm::cross(r_b, n)};
     const Direction3 invI_r_axn{a.inv_inertia_world * r_a_cross_n};
     const Direction3 invI_r_bxn{b.inv_inertia_world * r_b_cross_n};
 
     // (8-18) Denominator
     // "Effective Mass" denominator; in the literature often denoted by k
-    const f32 k_a{a.inv_mass + glm::dot(n_hat, glm::cross(invI_r_axn, r_a))};
-    const f32 k_b{b.inv_mass + glm::dot(n_hat, glm::cross(invI_r_bxn, r_b))};
+    const f32 k_a{a.inv_mass + glm::dot(n, glm::cross(invI_r_axn, r_a))};
+    const f32 k_b{b.inv_mass + glm::dot(n, glm::cross(invI_r_bxn, r_b))};
     const f32 effective_mass{k_a + k_b};
     if (effective_mass <= 1e-12f)
     {
@@ -221,7 +226,7 @@ void apply_impulse_contact(
     contact.lambda_n = new_lambda_n;
     if (delta_lambda_n != 0.0f)
     {
-        const Direction3 impulse{delta_lambda_n * n_hat};
+        const Direction3 impulse{delta_lambda_n * n};
 
         // Equation (8-5) Delta v = J / M
         // Equation (8-6) tau_impulse = (p - x(t)) x J
@@ -240,29 +245,29 @@ void apply_impulse_contact(
             b.angular_velocity -= b.inv_inertia_world * tau_b_impulse;
         }
     }
-    apply_impulse_contact_friction(a, b, contact, r_a, r_b, n_hat);
+    apply_impulse_contact_friction(a, b, contact, r_a, r_b, n);
 }
 
 void positional_correction_contacts(
     std::vector<RigidBody>& bodies, const Contacts& contacts
 ) noexcept
 {
-    for (const Contact& c : contacts)
+    for (const Contact& contact : contacts)
     {
-        RigidBody& a = bodies[c.a_idx];
-        RigidBody& b = bodies[c.b_idx];
+        RigidBody& a = bodies[contact.a_idx];
+        RigidBody& b = bodies[contact.b_idx];
 
         if (a.is_static() && b.is_static())
         {
             continue;
         }
-        const f32 pen{c.penetration};
+        const f32 pen{contact.penetration};
         if (pen <= k_pen_tolerance)
         {
             continue;
         }
 
-        const Direction3 n_hat{c.n};
+        const Direction3 n{contact.n};
 
         const f32 inv_mass_a{a.inv_mass};
         const f32 inv_mass_b{b.inv_mass};
@@ -275,7 +280,7 @@ void positional_correction_contacts(
 
         f32 corr_mag{k_pen_percent * (pen - k_pen_tolerance)};
         corr_mag = std::clamp(corr_mag, 0.0f, k_pen_max_correction);
-        const Direction3 correction{(corr_mag / inv_mass_sum) * n_hat};
+        const Direction3 correction{(corr_mag / inv_mass_sum) * n};
 
         if (!a.is_static())
         {
@@ -352,7 +357,7 @@ void warm_start_contact(std::vector<RigidBody>& bodies, Contact& contact) noexce
         return;
     }
 
-    const Direction3 n_hat{contact.n};
+    const Direction3 n{contact.n};
     const Direction3 r_a{contact.p - a.position};
     const Direction3 r_b{contact.p - b.position};
 
@@ -361,7 +366,7 @@ void warm_start_contact(std::vector<RigidBody>& bodies, Contact& contact) noexce
     contact.lambda_t = std::clamp(contact.lambda_t, -50.0f, 50.0f);
     if (contact.lambda_n > 0.0f)
     {
-        const Direction3 Jn{warmstart_scale * contact.lambda_n * n_hat};
+        const Direction3 Jn{warmstart_scale * contact.lambda_n * n};
 
         if (!a.is_static())
         {
@@ -411,25 +416,23 @@ void solve_velocity_constraints(
             bool woke{false};
             if (pen_eff > 0.0f)
             {
-                wake_up(a);
-                wake_up(b);
-                woke = true;
+                woke |= wake_up(a);
+                woke |= wake_up(b);
             }
             else
             {
-                const Direction3 n_hat{contact.n};
+                const Direction3 n{contact.n};
                 const Direction3 ra{contact.p - a.position};
                 const Direction3 rb{contact.p - b.position};
 
                 const Direction3 pa_dot{a.velocity + glm::cross(a.angular_velocity, ra)};
                 const Direction3 pb_dot{b.velocity + glm::cross(b.angular_velocity, rb)};
-                const f32 v_rel_n = glm::dot(n_hat, pa_dot - pb_dot);
+                const f32 v_rel_n = glm::dot(n, pa_dot - pb_dot);
 
                 if (v_rel_n < -0.05f)
                 {
-                    wake_up(a);
-                    wake_up(b);
-                    woke = true;
+                    woke |= wake_up(a);
+                    woke |= wake_up(b);
                 }
             }
             if (woke)

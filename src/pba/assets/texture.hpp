@@ -11,30 +11,6 @@
 namespace ds_pba
 {
 
-enum class TextureLoadError : u8
-{
-    FileNotFound,
-    NotAFile,
-    DecodeFailed,
-    InvalidDimensions,
-};
-
-[[nodiscard]] constexpr const char* to_string(TextureLoadError e) noexcept
-{
-    switch (e)
-    {
-        case TextureLoadError::FileNotFound:
-            return "FileNotFound";
-        case TextureLoadError::NotAFile:
-            return "NotAFile";
-        case TextureLoadError::DecodeFailed:
-            return "DecodeFailed";
-        case TextureLoadError::InvalidDimensions:
-            return "InvalidDimensions";
-    }
-    return "Unknown";
-}
-
 struct ImageRGBA8
 {
     int width{0};

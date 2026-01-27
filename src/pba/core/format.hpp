@@ -46,6 +46,34 @@ struct formatter<glm::vec3>
 };
 
 template <>
+struct formatter<glm::vec2>
+{
+    formatter<float> float_fmt;
+
+    constexpr auto parse(format_parse_context& ctx)
+    {
+        return float_fmt.parse(ctx);
+    }
+
+    template <class FormatContext>
+    auto format(const glm::vec2& v, FormatContext& ctx) const
+    {
+        auto out = ctx.out();
+        *out++ = '(';
+        ctx.advance_to(out);
+        out = float_fmt.format(v.x, ctx);
+        ctx.advance_to(out);
+        *out++ = ',';
+        *out++ = ' ';
+        ctx.advance_to(out);
+        out = float_fmt.format(v.y, ctx);
+        ctx.advance_to(out);
+        *out++ = ')';
+        return out;
+    }
+};
+
+template <>
 struct formatter<glm::quat>
 {
     formatter<float> float_fmt;
@@ -103,7 +131,7 @@ struct formatter<glm::mat4>
         auto out = ctx.out();
         *out++ = '[';
 
-        for (int row = 0; row < 4; ++row)
+        for (int row{0}; row < 4; ++row)
         {
             if (row != 0)
             {
@@ -111,7 +139,7 @@ struct formatter<glm::mat4>
                 *out++ = ' ';
             }
 
-            for (int col = 0; col < 4; ++col)
+            for (int col{0}; col < 4; ++col)
             {
                 ctx.advance_to(out);
                 out = float_fmt.format(m[col][row], ctx);

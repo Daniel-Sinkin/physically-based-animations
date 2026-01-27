@@ -8,6 +8,7 @@
 #include "pba/gfx/video_recorder.hpp"
 #include "pba/ui/ui.hpp"
 //
+#include <gsl/util>
 #include <imgui.h>
 //
 #include <GLFW/glfw3.h>
@@ -38,9 +39,8 @@ bool GfxContext::capture_viewport_rgba8(std::vector<u8>& out) const
     {
         return false;
     }
-
-    const usize bytes = static_cast<usize>(w) * static_cast<usize>(h) * 4zu;
-    out.resize(bytes);
+    const usize num_bytes = narrow_cast<usize>(w) * narrow_cast<usize>(h) * 4zu;
+    out.resize(num_bytes);
 
     GLint prev_fbo{0};
     GLint prev_read_buffer{0};

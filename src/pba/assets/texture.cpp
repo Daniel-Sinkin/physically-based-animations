@@ -51,8 +51,7 @@ load_image_rgba8(const std::filesystem::path& path, TextureLoadOptions opt)
     int h{0};
     int comp_in_file{0};
 
-    const int req_comp = opt.force_rgba ? 4 : 0;
-
+    const auto req_comp = opt.force_rgba ? 4 : 0;
     stbi_uc* data = stbi_load(path.string().c_str(), &w, &h, &comp_in_file, req_comp);
     if (!data)
     {
@@ -77,8 +76,24 @@ load_image_rgba8(const std::filesystem::path& path, TextureLoadOptions opt)
         return std::nullopt;
     }
 
-    const usize nbytes =
-        static_cast<usize>(w) * static_cast<usize>(h) * static_cast<usize>(out_comp);
+    const auto w_u = static_cast<usize>(w);
+    const auto h_u = static_cast<usize>(h);
+    const auto c_u = static_cast<usize>(out_comp);
+
+    if (w_u > (std::numeric_limits<usize>::max() / h_u))
+    {
+        stbi_image_free(data);
+        std::println(stderr, "Image too large (overflow) for '{}': {}x{}", path.string(), w, h);
+        return std::nullopt;
+    }
+    const auto wh = w_u * h_u;
+    if (wh > (std::numeric_limits<usize>::max() / c_u))
+    {
+        stbi_image_free(data);
+        std::println(stderr, "Image too large (overflow) for '{}': {}x{}", path.string(), w, h);
+        return std::nullopt;
+    }
+    const usize nbytes = wh * c_u;
 
     ImageRGBA8 out{};
     out.width = w;

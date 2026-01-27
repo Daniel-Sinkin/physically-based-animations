@@ -238,92 +238,78 @@ bool GfxContext::create_textures()
 
 bool GfxContext::create_meshes()
 {
-    auto upload_or_fail_pn = [&](const std::optional<MeshDataPN>& mesh_data,
-                                 std::string_view label) -> std::optional<GLMesh>
-    {
-        if (!mesh_data)
-        {
-            std::println(stderr, "Failed to create mesh '{}'", label);
-            return std::nullopt;
-        }
-
-        auto mesh_res = upload_mesh_pn(*mesh_data);
-        if (!mesh_res)
-        {
-            std::println(stderr, "Failed to upload mesh '{}'", label);
-        }
-        return mesh_res;
-    };
-
-    auto upload_or_fail_pn_value = [&](MeshDataPN mesh_data,
-                                       std::string_view label) -> std::optional<GLMesh>
+    const auto upload_pn_or_fail =
+        [&](const MeshDataPN& mesh_data, std::string_view label, GLMesh& dst) -> bool
     {
         auto mesh_res = upload_mesh_pn(mesh_data);
         if (!mesh_res)
         {
             std::println(stderr, "Failed to upload mesh '{}'", label);
+            return false;
         }
-        return mesh_res;
+        dst = *mesh_res;
+        return true;
     };
-
-    auto upload_or_fail_grid = [&](const std::optional<MeshDataPColor>& mesh_data,
-                                   std::string_view label) -> std::optional<GLMesh>
+    const auto upload_pnt_or_fail =
+        [&](const MeshDataPNT& mesh_data, std::string_view label, GLMesh& dst) -> bool
     {
-        if (!mesh_data)
-        {
-            std::println(stderr, "Failed to create mesh '{}'", label);
-            return std::nullopt;
-        }
-
-        auto mesh_res = upload_mesh_pcolor_lines(*mesh_data);
+        auto mesh_res = upload_mesh_pnt(mesh_data);
         if (!mesh_res)
         {
             std::println(stderr, "Failed to upload mesh '{}'", label);
+            return false;
         }
-        return mesh_res;
+        dst = *mesh_res;
+        return true;
     };
-
+    const auto upload_grid_or_fail =
+        [&](const MeshDataPColor& mesh_data, std::string_view label, GLMesh& dst) -> bool
     {
-        auto mesh_res = upload_or_fail_pn_value(create_cube_mesh(), "cube");
+        auto mesh_res = upload_mesh_pcolor_lines(mesh_data);
         if (!mesh_res)
+        {
+            std::println(stderr, "Failed to upload mesh '{}'", label);
+            return false;
+        }
+        dst = *mesh_res;
+        return true;
+    };
+    {  // Cube
+        const MeshDataPN mesh = create_cube_mesh();
+        if (!upload_pn_or_fail(mesh, "cube", meshes.cube))
         {
             return false;
         }
-        meshes.cube = *mesh_res;
     }
-    {
-        auto mesh_res = upload_or_fail_pn(create_sphere_mesh(32, 24, 1.0f), "sphere");
-        if (!mesh_res)
+    {  // Sphere
+        const MeshDataPN mesh = create_sphere_mesh(32, 24, 1.0f);
+        if (!upload_pn_or_fail(mesh, "sphere", meshes.sphere))
         {
             return false;
         }
-        meshes.sphere = *mesh_res;
     }
-    {
-        auto mesh_res = upload_or_fail_grid(create_grid_mesh(grid), "grid");
-        if (!mesh_res)
+    {  // Grid
+        const MeshDataPColor mesh = create_grid_mesh(grid);
+        if (!upload_grid_or_fail(mesh, "grid", meshes.grid))
         {
             return false;
         }
-        meshes.grid = *mesh_res;
     }
-    {
-        auto mesh_res = upload_or_fail_pn(create_cylinder_mesh(24, 0.5f, 1.0f), "cylinder");
-        if (!mesh_res)
+    {  // Cylinder
+        const MeshDataPN mesh = create_cylinder_mesh(24, 0.5f, 1.0f);
+        if (!upload_pn_or_fail(mesh, "cylinder", meshes.cylinder))
         {
             return false;
         }
-        meshes.cylinder = *mesh_res;
     }
-    {
-        auto mesh_res = upload_or_fail_pn_value(create_pyramid_mesh(), "pyramid");
-        if (!mesh_res)
+    {  // Pyramid
+        const MeshDataPN mesh = create_pyramid_mesh();
+        if (!upload_pn_or_fail(mesh, "pyramid", meshes.pyramid))
         {
             return false;
         }
-        meshes.pyramid = *mesh_res;
     }
-    {
+    {  // Marble Bust
         auto mesh_res = load_model_mesh_pnt(k_model_marble_bust);
         if (!mesh_res)
         {
@@ -331,15 +317,11 @@ bool GfxContext::create_meshes()
             return false;
         }
 
-        auto m = upload_mesh_pnt(*mesh_res);
-        if (!m)
+        if (!upload_pnt_or_fail(*mesh_res, k_model_marble_bust, meshes.marble_bust))
         {
-            std::println(stderr, "Failed to upload mesh '{}' (PNT)", k_model_marble_bust);
             return false;
         }
-        meshes.marble_bust = *m;
     }
-
     return true;
 }
 

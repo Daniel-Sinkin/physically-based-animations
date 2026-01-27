@@ -3,10 +3,31 @@
 
 #include "pba/engine/scene_types.hpp"
 
+#include <glm/ext/vector_float2.hpp>
+#include <glm/ext/vector_float3.hpp>
+#include <glm/gtc/quaternion.hpp>
 #include <json.hpp>
 
 namespace nlohmann
 {
+template <>
+struct adl_serializer<glm::vec2>
+{
+    static void to_json(json& j, const glm::vec2& v)
+    {
+        j = json::array({v.x, v.y});
+    }
+
+    static void from_json(const json& j, glm::vec2& v)
+    {
+        if (!j.is_array() || j.size() != 2)
+        {
+            throw json::type_error::create(302, "glm::vec2 must be array[2]", j);
+        }
+        v.x = j.at(0).get<float>();
+        v.y = j.at(1).get<float>();
+    }
+};
 
 template <>
 struct adl_serializer<glm::vec3>

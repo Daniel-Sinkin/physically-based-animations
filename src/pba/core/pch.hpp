@@ -1,6 +1,5 @@
 // pba/pch.hpp
 #pragma once
-
 // Standard Library
 #include <algorithm>      // IWYU pragma: keep
 #include <array>          // IWYU pragma: keep
@@ -35,10 +34,13 @@
 #endif
 #include <GLFW/glfw3.h>  // IWYU pragma: keep
 //
-#include "backends/imgui_impl_glfw.h"     // IWYU pragma: keep
-#include "backends/imgui_impl_opengl3.h"  // IWYU pragma: keep
+#include <backends/imgui_impl_glfw.h>     // IWYU pragma: keep
+#include <backends/imgui_impl_opengl3.h>  // IWYU pragma: keep
+#include <glm/glm.hpp>                    // IWYU pragma: keep
+#include <glm/gtc/matrix_transform.hpp>   // IWYU pragma: keep
+#include <glm/gtc/type_ptr.hpp>           // IWYU pragma: keep
+#include <imgui.h>                        // IWYU pragma: keep
+//
+#include "pba/core/gsl.hpp"  // IWYU pragma: keep
 
-#include <glm/glm.hpp>                   // IWYU pragma: keep
-#include <glm/gtc/matrix_transform.hpp>  // IWYU pragma: keep
-#include <glm/gtc/type_ptr.hpp>          // IWYU pragma: keep
-#include <imgui.h>                       // IWYU pragma: keep
+#include <gsl/gsl>  // IWYU pragma: keep

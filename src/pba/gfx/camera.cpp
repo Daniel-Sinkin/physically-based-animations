@@ -1,4 +1,5 @@
 // pba/gfx/camera.cpp
+#include "pba/core/constants.hpp"
 #include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/gfx/camera.hpp"
@@ -8,7 +9,7 @@
 namespace ds_pba
 {
 
-[[nodiscard]] glm::vec3 Camera::position() const
+[[nodiscard]] Position3 Camera::position() const noexcept
 {
     const f32 cos_pitch{std::cos(pitch)};
     const f32 sin_pitch{std::sin(pitch)};
@@ -24,17 +25,17 @@ namespace ds_pba
     return pivot + offset;
 }
 
-[[nodiscard]] ViewMatrix Camera::view_matrix() const
+[[nodiscard]] ViewMatrix Camera::view_matrix() const noexcept
 {
-    return glm::lookAt(position(), pivot, glm::vec3{0, 0, 1});
+    return glm::lookAt(position(), pivot, k_axis_z);
 }
 
-[[nodiscard]] ProjMatrix Camera::proj_matrix(f32 aspect) const
+[[nodiscard]] ProjMatrix Camera::proj_matrix(f32 aspect) const noexcept
 {
     return glm::perspective(fov_y, aspect, z_near, z_far);
 }
 
-[[nodiscard]] Direction3 Camera::right() const
+[[nodiscard]] Direction3 Camera::right() const noexcept
 {
     const Position3 pos{position()};
     const Direction3 forward{glm::normalize(pivot - pos)};
@@ -43,7 +44,7 @@ namespace ds_pba
     return right;
 }
 
-[[nodiscard]] Direction3 Camera::up() const
+[[nodiscard]] Direction3 Camera::up() const noexcept
 {
     const glm::vec3 pos{position()};
     const Direction3 forward{glm::normalize(pivot - pos)};

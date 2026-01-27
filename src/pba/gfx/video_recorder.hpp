@@ -31,18 +31,13 @@ struct VideoRecorder
 
     FILE* pipe{nullptr};
 
-    [[nodiscard]] bool is_recording() const noexcept;
-
-    bool start(std::filesystem::path output_path);
-
-    bool write_frame(std::span<const u8> rgba);
-
     void stop() noexcept;
-
+    [[nodiscard]] bool start(std::filesystem::path output_path);
+    [[nodiscard]] bool write_frame(std::span<const u8> rgba);
+    [[nodiscard]] bool is_recording() const noexcept;
     [[nodiscard]] static std::string quote_arg(std::string_view s);
     [[nodiscard]] static FILE* open_pipe_write(const std::string& cmd);
-    static int close_pipe(FILE* pipe) noexcept;
-    static void set_pipe_binary_mode(FILE* pipe) noexcept;
+    [[nodiscard]] static int close_pipe(FILE* pipe) noexcept;
 };
 
 }  // namespace ds_pba

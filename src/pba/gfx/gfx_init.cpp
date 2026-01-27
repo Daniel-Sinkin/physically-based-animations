@@ -3,7 +3,7 @@
 
 namespace ds_pba
 {
-bool GfxContext::setup()
+[[nodiscard]] bool GfxContext::setup()
 {
     using namespace ds_pba;
 
@@ -49,18 +49,16 @@ bool GfxContext::setup()
 
             const int desired_fb_w{2400};
             const int desired_fb_h{1350};
-            float sx{1.0f};
+            f32 sx{1.0f};
             f32 sy{1.0f};
             glfwGetMonitorContentScale(monitor, &sx, &sy);
 
             const int window_width{std::max(1, static_cast<int>(std::lround(desired_fb_w / sx)))};
             const int window_height{std::max(1, static_cast<int>(std::lround(desired_fb_h / sy)))};
-
             glfwSetWindowSize(window, window_width, window_height);
 
             const int window_x{monitor_x + (mode->width - window_width) / 2};
             const int window_y{monitor_y + (mode->height - window_height) / 2};
-
             glfwSetWindowPos(window, window_x, window_y);
         }
     }
@@ -102,7 +100,7 @@ bool GfxContext::setup()
     }
     {  // Load Themes
         auto res = load_theme_pack_json("assets/ui/themes.json");
-        if (res)
+        if (res && !res->themes.empty())
         {
             theme_pack = std::move(*res);
             theme_loaded = true;

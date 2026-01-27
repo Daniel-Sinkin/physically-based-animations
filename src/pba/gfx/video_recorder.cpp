@@ -54,20 +54,26 @@ std::string VideoRecorder::quote_arg(std::string_view s)
     return out;
 }
 
-FILE* VideoRecorder::open_pipe_write(const std::string& cmd)
+[[nodiscard]] FILE* VideoRecorder::open_pipe_write(const std::string& cmd)
 {
     return popen(cmd.c_str(), "w");
 }
 
-int VideoRecorder::close_pipe(FILE* pipe) noexcept
+[[nodiscard]] int VideoRecorder::close_pipe(FILE* pipe) noexcept
 {
     return pclose(pipe);
 }
 
-bool VideoRecorder::start(std::filesystem::path path)
+[[nodiscard]] bool VideoRecorder::start(std::filesystem::path path)
 {
+    {
+        Expects((width > -1 && height > -1) && "Need to init width and height before recording");
+    }
+
     stop();
-    assert((width > -1 && height > -1) && "Need to init width and height before recording");
+
+    bool ok{true};
+
     if (width <= 0 || height <= 0 || fps <= 0)
     {
         std::println(
@@ -76,56 +82,67 @@ bool VideoRecorder::start(std::filesystem::path path)
             height,
             fps
         );
-        return false;
+        ok = false;
     }
-    output_path = std::move(path);
 
-    frames_written = 0;
-    if (output_path.has_parent_path())
+    if (ok)
     {
-        std::error_code ec{};
-        std::filesystem::create_directories(output_path.parent_path(), ec);
+        output_path = std::move(path);
+        frames_written = 0;
 
-        if (ec)
+        if (output_path.has_parent_path())
         {
-            std::println(
-                "[Warning] Failed to create directories for output path '{}': {}",
-                output_path.string(),
-                ec.message()
-            );
-            assert(!pipe);
-            return false;
+            std::error_code ec{};
+            std::filesystem::create_directories(output_path.parent_path(), ec);
+
+            if (ec)
+            {
+                std::println(
+                    "[Warning] Failed to create directories for output path '{}': {}",
+                    output_path.string(),
+                    ec.message()
+                );
+                assert(!pipe);
+                ok = false;
+            }
         }
     }
 
-    const std::string ffmpeg{quote_arg(std::string_view{DS_PBA_FFMPEG_EXECUTABLE})};
-    const std::string out{quote_arg(output_path.string())};
-    assert(!out.empty());
-
-    const std::string cmd = std::format(
-        "{} -y -hide_banner -loglevel error "
-        "-f rawvideo -pixel_format rgba -video_size {}x{} -framerate {} -i - "
-        "-vf vflip "
-        "-an "
-        "-c:v libx264 -preset veryfast -crf 18 -pix_fmt yuv420p -movflags +faststart "
-        "{}",
-        ffmpeg,
-        width,
-        height,
-        fps,
-        out
-    );
-
-    pipe = open_pipe_write(cmd);
-    if (!pipe)
+    if (ok)
     {
-        std::println("[Warning] Failed to open pipe for command '{}'", cmd);
-        return false;
+        const std::string ffmpeg{quote_arg(std::string_view{DS_PBA_FFMPEG_EXECUTABLE})};
+        const std::string out{quote_arg(output_path.string())};
+        assert(!out.empty());
+
+        const std::string cmd = std::format(
+            "{} -y -hide_banner -loglevel error "
+            "-f rawvideo -pixel_format rgba -video_size {}x{} -framerate {} -i - "
+            "-vf vflip "
+            "-an "
+            "-c:v libx264 -preset veryfast -crf 18 -pix_fmt yuv420p -movflags +faststart "
+            "{}",
+            ffmpeg,
+            width,
+            height,
+            fps,
+            out
+        );
+
+        pipe = open_pipe_write(cmd);
+        if (!pipe)
+        {
+            std::println("[Warning] Failed to open pipe for command '{}'", cmd);
+            ok = false;
+        }
     }
-    return true;
+
+    {
+        Ensures(ok == (pipe != nullptr));
+        return ok;
+    }
 }
 
-bool VideoRecorder::write_frame(std::span<const u8> rgba)
+[[nodiscard]] bool VideoRecorder::write_frame(std::span<const u8> rgba)
 {
     if (!pipe)
     {

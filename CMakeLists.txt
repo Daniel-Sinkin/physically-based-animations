@@ -11,6 +11,13 @@ find_program(FFMPEG_EXECUTABLE NAMES ffmpeg REQUIRED)
 message(STATUS "Found ffmpeg: ${FFMPEG_EXECUTABLE}")
 
 FetchContent_Declare(
+  ms_gsl
+  GIT_REPOSITORY https://github.com/microsoft/GSL.git
+  GIT_TAG        v4.0.0
+)
+FetchContent_MakeAvailable(ms_gsl)
+
+FetchContent_Declare(
   glfw
   GIT_REPOSITORY https://github.com/glfw/glfw.git
   GIT_TAG        3.3.9
@@ -139,6 +146,8 @@ target_link_libraries(main PRIVATE
   tinygltf_hdr
   stb_image_hdr
   nlohmann_json::nlohmann_json
+
+  Microsoft.GSL::GSL
 )
 
 target_compile_options(main PRIVATE
@@ -148,6 +157,7 @@ target_compile_options(main PRIVATE
   -Werror
   -Wshadow
   -Wconversion
+  -Wfloat-conversion
   -Wsign-conversion
   -Wcast-qual
   -Wcast-align

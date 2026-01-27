@@ -28,7 +28,7 @@ struct RigidBody
     Direction3 force_accum{};
     f32 inv_mass{k_static_mass};
 
-    Quaternion orientation{1.0f, 0.0f, 0.0f, 0.0f};
+    Quaternion orientation{k_quaternion_identity};
     Direction3 angular_velocity{};
     Direction3 torque_accum{};
 
@@ -98,7 +98,7 @@ struct Contact
     bool has_t_hat{false};  // do we have a cached tangent direction?
     bool allow_warm_start{true};
 
-    [[nodiscard]] ContactValidity validate() const noexcept
+    [[nodiscard]] ContactValidity validate() const
     {
         const auto finite_f32 = [](f32 x) noexcept -> bool
         { return std::isfinite(static_cast<f64>(x)); };
@@ -200,11 +200,6 @@ struct Contact
         }
 
         return ContactValidity::Ok;
-    }
-
-    [[nodiscard]] bool is_valid() const noexcept
-    {
-        return validate() == ContactValidity::Ok;
     }
 };
 using Contacts = std::pmr::vector<Contact>;

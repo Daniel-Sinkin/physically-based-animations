@@ -68,7 +68,7 @@ inline UniformLocationCache& uniform_cache()
     return c;
 }
 
-inline void warn_uniform_missing_once(ProgramHandle program, const char* name) noexcept
+inline void warn_uniform_missing_once(ProgramHandle program, const char* name)
 {
 #ifndef NDEBUG
     auto& warned_prog = uniform_cache().warned[program];
@@ -104,13 +104,13 @@ uniform_loc_or_warn(ProgramHandle program, const char* name) noexcept
 
 }  // namespace detail
 
-inline void invalidate_uniform_cache_for_program(ProgramHandle program) noexcept
+inline void invalidate_uniform_cache_for_program(ProgramHandle program)
 {
     // THe uniforms aren't stable after relinking so caches need to be invalidated on shutdown
     detail::uniform_cache().invalidate_program(program);
 }
 
-inline void set_uniform_mat4(ProgramHandle program, const char* name, const glm::mat4& m) noexcept
+inline void set_uniform_mat4(ProgramHandle program, const char* name, const glm::mat4& m)
 {
     const UniformLocation loc{detail::uniform_loc_or_warn(program, name)};
     if (loc < 0)
@@ -120,7 +120,7 @@ inline void set_uniform_mat4(ProgramHandle program, const char* name, const glm:
     glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(m));
 }
 
-inline void set_uniform_int(ProgramHandle program, const char* name, int v) noexcept
+inline void set_uniform_int(ProgramHandle program, const char* name, int v)
 {
     const UniformLocation loc{detail::uniform_loc_or_warn(program, name)};
     if (loc < 0)
@@ -130,7 +130,7 @@ inline void set_uniform_int(ProgramHandle program, const char* name, int v) noex
     glUniform1i(loc, v);
 }
 
-inline void set_uniform_vec3(ProgramHandle program, const char* name, const glm::vec3& v) noexcept
+inline void set_uniform_vec3(ProgramHandle program, const char* name, const glm::vec3& v)
 {
     const UniformLocation loc{detail::uniform_loc_or_warn(program, name)};
     if (loc < 0)
@@ -140,7 +140,7 @@ inline void set_uniform_vec3(ProgramHandle program, const char* name, const glm:
     glUniform3f(loc, v.x, v.y, v.z);
 }
 
-inline void set_uniform_float(ProgramHandle program, const char* name, f32 v) noexcept
+inline void set_uniform_float(ProgramHandle program, const char* name, f32 v)
 {
     const UniformLocation loc{detail::uniform_loc_or_warn(program, name)};
     if (loc < 0)
@@ -150,7 +150,7 @@ inline void set_uniform_float(ProgramHandle program, const char* name, f32 v) no
     glUniform1f(loc, v);
 }
 
-inline void set_uniform_bool(ProgramHandle program, const char* name, bool v) noexcept
+inline void set_uniform_bool(ProgramHandle program, const char* name, bool v)
 {
     const UniformLocation loc{detail::uniform_loc_or_warn(program, name)};
     if (loc < 0)

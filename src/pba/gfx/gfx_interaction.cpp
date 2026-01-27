@@ -14,7 +14,6 @@
 #include "pba/gfx/raycast.hpp"
 #include "pba/ui/ui.hpp"
 //
-#include <imgui.h>
 #include <optional>
 #include <utility>
 //
@@ -27,10 +26,12 @@ namespace ds_pba
 
 void GfxContext::hover_interaction(const EditorInput& input) const
 {
+    {
+        Expects(viewport_fb_rect_valid && "If viewport hovered then it must be valid");
+    }
     const ImGuiIO& io{ImGui::GetIO()};
 
     Camera& cam{scene_context->camera};
-    assert(viewport_fb_rect_valid && "If viewport hovered then it must be valid");
     const f32 wheel{io.MouseWheel};
     if (wheel != 0.0f)
     {  // Zooming

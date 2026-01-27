@@ -92,8 +92,9 @@ void GfxContext::request_close() noexcept
 
 void GfxContext::step()
 {
+    Expects(scene_context && "Scene Context not set for GfxContext");
+    Expects(engine_context && "Scene Context not set for GfxContext");
     using namespace ds_pba;
-    assert(scene_context && "Scene Context not set for GfxContext");
 
     if (!is_active())
     {
@@ -112,7 +113,7 @@ void GfxContext::step()
     }
 
     glfwPollEvents();
-    editor_input.update(window);
+    editor_input.update(not_null{window});
 
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();

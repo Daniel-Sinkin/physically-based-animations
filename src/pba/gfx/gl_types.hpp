@@ -6,6 +6,7 @@
 #include <cassert>
 #include <cstddef>
 #include <glad/glad.h>
+#include <gsl/assert>
 
 namespace ds_pba
 {
@@ -60,7 +61,7 @@ struct VAO final
         return id != 0;
     }
 
-    void destroy()
+    void destroy() noexcept
     {
         if (valid())
         {
@@ -71,7 +72,9 @@ struct VAO final
 
     void bind() const noexcept
     {
-        assert(valid() && "Attempting to bind invalid VAO (id == 0)");
+        {
+            Expects(valid() && "Attempting to bind invalid VAO (id == 0)");
+        }
         glBindVertexArray(id);
     }
 
@@ -107,7 +110,7 @@ struct VBO final
         return id != 0;
     }
 
-    void destroy()
+    void destroy() noexcept
     {
         if (valid())
         {
@@ -118,7 +121,9 @@ struct VBO final
 
     void bind_array_buffer() const noexcept
     {
-        assert(valid() && "Attempting to bind invalid VBO (id == 0)");
+        {
+            Expects(valid() && "Attempting to bind invalid VBO (id == 0)");
+        }
         glBindBuffer(GL_ARRAY_BUFFER, id);
     }
 
@@ -140,7 +145,6 @@ struct VBO final
     }
 };
 
-// Strong-typed program handle (useful for uniform cache keys)
 struct ProgramHandle final
 {
     GLuint id{0};
@@ -177,7 +181,9 @@ struct ShaderProgram final
 
     void bind() const noexcept
     {
-        assert(valid());
+        {
+            Expects(valid());
+        }
         glUseProgram(id);
     }
 
@@ -211,7 +217,7 @@ struct GLMesh final
         VAO::bind(prev);
     }
 
-    void destroy()
+    void destroy() noexcept
     {
         vbo.destroy();
         vao.destroy();

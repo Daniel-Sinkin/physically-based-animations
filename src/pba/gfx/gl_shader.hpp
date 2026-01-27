@@ -47,7 +47,9 @@ struct Shader
 
     static Shader create(ShaderType shader_type) noexcept
     {
-        assert(is_valid_type(shader_type) && "Invalid ShaderType");
+        {
+            Expects(is_valid_type(shader_type));
+        }
         return Shader{
             .handle = ShaderHandle{glCreateShader(static_cast<GLenum>(shader_type))},
             .type = shader_type
@@ -56,9 +58,11 @@ struct Shader
 
     void compile(const std::string& source) const noexcept
     {
-        assert(valid() && "Attempting to compile invalid Shader (id == 0)");
+        {
+            Expects(valid());
+        }
         const char* src{source.data()};
-        const GLint len{static_cast<GLint>(source.size())};
+        const auto len = static_cast<GLint>(source.size());
         glShaderSource(handle.id, 1, &src, &len);
         glCompileShader(handle.id);
     }
@@ -72,7 +76,9 @@ struct Shader
 
     [[nodiscard]] bool compiled_ok() const noexcept
     {
-        assert(valid() && "Attempting to query invalid Shader (id == 0)");
+        {
+            Expects(valid());
+        }
         GLint ok{GL_FALSE};
         glGetShaderiv(handle.id, GL_COMPILE_STATUS, &ok);
         return ok == GL_TRUE;
@@ -80,7 +86,9 @@ struct Shader
 
     [[nodiscard]] std::string info_log() const
     {
-        assert(valid() && "Attempting to query invalid Shader (id == 0)");
+        {
+            Expects(valid());
+        }
         GLint log_len{0};
         glGetShaderiv(handle.id, GL_INFO_LOG_LENGTH, &log_len);
         std::string log(static_cast<usize>(std::max(1, log_len)), '\0');

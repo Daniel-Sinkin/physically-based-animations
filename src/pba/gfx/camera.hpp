@@ -24,12 +24,12 @@ struct Camera
     f32 z_near{k_camera_z_near};
     f32 z_far{k_camera_z_far};
 
-    [[nodiscard]] Position3 position() const;
-    [[nodiscard]] ViewMatrix view_matrix() const;
-    [[nodiscard]] ProjMatrix proj_matrix(f32 aspect) const;
+    [[nodiscard]] Position3 position() const noexcept;
+    [[nodiscard]] ViewMatrix view_matrix() const noexcept;
+    [[nodiscard]] ProjMatrix proj_matrix(f32 aspect) const noexcept;
 
-    [[nodiscard]] Direction3 right() const;
-    [[nodiscard]] Direction3 up() const;
+    [[nodiscard]] Direction3 right() const noexcept;
+    [[nodiscard]] Direction3 up() const noexcept;
 };
 
 }  // namespace ds_pba
