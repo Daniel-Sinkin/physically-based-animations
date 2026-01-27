@@ -9,6 +9,7 @@
 #include "pba/core/constants.hpp"
 #include "pba/core/format.hpp"  // IWYU pragma: keep
 #include "pba/engine/scene_types.hpp"
+#include "pba/engine/scenes.hpp"
 #include "pba/gfx/camera.hpp"
 #include "pba/physics/forces.hpp"
 #include "pba/ui/ui.hpp"
@@ -179,97 +180,7 @@ void EngineContext::create_pyramid(int base_n, f32 step_size, f32 base_z)
 
 [[nodiscard]] bool EngineContext::setup()
 {
-    const ScopeTimer timer{"Engine setup"};
-    {
-        // add_ground();
-        spawn_cube(
-            Position3{-14.0f, 0.0f, 2.0f},
-            Direction3{+28.0f, 0.0f, 0.0f},
-            k_quaternion_identity,
-            ColorRGBf{0.90f, 0.35f, 0.35f}
-        );
-        obj_name_map.insert_or_assign(scene.cube_objects.back().id, "Projecticle Red");
-        spawn_cube(
-            Position3{+14.0f, 0.0f, 2.2f},
-            Direction3{-28.0f, 0.0f, 0.0f},
-            k_quaternion_identity,
-            ColorRGBf{0.35f, 0.90f, 0.35f}
-        );
-        obj_name_map.insert_or_assign(scene.cube_objects.back().id, "Projecticle Green");
-        spawn_cube(
-            Position3{0.0f, -14.0f, 2.0f},
-            Direction3{0.0f, +28.0f, 0.0f},
-            k_quaternion_identity,
-            ColorRGBf{0.35f, 0.55f, 0.95f}
-        );
-        obj_name_map.insert_or_assign(scene.cube_objects.back().id, "Projecticle Blue");
-        spawn_cube(
-            Position3{0.0f, +14.0f, 2.4f},
-            Direction3{0.0f, -28.0f, -2.0f},
-            k_quaternion_identity,
-            ColorRGBf{0.95f, 0.85f, 0.35f}
-        );
-        obj_name_map.insert_or_assign(scene.cube_objects.back().id, "Projecticle Yellow");
-
-        create_pyramid(16);
-        scene.marble_bust_objects.push_back(
-            Object{
-                .id = next_object_id(),
-                .type = ObjectType::MarbleBust,
-                .transform{
-                    .position{10.0f, -15.0f, -5.0f},
-                    .scale{14.0f, 14.0f, 14.0f},
-                    .orientation{glm::angleAxis(k_pi, k_axis_z)}
-                }
-            }
-        );
-        scene.cube_objects.push_back(
-            Object{
-                .id = next_object_id(),
-                .type = ObjectType::Cube,
-                .transform{.position{10.0f, -15.0f, -5.5f}, .scale{10.0f, 10.0f, 1.0f}}
-            }
-        );
-    }
-
-    {
-        physics.external_forces.clear();
-
-        static Position3 origin{0.0f, 0.0f, 0.0f};
-        static Position3 pos{-20.0f, -10.0f, 10.0f};
-
-        static AttractorForce attractor_origin{
-            .target = &origin,
-            .accel_mag = 15.0f,
-            .min_radius = 0.5f,
-        };
-
-        static RepulsionForce repulse_pivot{
-            .target = &scene.camera.pivot,
-            .accel_max = 100.0f,
-            .range = 4.0f,
-            .min_radius = 0.5f,
-        };
-
-        static AttractorForce attractor_pos{
-            .target = &pos,
-            .accel_mag = 15.0f,
-            .min_radius = 0.5f,
-        };
-
-        physics.external_forces.push_back(
-            ExternalForce{.fn = apply_attractor_force, .user = &attractor_origin}
-        );
-
-        physics.external_forces.push_back(
-            ExternalForce{.fn = apply_repulsion_force, .user = &repulse_pivot}
-        );
-
-        physics.external_forces.push_back(
-            ExternalForce{.fn = apply_attractor_force, .user = &attractor_pos}
-        );
-    }
-
+    setup_active_scene(*this);
     gfx.scene_context = &scene;
     gfx.engine_context = this;
     if (!gfx.setup())
@@ -340,16 +251,7 @@ void EngineContext::run()
                 scene.cube_objects[cube_i].transform.orientation =
                     physics.bodies[phys_i].orientation;
             }
-
-            const f32 dt_s = static_cast<f32>(frame_dt.count());
-            static f32 marble_spin_angle{k_pi};
-            marble_spin_angle += 1.2f * dt_s;
-            if (marble_spin_angle > k_two_pi)
-            {
-                marble_spin_angle = std::fmod(marble_spin_angle, k_two_pi);
-            }
-            scene.marble_bust_objects[0].transform.orientation =
-                glm::angleAxis(marble_spin_angle, k_axis_z);
+            update_active_scene(*this, static_cast<f32>(frame_dt.count()));
         }
     }
 }

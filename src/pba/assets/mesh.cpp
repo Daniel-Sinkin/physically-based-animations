@@ -6,8 +6,6 @@
 #include "pba/core/math_types.hpp"
 
 #include <gsl/assert>
-#include <optional>
-#include <print>
 
 namespace ds_pba
 {
@@ -219,9 +217,8 @@ MeshDataPN create_cylinder_mesh(int n_segments, f32 radius, f32 height)
     emit_cap(hz, hz * k_axis_z, k_axis_z);
     emit_cap(-hz, -hz * k_axis_z, k_axis_z);
 
-    const auto expected = static_cast<usize>(n_segments) * 12zu;
-    const auto actual = out.vertices.size();
-    assert(actual == expected);
+    [[maybe_unused]] const auto expected = static_cast<usize>(n_segments) * 12zu;
+    Ensures(out.vertices.size() == expected);
     return out;
 }
 
@@ -329,9 +326,12 @@ MeshDataPN create_sphere_mesh(int lat, int lon, f32 radius)
         }
     }
 
-    const usize expected{static_cast<usize>(lon) * 6zu * static_cast<usize>(lat - 1)};
-    const usize actual{out.vertices.size()};
-    assert(actual == expected);
+    {
+        [[maybe_unused]] const usize expected{
+            static_cast<usize>(lon) * 6zu * static_cast<usize>(lat - 1)
+        };
+        Ensures(out.vertices.size() == expected);
+    }
     return out;
 }
 
@@ -386,9 +386,8 @@ MeshDataPColor create_grid_mesh(GridSettings grid)
         }
     }
 
-    const auto expected = static_cast<usize>((2 * n_lines_per_side + 1) * 4);
-    const auto actual = out.vertices.size();
-    assert(actual == expected);
+    [[maybe_unused]] const auto expected = static_cast<usize>((2 * n_lines_per_side + 1) * 4);
+    Ensures(out.vertices.size() == expected);
     return out;
 }
 
