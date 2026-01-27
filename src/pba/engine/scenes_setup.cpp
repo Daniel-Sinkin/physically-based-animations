@@ -315,7 +315,8 @@ void setup_scene_attractors_and_repulsive_pivot(EngineContext& e) noexcept
     );
     e.obj_name_map.insert_or_assign(e.scene.cube_objects.back().id, "Projectile Yellow");
 
-    e.create_pyramid(16);
+    // e.create_pyramid(16);
+    e.create_pyramid_3d(10, 1.06f, 0.5f);
 
     e.scene.cube_objects.push_back(
         Object{
@@ -324,9 +325,6 @@ void setup_scene_attractors_and_repulsive_pivot(EngineContext& e) noexcept
             .transform{.position{10.0f, -15.0f, -5.5f}, .scale{10.0f, 10.0f, 1.0f}}
         }
     );
-
-    static UniformForce gravity_disabled{.accel = Direction3{0.0f, 0.0f, 0.0f}};
-    (void) gravity_disabled;
 
     static Position3 origin{0.0f, 0.0f, 0.0f};
     static Position3 pos{-20.0f, -10.0f, 10.0f};
@@ -360,6 +358,7 @@ void setup_scene_attractors_and_repulsive_pivot(EngineContext& e) noexcept
     e.physics.external_forces.push_back(
         ExternalForce{.fn = apply_attractor_force, .user = &attractor_pos}
     );
+    e.physics.external_forces.clear();
 }
 
 void setup_scene_small_pyramid_projectiles_gravity(EngineContext& e) noexcept

@@ -178,6 +178,39 @@ void EngineContext::create_pyramid(int base_n, f32 step_size, f32 base_z)
     }
 }
 
+void EngineContext::create_pyramid_3d(int base_n, f32 step_size, f32 base_z)
+{
+    for (int layer{0}; layer < base_n; ++layer)
+    {
+        const int n = base_n - layer;
+        const f32 z = base_z + static_cast<f32>(layer) * step_size;
+
+        const f32 half_span = 0.5f * static_cast<f32>(n - 1) * step_size;
+
+        for (int ix{0}; ix < n; ++ix)
+        {
+            const f32 x = static_cast<f32>(ix) * step_size - half_span;
+
+            for (int iy{0}; iy < n; ++iy)
+            {
+                const f32 y = static_cast<f32>(iy) * step_size - half_span;
+
+                spawn_cube(
+                    Position3{x, y, z},
+                    k_zero_dir,
+                    k_quaternion_identity,
+                    ColorRGBf{k_scene_object_default_color}
+                );
+
+                obj_name_map.insert_or_assign(
+                    scene.cube_objects.back().id,
+                    std::format("Pyramid3D (layer={}, ix={}, iy={})", layer, ix, iy)
+                );
+            }
+        }
+    }
+}
+
 [[nodiscard]] bool EngineContext::setup()
 {
     setup_active_scene(*this);
