@@ -59,6 +59,9 @@ void GfxContext::render_to_viewport_objects(
             // TODO: Clean this up
             // TODO: Clean this up
             // TODO: Clean this up
+            // TODO: Clean this up
+            // TODO: Clean this up
+            // TODO: Clean this up
             {  // Color
                 ColorRGBf color{o.color};
                 if (phys_debug.enabled && engine_context)
@@ -106,9 +109,6 @@ void GfxContext::render_to_viewport_objects(
 
                                             if (phys_debug.ke_include_angular)
                                             {
-                                                // inv_inertia_world is mat3; inverse is OK for a
-                                                // first pass. If this shows up in profiles, store
-                                                // I_world alongside invI.
                                                 const glm::mat3 I_world =
                                                     glm::inverse(rb.inv_inertia_world);
                                                 E += 0.5f
@@ -162,6 +162,8 @@ void GfxContext::render_to_viewport_objects(
         VAO::unbind();
     }
 
+    // Temp deleted so I can avoid loading textures and meshes on start up improving
+    // startup speed significantly
     if (false && !scene_context->marble_bust_objects.empty())
     {  // Marble Bust
         if (!textures.marble_bust_diffuse.valid() || !textures.marble_bust_normal.valid())
@@ -267,34 +269,34 @@ void GfxContext::render_to_viewport_outline(
         return;
     }
 
-    auto find_object = [&](ObjectId id) -> std::optional<std::pair<ObjectType, const Object*>>
+    struct FoundObject
     {
-        for (const Object& o : scene_context->cube_objects)
+        ObjectType type{};
+        const Object* object{};
+    };
+    struct ObjectBucket
+    {
+        ObjectType type;
+        const std::vector<Object>* objects;
+    };
+
+    const std::array<ObjectBucket, 4> buckets{{
+        {ObjectType::Cube, &scene_context->cube_objects},
+        {ObjectType::Sphere, &scene_context->sphere_objects},
+        {ObjectType::Hitmarker, &scene_context->hitmarker_objects},
+        {ObjectType::MarbleBust, &scene_context->marble_bust_objects},
+    }};
+
+    auto find_object = [&](ObjectId id) -> std::optional<FoundObject>
+    {
+        for (const auto& b : buckets)
         {
-            if (o.id == id)
+            for (const Object& o : *b.objects)
             {
-                return std::pair<ObjectType, const Object*>{ObjectType::Cube, &o};
-            }
-        }
-        for (const Object& o : scene_context->sphere_objects)
-        {
-            if (o.id == id)
-            {
-                return std::pair<ObjectType, const Object*>{ObjectType::Sphere, &o};
-            }
-        }
-        for (const Object& o : scene_context->hitmarker_objects)
-        {
-            if (o.id == id)
-            {
-                return std::pair<ObjectType, const Object*>{ObjectType::Hitmarker, &o};
-            }
-        }
-        for (const Object& o : scene_context->marble_bust_objects)
-        {
-            if (o.id == id)
-            {
-                return std::pair<ObjectType, const Object*>{ObjectType::MarbleBust, &o};
+                if (o.id == id)
+                {
+                    return FoundObject{b.type, &o};
+                }
             }
         }
         return std::nullopt;
@@ -432,8 +434,7 @@ void GfxContext::viewport_window()
 
     viewport_fb_rect_valid = true;
 
-    int fbw{0};
-    int fbh{0};
+    int fbw{0}, fbh{0};
     glfwGetFramebufferSize(window, &fbw, &fbh);
     if (fbw == 0 || fbh == 0)
     {
@@ -441,8 +442,7 @@ void GfxContext::viewport_window()
         viewport_fb_rect_valid = false;
     }
 
-    int win_w{1};
-    int win_h{1};
+    int win_w{1}, win_h{1};
     glfwGetWindowSize(window, &win_w, &win_h);
     if (win_w == 0 || win_h == 0)
     {

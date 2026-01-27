@@ -14,10 +14,10 @@
 #include "pba/util/shutdown.hpp"
 //
 #include <atomic>
-#include <imgui.h>
 //
 #include <GLFW/glfw3.h>
 #include <glm/ext/matrix_float4x4.hpp>
+#include <imgui.h>
 #include <json.hpp>
 
 namespace ds_pba
@@ -163,25 +163,17 @@ void GfxContext::step()
         }
         else if (input.key_pressed(EditorKey::Y))
         {
-            if (k_is_german_keyboard)
-            {
-                set_grab_constraint(EditorState::GrabConstraint::Z);
-            }
-            else
-            {
-                set_grab_constraint(EditorState::GrabConstraint::Y);
-            }
+            set_grab_constraint(
+                k_is_german_keyboard ? EditorState::GrabConstraint::Z
+                                     : EditorState::GrabConstraint::Y
+            );
         }
         else if (input.key_pressed(EditorKey::Z))
         {
-            if (k_is_german_keyboard)
-            {
-                set_grab_constraint(EditorState::GrabConstraint::Y);
-            }
-            else
-            {
-                set_grab_constraint(EditorState::GrabConstraint::Z);
-            }
+            set_grab_constraint(
+                k_is_german_keyboard ? EditorState::GrabConstraint::Y
+                                     : EditorState::GrabConstraint::Z
+            );
         }
 
         if (input.mouse_right.pressed() || input.key_pressed(EditorKey::Escape))

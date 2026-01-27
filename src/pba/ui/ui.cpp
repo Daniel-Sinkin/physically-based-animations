@@ -1,19 +1,19 @@
 // pba/ui/ui.cpp
+#include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/ui/ui.hpp"
 //
-#include "glm/gtc/quaternion.hpp"
-#include "glm/trigonometric.hpp"
 #include "pba/core/constants.hpp"
 #include "pba/core/core_types.hpp"
 #include "pba/core/math_types.hpp"
-#include "pba/core/pch.hpp"  // IWYU pragma: keep
 #include "pba/engine/engine_context.hpp"
 #include "pba/engine/scene_context.hpp"
 #include "pba/engine/scene_types.hpp"
 #include "pba/gfx/gfx_context.hpp"
 #include "pba/physics/physics_context.hpp"
 //
+#include <glm/gtc/quaternion.hpp>
+#include <glm/trigonometric.hpp>
 #include <imgui.h>
 
 namespace ds_pba
@@ -22,10 +22,9 @@ namespace
 {
 void render_physics_debug_window(EngineContext& engine_context)
 {
-    PhysicsContext& physics_context = engine_context.physics;
-    GfxContext& gfx_context = engine_context.gfx;
-    SceneContext& scene_context = engine_context.scene;
-
+    auto& physics_context = engine_context.physics;
+    auto& gfx_context = engine_context.gfx;
+    auto& scene_context = engine_context.scene;
     auto& dbg = gfx_context.phys_debug;
 
     ImGui::Begin("Physics Debug");

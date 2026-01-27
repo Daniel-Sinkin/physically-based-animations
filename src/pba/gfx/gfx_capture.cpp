@@ -8,28 +8,33 @@
 #include "pba/gfx/video_recorder.hpp"
 #include "pba/ui/ui.hpp"
 //
+#include <gsl/assert>
 #include <gsl/util>
 #include <imgui.h>
 //
 #include <GLFW/glfw3.h>
 #include <glm/ext/matrix_float4x4.hpp>
 #include <json.hpp>
+#include <print>
 
 namespace ds_pba
 {
 
 bool GfxContext::capture_viewport_rgba8(std::vector<u8>& out) const
 {
-    if (!loaded_glad)
+    Expects(loaded_glad);
     {
+        std::println("Glad not loaded");
         return false;
     }
     if (!viewport_fb_rect_valid)
     {
+        std::println("Viewport framebuffer not valid");
         return false;
     }
     if (viewport_fbo.fbo == 0 || viewport_fbo.color_tex == 0)
     {
+        std::println("Frame buffer fbo or color_tex is invalid");
         return false;
     }
 
@@ -37,16 +42,17 @@ bool GfxContext::capture_viewport_rgba8(std::vector<u8>& out) const
     const int h{viewport_fbo.height};
     if (w <= 0 || h <= 0)
     {
+        std::println("Viewport is empty");
         return false;
     }
     const usize num_bytes = narrow_cast<usize>(w) * narrow_cast<usize>(h) * 4zu;
     out.resize(num_bytes);
 
     GLint prev_fbo{0};
-    GLint prev_read_buffer{0};
-    GLint prev_pack_alignment{0};
     glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_fbo);
+    GLint prev_read_buffer{0};
     glGetIntegerv(GL_READ_BUFFER, &prev_read_buffer);
+    GLint prev_pack_alignment{0};
     glGetIntegerv(GL_PACK_ALIGNMENT, &prev_pack_alignment);
 
     glBindFramebuffer(GL_FRAMEBUFFER, viewport_fbo.fbo);
@@ -130,10 +136,12 @@ void GfxContext::toggle_recording()
 {
     if (recorder.is_recording())
     {
+        std::println("Stopping the recording");
         stop_recording();
     }
     else
     {
+        std::println("Starting the recording");
         start_recording();
     }
 }

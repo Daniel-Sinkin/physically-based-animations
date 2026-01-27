@@ -27,7 +27,6 @@ namespace ds_pba
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
 
-    // No focus on startup
     glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
 
     {

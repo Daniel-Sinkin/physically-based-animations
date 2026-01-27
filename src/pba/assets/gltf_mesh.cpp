@@ -8,6 +8,7 @@
 #include "pba/core/math_types.hpp"
 #include "pba/util/scope_timer.hpp"
 //
+#include <gsl/assert>
 #include <print>
 //
 #include <glm/gtc/quaternion.hpp>
@@ -110,7 +111,6 @@ read_indices_u32(const tinygltf::Model& model, int accessor_index)
 {
     if (accessor_index < 0)
     {
-        // No indices -> non-indexed primitive
         return std::vector<u32>{};
     }
     if (accessor_index >= static_cast<int>(model.accessors.size()))
@@ -177,27 +177,24 @@ read_indices_u32(const tinygltf::Model& model, int accessor_index)
     const std::byte* base{reinterpret_cast<const std::byte*>(buf.data.data() + base_off)};
 
     std::vector<u32> out(count);
-
     switch (a.componentType)
     {
         case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:
-            for (usize i = 0; i < count; ++i)
+            for (usize i{0zu}; i < count; ++i)
             {
                 out[i] =
                     static_cast<u32>(read_unaligned<std::uint8_t>(not_null{base + i * stride}));
             }
             break;
-
         case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:
-            for (usize i = 0; i < count; ++i)
+            for (usize i{0zu}; i < count; ++i)
             {
                 out[i] =
                     static_cast<u32>(read_unaligned<std::uint16_t>(not_null{base + i * stride}));
             }
             break;
-
         case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:
-            for (usize i = 0; i < count; ++i)
+            for (usize i{0zu}; i < count; ++i)
             {
                 out[i] = read_unaligned<std::uint32_t>(not_null{base + i * stride});
             }
@@ -209,15 +206,6 @@ read_indices_u32(const tinygltf::Model& model, int accessor_index)
     }
 
     return out;
-}
-
-static glm::mat4 preprocess_matrix(const Transform& t) noexcept
-{
-    auto M = glm::identity<glm::mat4>();
-    M = glm::translate(M, t.position);
-    M *= glm::mat4_cast(t.orientation);
-    M = glm::scale(M, t.scale);
-    return M;
 }
 
 static std::optional<AccessorView> get_vec3_f32_view(const tinygltf::Model& m, int accessor_index)
@@ -252,16 +240,16 @@ static std::optional<AccessorView> get_vec3_f32_view(const tinygltf::Model& m, i
 
     const tinygltf::Buffer& buf{m.buffers[static_cast<usize>(bv.buffer)]};
 
-    constexpr usize elem{12zu};  // vec3<f32>
-    const usize stride{(bv.byteStride != 0) ? static_cast<usize>(bv.byteStride) : elem};
-    if (stride < elem)
+    constexpr usize size_elem{3zu * sizeof(f32)};
+    const usize stride{(bv.byteStride != 0) ? static_cast<usize>(bv.byteStride) : size_elem};
+    if (stride < size_elem)
     {
-        std::println(stderr, "Invalid vec3 stride {} (< {})", stride, elem);
+        std::println(stderr, "Invalid vec3 stride {} (< {})", stride, size_elem);
         return std::nullopt;
     }
 
-    const usize base_off{static_cast<usize>(bv.byteOffset) + static_cast<usize>(a.byteOffset)};
-    const usize count{static_cast<usize>(a.count)};
+    const auto base_off = static_cast<usize>(bv.byteOffset + a.byteOffset);
+    const auto count = static_cast<usize>(a.count);
 
     if (base_off > buf.data.size())
     {
@@ -271,8 +259,8 @@ static std::optional<AccessorView> get_vec3_f32_view(const tinygltf::Model& m, i
 
     if (count != 0zu)
     {
-        const usize last{(count - 1zu) * stride};
-        if (base_off + last + elem > buf.data.size())
+        const auto last = (count - 1zu) * stride;
+        if (base_off + last + size_elem > buf.data.size())
         {
             std::println(stderr, "vec3 accessor OOB (count/stride)");
             return std::nullopt;
@@ -374,7 +362,7 @@ static std::optional<Vec2AccessorView> get_vec2_view(const tinygltf::Model& m, i
     };
 }
 
-static glm::vec2 read_vec2_as_f32(const Vec2AccessorView& v, usize i) noexcept
+static glm::vec2 read_vec2_as_f32(const Vec2AccessorView& v, usize i)
 {
     const std::byte* loc = v.base + i * v.stride;
 
@@ -412,7 +400,12 @@ static glm::vec2 read_vec2_as_f32(const Vec2AccessorView& v, usize i) noexcept
             }
 
         default:
-            // Should not happen due to validation in get_vec2_view
+            std::println(
+                stderr,
+                "v.component tpye in read_vec2_as_f32 is {} which is invalid. This should have "
+                "been caught in get_vec2_view",
+                v.component_type
+            );
             return glm::vec2{0.0f, 0.0f};
     }
 }
@@ -549,13 +542,14 @@ std::optional<MeshDataPN> load_gltf_mesh(const std::string& path, const Transfor
     }
     const std::vector<u32>& idx{*idx_opt};
 
-    const glm::mat4 P{preprocess_matrix(preprocess)};
-    const glm::mat3 N{glm::transpose(glm::inverse(glm::mat3(P)))};
+    const ModelMatrix model_matrix{preprocess.model_matrix()};
+    const glm::mat3 normal_matrix{glm::transpose(glm::inverse(glm::mat3(model_matrix)))};
 
     auto apply_pos = [&](const glm::vec3& p) -> glm::vec3
-    { return glm::vec3(P * glm::vec4(p, 1.0f)); };
+    { return glm::vec3(model_matrix * glm::vec4(p, 1.0f)); };
 
-    auto normalized = [&](const glm::vec3& n) -> glm::vec3 { return safe_normalize(N * n); };
+    auto normalized = [&](const glm::vec3& n) -> glm::vec3
+    { return safe_normalize(normal_matrix * n); };
 
     auto read_pos = [&](u32 i) -> glm::vec3
     {
@@ -811,7 +805,7 @@ std::optional<MeshDataPNT> load_gltf_mesh_pnt(const std::string& path, const Tra
     }
     const std::vector<u32>& idx{*idx_opt};
 
-    const glm::mat4 P{preprocess_matrix(preprocess)};
+    const ModelMatrix P{preprocess.model_matrix()};
     const glm::mat3 N{glm::transpose(glm::inverse(glm::mat3(P)))};
 
     auto apply_pos = [&](const glm::vec3& p) -> glm::vec3

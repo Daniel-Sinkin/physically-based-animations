@@ -35,6 +35,8 @@ struct EngineContext
 
     void link_latest_objects(ObjectId id);
 
+    SceneId active_scene{k_default_scene};
+
     void add_cube(Position3 position);
     void spawn_cube(
         Position3 pos,

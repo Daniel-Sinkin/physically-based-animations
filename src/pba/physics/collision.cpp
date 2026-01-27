@@ -1,5 +1,4 @@
 // pba/physics/collision.cpp
-#include "glm/gtc/quaternion.hpp"
 #include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/physics/collision.hpp"
@@ -14,6 +13,7 @@
 #include <limits>
 //
 #include <glm/geometric.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 namespace ds_pba
 {

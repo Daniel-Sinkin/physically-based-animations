@@ -1,22 +1,22 @@
 // pba/engine/engine_context.cpp
-#include "glm/ext/quaternion_trigonometric.hpp"
-#include "pba/core/core_types.hpp"
-#include "pba/core/math_types.hpp"
 #include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/engine/engine_context.hpp"
 //
 #include "pba/core/constants.hpp"
+#include "pba/core/core_types.hpp"
 #include "pba/core/format.hpp"  // IWYU pragma: keep
+#include "pba/core/math_types.hpp"
 #include "pba/engine/scene_types.hpp"
 #include "pba/engine/scenes.hpp"
 #include "pba/gfx/camera.hpp"
 #include "pba/physics/forces.hpp"
 #include "pba/ui/ui.hpp"
-#include "pba/util/scope_timer.hpp"
-
+//
 #include <algorithm>
 #include <gsl/assert>
+//
+#include <glm/ext/quaternion_trigonometric.hpp>
 
 namespace ds_pba
 {

@@ -185,7 +185,7 @@ struct GfxContext
 
         ColorRGBf ke_low_color{0.0f, 0.0f, 1.0f};
         ColorRGBf ke_high_color{1.0f, 0.0f, 0.0f};
-        f32 ke_max{100.0f};
+        f32 ke_max{1.0f};
         bool ke_include_angular{true};
 
         bool show_selected_axes{true};
