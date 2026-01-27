@@ -22,7 +22,7 @@
 
 namespace ds_pba
 {
-std::optional<Position3> GfxContext::get_object_position(ObjectId id) const
+std::optional<Pos3> GfxContext::get_object_position(ObjectId id) const
 {
     if (!scene_context)
     {
@@ -69,7 +69,7 @@ std::optional<Position3> GfxContext::get_object_position(ObjectId id) const
 
     return std::nullopt;
 }
-void GfxContext::set_object_position(ObjectId id, const Position3& p) const
+void GfxContext::set_object_position(ObjectId id, const Pos3& p) const
 {
     if (!scene_context)
     {
@@ -88,10 +88,10 @@ void GfxContext::set_object_position(ObjectId id, const Position3& p) const
                 RigidBody& rb = engine_context->physics.bodies[phys_i];
                 rb.position = p;
 
-                rb.velocity = Direction3{};
-                rb.angular_velocity = Direction3{};
-                rb.force_accum = Direction3{};
-                rb.torque_accum = Direction3{};
+                rb.velocity = Dir3{};
+                rb.angular_velocity = Dir3{};
+                rb.force_accum = Dir3{};
+                rb.torque_accum = Dir3{};
 
                 rb.asleep = false;
                 rb.sleep_frames = 0;

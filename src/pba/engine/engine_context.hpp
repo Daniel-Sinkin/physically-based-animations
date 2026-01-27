@@ -6,7 +6,7 @@
 #include "pba/engine/scene_context.hpp"
 #include "pba/gfx/gfx_context.hpp"
 #include "pba/physics/physics_context.hpp"
-
+//
 #include <string>
 #include <unordered_map>
 
@@ -37,12 +37,12 @@ struct EngineContext
 
     SceneId active_scene{k_default_scene};
 
-    void add_cube(Position3 position);
+    void add_cube(Pos3 position);
     void spawn_cube(
-        Position3 pos,
-        Direction3 vel = Direction3{0.0f, 0.0f, 0.0f},
+        Pos3 pos,
+        Dir3 vel = Dir3{0.0f, 0.0f, 0.0f},
         Quaternion ori = Quaternion{1.0f, 0.0f, 0.0f, 0.0f},
-        ColorRGBf color = ColorRGBf{0.80f, 0.80f, 0.80f}
+        Color3 color = Color3{0.80f, 0.80f, 0.80f}
     );
 
     void add_ground();

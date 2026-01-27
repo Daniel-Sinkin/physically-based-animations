@@ -66,7 +66,7 @@ void GfxContext::render_to_viewport_objects(
             // TODO: Clean this up
             // TODO: Clean this up
             {  // Color
-                ColorRGBf color{o.color};
+                Color3 color{o.color};
                 if (phys_debug.enabled && engine_context)
                 {
                     if (auto it = engine_context->obj_map.find(o.id);
@@ -78,10 +78,6 @@ void GfxContext::render_to_viewport_objects(
                             const RigidBody& rb = engine_context->physics.bodies[phys_i];
                             if (!rb.is_static())
                             {
-                                const auto lerp =
-                                    [](const ColorRGBf& a, const ColorRGBf& b, f32 t) -> ColorRGBf
-                                { return (1.0f - t) * a + t * b; };
-
                                 switch (phys_debug.color_mode)
                                 {
                                     case PhysicsDebugSettings::ColorMode::Diffuse:
@@ -97,11 +93,10 @@ void GfxContext::render_to_viewport_objects(
                                                           0.0f,
                                                           1.0f
                                                       );
-                                            color = lerp(
-                                                phys_debug.sleep_active_color,
-                                                phys_debug.sleep_asleep_color,
-                                                t
-                                            );
+                                            color =
+                                                mix(phys_debug.sleep_active_color,
+                                                    phys_debug.sleep_asleep_color,
+                                                    t);
                                         }
                                         break;
 
@@ -123,7 +118,7 @@ void GfxContext::render_to_viewport_objects(
 
                                             const auto denom = std::max(1e-6f, phys_debug.ke_max);
                                             const auto t = std::clamp(E / denom, 0.0f, 1.0f);
-                                            color = lerp(
+                                            color = mix(
                                                 phys_debug.ke_low_color, phys_debug.ke_high_color, t
                                             );
                                         }
@@ -133,7 +128,7 @@ void GfxContext::render_to_viewport_objects(
                         }
                     }
                 }
-                set_uniform_vec3(shader_programs.obj.handle(), "uColor", color);
+                set_uniform_color3(shader_programs.obj.handle(), "uColor", color);
             }
 
             glDrawArrays(GL_TRIANGLES, 0, meshes.cube.vertex_count);
@@ -150,7 +145,7 @@ void GfxContext::render_to_viewport_objects(
             assert(o.id != k_invalid_id);
 
             set_uniform_mat4(shader_programs.obj.handle(), "uModel", o.transform.model_matrix().m);
-            set_uniform_vec3(shader_programs.obj.handle(), "uColor", o.color);
+            set_uniform_color3(shader_programs.obj.handle(), "uColor", o.color);
 
             glDrawArrays(GL_TRIANGLES, 0, meshes.sphere.vertex_count);
         }
@@ -158,7 +153,7 @@ void GfxContext::render_to_viewport_objects(
         {
             assert(o.id != k_invalid_id);
             set_uniform_mat4(shader_programs.obj.handle(), "uModel", o.transform.model_matrix().m);
-            set_uniform_vec3(shader_programs.obj.handle(), "uColor", o.color);
+            set_uniform_color3(shader_programs.obj.handle(), "uColor", o.color);
 
             glDrawArrays(GL_TRIANGLES, 0, meshes.sphere.vertex_count);
         }
@@ -390,7 +385,7 @@ void GfxContext::render_to_viewport_outline(
 }
 
 void GfxContext::render_to_viewport_pivot(
-    const Position3& pivot_pos,
+    const Pos3& pivot_pos,
     const ViewMatrix& camera_view_matrix,
     const ProjMatrix& camera_proj_matrix
 ) const
@@ -523,8 +518,7 @@ void GfxContext::render_to_viewport_physics_debug(
 
     debug_line_vertices.clear();
 
-    auto push_line =
-        [&](const Position3& a, const Position3& b, f32 r, f32 g, f32 bl, f32 al) -> void
+    auto push_line = [&](const Pos3& a, const Pos3& b, f32 r, f32 g, f32 bl, f32 al) -> void
     {
         debug_line_vertices.push_back(DebugLineV_PColor{a.x, a.y, a.z, r, g, bl, al});
         debug_line_vertices.push_back(DebugLineV_PColor{b.x, b.y, b.z, r, g, bl, al});
@@ -538,11 +532,11 @@ void GfxContext::render_to_viewport_physics_debug(
 
         for (const auto& c : phys.debug_contacts)
         {
-            const Position3 p{c.p};
+            const Pos3 p{c.p};
 
-            push_line(p + Direction3{s, 0.0f, 0.0f}, p - Direction3{s, 0.0f, 0.0f}, 1, 1, 1, 1);
-            push_line(p + Direction3{0.0f, s, 0.0f}, p - Direction3{0.0f, s, 0.0f}, 1, 1, 1, 1);
-            push_line(p + Direction3{0.0f, 0.0f, s}, p - Direction3{0.0f, 0.0f, s}, 1, 1, 1, 1);
+            push_line(p + Dir3{s, 0.0f, 0.0f}, p - Dir3{s, 0.0f, 0.0f}, 1, 1, 1, 1);
+            push_line(p + Dir3{0.0f, s, 0.0f}, p - Dir3{0.0f, s, 0.0f}, 1, 1, 1, 1);
+            push_line(p + Dir3{0.0f, 0.0f, s}, p - Dir3{0.0f, 0.0f, s}, 1, 1, 1, 1);
 
             if (phys_debug.show_contact_normals)
             {
@@ -584,7 +578,7 @@ void GfxContext::render_to_viewport_physics_debug(
             }
         }
 
-        Position3 com{};
+        Pos3 com{};
         Quaternion ori{};
         f32 extent{1.0f};
 
@@ -612,9 +606,9 @@ void GfxContext::render_to_viewport_physics_debug(
         const f32 axis_len = std::max(0.0f, extent) * std::max(0.0f, phys_debug.axis_scale);
 
         const glm::mat3 R{glm::mat3_cast(ori)};
-        const Direction3 ax{glm::normalize(R * k_axis_x)};
-        const Direction3 ay{glm::normalize(R * k_axis_y)};
-        const Direction3 az{glm::normalize(R * k_axis_z)};
+        const Dir3 ax{glm::normalize(R * k_axis_x)};
+        const Dir3 ay{glm::normalize(R * k_axis_y)};
+        const Dir3 az{glm::normalize(R * k_axis_z)};
 
         if (phys_debug.show_selected_axes)
         {

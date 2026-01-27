@@ -44,15 +44,15 @@ void render_physics_debug_window(EngineContext& engine_context)
 
     if (dbg.color_mode == GfxContext::PhysicsDebugSettings::ColorMode::SleepState)
     {
-        ImGui::ColorEdit3("Active color", &dbg.sleep_active_color.x);
-        ImGui::ColorEdit3("Asleep color", &dbg.sleep_asleep_color.x);
+        ImGui::ColorEdit3("Active color", dbg.sleep_active_color.data());
+        ImGui::ColorEdit3("Asleep color", dbg.sleep_asleep_color.data());
     }
     else if (dbg.color_mode == GfxContext::PhysicsDebugSettings::ColorMode::KineticEnergy)
     {
         ImGui::Checkbox("Include angular", &dbg.ke_include_angular);
         ImGui::DragFloat("Max KE", &dbg.ke_max, 0.5f, 0.001f, 1e9f, "%.3f");
-        ImGui::ColorEdit3("Low", &dbg.ke_low_color.x);
-        ImGui::ColorEdit3("High", &dbg.ke_high_color.x);
+        ImGui::ColorEdit3("Low", dbg.ke_low_color.data());
+        ImGui::ColorEdit3("High", dbg.ke_high_color.data());
     }
 
     ImGui::Separator();
@@ -564,12 +564,12 @@ void render_imgui_windows(EngineContext& engine_context)
 
             ImGui::Separator();
 
-            ImGui::ColorEdit3("Color", &o.color.x);
+            ImGui::ColorEdit3("Color", o.color.data());
 
             if (physics_index)
             {
                 RigidBody& rb = physics_context.bodies[*physics_index];
-                Position3 p = rb.position;
+                Pos3 p = rb.position;
                 if (ImGui::DragFloat3("Position", &p.x, 0.01f))
                 {
                     gfx_context.set_object_position(o.id, p);

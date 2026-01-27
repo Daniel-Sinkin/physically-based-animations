@@ -12,16 +12,15 @@
 #include "pba/ui/ui.hpp"
 //
 #include <algorithm>
-#include <gsl/assert>
-//
 #include <glm/ext/quaternion_trigonometric.hpp>
+#include <gsl/assert>
 
 namespace ds_pba
 {
 namespace
 {
 
-[[nodiscard]] glm::mat3 inv_inertia_body_box(f32 inv_mass, const Direction3& half_extent) noexcept
+[[nodiscard]] glm::mat3 inv_inertia_body_box(f32 inv_mass, const Dir3& half_extent) noexcept
 {
     if (inv_mass == k_static_mass)
     {
@@ -75,7 +74,7 @@ void EngineContext::link_latest_objects(ObjectId id)
     );
 }
 
-void EngineContext::add_cube(Position3 position)
+void EngineContext::add_cube(Pos3 position)
 {
     const ObjectId id{next_object_id()};
 
@@ -86,7 +85,7 @@ void EngineContext::add_cube(Position3 position)
     physics.bodies.push_back(
         RigidBody{
             .id = id,
-            .half_extents = Direction3{0.5f, 0.5f, 0.5f},
+            .half_extents = Dir3{0.5f, 0.5f, 0.5f},
             .position = position,
             .inv_mass = 1.0f,
         }
@@ -99,8 +98,8 @@ void EngineContext::add_ground()
 {
     const ObjectId id{next_object_id()};
 
-    constexpr Position3 ground_center{0.0f, 0.0f, -3.5f};
-    constexpr Position3 half_extents{10.0f, 10.0f, 0.5f};
+    constexpr Pos3 ground_center{0.0f, 0.0f, -3.5f};
+    constexpr Pos3 half_extents{10.0f, 10.0f, 0.5f};
 
     scene.cube_objects.push_back(
         Object{
@@ -122,7 +121,7 @@ void EngineContext::add_ground()
             .half_extents = half_extents,
 
             .position = ground_center,
-            .velocity = Direction3{0.0f, 0.0f, 30.0f},
+            .velocity = Dir3{0.0f, 0.0f, 30.0f},
             .inv_mass = 1.0f / 50.0f,
             .inv_inertia_body = glm::mat3(0.0f),
             .inv_inertia_world = glm::mat3(0.0f),
@@ -135,7 +134,7 @@ void EngineContext::add_ground()
     obj_name_map.insert_or_assign(id, "Ground");
 }
 
-void EngineContext::spawn_cube(Position3 pos, Direction3 vel, Quaternion ori, ColorRGBf color)
+void EngineContext::spawn_cube(Pos3 pos, Dir3 vel, Quaternion ori, Color3 color)
 {
     add_cube(pos);
 
@@ -164,10 +163,10 @@ void EngineContext::create_pyramid(int base_n, f32 step_size, f32 base_z)
             const auto x = static_cast<f32>(ix) * step_size - half_span;
             const auto y = 0.0f;
             spawn_cube(
-                Position3{x, y, z},
+                Pos3{x, y, z},
                 k_zero_dir,
                 k_quaternion_identity,
-                ColorRGBf{k_scene_object_default_color}
+                Color3{k_scene_object_default_color}
             );
             obj_name_map.insert_or_assign(
                 scene.cube_objects.back().id, std::format("Pyramid (layer={}, idx={})", layer, ix)
@@ -194,10 +193,10 @@ void EngineContext::create_pyramid_3d(int base_n, f32 step_size, f32 base_z)
                 const f32 y = static_cast<f32>(iy) * step_size - half_span;
 
                 spawn_cube(
-                    Position3{x, y, z},
+                    Pos3{x, y, z},
                     k_zero_dir,
                     k_quaternion_identity,
-                    ColorRGBf{k_scene_object_default_color}
+                    Color3{k_scene_object_default_color}
                 );
 
                 obj_name_map.insert_or_assign(

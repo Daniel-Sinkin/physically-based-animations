@@ -181,11 +181,11 @@ struct GfxContext
 
         ColorMode color_mode{ColorMode::Diffuse};
 
-        ColorRGBf sleep_active_color{1.0f, 0.0f, 0.0f};
-        ColorRGBf sleep_asleep_color{0.0f, 0.0f, 1.0f};
+        Color3 sleep_active_color{1.0f, 0.0f, 0.0f};
+        Color3 sleep_asleep_color{0.0f, 0.0f, 1.0f};
 
-        ColorRGBf ke_low_color{0.0f, 0.0f, 1.0f};
-        ColorRGBf ke_high_color{1.0f, 0.0f, 0.0f};
+        Color3 ke_low_color{0.0f, 0.0f, 1.0f};
+        Color3 ke_high_color{1.0f, 0.0f, 0.0f};
         f32 ke_max{1.0f};
         bool ke_include_angular{true};
 
@@ -234,7 +234,7 @@ struct GfxContext
             f64 start_mouse_x{0.0};
             f64 start_mouse_y{0.0};
             GrabConstraint constraint{GrabConstraint::None};
-            std::vector<std::pair<ObjectId, Position3>> start_positions{};
+            std::vector<std::pair<ObjectId, Pos3>> start_positions{};
         };
 
         Grab grab{};
@@ -250,7 +250,7 @@ struct GfxContext
     void render_to_viewport();
     void render_to_viewport_grid(const ViewMatrix&, const ProjMatrix&) const;
     void render_to_viewport_objects(const ViewMatrix&, const ProjMatrix&) const;
-    void render_to_viewport_pivot(const Position3&, const ViewMatrix&, const ProjMatrix&) const;
+    void render_to_viewport_pivot(const Pos3&, const ViewMatrix&, const ProjMatrix&) const;
     void render_to_viewport_outline(const ViewMatrix&, const ProjMatrix&) const;
     void render_to_viewport_physics_debug(const ViewMatrix&, const ProjMatrix&);
 
@@ -267,8 +267,8 @@ struct GfxContext
     void hover_interaction_holding_middle(const EditorInput& input, Camera& cam) const;
     void hover_interaction_selection(const EditorInput& input, const Raycast& rc) const;
 
-    void set_object_position(ObjectId id, const Position3& p) const;
-    [[nodiscard]] std::optional<Position3> get_object_position(ObjectId id) const;
+    void set_object_position(ObjectId id, const Pos3& p) const;
+    [[nodiscard]] std::optional<Pos3> get_object_position(ObjectId id) const;
 
     bool is_active() const;
     void deactivate() noexcept

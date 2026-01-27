@@ -5,7 +5,7 @@
 #include "pba/core/core_types.hpp"  // IWYU pragma: keep
 #include "pba/core/geometry.hpp"
 #include "pba/core/math_types.hpp"
-
+//
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -15,8 +15,8 @@ namespace ds_pba
 
 struct Transform
 {
-    Position3 position{};
-    Direction3 scale{1.0f, 1.0f, 1.0f};
+    Pos3 position{};
+    Dir3 scale{1.0f, 1.0f, 1.0f};
     Quaternion orientation{k_quaternion_identity};
 
     [[nodiscard]] ModelMatrix model_matrix() const noexcept
@@ -41,7 +41,7 @@ struct Object
     ObjectId id{k_invalid_id};
     ObjectType type{ObjectType::Cube};
     Transform transform{};
-    ColorRGBf color{k_scene_object_default_color};
+    Color3 color{k_scene_object_default_color};
 };
 
 }  // namespace ds_pba

@@ -18,8 +18,8 @@ struct SceneContext;
 
 struct Ray
 {
-    Position3 origin{};
-    Direction3 dir{};
+    Pos3 origin{};
+    Dir3 dir{};
 
     [[nodiscard]] bool valid() const noexcept
     {  // Has to be normalised
@@ -30,7 +30,7 @@ struct Ray
 struct Raycast
 {
     Ray ray;
-    Position3 hit;
+    Pos3 hit;
     f32 t;
     ObjectId object_id;
     ObjectType object_type;

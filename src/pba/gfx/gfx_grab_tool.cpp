@@ -152,7 +152,7 @@ void GfxContext::update_grab(const EditorInput& input)
     const auto dy = narrow_cast<f32>(input.ui_mouse_y - grab.start_mouse_y);
 
     // Mouse up = look down
-    Direction3 delta{(dx * units_per_px) * cam.right() + (-dy * units_per_px) * cam.up()};
+    Dir3 delta{(dx * units_per_px) * cam.right() + (-dy * units_per_px) * cam.up()};
 
     using GC = EditorState::GrabConstraint;
     switch (grab.constraint)
@@ -160,13 +160,13 @@ void GfxContext::update_grab(const EditorInput& input)
         case GC::None:
             break;
         case GC::X:
-            delta = Direction3{delta.x, 0.0f, 0.0f};
+            delta = Dir3{delta.x, 0.0f, 0.0f};
             break;
         case GC::Y:
-            delta = Direction3{0.0f, delta.y, 0.0f};
+            delta = Dir3{0.0f, delta.y, 0.0f};
             break;
         case GC::Z:
-            delta = Direction3{0.0f, 0.0f, delta.z};
+            delta = Dir3{0.0f, 0.0f, delta.z};
             break;
     }
     for (const auto& [id, start_pos] : grab.start_positions)

@@ -20,16 +20,16 @@ struct RigidBody
 {
     ObjectId id{k_invalid_id};
 
-    Direction3 half_extents{0.5f, 0.5f, 0.5f};
+    Dir3 half_extents{0.5f, 0.5f, 0.5f};
 
-    Position3 position{};
-    Direction3 velocity{};
-    Direction3 force_accum{};
+    Pos3 position{};
+    Dir3 velocity{};
+    Dir3 force_accum{};
     f32 inv_mass{k_static_mass};
 
     Quaternion orientation{k_quaternion_identity};
-    Direction3 angular_velocity{};
-    Direction3 torque_accum{};
+    Dir3 angular_velocity{};
+    Dir3 torque_accum{};
 
     glm::mat3 inv_inertia_body{0.0f};
     glm::mat3 inv_inertia_world{0.0f};
@@ -87,13 +87,13 @@ struct Contact
     usize a_idx{k_invalid_idx};
     usize b_idx{k_invalid_idx};
 
-    Position3 p{};           // contact point (world)
-    Direction3 n{k_axis_z};  // unit normal (world), direction is b -> a
+    Pos3 p{};           // contact point (world)
+    Dir3 n{k_axis_z};  // unit normal (world), direction is b -> a
     f32 penetration{};       // >= 0
     f32 lambda_n{};          // accumulated normal impulse
     f32 lambda_t{};          // accumulated friction impulse
 
-    Direction3 t_hat{};     // tangent direction
+    Dir3 t_hat{};     // tangent direction
     bool has_t_hat{false};  // do we have a cached tangent direction?
     bool allow_warm_start{true};
 
@@ -207,7 +207,7 @@ struct ContactCacheEntry
 {
     f32 lambda_n{};
     f32 lambda_t{};
-    Direction3 t_hat{};
+    Dir3 t_hat{};
     bool has_t_hat{false};
 };
 

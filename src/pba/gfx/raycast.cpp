@@ -80,12 +80,12 @@ raycast(const SceneContext& scene_context, const Ray& ray) noexcept
 
     const ClipToWorldMatrix c2w = clip_to_world(camera_proj_matrix, camera_view_matrix);
 
-    const Position3 near_w = c2w.unproject_ndc(x_ndc, y_ndc, -1.0f);
-    const Position3 far_w = c2w.unproject_ndc(x_ndc, y_ndc, +1.0f);
+    const Pos3 near_w = c2w.unproject_ndc(x_ndc, y_ndc, -1.0f);
+    const Pos3 far_w = c2w.unproject_ndc(x_ndc, y_ndc, +1.0f);
 
     return Ray{
         .origin = near_w,
-        .dir = glm::normalize(Direction3{far_w - near_w}),
+        .dir = glm::normalize(Dir3{far_w - near_w}),
     };
 }
 
@@ -97,8 +97,8 @@ intersect_ray_sphere(const Ray& ray, const ModelMatrix& model_matrix) noexcept
 
     const auto world_to_model = model_matrix.world_to_model();
 
-    const Position3 origin_local = world_to_model.transform_position(ray.origin);
-    const Direction3 dir_local = glm::normalize(world_to_model.transform_direction(ray.dir));
+    const Pos3 origin_local = world_to_model.transform_position(ray.origin);
+    const Dir3 dir_local = glm::normalize(world_to_model.transform_direction(ray.dir));
 
     const auto a = 1.0f;
     const auto b = 2.0f * glm::dot(origin_local, dir_local);
@@ -120,8 +120,8 @@ intersect_ray_sphere(const Ray& ray, const ModelMatrix& model_matrix) noexcept
         return std::nullopt;
     }
 
-    const Position3 hit_local{origin_local + t_local * dir_local};
-    const Position3 hit_world{model_matrix.transform_position(hit_local)};
+    const Pos3 hit_local{origin_local + t_local * dir_local};
+    const Pos3 hit_world{model_matrix.transform_position(hit_local)};
 
     const f32 t_world{glm::dot(hit_world - ray.origin, ray.dir)};
     if (t_world <= 0.0f)
@@ -178,11 +178,11 @@ intersect_ray_cube(const Ray& ray_world, const ModelMatrix& model_matrix) noexce
 
     const auto world_to_model = model_matrix.world_to_model();
 
-    const Position3 origin_local = world_to_model.transform_position(ray_world.origin);
-    const Direction3 dir_local = world_to_model.transform_direction(ray_world.dir);
+    const Pos3 origin_local = world_to_model.transform_position(ray_world.origin);
+    const Dir3 dir_local = world_to_model.transform_direction(ray_world.dir);
 
-    constexpr Position3 bmin{-0.5f, -0.5f, -0.5f};
-    constexpr Position3 bmax{+0.5f, +0.5f, +0.5f};
+    constexpr Pos3 bmin{-0.5f, -0.5f, -0.5f};
+    constexpr Pos3 bmax{+0.5f, +0.5f, +0.5f};
 
     // clang-format off
     if (!slab(origin_local.x, dir_local.x, bmin.x, bmax.x)) return std::nullopt;
@@ -196,8 +196,8 @@ intersect_ray_cube(const Ray& ray_world, const ModelMatrix& model_matrix) noexce
         return std::nullopt;
     }
 
-    const Position3 hit_local = origin_local + t_local * dir_local;
-    const Position3 hit_world = model_matrix.transform_position(hit_local);
+    const Pos3 hit_local = origin_local + t_local * dir_local;
+    const Pos3 hit_world = model_matrix.transform_position(hit_local);
 
     // Assumes ray_world.dir is unit-length (checked above).
     const f32 t_world = glm::dot(hit_world - ray_world.origin, ray_world.dir);

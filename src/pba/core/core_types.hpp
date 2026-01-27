@@ -104,4 +104,41 @@ using ColorRGBA8 = ColorRGBA<u8>;
 using ColorRGBAf = ColorRGBA<f32>;
 using ColorRGBAd = ColorRGBA<f64>;
 
+// clang-format off
+struct Color3
+{
+    std::array<f32, 3> v{};
+
+    constexpr Color3() noexcept = default;
+    constexpr Color3(f32 r, f32 g, f32 b) noexcept : v{r, g, b} {}
+
+    constexpr f32*       data()       noexcept { return v.data(); }
+    constexpr const f32* data() const noexcept { return v.data(); }
+
+    constexpr f32&       r()       noexcept { return v[0]; }
+    constexpr f32&       g()       noexcept { return v[1]; }
+    constexpr f32&       b()       noexcept { return v[2]; }
+
+    constexpr const f32& r() const noexcept { return v[0]; }
+    constexpr const f32& g() const noexcept { return v[1]; }
+    constexpr const f32& b() const noexcept { return v[2]; }
+
+    static const Color3 Black;
+    static const Color3 White;
+    static const Color3 Red;
+    static const Color3 Green;
+    static const Color3 Blue;
+    static const Color3 Yellow;
+    static const Color3 Cyan;
+    static const Color3 Magenta;
+};
+inline constexpr Color3 Color3::Black   {0.0f, 0.0f, 0.0f};
+inline constexpr Color3 Color3::White   {1.0f, 1.0f, 1.0f};
+inline constexpr Color3 Color3::Red     {1.0f, 0.0f, 0.0f};
+inline constexpr Color3 Color3::Green   {0.0f, 1.0f, 0.0f};
+inline constexpr Color3 Color3::Blue    {0.0f, 0.0f, 1.0f};
+inline constexpr Color3 Color3::Yellow  {1.0f, 1.0f, 0.0f};
+inline constexpr Color3 Color3::Cyan    {0.0f, 1.0f, 1.0f};
+inline constexpr Color3 Color3::Magenta {1.0f, 0.0f, 1.0f};
+// clang-format on
 }  // namespace ds_pba

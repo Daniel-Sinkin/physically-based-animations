@@ -31,8 +31,8 @@ struct PhysicsContext
     {
         ObjectId a_id{k_invalid_id};
         ObjectId b_id{k_invalid_id};
-        Position3 p{};
-        Direction3 n{k_axis_z};
+        Pos3 p{};
+        Dir3 n{k_axis_z};
         f32 penetration{};
         bool allow_warm_start{true};
     };

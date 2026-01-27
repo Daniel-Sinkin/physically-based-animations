@@ -538,7 +538,7 @@ std::optional<MeshDataPN> load_gltf_mesh(const std::string& path, const Transfor
     auto normalized = [&](const glm::vec3& n) -> glm::vec3
     { return safe_normalize(normal_matrix.m * n); };
 
-    auto read_pos = [&](u32 i) -> Position3
+    auto read_pos = [&](u32 i) -> Pos3
     {
         const glm::vec3 p{read_vec3_f32_strided(pos_base, pos_stride, static_cast<usize>(i))};
         return model_matrix.transform_position(p);
@@ -578,15 +578,15 @@ std::optional<MeshDataPN> load_gltf_mesh(const std::string& path, const Transfor
                 return std::nullopt;
             }
 
-            const Position3 p0{read_pos(i0)};
-            const Position3 p1{read_pos(i1)};
-            const Position3 p2{read_pos(i2)};
+            const Pos3 p0{read_pos(i0)};
+            const Pos3 p1{read_pos(i1)};
+            const Pos3 p2{read_pos(i2)};
 
             if (has_normals)
             {
                 auto emit = [&](u32 i, const glm::vec3& p) -> void
                 {
-                    const Direction3 n{read_nrm(i)};
+                    const Dir3 n{read_nrm(i)};
                     verts.emplace_back(p.x, p.y, p.z, n.x, n.y, n.z);
                 };
                 emit(i0, p0);
@@ -595,7 +595,7 @@ std::optional<MeshDataPN> load_gltf_mesh(const std::string& path, const Transfor
             }
             else
             {
-                const Direction3 fn{face_normal(p0, p1, p2)};
+                const Dir3 fn{face_normal(p0, p1, p2)};
                 auto emit = [&](const glm::vec3& p, const glm::vec3& n) -> void
                 { verts.emplace_back(p.x, p.y, p.z, n.x, n.y, n.z); };
 
@@ -622,15 +622,15 @@ std::optional<MeshDataPN> load_gltf_mesh(const std::string& path, const Transfor
             const u32 i1{vertex_idx++};
             const u32 i2{vertex_idx++};
 
-            const Position3 p0{read_pos(i0)};
-            const Position3 p1{read_pos(i1)};
-            const Position3 p2{read_pos(i2)};
+            const Pos3 p0{read_pos(i0)};
+            const Pos3 p1{read_pos(i1)};
+            const Pos3 p2{read_pos(i2)};
 
-            const Direction3 fn{has_normals ? glm::vec3{} : face_normal(p0, p1, p2)};
+            const Dir3 fn{has_normals ? glm::vec3{} : face_normal(p0, p1, p2)};
 
             auto emit = [&](u32 i, const glm::vec3& p) -> void
             {
-                const Direction3 n{has_normals ? read_nrm(i) : fn};
+                const Dir3 n{has_normals ? read_nrm(i) : fn};
                 verts.push_back(MeshV_PN{p.x, p.y, p.z, n.x, n.y, n.z});
             };
 
@@ -839,15 +839,15 @@ std::optional<MeshDataPNT> load_gltf_mesh_pnt(const std::string& path, const Tra
                 return std::nullopt;
             }
 
-            const Position3 p0{read_pos(i0)};
-            const Position3 p1{read_pos(i1)};
-            const Position3 p2{read_pos(i2)};
+            const Pos3 p0{read_pos(i0)};
+            const Pos3 p1{read_pos(i1)};
+            const Pos3 p2{read_pos(i2)};
 
             if (has_normals)
             {
                 auto emit = [&](u32 i, const glm::vec3& p) -> void
                 {
-                    const Direction3 n{read_nrm(i)};
+                    const Dir3 n{read_nrm(i)};
                     const glm::vec2 uv = read_uv(i);
                     verts.push_back(MeshV_PNT{p.x, p.y, p.z, n.x, n.y, n.z, uv.x, uv.y});
                 };
@@ -857,7 +857,7 @@ std::optional<MeshDataPNT> load_gltf_mesh_pnt(const std::string& path, const Tra
             }
             else
             {
-                const Direction3 fn{face_normal(p0, p1, p2)};
+                const Dir3 fn{face_normal(p0, p1, p2)};
                 auto emit = [&](u32 i, const glm::vec3& p, const glm::vec3& n) -> void
                 {
                     const glm::vec2 uv = read_uv(i);
@@ -891,11 +891,11 @@ std::optional<MeshDataPNT> load_gltf_mesh_pnt(const std::string& path, const Tra
             const glm::vec3 p1{read_pos(i1)};
             const glm::vec3 p2{read_pos(i2)};
 
-            const Direction3 fn{has_normals ? glm::vec3{} : face_normal(p0, p1, p2)};
+            const Dir3 fn{has_normals ? glm::vec3{} : face_normal(p0, p1, p2)};
 
             auto emit = [&](u32 i, const glm::vec3& p) -> void
             {
-                const Direction3 n{has_normals ? read_nrm(i) : fn};
+                const Dir3 n{has_normals ? read_nrm(i) : fn};
                 const glm::vec2 uv = read_uv(i);
                 verts.push_back(MeshV_PNT{p.x, p.y, p.z, n.x, n.y, n.z, uv.x, uv.y});
             };

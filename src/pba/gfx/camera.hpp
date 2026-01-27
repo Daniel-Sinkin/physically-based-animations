@@ -15,7 +15,7 @@ namespace ds_pba
 
 struct Camera
 {
-    Position3 pivot{k_camera_pivot};
+    Pos3 pivot{k_camera_pivot};
     f32 distance{k_camera_distance};
 
     f32 yaw{glm::radians(k_camera_yaw)};
@@ -25,12 +25,12 @@ struct Camera
     f32 z_near{k_camera_z_near};
     f32 z_far{k_camera_z_far};
 
-    [[nodiscard]] Position3 position() const noexcept;
+    [[nodiscard]] Pos3 position() const noexcept;
     [[nodiscard]] ViewMatrix view_matrix() const noexcept;
     [[nodiscard]] ProjMatrix proj_matrix(f32 aspect) const noexcept;
 
-    [[nodiscard]] Direction3 right() const noexcept;
-    [[nodiscard]] Direction3 up() const noexcept;
+    [[nodiscard]] Dir3 right() const noexcept;
+    [[nodiscard]] Dir3 up() const noexcept;
 };
 
 }  // namespace ds_pba

@@ -26,7 +26,7 @@ namespace
 }
 
 static void reduce_contact_points_to_4(
-    std::array<Position3, k_contact_points>& pts, usize& new_pt_count, const Direction3& n
+    std::array<Pos3, k_contact_points>& pts, usize& new_pt_count, const Dir3& n
 ) noexcept
 {
     if (new_pt_count <= 4)
@@ -34,15 +34,15 @@ static void reduce_contact_points_to_4(
         return;
     }
 
-    Direction3 t1{glm::cross(n, Direction3{1.0f, 0.0f, 0.0f})};
+    Dir3 t1{glm::cross(n, Dir3{1.0f, 0.0f, 0.0f})};
     if (glm::dot(t1, t1) < 1e-8f)
     {
-        t1 = glm::cross(n, Direction3{0.0f, 1.0f, 0.0f});
+        t1 = glm::cross(n, Dir3{0.0f, 1.0f, 0.0f});
     }
     t1 = glm::normalize(t1);
-    const Direction3 t2{glm::normalize(glm::cross(n, t1))};
+    const Dir3 t2{glm::normalize(glm::cross(n, t1))};
 
-    auto pick_extremes = [&](const Direction3& axis) -> std::pair<usize, usize>
+    auto pick_extremes = [&](const Dir3& axis) -> std::pair<usize, usize>
     {
         usize i_min{0zu};
         usize i_max{0zu};
@@ -71,17 +71,17 @@ static void reduce_contact_points_to_4(
 
     std::array<usize, 4> idx{a0, a1, b0, b1};
 
-    std::array<Position3, k_collision_reduced_num> reduced{};
+    std::array<Pos3, k_collision_reduced_num> reduced{};
     usize reduced_count{0zu};
 
     for (usize k{0zu}; k < idx.size(); ++k)
     {
-        const Position3 p{pts[idx[k]]};
+        const Pos3 p{pts[idx[k]]};
 
         bool dup{false};
         for (usize r{0zu}; r < reduced_count; ++r)
         {
-            const Direction3 d{p - reduced[r]};
+            const Dir3 d{p - reduced[r]};
             if (glm::dot(d, d) < 1e-8f)
             {
                 dup = true;
@@ -106,28 +106,28 @@ static void reduce_contact_points_to_4(
     new_pt_count = reduced_count;
 }
 
-[[nodiscard]] std::array<Direction3, 3> obb_axes_world(const RigidBody& b) noexcept
+[[nodiscard]] std::array<Dir3, 3> obb_axes_world(const RigidBody& b) noexcept
 {
     // In an AABB the faces are already aligned with the standard basis so rotating
     // an AABB and rotating the local axis is the same thing.
     const auto R = glm::mat3_cast(b.orientation);
     // GLM (and OpenGL) store array in column major
     return {
-        Direction3{R[0]},
-        Direction3{R[1]},
-        Direction3{R[2]},
+        Dir3{R[0]},
+        Dir3{R[1]},
+        Dir3{R[2]},
     };
 }
 
-[[nodiscard]] std::array<Position3, 8> box_world_corners(const RigidBody& b) noexcept
+[[nodiscard]] std::array<Pos3, 8> box_world_corners(const RigidBody& b) noexcept
 {
     const auto [ax, ay, az] = obb_axes_world(b);
     // From center of mass move towards one of the faces == move along rotated axis
     // so we just need to do one step of length of the half extent.
-    const Direction3 ex{ax * b.half_extents.x};
-    const Direction3 ey{ay * b.half_extents.y};
-    const Direction3 ez{az * b.half_extents.z};
-    return std::array<Position3, 8>{
+    const Dir3 ex{ax * b.half_extents.x};
+    const Dir3 ey{ay * b.half_extents.y};
+    const Dir3 ez{az * b.half_extents.z};
+    return std::array<Pos3, 8>{
         b.position - ex - ey - ez,
         b.position - ex - ey + ez,
         b.position - ex + ey - ez,
@@ -139,16 +139,16 @@ static void reduce_contact_points_to_4(
     };
 }
 
-[[nodiscard]] bool point_in_obb(const Position3& p, const RigidBody& b) noexcept
+[[nodiscard]] bool point_in_obb(const Pos3& p, const RigidBody& b) noexcept
 {
-    const std::array<Direction3, 3> axes = obb_axes_world(b);
-    const Direction3 d{p - b.position};
+    const std::array<Dir3, 3> axes = obb_axes_world(b);
+    const Dir3 d{p - b.position};
 
     const f32 lx{glm::dot(d, axes[0])};
     const f32 ly{glm::dot(d, axes[1])};
     const f32 lz{glm::dot(d, axes[2])};
 
-    const Direction3 he{b.half_extents};
+    const Dir3 he{b.half_extents};
     constexpr f32 eps{1e-6f};
 
     const bool inside_x{std::abs(lx) <= he.x + eps};
@@ -158,7 +158,7 @@ static void reduce_contact_points_to_4(
 }
 
 void project_obb_on_axis(
-    const RigidBody& b, const Direction3& axis, f32& out_min, f32& out_max
+    const RigidBody& b, const Dir3& axis, f32& out_min, f32& out_max
 ) noexcept
 {
     const auto axes = obb_axes_world(b);
@@ -178,7 +178,7 @@ void project_obb_on_axis(
 [[nodiscard]] bool obb_obb_overlap(
     const RigidBody& a,
     const RigidBody& b,
-    Direction3& out_n,
+    Dir3& out_n,
     f32& out_penetration,
     int& out_axis_index
 ) noexcept
@@ -186,7 +186,7 @@ void project_obb_on_axis(
     const auto ax = obb_axes_world(a);
     const auto bx = obb_axes_world(b);
 
-    std::array<Direction3, 15> axes{};
+    std::array<Dir3, 15> axes{};
     {
         axes[0] = ax[0];
         axes[1] = ax[1];
@@ -206,22 +206,22 @@ void project_obb_on_axis(
         }
     }
 
-    const Direction3 d{a.position - b.position};
+    const Dir3 d{a.position - b.position};
 
     f32 best_overlap{std::numeric_limits<f32>::infinity()};
-    Direction3 best_axis{0.0f, 0.0f, 1.0f};
+    Dir3 best_axis{0.0f, 0.0f, 1.0f};
     int best_i{-1};
 
     for (usize i{0}; i < axes.size(); ++i)
     {
-        const Direction3 raw_axis{axes[i]};
+        const Dir3 raw_axis{axes[i]};
         const f32 len2 = glm::dot(raw_axis, raw_axis);
         if (len2 <= 1e-10f)
         {
             continue;
         }
 
-        const Direction3 axis = raw_axis / std::sqrt(len2);
+        const Dir3 axis = raw_axis / std::sqrt(len2);
 
         f32 a_min{}, a_max{};
         project_obb_on_axis(a, axis, a_min, a_max);
@@ -255,7 +255,7 @@ void project_obb_on_axis(
 
 }  // namespace
 
-ContactKey make_contact_key(const RigidBody& a, const RigidBody& b, const Position3& p) noexcept
+ContactKey make_contact_key(const RigidBody& a, const RigidBody& b, const Pos3& p) noexcept
 {
     const ObjectId id0 = std::min(a.id, b.id);
     const ObjectId id1 = std::max(a.id, b.id);
@@ -288,7 +288,7 @@ void generate_obb_contacts(std::span<const RigidBody> bodies, std::pmr::vector<C
                 continue;
             }
 
-            Direction3 n{k_axis_z};
+            Dir3 n{k_axis_z};
             f32 penetration{0.0f};
             int axis_index{-1};
             if (!obb_obb_overlap(a, b, n, penetration, axis_index))
@@ -298,12 +298,12 @@ void generate_obb_contacts(std::span<const RigidBody> bodies, std::pmr::vector<C
             const bool cross_axis{axis_index >= 6};
 
             // More contact points are more expensive
-            std::array<Position3, k_contact_points> pts{};
+            std::array<Pos3, k_contact_points> pts{};
             usize pt_count{0};
 
             // Get the obb corner positions
-            const std::array<Position3, 8> a_corners{box_world_corners(a)};
-            for (const Position3& p : a_corners)
+            const std::array<Pos3, 8> a_corners{box_world_corners(a)};
+            for (const Pos3& p : a_corners)
             {
                 if (pt_count >= pts.size())
                 {
@@ -315,8 +315,8 @@ void generate_obb_contacts(std::span<const RigidBody> bodies, std::pmr::vector<C
                 }
             }
 
-            const std::array<Position3, 8> b_corners{box_world_corners(b)};
-            for (const Position3& p : b_corners)
+            const std::array<Pos3, 8> b_corners{box_world_corners(b)};
+            for (const Pos3& p : b_corners)
             {
                 if (pt_count >= pts.size())
                 {
@@ -338,8 +338,8 @@ void generate_obb_contacts(std::span<const RigidBody> bodies, std::pmr::vector<C
                 // in particular if one of (or both) the objects
                 // is scaled very large as the mid point can be quite
                 // far away.
-                const Position3 mid{0.5f * (a.position + b.position)};
-                const Position3 p{mid - 0.5f * penetration * n};
+                const Pos3 mid{0.5f * (a.position + b.position)};
+                const Pos3 p{mid - 0.5f * penetration * n};
                 out.push_back(
                     Contact{
                         .a_idx = i,

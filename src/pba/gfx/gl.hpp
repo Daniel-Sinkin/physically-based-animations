@@ -140,6 +140,16 @@ inline void set_uniform_vec3(ProgramHandle program, const char* name, const glm:
     glUniform3f(loc, v.x, v.y, v.z);
 }
 
+inline void set_uniform_color3(ProgramHandle program, const char* name, const Color3& v)
+{
+    const UniformLocation loc{detail::uniform_loc_or_warn(program, name)};
+    if (loc < 0)
+    {
+        return;
+    }
+    glUniform3f(loc, v.r(), v.g(), v.b());
+}
+
 inline void set_uniform_float(ProgramHandle program, const char* name, f32 v)
 {
     const UniformLocation loc{detail::uniform_loc_or_warn(program, name)};

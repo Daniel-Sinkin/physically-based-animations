@@ -4,7 +4,7 @@
 #include "pba/core/core_types.hpp"
 #include "pba/core/math_types.hpp"
 #include "pba/core/scene_types.hpp"
-
+//
 #include <string_view>
 
 namespace ds_pba
@@ -50,7 +50,7 @@ inline constexpr usize k_max_terminal_lines{2000zu};
 //
 // Physics
 //
-inline constexpr Direction3 k_gravity{0.0f, 0.0f, -9.81f};
+inline constexpr Dir3 k_gravity{0.0f, 0.0f, -9.81f};
 inline constexpr usize k_contact_points{8zu};
 inline constexpr usize k_collision_reduced_num{4zu};
 
@@ -79,7 +79,7 @@ inline constexpr usize k_energy_history_len{600zu};
 //
 // Camera
 //
-inline constexpr Position3 k_camera_pivot{0.0f, 0.0f, 0.0f};
+inline constexpr Pos3 k_camera_pivot{0.0f, 0.0f, 0.0f};
 inline constexpr f32 k_camera_distance{25.0f};
 inline constexpr f32 k_camera_yaw{50.0f};
 inline constexpr f32 k_camera_pitch{30.0f};
@@ -90,13 +90,29 @@ inline constexpr f32 k_camera_z_far{1000.0f};
 //
 // Render
 //
-inline constexpr ColorRGBf k_scene_object_default_color{0.8f, 0.8f, 0.8f};
+inline constexpr Color3 k_scene_object_default_color{0.8f, 0.8f, 0.8f};
 inline constexpr int k_num_lines_per_side{40};
 inline constexpr f32 k_spacing{1.0f};
 inline constexpr f32 k_fog_start{25.0f};
 inline constexpr f32 k_fog_end{40.0f};
 inline constexpr f32 k_minor_alpha{0.35f};
 inline constexpr f32 k_axis_alpha{0.95f};
+
+inline constexpr Color3 k_color3_red{1.0f, 0.0f, 0.0};
+inline constexpr Color3 k_color3_green{0.0f, 1.0f, 0.0};
+inline constexpr Color3 k_color3_blue{0.0f, 0.0f, 1.0};
+
+inline constexpr Color3 k_color3_yellow{1.0f, 1.0f, 0.0f};
+inline constexpr Color3 k_color3_cyan{0.0f, 1.0f, 1.0f};
+inline constexpr Color3 k_color3_magenta{1.0f, 0.0f, 1.0f};
+
+inline constexpr Color3 k_color3_white{1.0f, 1.0f, 1.0f};
+inline constexpr Color3 k_color3_black{0.0f, 0.0f, 0.0f};
+inline constexpr Color3 k_color3_gray{0.5f, 0.5f, 0.5f};
+
+inline constexpr Color3 k_color3_orange{1.0f, 0.55f, 0.0f};
+inline constexpr Color3 k_color3_purple{0.6f, 0.4f, 0.8f};
+inline constexpr Color3 k_color3_teal{0.2f, 0.7f, 0.6f};
 
 //
 // Paths

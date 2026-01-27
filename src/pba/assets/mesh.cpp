@@ -236,21 +236,21 @@ MeshDataPN create_sphere_mesh(int lat, int lon, f32 radius)
     const auto n_verts = static_cast<usize>(lon) * 6zu * static_cast<usize>(lat - 1);
     out.vertices.reserve(n_verts);
 
-    auto push = [&](const Position3& p, const Direction3& n) -> void
+    auto push = [&](const Pos3& p, const Dir3& n) -> void
     { out.vertices.push_back(MeshV_PN{p.x, p.y, p.z, n.x, n.y, n.z}); };
 
-    const Direction3 n_top{k_axis_z};
-    const Direction3 n_bot{-k_axis_z};
-    const Position3 p_top{radius * n_top};
-    const Position3 p_bot{radius * n_bot};
+    const Dir3 n_top{k_axis_z};
+    const Dir3 n_bot{-k_axis_z};
+    const Pos3 p_top{radius * n_top};
+    const Pos3 p_bot{radius * n_bot};
 
-    auto unit = [&](f32 theta, f32 phi) -> Direction3
+    auto unit = [&](f32 theta, f32 phi) -> Dir3
     {
         const auto s_theta = std::sin(theta);
         const auto c_theta = std::cos(theta);
         const auto s_phi = std::sin(phi);
         const auto c_phi = std::cos(phi);
-        return Direction3{s_theta * c_phi, s_theta * s_phi, c_theta};
+        return Dir3{s_theta * c_phi, s_theta * s_phi, c_theta};
     };
 
     {  // Top
@@ -262,11 +262,11 @@ MeshDataPN create_sphere_mesh(int lat, int lon, f32 radius)
             const auto phi0 = (j_f / lon_f) * k_two_pi;
             const auto phi1 = ((j_f + 1.0f) / lon_f) * k_two_pi;
 
-            const Direction3 n10{unit(theta1, phi0)};
-            const Direction3 n11{unit(theta1, phi1)};
+            const Dir3 n10{unit(theta1, phi0)};
+            const Dir3 n11{unit(theta1, phi1)};
 
-            const Position3 p10{radius * n10};
-            const Position3 p11{radius * n11};
+            const Pos3 p10{radius * n10};
+            const Pos3 p11{radius * n11};
 
             push(p_top, n_top);
             push(p10, n10);
@@ -287,15 +287,15 @@ MeshDataPN create_sphere_mesh(int lat, int lon, f32 radius)
             const auto phi0 = (j_f / lon_f) * k_two_pi;
             const auto phi1 = ((j_f + 1.0f) / lon_f) * k_two_pi;
 
-            const Direction3 n00{unit(theta0, phi0)};
-            const Direction3 n10{unit(theta0, phi1)};
-            const Direction3 n01{unit(theta1, phi0)};
-            const Direction3 n11{unit(theta1, phi1)};
+            const Dir3 n00{unit(theta0, phi0)};
+            const Dir3 n10{unit(theta0, phi1)};
+            const Dir3 n01{unit(theta1, phi0)};
+            const Dir3 n11{unit(theta1, phi1)};
 
-            const Position3 p00{radius * n00};
-            const Position3 p10{radius * n10};
-            const Position3 p01{radius * n01};
-            const Position3 p11{radius * n11};
+            const Pos3 p00{radius * n00};
+            const Pos3 p10{radius * n10};
+            const Pos3 p01{radius * n01};
+            const Pos3 p11{radius * n11};
 
             push(p00, n00);
             push(p01, n01);
@@ -316,11 +316,11 @@ MeshDataPN create_sphere_mesh(int lat, int lon, f32 radius)
             const auto phi0 = (j_f / lon_f) * k_two_pi;
             const auto phi1 = ((j_f + 1.0f) / lon_f) * k_two_pi;
 
-            const Direction3 n00{unit(theta0, phi0)};
-            const Direction3 n01{unit(theta0, phi1)};
+            const Dir3 n00{unit(theta0, phi0)};
+            const Dir3 n01{unit(theta0, phi1)};
 
-            const Position3 p00{radius * n00};
-            const Position3 p01{radius * n01};
+            const Pos3 p00{radius * n00};
+            const Pos3 p01{radius * n01};
 
             push(p00, n00);
             push(p_bot, n_bot);
@@ -352,7 +352,7 @@ MeshDataPColor create_grid_mesh(GridSettings grid)
     MeshDataPColor out{};
     out.vertices.reserve(static_cast<usize>((2 * n_lines_per_side + 1) * 4));
 
-    auto push_line = [&](Position3 a, Position3 b, f32 r, f32 g, f32 bl, f32 al) -> void
+    auto push_line = [&](Pos3 a, Pos3 b, f32 r, f32 g, f32 bl, f32 al) -> void
     {
         out.vertices.push_back(MeshV_PColor{a.x, a.y, a.z, r, g, bl, al});
         out.vertices.push_back(MeshV_PColor{b.x, b.y, b.z, r, g, bl, al});

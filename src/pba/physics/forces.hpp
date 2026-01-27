@@ -21,7 +21,7 @@ struct ExternalForce
 
 struct UniformForce
 {
-    Direction3 accel{k_earth_gravity};
+    Dir3 accel{k_earth_gravity};
 };
 inline void apply_uniform_force(std::vector<RigidBody>& bodies, f32, void* user) noexcept
 {
@@ -40,7 +40,7 @@ inline void apply_uniform_force(std::vector<RigidBody>& bodies, f32, void* user)
 
 struct AttractorForce
 {
-    const Position3* target{};
+    const Pos3* target{};
     f32 accel_mag{10.0f};
     f32 min_radius{0.25f};
 };
@@ -53,7 +53,7 @@ inline void apply_attractor_force(std::vector<RigidBody>& bodies, f32, void* use
         return;
     }
 
-    const Position3 target = *a.target;
+    const Pos3 target = *a.target;
 
     const f32 min_r = std::max(a.min_radius, 1e-6f);
     const f32 min_r2 = min_r * min_r;
@@ -65,7 +65,7 @@ inline void apply_attractor_force(std::vector<RigidBody>& bodies, f32, void* use
             continue;
         }
 
-        const Direction3 d = target - b.position;
+        const Dir3 d = target - b.position;
         const f32 d2 = glm::dot(d, d);
         if (d2 <= min_r2)
         {
@@ -73,8 +73,8 @@ inline void apply_attractor_force(std::vector<RigidBody>& bodies, f32, void* use
         }
 
         const f32 inv_len = 1.0f / std::sqrt(d2);
-        const Direction3 dir = d * inv_len;
-        const Direction3 accel = a.accel_mag * dir;
+        const Dir3 dir = d * inv_len;
+        const Dir3 accel = a.accel_mag * dir;
 
         const f32 m = 1.0f / b.inv_mass;
         b.force_accum += m * accel;
@@ -83,7 +83,7 @@ inline void apply_attractor_force(std::vector<RigidBody>& bodies, f32, void* use
 
 struct RepulsionForce
 {
-    const Position3* target{};
+    const Pos3* target{};
     f32 accel_max{15.0f};
     f32 range{5.0f};
     f32 min_radius{0.5f};
@@ -100,7 +100,7 @@ inline void apply_repulsion_force(std::vector<RigidBody>& bodies, f32, void* use
     const f32 min_r2 = min_r * min_r;
     const f32 range = std::max(r.range, min_r);
 
-    const Position3 target = *r.target;
+    const Pos3 target = *r.target;
 
     for (RigidBody& b : bodies)
     {
@@ -109,7 +109,7 @@ inline void apply_repulsion_force(std::vector<RigidBody>& bodies, f32, void* use
             continue;
         }
 
-        const Direction3 d = b.position - target;
+        const Dir3 d = b.position - target;
         const f32 d2 = glm::dot(d, d);
         if (d2 <= min_r2)
         {
@@ -122,12 +122,12 @@ inline void apply_repulsion_force(std::vector<RigidBody>& bodies, f32, void* use
             continue;
         }
 
-        const Direction3 dir = d / dist;
+        const Dir3 dir = d / dist;
 
         const f32 t = (range - dist) / (range - min_r);
         const f32 accel_mag = std::clamp(t, 0.0f, 1.0f) * r.accel_max;
 
-        const Direction3 accel = accel_mag * dir;
+        const Dir3 accel = accel_mag * dir;
         const f32 m = 1.0f / b.inv_mass;
         b.force_accum += m * accel;
     }
@@ -136,7 +136,7 @@ inline void apply_repulsion_force(std::vector<RigidBody>& bodies, f32, void* use
 struct Motor
 {
     ObjectId id{};
-    Direction3 torque{};
+    Dir3 torque{};
 };
 
 inline void apply_motor_torque(std::vector<RigidBody>& bodies, f32, void* user) noexcept
@@ -180,7 +180,7 @@ inline void apply_nbody_gravity(std::vector<RigidBody>& bodies, f32, void* user)
             }
             const RigidBody& b = bodies[j];
 
-            const Direction3 r = b.position - a.position;
+            const Dir3 r = b.position - a.position;
             const f32 r2 = glm::dot(r, r) + p.softening * p.softening;
             const f32 inv_r = 1.0f / std::sqrt(r2);
             const f32 inv_r3 = inv_r * inv_r * inv_r;

@@ -9,7 +9,7 @@
 namespace ds_pba
 {
 
-[[nodiscard]] Position3 Camera::position() const noexcept
+[[nodiscard]] Pos3 Camera::position() const noexcept
 {
     const f32 cos_pitch{std::cos(pitch)};
     const f32 sin_pitch{std::sin(pitch)};
@@ -35,20 +35,20 @@ namespace ds_pba
     return ProjMatrix{glm::perspective(fov_y, aspect, z_near, z_far)};
 }
 
-[[nodiscard]] Direction3 Camera::right() const noexcept
+[[nodiscard]] Dir3 Camera::right() const noexcept
 {
-    const Position3 pos{position()};
-    const Direction3 forward{glm::normalize(pivot - pos)};
-    const Direction3 world_up{0.0f, 0.0f, 1.0f};
-    const Direction3 right{glm::normalize(glm::cross(forward, world_up))};
+    const Pos3 pos{position()};
+    const Dir3 forward{glm::normalize(pivot - pos)};
+    const Dir3 world_up{0.0f, 0.0f, 1.0f};
+    const Dir3 right{glm::normalize(glm::cross(forward, world_up))};
     return right;
 }
 
-[[nodiscard]] Direction3 Camera::up() const noexcept
+[[nodiscard]] Dir3 Camera::up() const noexcept
 {
     const glm::vec3 pos{position()};
-    const Direction3 forward{glm::normalize(pivot - pos)};
-    const Direction3 up{glm::normalize(glm::cross(right(), forward))};
+    const Dir3 forward{glm::normalize(pivot - pos)};
+    const Dir3 up{glm::normalize(glm::cross(right(), forward))};
     return up;
 }
 

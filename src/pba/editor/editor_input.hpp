@@ -2,10 +2,11 @@
 #pragma once
 
 #include "pba/core/core_types.hpp"
-
-#include <GLFW/glfw3.h>
+//
 #include <array>
 #include <utility>
+//
+#include <GLFW/glfw3.h>
 
 struct GLFWwindow;
 
