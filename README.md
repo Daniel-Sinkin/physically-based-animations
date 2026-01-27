@@ -55,6 +55,10 @@ if(ImGui::BeginTable(/*args*/)){
 ```
 
 ## References
+* https://www.scs.stanford.edu/~dm/blog/param-pack.html
+* https://en.cppreference.com/w/cpp/language/value_category.html#Forwarding_references
+
+## References (Papers) 
 * [PBRT4] Physically Based Rendering, 4th Edition — Matt Pharr, Wenzel Jakob, Greg Humphreys — https://pbr-book.org/4ed/
   * Rendering basics, camera transforms, ray–shape intersection, shading
 * [Catto05] Iterative Dynamics with Temporal Coherence — Erin Catto, 2005 — https://box2d.org/files/ErinCatto_IterativeDynamics_GDC2005.pdf

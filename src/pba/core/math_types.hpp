@@ -3,16 +3,12 @@
 
 #include "pba/core/core_types.hpp"
 
-#include <glm/ext/matrix_float4x4.hpp>
 #include <glm/ext/quaternion_common.hpp>
 #include <glm/ext/vector_float3.hpp>
+#include <numbers>
 
 namespace ds_pba
 {
-using ModelMatrix = glm::mat4;
-using ViewMatrix = glm::mat4;
-using ProjMatrix = glm::mat4;
-
 using Position3 = glm::vec3;
 using Direction3 = glm::vec3;
 using EulerDeg3 = glm::vec3;
@@ -20,6 +16,7 @@ using Quaternion = glm::quat;
 
 using ColorRGBf = glm::vec3;
 
+// Common math constants
 inline constexpr Direction3 k_zero_dir{0.0f, 0.0f, 0.0f};
 inline constexpr Quaternion k_quaternion_identity{1.0f, 0.0f, 0.0f, 0.0f};
 

@@ -1,5 +1,6 @@
 // pba/gfx/camera.cpp
 #include "pba/core/constants.hpp"
+#include "pba/core/geometry.hpp"
 #include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/gfx/camera.hpp"
@@ -27,12 +28,12 @@ namespace ds_pba
 
 [[nodiscard]] ViewMatrix Camera::view_matrix() const noexcept
 {
-    return glm::lookAt(position(), pivot, k_axis_z);
+    return ViewMatrix{glm::lookAt(position(), pivot, k_axis_z)};
 }
 
 [[nodiscard]] ProjMatrix Camera::proj_matrix(f32 aspect) const noexcept
 {
-    return glm::perspective(fov_y, aspect, z_near, z_far);
+    return ProjMatrix{glm::perspective(fov_y, aspect, z_near, z_far)};
 }
 
 [[nodiscard]] Direction3 Camera::right() const noexcept

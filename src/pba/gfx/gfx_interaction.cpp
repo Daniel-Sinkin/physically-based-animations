@@ -1,4 +1,5 @@
 // pba/gfx/gfx_interaction.cpp
+#include "pba/core/geometry.hpp"
 #include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/editor/editor_input.hpp"

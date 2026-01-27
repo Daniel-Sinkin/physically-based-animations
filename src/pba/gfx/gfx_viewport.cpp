@@ -1,4 +1,5 @@
 // pba/gfx/gfx_viewport.cpp
+#include "pba/core/geometry.hpp"
 #include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/gfx/gfx_context.hpp"
@@ -38,8 +39,8 @@ void GfxContext::render_to_viewport_objects(
     glStencilFunc(GL_ALWAYS, 0, 0xFF);
 
     shader_programs.obj.bind();
-    set_uniform_mat4(shader_programs.obj.handle(), "uView", camera_view_matrix);
-    set_uniform_mat4(shader_programs.obj.handle(), "uProj", camera_proj_matrix);
+    set_uniform_mat4(shader_programs.obj.handle(), "uView", camera_view_matrix.m);
+    set_uniform_mat4(shader_programs.obj.handle(), "uProj", camera_proj_matrix.m);
 
     if (!scene_context->cube_objects.empty())
     {  // Cubes
@@ -49,8 +50,9 @@ void GfxContext::render_to_viewport_objects(
             const Object& o{scene_context->cube_objects[i]};
             assert(o.id != k_invalid_id);
 
-            set_uniform_mat4(shader_programs.obj.handle(), "uModel", o.transform.model_matrix());
+            set_uniform_mat4(shader_programs.obj.handle(), "uModel", o.transform.model_matrix().m);
 
+            // TODO: Clean this up
             // TODO: Clean this up
             // TODO: Clean this up
             // TODO: Clean this up
@@ -146,7 +148,7 @@ void GfxContext::render_to_viewport_objects(
             const Object& o{scene_context->sphere_objects[i]};
             assert(o.id != k_invalid_id);
 
-            set_uniform_mat4(shader_programs.obj.handle(), "uModel", o.transform.model_matrix());
+            set_uniform_mat4(shader_programs.obj.handle(), "uModel", o.transform.model_matrix().m);
             set_uniform_vec3(shader_programs.obj.handle(), "uColor", o.color);
 
             glDrawArrays(GL_TRIANGLES, 0, meshes.sphere.vertex_count);
@@ -154,7 +156,7 @@ void GfxContext::render_to_viewport_objects(
         for (const auto& o : scene_context->hitmarker_objects)
         {
             assert(o.id != k_invalid_id);
-            set_uniform_mat4(shader_programs.obj.handle(), "uModel", o.transform.model_matrix());
+            set_uniform_mat4(shader_programs.obj.handle(), "uModel", o.transform.model_matrix().m);
             set_uniform_vec3(shader_programs.obj.handle(), "uColor", o.color);
 
             glDrawArrays(GL_TRIANGLES, 0, meshes.sphere.vertex_count);
@@ -176,8 +178,8 @@ void GfxContext::render_to_viewport_objects(
         }
 
         shader_programs.obj_tex.bind();
-        set_uniform_mat4(shader_programs.obj_tex.handle(), "uView", camera_view_matrix);
-        set_uniform_mat4(shader_programs.obj_tex.handle(), "uProj", camera_proj_matrix);
+        set_uniform_mat4(shader_programs.obj_tex.handle(), "uView", camera_view_matrix.m);
+        set_uniform_mat4(shader_programs.obj_tex.handle(), "uProj", camera_proj_matrix.m);
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, textures.marble_bust_diffuse.id);
@@ -193,7 +195,7 @@ void GfxContext::render_to_viewport_objects(
         {
             assert(o.id != k_invalid_id);
             set_uniform_mat4(
-                shader_programs.obj_tex.handle(), "uModel", o.transform.model_matrix()
+                shader_programs.obj_tex.handle(), "uModel", o.transform.model_matrix().m
             );
             glDrawArrays(GL_TRIANGLES, 0, meshes.marble_bust.vertex_count);
         }
@@ -214,8 +216,8 @@ void GfxContext::render_to_viewport_grid(
     glDepthMask(GL_FALSE);
 
     shader_programs.grid.bind();
-    set_uniform_mat4(shader_programs.grid.handle(), "uView", camera_view_matrix);
-    set_uniform_mat4(shader_programs.grid.handle(), "uProj", camera_proj_matrix);
+    set_uniform_mat4(shader_programs.grid.handle(), "uView", camera_view_matrix.m);
+    set_uniform_mat4(shader_programs.grid.handle(), "uProj", camera_proj_matrix.m);
     set_uniform_float(shader_programs.grid.handle(), "uFogStart", grid.fog_start);
     set_uniform_float(shader_programs.grid.handle(), "uFogEnd", grid.fog_end);
 
@@ -330,7 +332,7 @@ void GfxContext::render_to_viewport_outline(
         const auto [type, sel_ptr] = *obj_res;
         const Object& sel = *sel_ptr;
 
-        const glm::mat4 M = sel.transform.model_matrix();
+        const auto model_matrix{sel.transform.model_matrix()};
 
         glClear(GL_STENCIL_BUFFER_BIT);
 
@@ -344,9 +346,9 @@ void GfxContext::render_to_viewport_outline(
             glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
             shader_programs.obj.bind();
-            set_uniform_mat4(shader_programs.obj.handle(), "uView", camera_view_matrix);
-            set_uniform_mat4(shader_programs.obj.handle(), "uProj", camera_proj_matrix);
-            set_uniform_mat4(shader_programs.obj.handle(), "uModel", M);
+            set_uniform_mat4(shader_programs.obj.handle(), "uView", camera_view_matrix.m);
+            set_uniform_mat4(shader_programs.obj.handle(), "uProj", camera_proj_matrix.m);
+            set_uniform_mat4(shader_programs.obj.handle(), "uModel", model_matrix.m);
 
             instantiate_mesh_for_type(type);
 
@@ -363,12 +365,13 @@ void GfxContext::render_to_viewport_outline(
             glDisable(GL_DEPTH_TEST);
             glDisable(GL_CULL_FACE);
 
-            const ModelMatrix M_outline = M * glm::scale(glm::mat4(1.0f), glm::vec3(1.04f));
+            const auto M_outline =
+                ModelMatrix{model_matrix.m * glm::scale(glm::mat4(1.0f), glm::vec3(1.04f))};
 
             shader_programs.outline.bind();
-            set_uniform_mat4(shader_programs.outline.handle(), "uModel", M_outline);
-            set_uniform_mat4(shader_programs.outline.handle(), "uView", camera_view_matrix);
-            set_uniform_mat4(shader_programs.outline.handle(), "uProj", camera_proj_matrix);
+            set_uniform_mat4(shader_programs.outline.handle(), "uModel", M_outline.m);
+            set_uniform_mat4(shader_programs.outline.handle(), "uView", camera_view_matrix.m);
+            set_uniform_mat4(shader_programs.outline.handle(), "uProj", camera_proj_matrix.m);
             set_uniform_vec3(
                 shader_programs.outline.handle(), "uColor", glm::vec3(1.0f, 0.55f, 0.0f)
             );
@@ -402,13 +405,13 @@ void GfxContext::render_to_viewport_pivot(
     const GLMesh& pivot_mesh{meshes.sphere};
 
     shader_programs.pivot.bind();
-    set_uniform_mat4(shader_programs.pivot.handle(), "uView", camera_view_matrix);
-    set_uniform_mat4(shader_programs.pivot.handle(), "uProj", camera_proj_matrix);
+    set_uniform_mat4(shader_programs.pivot.handle(), "uView", camera_view_matrix.m);
+    set_uniform_mat4(shader_programs.pivot.handle(), "uProj", camera_proj_matrix.m);
 
     pivot_mesh.vao.bind();
 
     const Transform t{.position = pivot_pos, .scale = {0.1f, 0.1f, 0.1f}};
-    set_uniform_mat4(shader_programs.pivot.handle(), "uModel", t.model_matrix());
+    set_uniform_mat4(shader_programs.pivot.handle(), "uModel", t.model_matrix().m);
     set_uniform_vec3(
         shader_programs.pivot.handle(),
         "uColor",
@@ -706,8 +709,8 @@ void GfxContext::render_to_viewport_physics_debug(
     glDisable(GL_STENCIL_TEST);
 
     shader_programs.grid.bind();
-    set_uniform_mat4(shader_programs.grid.handle(), "uView", camera_view_matrix);
-    set_uniform_mat4(shader_programs.grid.handle(), "uProj", camera_proj_matrix);
+    set_uniform_mat4(shader_programs.grid.handle(), "uView", camera_view_matrix.m);
+    set_uniform_mat4(shader_programs.grid.handle(), "uProj", camera_proj_matrix.m);
 
     set_uniform_float(shader_programs.grid.handle(), "uFogStart", 1.0e6f);
     set_uniform_float(shader_programs.grid.handle(), "uFogEnd", 2.0e6f);

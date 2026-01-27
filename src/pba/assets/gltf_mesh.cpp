@@ -83,16 +83,6 @@ read_vec3_f32_strided(not_null<const std::byte*> base, usize stride, usize strid
     return glm::vec3{x, y, z};
 }
 
-static glm::vec3 safe_normalize(glm::vec3 v) noexcept
-{
-    const auto len = glm::length(v);
-    if (len <= 1e-12f)
-    {
-        return glm::vec3{0.0f, 0.0f, 1.0f};
-    }
-    return v / len;
-}
-
 static glm::vec3 face_normal(const glm::vec3& p0, const glm::vec3& p1, const glm::vec3& p2) noexcept
 {
     return safe_normalize(glm::cross(p1 - p0, p2 - p0));
@@ -543,18 +533,15 @@ std::optional<MeshDataPN> load_gltf_mesh(const std::string& path, const Transfor
     const std::vector<u32>& idx{*idx_opt};
 
     const ModelMatrix model_matrix{preprocess.model_matrix()};
-    const glm::mat3 normal_matrix{glm::transpose(glm::inverse(glm::mat3(model_matrix)))};
-
-    auto apply_pos = [&](const glm::vec3& p) -> glm::vec3
-    { return glm::vec3(model_matrix * glm::vec4(p, 1.0f)); };
+    const auto normal_matrix = model_matrix.normal_matrix();
 
     auto normalized = [&](const glm::vec3& n) -> glm::vec3
-    { return safe_normalize(normal_matrix * n); };
+    { return safe_normalize(normal_matrix.m * n); };
 
-    auto read_pos = [&](u32 i) -> glm::vec3
+    auto read_pos = [&](u32 i) -> Position3
     {
         const glm::vec3 p{read_vec3_f32_strided(pos_base, pos_stride, static_cast<usize>(i))};
-        return apply_pos(p);
+        return model_matrix.transform_position(p);
     };
 
     auto read_nrm = [&](u32 i) -> glm::vec3
@@ -805,18 +792,13 @@ std::optional<MeshDataPNT> load_gltf_mesh_pnt(const std::string& path, const Tra
     }
     const std::vector<u32>& idx{*idx_opt};
 
-    const ModelMatrix P{preprocess.model_matrix()};
-    const glm::mat3 N{glm::transpose(glm::inverse(glm::mat3(P)))};
-
-    auto apply_pos = [&](const glm::vec3& p) -> glm::vec3
-    { return glm::vec3(P * glm::vec4(p, 1.0f)); };
-
-    auto normalized = [&](const glm::vec3& n) -> glm::vec3 { return safe_normalize(N * n); };
+    const ModelMatrix model_matrix{preprocess.model_matrix()};
+    const auto normal_matrix{model_matrix.normal_matrix()};
 
     auto read_pos = [&](u32 i) -> glm::vec3
     {
         const glm::vec3 p{read_vec3_f32_strided(pos_base, pos_stride, static_cast<usize>(i))};
-        return apply_pos(p);
+        return model_matrix.transform_position(p);
     };
 
     auto read_nrm = [&](u32 i) -> glm::vec3
@@ -825,7 +807,7 @@ std::optional<MeshDataPNT> load_gltf_mesh_pnt(const std::string& path, const Tra
         const glm::vec3 n{
             safe_normalize(read_vec3_f32_strided(nrm_base, nrm_stride, static_cast<usize>(i)))
         };
-        return normalized(n);
+        return safe_normalize(normal_matrix.m * n);
     };
 
     auto read_uv = [&](u32 i) -> glm::vec2

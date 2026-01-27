@@ -3,6 +3,7 @@
 
 #include "pba/core/constants.hpp"
 #include "pba/core/core_types.hpp"  // IWYU pragma: keep
+#include "pba/core/geometry.hpp"
 #include "pba/core/math_types.hpp"
 
 #include <glm/ext/matrix_transform.hpp>
@@ -20,11 +21,11 @@ struct Transform
 
     [[nodiscard]] ModelMatrix model_matrix() const noexcept
     {
-        auto M{glm::identity<ModelMatrix>()};
+        auto M{glm::identity<glm::mat4>()};
         M = glm::translate(M, position);
         M *= glm::mat4_cast(orientation);
         M = glm::scale(M, scale);
-        return M;
+        return ModelMatrix{M};
     }
 };
 
