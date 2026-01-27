@@ -8,14 +8,12 @@
 #include "pba/gfx/video_recorder.hpp"
 #include "pba/ui/ui.hpp"
 //
+#include <GLFW/glfw3.h>
+#include <glm/ext/matrix_float4x4.hpp>
 #include <gsl/assert>
 #include <gsl/util>
 #include <imgui.h>
-//
-#include <GLFW/glfw3.h>
-#include <glm/ext/matrix_float4x4.hpp>
 #include <json.hpp>
-#include <print>
 
 namespace ds_pba
 {
@@ -23,6 +21,7 @@ namespace ds_pba
 bool GfxContext::capture_viewport_rgba8(std::vector<u8>& out) const
 {
     Expects(loaded_glad);
+    if (!loaded_glad)
     {
         std::println("Glad not loaded");
         return false;

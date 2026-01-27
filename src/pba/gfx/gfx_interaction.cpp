@@ -15,6 +15,7 @@
 #include "pba/ui/ui.hpp"
 //
 #include <optional>
+#include <print>
 #include <utility>
 //
 #include <GLFW/glfw3.h>
@@ -53,7 +54,7 @@ void GfxContext::hover_interaction(const EditorInput& input) const
         const ProjMatrix camera_proj_matrix{scene_context->camera.proj_matrix(aspect)};
 
         const glm::vec2 mouse_pos{
-            static_cast<f32>(input.ui_mouse_x), static_cast<f32>(input.ui_mouse_y)
+            narrow_cast<f32>(input.ui_mouse_x), narrow_cast<f32>(input.ui_mouse_y)
         };
 
         const Ray mouse_ray{ray_from_imgui_rect(

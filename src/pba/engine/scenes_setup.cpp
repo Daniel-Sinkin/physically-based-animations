@@ -281,7 +281,7 @@ void apply_oscillating_uniform(std::vector<RigidBody>& bodies, f32 dt_s, void* u
 }
 }  // namespace
 
-void setup_scene_current(EngineContext& e) noexcept
+void setup_scene_attractors_and_repulsive_pivot(EngineContext& e) noexcept
 {
     e.spawn_cube(
         Position3{-14.0f, 0.0f, 2.0f},
@@ -317,17 +317,6 @@ void setup_scene_current(EngineContext& e) noexcept
 
     e.create_pyramid(16);
 
-    e.scene.marble_bust_objects.push_back(
-        Object{
-            .id = next_object_id(),
-            .type = ObjectType::MarbleBust,
-            .transform{
-                .position{10.0f, -15.0f, -5.0f},
-                .scale{14.0f, 14.0f, 14.0f},
-                .orientation{glm::angleAxis(k_pi, k_axis_z)}
-            }
-        }
-    );
     e.scene.cube_objects.push_back(
         Object{
             .id = next_object_id(),
@@ -509,24 +498,26 @@ void setup_scene_motors_elongated_no_gravity(EngineContext& e) noexcept
     constexpr int k_rods = 6;
     for (int i = 0; i < k_rods; ++i)
     {
-        const auto x = -12.0f + 4.8f * static_cast<f32>(i);
-        const auto z = 2.0f + 0.25f * static_cast<f32>(i);
-
-        const Quaternion q =
+        const auto i_f = static_cast<f32>(i);
+        const Position3 pos{-12.0f + 4.8f * i_f, 0.0f, 2.0f + 0.25f * i_f};
+        const Direction3 half_extents{3.0f, 0.25f, 0.25f};
+        const auto inv_mass = 1.0f / 8.0f;
+        const Direction3 velo{k_zero_dir};
+        const Quaternion ori =
             (i % 2 == 0) ? k_quaternion_identity : glm::angleAxis(0.30f * k_pi, k_axis_z);
+        const Direction3 angular_velocty{k_zero_dir};
 
         const ObjectId id = spawn_box(
             e,
-            Position3{x, 0.0f, z},
-            Direction3{3.0f, 0.25f, 0.25f},
-            1.0f / 8.0f,
-            k_zero_dir,
-            q,
-            k_zero_dir,
+            pos,
+            half_extents,
+            inv_mass,
+            velo,
+            ori,
+            angular_velocty,
             ColorRGBf{0.80f, 0.82f, 0.88f},
             std::string_view{}
         );
-
         e.obj_name_map.insert_or_assign(id, std::format("Motor Rod {}", i));
 
         pack.motors[pack.count] = Motor{

@@ -65,7 +65,7 @@ void setup_active_scene(EngineContext& e)
 
 void update_active_scene(EngineContext& e, f32 frame_dt_s)
 {
-    if (e.active_scene == SceneId::CurrentAttractorsAndRepulsivePivot)
+    if (e.active_scene == SceneId::AttractorsAndRepulsivePivot)
     {
         if (!e.scene.marble_bust_objects.empty())
         {

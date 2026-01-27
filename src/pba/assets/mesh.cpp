@@ -217,8 +217,10 @@ MeshDataPN create_cylinder_mesh(int n_segments, f32 radius, f32 height)
     emit_cap(hz, hz * k_axis_z, k_axis_z);
     emit_cap(-hz, -hz * k_axis_z, k_axis_z);
 
-    [[maybe_unused]] const auto expected = static_cast<usize>(n_segments) * 12zu;
+#ifndef DEBUG
+    const auto expected = static_cast<usize>(n_segments) * 12zu;
     Ensures(out.vertices.size() == expected);
+#endif
     return out;
 }
 
@@ -326,12 +328,10 @@ MeshDataPN create_sphere_mesh(int lat, int lon, f32 radius)
         }
     }
 
-    {
-        [[maybe_unused]] const usize expected{
-            static_cast<usize>(lon) * 6zu * static_cast<usize>(lat - 1)
-        };
+#ifndef NDEBUG
+        const usize expected{static_cast<usize>(lon) * 6zu * static_cast<usize>(lat - 1)};
         Ensures(out.vertices.size() == expected);
-    }
+#endif
     return out;
 }
 
@@ -386,8 +386,10 @@ MeshDataPColor create_grid_mesh(GridSettings grid)
         }
     }
 
+#ifndef DEBUG
     [[maybe_unused]] const auto expected = static_cast<usize>((2 * n_lines_per_side + 1) * 4);
     Ensures(out.vertices.size() == expected);
+#endif
     return out;
 }
 

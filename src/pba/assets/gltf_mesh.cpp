@@ -635,9 +635,9 @@ std::optional<MeshDataPN> load_gltf_mesh(const std::string& path, const Transfor
             const u32 i1{vertex_idx++};
             const u32 i2{vertex_idx++};
 
-            const glm::vec3 p0{read_pos(i0)};
-            const glm::vec3 p1{read_pos(i1)};
-            const glm::vec3 p2{read_pos(i2)};
+            const Position3 p0{read_pos(i0)};
+            const Position3 p1{read_pos(i1)};
+            const Position3 p2{read_pos(i2)};
 
             const Direction3 fn{has_normals ? glm::vec3{} : face_normal(p0, p1, p2)};
 

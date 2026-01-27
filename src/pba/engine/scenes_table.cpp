@@ -7,7 +7,7 @@
 
 namespace ds_pba
 {
-void setup_scene_current(EngineContext& e) noexcept;
+void setup_scene_attractors_and_repulsive_pivot(EngineContext& e) noexcept;
 void setup_scene_small_pyramid_projectiles_gravity(EngineContext& e) noexcept;
 void setup_scene_attractor_origin_no_gravity(EngineContext& e) noexcept;
 void setup_scene_attractor_origin_with_gravity(EngineContext& e) noexcept;
@@ -40,11 +40,11 @@ struct Scene
 }
 
 static constexpr std::array<Scene, scene_count()> k_scenes = {{
-    {SceneId::CurrentAttractorsAndRepulsivePivot,
+    {SceneId::AttractorsAndRepulsivePivot,
      "Current: 2 attractors + repulsive pivot",
      "Your current testbed: 4 projectiles + flat pyramid + marble bust; forces: attract to "
      "origin, attract to fixed point, repulsion from camera pivot; no gravity.",
-     &setup_scene_current},
+     &setup_scene_attractors_and_repulsive_pivot},
 
     {SceneId::SmallPyramid_Projectiles_NoGround_Gravity,
      "Small pyramid + projectiles (gravity, no ground)",

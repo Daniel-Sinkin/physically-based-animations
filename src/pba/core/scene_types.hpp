@@ -7,7 +7,7 @@ namespace ds_pba
 {
 enum class SceneId : u32
 {
-    CurrentAttractorsAndRepulsivePivot = 0,
+    AttractorsAndRepulsivePivot = 0,
 
     SmallPyramid_Projectiles_NoGround_Gravity,
     AttractorToOrigin_NoGravity,

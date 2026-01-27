@@ -12,7 +12,7 @@ namespace ds_pba
 //
 // Scenes
 //
-inline constexpr SceneId k_default_scene = SceneId::CurrentAttractorsAndRepulsivePivot;
+inline constexpr SceneId k_default_scene = SceneId::AttractorsAndRepulsivePivot;
 
 //
 // Interface
