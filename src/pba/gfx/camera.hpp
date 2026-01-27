@@ -3,6 +3,7 @@
 
 #include "pba/core/constants.hpp"
 #include "pba/core/core_types.hpp"
+#include "pba/core/geometry.hpp"
 #include "pba/core/math_types.hpp"
 //
 #include <glm/glm.hpp>

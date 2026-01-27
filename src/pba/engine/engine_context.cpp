@@ -9,8 +9,6 @@
 #include "pba/core/math_types.hpp"
 #include "pba/engine/scene_types.hpp"
 #include "pba/engine/scenes.hpp"
-#include "pba/gfx/camera.hpp"
-#include "pba/physics/forces.hpp"
 #include "pba/ui/ui.hpp"
 //
 #include <algorithm>

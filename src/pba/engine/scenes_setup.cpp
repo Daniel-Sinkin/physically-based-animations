@@ -1,5 +1,4 @@
 // pba/engine/scenes_setup.cpp
-#include "pba/core/geometry.hpp"
 #include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/core/constants.hpp"

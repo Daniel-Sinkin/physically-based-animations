@@ -64,6 +64,7 @@ void GfxContext::render_to_viewport_objects(
             // TODO: Clean this up
             // TODO: Clean this up
             // TODO: Clean this up
+            // TODO: Clean this up
             {  // Color
                 ColorRGBf color{o.color};
                 if (phys_debug.enabled && engine_context)

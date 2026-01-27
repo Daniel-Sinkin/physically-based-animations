@@ -1,7 +1,6 @@
 // pba/core/geometry.cpp
 #include "pba/core/geometry.hpp"
 
-#include <algorithm>
 #include <cmath>
 #include <glm/geometric.hpp>
 #include <glm/gtc/matrix_inverse.hpp>

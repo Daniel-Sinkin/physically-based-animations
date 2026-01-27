@@ -2,7 +2,6 @@
 #pragma once
 
 #include "pba/core/core_types.hpp"
-#include "pba/core/geometry.hpp"
 #include "pba/engine/scene_types.hpp"
 #include "pba/gfx/camera.hpp"
 

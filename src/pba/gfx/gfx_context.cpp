@@ -1,5 +1,4 @@
 // pba/gfx/gfx_context.cpp
-#include "pba/core/geometry.hpp"
 #include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/gfx/gfx_context.hpp"
@@ -7,7 +6,6 @@
 #include "pba/core/constants.hpp"
 #include "pba/core/core_types.hpp"
 #include "pba/core/format.hpp"  // IWYU pragma: keep
-#include "pba/core/geometry.hpp"
 #include "pba/editor/editor_input.hpp"
 #include "pba/gfx/gl.hpp"
 #include "pba/gfx/gl_types.hpp"

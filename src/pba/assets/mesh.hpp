@@ -5,8 +5,6 @@
 #include "pba/core/core_types.hpp"
 #include "pba/core/render_types.hpp"
 
-#include <optional>
-
 namespace ds_pba
 {
 [[nodiscard]] MeshDataPN create_cube_mesh();

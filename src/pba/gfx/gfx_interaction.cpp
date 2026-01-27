@@ -15,10 +15,6 @@
 #include "pba/gfx/raycast.hpp"
 #include "pba/ui/ui.hpp"
 //
-#include <optional>
-#include <print>
-#include <utility>
-//
 #include <GLFW/glfw3.h>
 #include <glm/ext/matrix_float4x4.hpp>
 #include <json.hpp>
