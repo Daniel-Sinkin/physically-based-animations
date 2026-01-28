@@ -1,30 +1,30 @@
 // pba/gfx/gfx_viewport.cpp
-#include "glm/fwd.hpp"
-#include "pba/core/constants.hpp"
-#include "pba/core/geometry.hpp"
 #include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
-#include "pba/engine/scenes.hpp"
 #include "pba/gfx/gfx_context.hpp"
 //
+#include "pba/core/constants.hpp"
 #include "pba/core/core_types.hpp"
 #include "pba/core/format.hpp"  // IWYU pragma: keep
+#include "pba/core/geometry.hpp"
 #include "pba/core/math_types.hpp"
 #include "pba/engine/engine_context.hpp"
-#include "pba/engine/scene_context.hpp"
-#include "pba/engine/scene_types.hpp"
 #include "pba/gfx/gl_types.hpp"
 #include "pba/gfx/raycast.hpp"
+#include "pba/scene/scene_context.hpp"
+#include "pba/scene/scene_types.hpp"
+#include "pba/scene/scenes.hpp"
 #include "pba/ui/ui.hpp"
 //
 #include <algorithm>
-#include <imgui.h>
 #include <optional>
 #include <print>
 #include <utility>
 //
 #include <GLFW/glfw3.h>
 #include <glm/ext/matrix_float4x4.hpp>
+#include <glm/fwd.hpp>
+#include <imgui.h>
 #include <json.hpp>
 
 namespace ds_pba
@@ -55,6 +55,8 @@ void GfxContext::render_to_viewport_objects(
 
             prog.set_uModel(o.transform.model_matrix());
 
+            // TODO: Clean this up
+            // TODO: Clean this up
             // TODO: Clean this up
             // TODO: Clean this up
             {

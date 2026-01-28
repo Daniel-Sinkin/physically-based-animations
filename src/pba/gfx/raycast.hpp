@@ -4,7 +4,7 @@
 #include "pba/core/core_types.hpp"
 #include "pba/core/geometry.hpp"
 #include "pba/core/math_types.hpp"
-#include "pba/engine/scene_types.hpp"
+#include "pba/scene/scene_types.hpp"
 //
 #include <cmath>
 #include <glm/glm.hpp>

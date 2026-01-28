@@ -1,4 +1,4 @@
-// pba/engine/scene_types.hpp
+// pba/scene/scene_types.hpp
 #pragma once
 
 #include "pba/core/constants.hpp"

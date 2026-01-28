@@ -1,12 +1,12 @@
-// pba/engine/scenes_setup.cpp
+// pba/scene/scenes_setup.cpp
 #include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/core/constants.hpp"
 #include "pba/core/core_types.hpp"
 #include "pba/core/math_types.hpp"
 #include "pba/engine/engine_context.hpp"
-#include "pba/engine/scene_types.hpp"
 #include "pba/physics/forces.hpp"
+#include "pba/scene/scene_types.hpp"
 //
 #include <array>
 #include <cmath>

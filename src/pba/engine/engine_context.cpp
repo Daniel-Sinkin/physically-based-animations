@@ -7,8 +7,8 @@
 #include "pba/core/core_types.hpp"
 #include "pba/core/format.hpp"  // IWYU pragma: keep
 #include "pba/core/math_types.hpp"
-#include "pba/engine/scene_types.hpp"
-#include "pba/engine/scenes.hpp"
+#include "pba/scene/scene_types.hpp"
+#include "pba/scene/scenes.hpp"
 #include "pba/ui/ui.hpp"
 //
 #include <algorithm>

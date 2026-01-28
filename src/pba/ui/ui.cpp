@@ -7,10 +7,10 @@
 #include "pba/core/core_types.hpp"
 #include "pba/core/math_types.hpp"
 #include "pba/engine/engine_context.hpp"
-#include "pba/engine/scene_context.hpp"
-#include "pba/engine/scene_types.hpp"
 #include "pba/gfx/gfx_context.hpp"
 #include "pba/physics/physics_context.hpp"
+#include "pba/scene/scene_context.hpp"
+#include "pba/scene/scene_types.hpp"
 //
 #include <glm/gtc/quaternion.hpp>
 #include <glm/trigonometric.hpp>

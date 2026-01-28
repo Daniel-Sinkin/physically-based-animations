@@ -3,9 +3,9 @@
 
 #include "pba/core/core_types.hpp"
 #include "pba/core/math_types.hpp"
-#include "pba/engine/scene_context.hpp"
 #include "pba/gfx/gfx_context.hpp"
 #include "pba/physics/physics_context.hpp"
+#include "pba/scene/scene_context.hpp"
 //
 #include <string>
 #include <unordered_map>

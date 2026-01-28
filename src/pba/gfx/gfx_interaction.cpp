@@ -10,9 +10,9 @@
 #include "pba/core/format.hpp"  // IWYU pragma: keep
 #include "pba/core/math_types.hpp"
 #include "pba/engine/engine_context.hpp"
-#include "pba/engine/scene_context.hpp"
-#include "pba/engine/scene_types.hpp"
 #include "pba/gfx/raycast.hpp"
+#include "pba/scene/scene_context.hpp"
+#include "pba/scene/scene_types.hpp"
 #include "pba/ui/ui.hpp"
 //
 #include <GLFW/glfw3.h>

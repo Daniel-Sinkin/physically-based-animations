@@ -5,8 +5,8 @@
 #include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/core/math_types.hpp"
-#include "pba/engine/scene_context.hpp"
 #include "pba/gfx/raycast.hpp"
+#include "pba/scene/scene_context.hpp"
 
 #include <gsl/assert>
 

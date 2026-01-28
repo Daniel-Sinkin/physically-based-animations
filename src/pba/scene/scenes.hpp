@@ -1,8 +1,8 @@
-// pba/engine/scenes.hpp
+// pba/scene/scenes.hpp
 #pragma once
 
 #include "pba/core/core_types.hpp"
-#include "pba/core/scene_types.hpp"
+#include "pba/scene/scene_types.hpp"
 
 namespace ds_pba
 {
