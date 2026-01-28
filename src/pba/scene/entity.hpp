@@ -38,16 +38,4 @@ struct Entity
     std::optional<BodyHandle> body{};
     std::string name{};
 };
-
-[[nodiscard]] inline EntityId next_object_id() noexcept
-{
-    static std::atomic<EntityId> counter{0};
-    const EntityId id{counter.fetch_add(1u, std::memory_order_relaxed)};
-    if (id == k_invalid_id)
-    {
-        std::println(stderr, "Generated invalid id");
-        std::abort();
-    }
-    return id;
-};
 }  // namespace ds_pba

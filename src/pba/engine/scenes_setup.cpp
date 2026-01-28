@@ -60,7 +60,7 @@ EntityId spawn_box(
     std::string_view name = {}
 ) noexcept
 {
-    const EntityId id{next_object_id()};
+    const EntityId id{e.world.allocate_entity_id()};
 
     e.world.cube_objects.push_back(
         Entity{
@@ -318,7 +318,7 @@ void setup_scene_attractors_and_repulsive_pivot(EngineContext& e) noexcept
 
     e.world.cube_objects.push_back(
         Entity{
-            .id = next_object_id(),
+            .id = e.world.allocate_entity_id(),
             .type = EntityType::Cube,
             .transform{.position{10.0f, -15.0f, -5.5f}, .scale{10.0f, 10.0f, 1.0f}}
         }
@@ -345,7 +345,7 @@ void setup_scene_attractors_and_repulsive_pivot(EngineContext& e) noexcept
         .range = 4.0f,
         .min_radius = 0.5f,
     };
-    repulse_pivot.target = &e.world.editor_state.camera.pivot;
+    repulse_pivot.target = &e.world.editor_state().camera.pivot;
 
     e.physics.external_forces.push_back(
         ExternalForce{.fn = apply_attractor_force, .user = &attractor_origin}

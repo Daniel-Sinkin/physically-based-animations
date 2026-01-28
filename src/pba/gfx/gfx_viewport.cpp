@@ -240,7 +240,7 @@ void GfxContext::render_to_viewport()
     f32 aspect{viewport_fbo.aspect_ratio()};
 
     {
-        const Camera& cam{engine_context->world.editor_state.camera};
+        const Camera& cam{engine_context->world.editor_state().camera};
         const ViewMatrix camera_view_matrix{cam.view_matrix()};
         const ProjMatrix camera_proj_matrix{cam.proj_matrix(aspect)};
 
@@ -263,7 +263,7 @@ void GfxContext::render_to_viewport_outline(
 ) const
 {
     Expects(engine_context);
-    if (!engine_context || engine_context->world.editor_state.selected_ids.empty())
+    if (!engine_context || engine_context->world.editor_state().selected_ids.empty())
     {
         return;
     }
@@ -318,7 +318,7 @@ void GfxContext::render_to_viewport_outline(
         }
     };
 
-    for (const EntityId id : engine_context->world.editor_state.selected_ids)
+    for (const EntityId id : engine_context->world.editor_state().selected_ids)
     {
         auto obj_res = find_object(id);
         if (!obj_res)
@@ -563,7 +563,7 @@ void GfxContext::render_to_viewport_physics_debug(
         return nullptr;
     };
 
-    for (const auto id : engine_context->world.editor_state.selected_ids)
+    for (const auto id : engine_context->world.editor_state().selected_ids)
     {
         const RigidBody* rb_ptr{nullptr};
 

@@ -101,7 +101,7 @@ void GfxContext::begin_grab(const EditorInput& input)
         Expects(engine_context);
     }
 
-    if (engine_context->world.editor_state.selected_ids.empty())
+    if (engine_context->world.editor_state().selected_ids.empty())
     {
         ui_log("Grab (G): nothing selected");
         return;
@@ -115,7 +115,7 @@ void GfxContext::begin_grab(const EditorInput& input)
     grab.constraint = EditorState::GrabConstraint::None;
 
     grab.start_positions.clear();
-    const auto& selected_ids = engine_context->world.editor_state.selected_ids;
+    const auto& selected_ids = engine_context->world.editor_state().selected_ids;
     grab.start_positions.reserve(selected_ids.size());
     for (const EntityId id : selected_ids)
     {
@@ -140,7 +140,7 @@ void GfxContext::update_grab(const EditorInput& input)
         set_grab_constraint(c);
     }
 
-    const auto& cam = engine_context->world.editor_state.camera;
+    const auto& cam = engine_context->world.editor_state().camera;
 
     const auto vp_h = std::max(1.0f, viewport_img_size.y);
     const auto units_per_px = (2.0f * cam.distance * std::tan(0.5f * cam.fov_y)) / vp_h;

@@ -74,7 +74,7 @@ void EngineContext::link_latest_objects(EntityId id)
 
 void EngineContext::add_cube(Pos3 position)
 {
-    const EntityId id{next_object_id()};
+    const EntityId id{world.allocate_entity_id()};
 
     world.cube_objects.push_back(
         Entity{.id = id, .type = EntityType::Cube, .transform = {.position = position}}
@@ -94,7 +94,7 @@ void EngineContext::add_cube(Pos3 position)
 
 void EngineContext::add_ground()
 {
-    const EntityId id{next_object_id()};
+    const EntityId id{world.allocate_entity_id()};
 
     constexpr Pos3 ground_center{0.0f, 0.0f, -3.5f};
     constexpr Pos3 half_extents{10.0f, 10.0f, 0.5f};

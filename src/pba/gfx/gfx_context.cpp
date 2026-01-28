@@ -7,7 +7,6 @@
 #include "pba/core/core_types.hpp"
 #include "pba/core/format.hpp"  // IWYU pragma: keep
 #include "pba/editor/editor_input.hpp"
-#include "pba/gfx/camera.hpp"
 #include "pba/gfx/video_recorder.hpp"
 #include "pba/ui/ui.hpp"
 #include "pba/util/shutdown.hpp"

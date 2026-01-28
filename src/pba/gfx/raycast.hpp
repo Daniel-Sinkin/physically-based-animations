@@ -14,7 +14,7 @@ struct GLFWwindow;
 
 namespace ds_pba
 {
-struct World;
+class World;
 
 struct Ray
 {

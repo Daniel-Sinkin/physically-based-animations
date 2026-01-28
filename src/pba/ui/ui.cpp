@@ -25,7 +25,7 @@ void render_physics_debug_window(EngineContext& engine_context)
     auto& gfx_context = engine_context.gfx;
     auto& dbg = gfx_context.phys_debug;
 
-    auto& editor_state = engine_context.world.editor_state;
+    auto& editor_state = engine_context.world.editor_state();
 
     ImGui::Begin("Physics Debug");
 
@@ -331,7 +331,7 @@ void render_imgui_windows(EngineContext& engine_context)
     GfxContext& gfx_context = engine_context.gfx;
 
     auto& world = engine_context.world;
-    auto& editor_state = world.editor_state;
+    auto& editor_state = world.editor_state();
     auto& cam = editor_state.camera;
 
     auto object_label = [&](EntityId id, std::string_view type, usize ui_idx) -> std::string
@@ -628,7 +628,7 @@ void render_imgui_windows(EngineContext& engine_context)
     {
         ImGui::Begin("Scene Inspector");
         const usize n_obj{world.cube_objects.size() + world.sphere_objects.size()};
-        ImGui::Text("There are %zu objects in the scene", n_obj);
+        ImGui::Text("There are %zu entities in the scene", n_obj);
         if (!world.hitmarker_objects.empty())
         {
             ImGui::Text("There are %zu hitmarkers in the scene", world.hitmarker_objects.size());
