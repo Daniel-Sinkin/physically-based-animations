@@ -13,7 +13,7 @@ namespace
 {
 
 template <usize N>
-[[nodiscard]] MeshDataPN mesh_pn_from_array(const std::array<MeshV_PN, N>& a)
+MeshDataPN mesh_pn_from_array(const std::array<MeshV_PN, N>& a)
 {
     MeshDataPN out{};
     out.vertices.reserve(N);
@@ -25,7 +25,7 @@ template <usize N>
 
 MeshDataPN create_cube_mesh()
 {
-    constexpr f32 h = 0.5f;
+    constexpr auto h = 0.5f;
     // clang-format off
     static constexpr std::array<MeshV_PN, 36> verts = {
         // +Z
@@ -77,7 +77,7 @@ MeshDataPN create_cube_mesh()
 
 MeshDataPN create_quad_mesh()
 {
-    constexpr f32 h = 0.5f;
+    constexpr auto h = 0.5f;
     // clang-format off
     static constexpr std::array<MeshV_PN, 6> verts = {
         MeshV_PN{-h, -h, 0.0f,  0,  0,  1},
@@ -329,8 +329,8 @@ MeshDataPN create_sphere_mesh(int lat, int lon, f32 radius)
     }
 
 #ifndef NDEBUG
-        const usize expected{static_cast<usize>(lon) * 6zu * static_cast<usize>(lat - 1)};
-        Ensures(out.vertices.size() == expected);
+    const usize expected{static_cast<usize>(lon) * 6zu * static_cast<usize>(lat - 1)};
+    Ensures(out.vertices.size() == expected);
 #endif
     return out;
 }

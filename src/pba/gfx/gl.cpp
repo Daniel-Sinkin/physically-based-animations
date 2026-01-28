@@ -5,6 +5,7 @@
 //
 #include "pba/gfx/gl_shader.hpp"
 #include "pba/gfx/gl_types.hpp"
+#include "pba/gfx/shader_program.hpp"
 
 namespace ds_pba
 {
@@ -28,6 +29,8 @@ create_program(const std::string& vert_src, const std::string& frag_src)
     glAttachShader(prog.id, vs.handle.id);
     glAttachShader(prog.id, fs.handle.id);
     glLinkProgram(prog.id);
+
+    prog.init_uniform_locations();
 
     vs.destroy();
     fs.destroy();

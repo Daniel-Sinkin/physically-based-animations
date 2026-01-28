@@ -18,7 +18,7 @@ namespace ds_pba
 {
 namespace
 {
-[[nodiscard]] glm::mat3 inv_inertia_body_box(f32 inv_mass, const Dir3& half_extent) noexcept
+glm::mat3 inv_inertia_body_box(f32 inv_mass, const Dir3& half_extent) noexcept
 {
     if (inv_mass == k_static_mass)
     {
@@ -30,9 +30,9 @@ namespace
     const auto y = 2.0f * half_extent.y;
     const auto z = 2.0f * half_extent.z;
 
-    const f32 Ixx{(m / 12.0f) * (y * y + z * z)};
-    const f32 Iyy{(m / 12.0f) * (x * x + z * z)};
-    const f32 Izz{(m / 12.0f) * (x * x + y * y)};
+    const auto Ixx = (m / 12.0f) * (y * y + z * z);
+    const auto Iyy = (m / 12.0f) * (x * x + z * z);
+    const auto Izz = (m / 12.0f) * (x * x + y * y);
 
     glm::mat3 invI{0.0f};
     invI[0][0] = (Ixx > 0.0f) ? (1.0f / Ixx) : 0.0f;
@@ -41,10 +41,10 @@ namespace
     return invI;
 }
 
-[[nodiscard]] glm::mat3
+glm::mat3
 inv_inertia_world_from_body(const Quaternion& q, const glm::mat3& inv_inertia_body) noexcept
 {
-    const glm::mat3 R{glm::mat3_cast(q)};
+    const auto R = glm::mat3_cast(q);
     return R * inv_inertia_body * glm::transpose(R);
 }
 
@@ -136,18 +136,17 @@ void create_pyramid_3d(EngineContext& e, int base_n, f32 step_size, f32 base_z) 
 {
     for (int layer{0}; layer < base_n; ++layer)
     {
-        const int n{base_n - layer};
-        const f32 z{base_z + static_cast<f32>(layer) * step_size};
+        const auto n = base_n - layer;
+        const auto z = base_z + static_cast<f32>(layer) * step_size;
 
-        const f32 half_span{0.5f * static_cast<f32>(n - 1) * step_size};
+        const auto half_span = 0.5f * static_cast<f32>(n - 1) * step_size;
 
         for (int ix{0}; ix < n; ++ix)
         {
+            const auto x = static_cast<f32>(ix) * step_size - half_span;
             for (int iy{0}; iy < n; ++iy)
             {
-                const f32 x{static_cast<f32>(ix) * step_size - half_span};
-                const f32 y{static_cast<f32>(iy) * step_size - half_span};
-
+                const auto y = static_cast<f32>(iy) * step_size - half_span;
                 e.spawn_cube(
                     Pos3{x, y, z},
                     k_zero_dir,
@@ -159,10 +158,10 @@ void create_pyramid_3d(EngineContext& e, int base_n, f32 step_size, f32 base_z) 
     }
 }
 
-[[nodiscard]] Dir3 tangent_ccw_xy(const Dir3& r) noexcept
+Dir3 tangent_ccw_xy(const Dir3& r) noexcept
 {
     const Dir3 t{-r.y, r.x, 0.0f};
-    const f32 t2 = glm::dot(t, t);
+    const auto t2 = glm::dot(t, t);
     if (t2 <= 1e-12f)
     {
         return Dir3{0.0f, 1.0f, 0.0f};
@@ -172,7 +171,7 @@ void create_pyramid_3d(EngineContext& e, int base_n, f32 step_size, f32 base_z) 
 
 void apply_keep_awake(std::vector<RigidBody>& bodies, f32, void*) noexcept
 {
-    for (RigidBody& b : bodies)
+    for (auto& b : bodies)
     {
         if (b.is_static())
         {
@@ -193,7 +192,6 @@ void apply_nbody_gravity_fixed(std::vector<RigidBody>& bodies, f32, void* user) 
 {
     auto& p = *static_cast<NBodyForceParams*>(user);
     const usize n = bodies.size();
-
     for (usize i{0}; i < n; ++i)
     {
         RigidBody& a = bodies[i];
@@ -202,7 +200,7 @@ void apply_nbody_gravity_fixed(std::vector<RigidBody>& bodies, f32, void* user) 
             continue;
         }
 
-        const f32 ma = (a.inv_mass > 0.0f) ? (1.0f / a.inv_mass) : 0.0f;
+        const auto ma = (a.inv_mass > 0.0f) ? (1.0f / a.inv_mass) : 0.0f;
 
         for (usize j{0zu}; j < n; ++j)
         {
@@ -216,7 +214,7 @@ void apply_nbody_gravity_fixed(std::vector<RigidBody>& bodies, f32, void* user) 
                 continue;
             }
 
-            const f32 mb = (b.inv_mass > 0.0f) ? (1.0f / b.inv_mass) : 0.0f;
+            const auto mb = (b.inv_mass > 0.0f) ? (1.0f / b.inv_mass) : 0.0f;
 
             const Dir3 r{b.position - a.position};
             const auto r2 = glm::dot(r, r) + p.softening * p.softening;
@@ -358,7 +356,6 @@ void setup_scene_attractors_and_repulsive_pivot(EngineContext& e) noexcept
     e.physics.external_forces.push_back(
         ExternalForce{.fn = apply_attractor_force, .user = &attractor_pos}
     );
-    e.physics.external_forces.clear();
 }
 
 void setup_scene_small_pyramid_projectiles_gravity(EngineContext& e) noexcept
@@ -442,9 +439,7 @@ void setup_scene_attractor_origin_with_gravity(EngineContext& e) noexcept
         const auto t = static_cast<f32>(i) / static_cast<f32>(n);
         const auto ang = t * k_two_pi;
 
-        const Pos3 p{
-            r * std::cos(ang), r * std::sin(ang), 12.0f + 0.15f * static_cast<f32>(i)
-        };
+        const Pos3 p{r * std::cos(ang), r * std::sin(ang), 12.0f + 0.15f * static_cast<f32>(i)};
         const Dir3 v{vmag * (-std::sin(ang)), vmag * (std::cos(ang)), 0.0f};
 
         e.spawn_cube(p, v, k_quaternion_identity, Color3{0.86f, 0.86f, 0.86f});
@@ -470,7 +465,7 @@ void setup_scene_pyramid3d_heavy_cube_drop(EngineContext& e) noexcept
 
     create_pyramid_3d(e, 7, 1.06f, -2.5f);
 
-    constexpr f32 heavy_mass = 350.0f;
+    constexpr auto heavy_mass = 350.0f;
     spawn_box(
         e,
         Pos3{1.5f, 0.0f, 18.0f},
@@ -533,10 +528,7 @@ void setup_scene_motors_elongated_no_gravity(EngineContext& e) noexcept
     {
         const auto y = -9.0f + 0.95f * static_cast<f32>(i);
         e.spawn_cube(
-            Pos3{6.0f, y, 2.0f},
-            k_zero_dir,
-            k_quaternion_identity,
-            Color3{0.45f, 0.70f, 0.95f}
+            Pos3{6.0f, y, 2.0f}, k_zero_dir, k_quaternion_identity, Color3{0.45f, 0.70f, 0.95f}
         );
     }
 }
@@ -601,7 +593,7 @@ void setup_scene_nbody_sun_3_planets(EngineContext& e) noexcept
     const Dir3 p_total{v2, v1 - v3, 0.0f};
     const Dir3 v_sun = -(p_total / sun_mass);
 
-    for (RigidBody& b : e.physics.bodies)
+    for (auto& b : e.physics.bodies)
     {
         if (b.id == sun_id)
         {
@@ -795,13 +787,12 @@ void setup_scene_box_drop_container(EngineContext& e) noexcept
 
     for (int i = 0; i < 80; ++i)
     {
-        const f32 fx = static_cast<f32>((i * 37) % 100) / 100.0f;
-        const f32 fy = static_cast<f32>((i * 73) % 100) / 100.0f;
+        const auto fx = static_cast<f32>((i * 37) % 100) / 100.0f;
+        const auto fy = static_cast<f32>((i * 73) % 100) / 100.0f;
 
-        const f32 x = (fx * 2.0f - 1.0f) * (inner - 2.5f);
-        const f32 y = (fy * 2.0f - 1.0f) * (inner - 2.5f);
-        const f32 z = 2.0f + 0.32f * static_cast<f32>(i);
-
+        const auto x = (fx * 2.0f - 1.0f) * (inner - 2.5f);
+        const auto y = (fy * 2.0f - 1.0f) * (inner - 2.5f);
+        const auto z = 2.0f + 0.32f * static_cast<f32>(i);
         e.spawn_cube(Pos3{x, y, z});
     }
 }

@@ -27,14 +27,13 @@ inline void apply_uniform_force(std::vector<RigidBody>& bodies, f32, void* user)
 {
     const auto& uf = *static_cast<const UniformForce*>(user);
 
-    for (RigidBody& b : bodies)
+    for (auto& b : bodies)
     {
         if (b.is_static() || b.asleep)
         {
             continue;
         }
-        const f32 m = 1.0f / b.inv_mass;
-        b.force_accum += m * uf.accel;
+        b.force_accum += uf.accel / b.inv_mass;
     }
 }
 
@@ -55,10 +54,10 @@ inline void apply_attractor_force(std::vector<RigidBody>& bodies, f32, void* use
 
     const Pos3 target = *a.target;
 
-    const f32 min_r = std::max(a.min_radius, 1e-6f);
-    const f32 min_r2 = min_r * min_r;
+    const auto min_r = std::max(a.min_radius, 1e-6f);
+    const auto min_r2 = min_r * min_r;
 
-    for (RigidBody& b : bodies)
+    for (auto& b : bodies)
     {
         if (b.is_static() || b.asleep)
         {
@@ -66,18 +65,17 @@ inline void apply_attractor_force(std::vector<RigidBody>& bodies, f32, void* use
         }
 
         const Dir3 d = target - b.position;
-        const f32 d2 = glm::dot(d, d);
+        const auto d2 = glm::dot(d, d);
         if (d2 <= min_r2)
         {
             continue;
         }
 
-        const f32 inv_len = 1.0f / std::sqrt(d2);
+        const auto inv_len = 1.0f / std::sqrt(d2);
         const Dir3 dir = d * inv_len;
         const Dir3 accel = a.accel_mag * dir;
 
-        const f32 m = 1.0f / b.inv_mass;
-        b.force_accum += m * accel;
+        b.force_accum += accel / b.inv_mass;
     }
 }
 
@@ -96,13 +94,13 @@ inline void apply_repulsion_force(std::vector<RigidBody>& bodies, f32, void* use
         return;
     }
 
-    const f32 min_r = std::max(r.min_radius, 1e-6f);
-    const f32 min_r2 = min_r * min_r;
-    const f32 range = std::max(r.range, min_r);
+    const auto min_r = std::max(r.min_radius, 1e-6f);
+    const auto min_r2 = min_r * min_r;
+    const auto range = std::max(r.range, min_r);
 
     const Pos3 target = *r.target;
 
-    for (RigidBody& b : bodies)
+    for (auto& b : bodies)
     {
         if (b.is_static() || b.asleep)
         {
@@ -110,13 +108,13 @@ inline void apply_repulsion_force(std::vector<RigidBody>& bodies, f32, void* use
         }
 
         const Dir3 d = b.position - target;
-        const f32 d2 = glm::dot(d, d);
+        const auto d2 = glm::dot(d, d);
         if (d2 <= min_r2)
         {
             continue;
         }
 
-        const f32 dist = std::sqrt(d2);
+        const auto dist = std::sqrt(d2);
         if (dist >= range)
         {
             continue;
@@ -124,12 +122,11 @@ inline void apply_repulsion_force(std::vector<RigidBody>& bodies, f32, void* use
 
         const Dir3 dir = d / dist;
 
-        const f32 t = (range - dist) / (range - min_r);
-        const f32 accel_mag = std::clamp(t, 0.0f, 1.0f) * r.accel_max;
+        const auto t = (range - dist) / (range - min_r);
+        const auto accel_mag = std::clamp(t, 0.0f, 1.0f) * r.accel_max;
 
         const Dir3 accel = accel_mag * dir;
-        const f32 m = 1.0f / b.inv_mass;
-        b.force_accum += m * accel;
+        b.force_accum += accel / b.inv_mass;
     }
 }
 
@@ -142,7 +139,7 @@ struct Motor
 inline void apply_motor_torque(std::vector<RigidBody>& bodies, f32, void* user) noexcept
 {
     auto& m = *static_cast<Motor*>(user);
-    for (RigidBody& b : bodies)
+    for (auto& b : bodies)
     {
         if (b.id == m.id && !b.is_static() && !b.asleep)
         {
@@ -161,31 +158,30 @@ struct NBodyParams
 inline void apply_nbody_gravity(std::vector<RigidBody>& bodies, f32, void* user) noexcept
 {
     auto& p = *static_cast<NBodyParams*>(user);
-    const usize n = bodies.size();
-
+    const auto n = bodies.size();
     for (usize i{0zu}; i < n; ++i)
     {
-        RigidBody& a = bodies[i];
+        auto& a = bodies[i];
         if (a.is_static() || a.asleep)
         {
             continue;
         }
 
-        const f32 m_a = 1.0f / a.inv_mass;
+        const auto m_a = 1.0f / a.inv_mass;
         for (usize j{0zu}; j < n; ++j)
         {
             if (i == j)
             {
                 continue;
             }
-            const RigidBody& b = bodies[j];
+            const auto& b = bodies[j];
 
             const Dir3 r = b.position - a.position;
-            const f32 r2 = glm::dot(r, r) + p.softening * p.softening;
-            const f32 inv_r = 1.0f / std::sqrt(r2);
-            const f32 inv_r3 = inv_r * inv_r * inv_r;
+            const auto r2 = glm::dot(r, r) + p.softening * p.softening;
+            const auto inv_r = 1.0f / std::sqrt(r2);
+            const auto inv_r3 = inv_r * inv_r * inv_r;
 
-            const f32 m_b = b.is_static() ? 0.0f : (1.0f / b.inv_mass);
+            const auto m_b = b.is_static() ? 0.0f : (1.0f / b.inv_mass);
             a.force_accum += (p.G * m_b) * r * inv_r3;
             a.force_accum += (p.G * m_a * m_b) * r * inv_r3;
         }

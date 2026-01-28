@@ -23,7 +23,7 @@ struct Ray
 
     [[nodiscard]] bool valid() const noexcept
     {  // Has to be normalised
-        return std::abs(glm::length(dir) - 1.0f) < 0.0001f;
+        return is_normalized(dir);
     }
 };
 

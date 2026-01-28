@@ -18,7 +18,7 @@ namespace ds_pba
 namespace
 {
 
-[[nodiscard]] inline bool wake_up(RigidBody& b) noexcept
+inline bool wake_up(RigidBody& b) noexcept
 {  // Returns true if we woke the model up
     if (!b.is_static() && b.asleep)
     {
@@ -29,15 +29,14 @@ namespace
     return false;
 }
 
-[[nodiscard]] Quaternion
-integrate_orientation(const Quaternion& q, const Dir3& omega_world, f32 dt) noexcept
+Quaternion integrate_orientation(const Quaternion& q, const Dir3& omega_world, f32 dt) noexcept
 {
     const Quaternion wq{0.0f, omega_world.x, omega_world.y, omega_world.z};
     const Quaternion out{q + (0.5f * dt) * (wq * q)};
     return glm::normalize(out);
 }
 
-[[nodiscard]] glm::mat3
+glm::mat3
 inv_inertia_world_from_body(const Quaternion& q, const glm::mat3& inv_inertia_body) noexcept
 {
     const glm::mat3 R{glm::mat3_cast(q)};
@@ -252,10 +251,10 @@ void positional_correction_contacts(
     std::vector<RigidBody>& bodies, const Contacts& contacts
 ) noexcept
 {
-    for (const Contact& contact : contacts)
+    for (const auto& contact : contacts)
     {
-        RigidBody& a = bodies[contact.a_idx];
-        RigidBody& b = bodies[contact.b_idx];
+        auto& a = bodies[contact.a_idx];
+        auto& b = bodies[contact.b_idx];
 
         if (a.is_static() && b.is_static())
         {
@@ -269,16 +268,16 @@ void positional_correction_contacts(
 
         const Dir3 n{contact.n};
 
-        const f32 inv_mass_a{a.inv_mass};
-        const f32 inv_mass_b{b.inv_mass};
-        const f32 inv_mass_sum{inv_mass_a + inv_mass_b};
+        const auto inv_mass_a = a.inv_mass;
+        const auto inv_mass_b = b.inv_mass;
+        const auto inv_mass_sum = inv_mass_a + inv_mass_b;
 
         if (inv_mass_sum <= 1e-12f)
         {
             continue;
         }
 
-        f32 corr_mag{k_pen_percent * (pen - k_pen_tolerance)};
+        auto corr_mag = k_pen_percent * (pen - k_pen_tolerance);
         corr_mag = std::clamp(corr_mag, 0.0f, k_pen_max_correction);
         const Dir3 correction{(corr_mag / inv_mass_sum) * n};
 
@@ -297,7 +296,7 @@ void positional_correction_contacts(
 
 void update_inv_inertia_world(std::vector<RigidBody>& bodies) noexcept
 {
-    for (RigidBody& b : bodies)
+    for (auto& b : bodies)
     {
         if (b.is_static())
         {
@@ -310,7 +309,7 @@ void update_inv_inertia_world(std::vector<RigidBody>& bodies) noexcept
 
 void integrate_forces(std::vector<RigidBody>& bodies, f32 dt_s) noexcept
 {
-    for (RigidBody& b : bodies)
+    for (auto& b : bodies)
     {
         if (b.is_static() || b.asleep)
         {
@@ -328,7 +327,7 @@ void integrate_forces(std::vector<RigidBody>& bodies, f32 dt_s) noexcept
 
 void integrate_velocities(std::vector<RigidBody>& bodies, f32 dt_s) noexcept
 {
-    for (RigidBody& b : bodies)
+    for (auto& b : bodies)
     {
         if (b.is_static() || b.asleep)
         {
@@ -345,8 +344,8 @@ void integrate_velocities(std::vector<RigidBody>& bodies, f32 dt_s) noexcept
 void warm_start_contact(std::vector<RigidBody>& bodies, Contact& contact) noexcept
 {
 
-    RigidBody& a = bodies[contact.a_idx];
-    RigidBody& b = bodies[contact.b_idx];
+    auto& a = bodies[contact.a_idx];
+    auto& b = bodies[contact.b_idx];
 
     if (a.is_static() && b.is_static())
     {
@@ -361,7 +360,7 @@ void warm_start_contact(std::vector<RigidBody>& bodies, Contact& contact) noexce
     const Dir3 r_a{contact.p - a.position};
     const Dir3 r_b{contact.p - b.position};
 
-    constexpr f32 warmstart_scale{1.0f};
+    constexpr auto warmstart_scale = 1.0f;
     contact.lambda_n = std::clamp(contact.lambda_n, 0.0f, 50.0f);
     contact.lambda_t = std::clamp(contact.lambda_t, -50.0f, 50.0f);
     if (contact.lambda_n > 0.0f)
@@ -403,7 +402,7 @@ void solve_velocity_constraints(
 {
     for (usize i{0zu}; i < k_solver_iterations; ++i)
     {
-        for (Contact& contact : contacts)
+        for (auto& contact : contacts)
         {
             RigidBody& a{bodies[contact.a_idx]};
             RigidBody& b{bodies[contact.b_idx]};
@@ -412,7 +411,7 @@ void solve_velocity_constraints(
                 continue;
             }
 
-            const f32 pen_eff = contact.penetration - k_pen_tolerance;
+            const auto pen_eff = contact.penetration - k_pen_tolerance;
             bool woke{false};
             if (pen_eff > 0.0f)
             {
@@ -427,7 +426,7 @@ void solve_velocity_constraints(
 
                 const Dir3 pa_dot{a.velocity + glm::cross(a.angular_velocity, ra)};
                 const Dir3 pb_dot{b.velocity + glm::cross(b.angular_velocity, rb)};
-                const f32 v_rel_n = glm::dot(n, pa_dot - pb_dot);
+                const auto v_rel_n = glm::dot(n, pa_dot - pb_dot);
 
                 if (v_rel_n < -0.05f)
                 {
@@ -462,7 +461,7 @@ void solve_position_constraints(std::vector<RigidBody>& bodies, const Contacts& 
 
 void apply_sleep_and_damping(std::vector<RigidBody>& bodies, f32 dt_s) noexcept
 {
-    for (RigidBody& b : bodies)
+    for (auto& b : bodies)
     {
         if (b.is_static() || b.asleep)
         {
@@ -500,7 +499,7 @@ void apply_sleep_and_damping(std::vector<RigidBody>& bodies, f32 dt_s) noexcept
 
 void clear_accumulators(std::vector<RigidBody>& bodies) noexcept
 {
-    for (RigidBody& b : bodies)
+    for (auto& b : bodies)
     {
         b.force_accum = Dir3{};
         b.torque_accum = Dir3{};

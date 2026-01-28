@@ -13,7 +13,7 @@ namespace ds_pba
 {
 namespace
 {
-[[nodiscard]] constexpr usize rgba_frame_bytes(int w, int h) noexcept
+constexpr usize rgba_frame_bytes(int w, int h) noexcept
 {
     if (w <= 0 || h <= 0)
     {
@@ -28,7 +28,7 @@ VideoRecorder::~VideoRecorder()
     stop();
 }
 
-[[nodiscard]] bool VideoRecorder::is_recording() const noexcept
+bool VideoRecorder::is_recording() const noexcept
 {
     return pipe != nullptr;
 }
@@ -54,17 +54,17 @@ std::string VideoRecorder::quote_arg(std::string_view s)
     return out;
 }
 
-[[nodiscard]] FILE* VideoRecorder::open_pipe_write(const std::string& cmd)
+FILE* VideoRecorder::open_pipe_write(const std::string& cmd)
 {
     return popen(cmd.c_str(), "w");
 }
 
-[[nodiscard]] int VideoRecorder::close_pipe(FILE* pipe) noexcept
+int VideoRecorder::close_pipe(FILE* pipe) noexcept
 {
     return pclose(pipe);
 }
 
-[[nodiscard]] bool VideoRecorder::start(std::filesystem::path path)
+bool VideoRecorder::start(std::filesystem::path path)
 {
     {
         Expects((width > -1 && height > -1) && "Need to init width and height before recording");
@@ -142,7 +142,7 @@ std::string VideoRecorder::quote_arg(std::string_view s)
     }
 }
 
-[[nodiscard]] bool VideoRecorder::write_frame(std::span<const u8> rgba)
+bool VideoRecorder::write_frame(std::span<const u8> rgba)
 {
     if (!pipe)
     {

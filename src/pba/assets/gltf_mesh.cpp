@@ -89,7 +89,7 @@ static glm::vec3 face_normal(const glm::vec3& p0, const glm::vec3& p1, const glm
 }
 
 template <class T>
-[[nodiscard]] static T read_unaligned(not_null<const std::byte*> p) noexcept
+static T read_unaligned(not_null<const std::byte*> p) noexcept
 {
     T v{};
     std::memcpy(&v, p.get(), sizeof(T));
@@ -360,15 +360,15 @@ static glm::vec2 read_vec2_as_f32(const Vec2AccessorView& v, usize i)
     {
         case TINYGLTF_COMPONENT_TYPE_FLOAT:
             {
-                const f32 u = read_unaligned<f32>(loc + 0);
-                const f32 w = read_unaligned<f32>(loc + 4);
+                const auto u = read_unaligned<f32>(loc + 0);
+                const auto w = read_unaligned<f32>(loc + 4);
                 return glm::vec2{u, w};
             }
 
         case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:
             {
-                const u8 u = read_unaligned<u8>(loc + 0);
-                const u8 w = read_unaligned<u8>(loc + 1);
+                const auto u = read_unaligned<u8>(loc + 0);
+                const auto w = read_unaligned<u8>(loc + 1);
                 if (v.normalized)
                 {
                     return glm::vec2{static_cast<f32>(u) / 255.0f, static_cast<f32>(w) / 255.0f};
@@ -378,8 +378,8 @@ static glm::vec2 read_vec2_as_f32(const Vec2AccessorView& v, usize i)
 
         case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:
             {
-                const u16 u = read_unaligned<u16>(loc + 0);
-                const u16 w = read_unaligned<u16>(loc + 2);
+                const auto u = read_unaligned<u16>(loc + 0);
+                const auto w = read_unaligned<u16>(loc + 2);
                 if (v.normalized)
                 {
                     return glm::vec2{
@@ -532,7 +532,7 @@ std::optional<MeshDataPN> load_gltf_mesh(const std::string& path, const Transfor
     }
     const std::vector<u32>& idx{*idx_opt};
 
-    const ModelMatrix model_matrix{preprocess.model_matrix()};
+    const auto model_matrix{preprocess.model_matrix()};
     const auto normal_matrix = model_matrix.normal_matrix();
 
     auto normalized = [&](const glm::vec3& n) -> glm::vec3
@@ -792,7 +792,7 @@ std::optional<MeshDataPNT> load_gltf_mesh_pnt(const std::string& path, const Tra
     }
     const std::vector<u32>& idx{*idx_opt};
 
-    const ModelMatrix model_matrix{preprocess.model_matrix()};
+    const auto model_matrix{preprocess.model_matrix()};
     const auto normal_matrix{model_matrix.normal_matrix()};
 
     auto read_pos = [&](u32 i) -> glm::vec3

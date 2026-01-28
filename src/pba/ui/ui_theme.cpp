@@ -147,7 +147,7 @@ std::optional<ThemeBase> parse_base(std::string_view s) noexcept
     return std::nullopt;
 }
 
-[[nodiscard]] constexpr const char* base_to_string(ThemeBase b) noexcept
+constexpr const char* base_to_string(ThemeBase b) noexcept
 {
     switch (b)
     {
@@ -233,7 +233,7 @@ std::optional<std::string_view> name_from_col(ImGuiCol col) noexcept
     return std::nullopt;
 }
 
-[[nodiscard]] std::string rgba_to_hex(u32 rgba)
+std::string rgba_to_hex(u32 rgba)
 {
     // 0xRRGGBBAA
     return std::format("0x{:08X}", rgba);

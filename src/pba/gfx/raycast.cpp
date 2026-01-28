@@ -1,5 +1,6 @@
 // pba/gfx/raycast.cpp
 #include "glm/geometric.hpp"
+#include "pba/core/core_types.hpp"
 #include "pba/core/geometry.hpp"
 #include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
@@ -11,11 +12,10 @@
 
 namespace ds_pba
 {
-[[nodiscard]] std::optional<Raycast>
-raycast(const SceneContext& scene_context, const Ray& ray) noexcept
+std::optional<Raycast> raycast(const SceneContext& scene_context, const Ray& ray) noexcept
 {
-    Expects(is_normalized(ray.dir));
-    f32 best_t{1e30f};
+    Expects(ray.valid());
+    auto best_t = k_f32_max;
 
     bool found{false};
     u32 best_object_id{};
@@ -25,11 +25,11 @@ raycast(const SceneContext& scene_context, const Ray& ray) noexcept
     // https://www.scs.stanford.edu/~dm/blog/param-pack.html
     auto check_hits = [&](const auto& objects, ObjectType type, auto&& intersect_fn) -> void
     {
-        for (const Object& o : objects)
+        for (const auto& o : objects)
         {
             if (auto res = intersect_fn(ray, o.transform.model_matrix()))
             {
-                const f32 t{*res};
+                const auto t = *res;
                 if (t < best_t)
                 {
                     best_t = t;
@@ -61,7 +61,7 @@ raycast(const SceneContext& scene_context, const Ray& ray) noexcept
     };
 }
 
-[[nodiscard]] Ray ray_from_imgui_rect(
+Ray ray_from_imgui_rect(
     const glm::vec2& mouse_pos,
     const glm::vec2& rect_pos,
     const glm::vec2& rect_size,
@@ -78,8 +78,7 @@ raycast(const SceneContext& scene_context, const Ray& ray) noexcept
     const auto x_ndc = 2.0f * (lx / w) - 1.0f;
     const auto y_ndc = 1.0f - 2.0f * (ly / h);
 
-    const ClipToWorldMatrix c2w = clip_to_world(camera_proj_matrix, camera_view_matrix);
-
+    const auto c2w = clip_to_world(camera_proj_matrix, camera_view_matrix);
     const Pos3 near_w = c2w.unproject_ndc(x_ndc, y_ndc, -1.0f);
     const Pos3 far_w = c2w.unproject_ndc(x_ndc, y_ndc, +1.0f);
 
@@ -90,10 +89,9 @@ raycast(const SceneContext& scene_context, const Ray& ray) noexcept
 }
 
 /// https://pbr-book.org/4ed/Shapes/Spheres
-[[nodiscard]] std::optional<f32>
-intersect_ray_sphere(const Ray& ray, const ModelMatrix& model_matrix) noexcept
+std::optional<f32> intersect_ray_sphere(const Ray& ray, const ModelMatrix& model_matrix) noexcept
 {
-    Expects(is_normalized(ray.dir));
+    Expects(ray.valid());
 
     const auto world_to_model = model_matrix.world_to_model();
 
@@ -132,9 +130,9 @@ intersect_ray_sphere(const Ray& ray, const ModelMatrix& model_matrix) noexcept
 }
 
 /// Solve ray.origin.z + t * ray.dir.z = 0 for t
-[[nodiscard]] std::optional<f32> intersect_ray_ground(const Ray& ray) noexcept
+std::optional<f32> intersect_ray_ground(const Ray& ray) noexcept
 {
-    Expects(is_normalized(ray.dir));
+    Expects(ray.valid());
     if (std::abs(ray.origin.z) < 1e-5f)
     {
         return 0.0f;
@@ -147,15 +145,14 @@ intersect_ray_sphere(const Ray& ray, const ModelMatrix& model_matrix) noexcept
     return -ray.origin.z / ray.dir.z;
 }
 
-/// Using the Slab method, see for example
-/// https://www.pbr-book.org/4ed/Shapes/Basic_Shape_Interface
-[[nodiscard]] std::optional<f32>
-intersect_ray_cube(const Ray& ray_world, const ModelMatrix& model_matrix) noexcept
+// Using the Slab method, see for example
+// https://www.pbr-book.org/4ed/Shapes/Basic_Shape_Interface
+std::optional<f32> intersect_ray_cube(const Ray& ray, const ModelMatrix& model_matrix) noexcept
 {
-    Expects(is_normalized(ray_world.dir));
+    Expects(ray.valid());
 
-    f32 t_min{-1e30f};
-    f32 t_max{+1e30f};
+    auto t_enter = k_f32_min;
+    auto t_exit = k_f32_max;
 
     auto slab = [&](f32 o, f32 d, f32 mn, f32 mx) -> bool
     {
@@ -163,34 +160,31 @@ intersect_ray_cube(const Ray& ray_world, const ModelMatrix& model_matrix) noexce
         {
             return (o >= mn && o <= mx);
         }
-
-        f32 t1{(mn - o) / d};
-        f32 t2{(mx - o) / d};
-        if (t1 > t2)
+        auto t_axis_enter = (mn - o) / d;
+        auto t_axis_exit = (mx - o) / d;
+        if (t_axis_enter > t_axis_exit)
         {
-            std::swap(t1, t2);
+            std::swap(t_axis_enter, t_axis_exit);
         }
-
-        t_min = std::max(t_min, t1);
-        t_max = std::min(t_max, t2);
-        return t_min <= t_max;
+        t_enter = std::max(t_enter, t_axis_enter);
+        t_exit = std::min(t_exit, t_axis_exit);
+        return (t_enter <= t_exit);
     };
 
     const auto world_to_model = model_matrix.world_to_model();
 
-    const Pos3 origin_local = world_to_model.transform_position(ray_world.origin);
-    const Dir3 dir_local = world_to_model.transform_direction(ray_world.dir);
+    const Pos3 origin_local = world_to_model.transform_position(ray.origin);
+    const Dir3 dir_local = world_to_model.transform_direction(ray.dir);
 
-    constexpr Pos3 bmin{-0.5f, -0.5f, -0.5f};
-    constexpr Pos3 bmax{+0.5f, +0.5f, +0.5f};
+    constexpr auto local_box = AABB::unit();
+    if (!slab(origin_local.x, dir_local.x, local_box.min.x, local_box.max.x)
+        || !slab(origin_local.y, dir_local.y, local_box.min.y, local_box.max.y)
+        || !slab(origin_local.z, dir_local.z, local_box.min.z, local_box.max.z))
+    {
+        return std::nullopt;
+    }
 
-    // clang-format off
-    if (!slab(origin_local.x, dir_local.x, bmin.x, bmax.x)) return std::nullopt;
-    if (!slab(origin_local.y, dir_local.y, bmin.y, bmax.y)) return std::nullopt;
-    if (!slab(origin_local.z, dir_local.z, bmin.z, bmax.z)) return std::nullopt;
-    // clang-format on
-
-    const f32 t_local = (t_min > 0.0f) ? t_min : ((t_max > 0.0f) ? t_max : -1.0f);
+    const auto t_local = (t_enter > 0.0f) ? t_enter : ((t_exit > 0.0f) ? t_exit : -1.0f);
     if (t_local <= 0.0f)
     {
         return std::nullopt;
@@ -199,8 +193,7 @@ intersect_ray_cube(const Ray& ray_world, const ModelMatrix& model_matrix) noexce
     const Pos3 hit_local = origin_local + t_local * dir_local;
     const Pos3 hit_world = model_matrix.transform_position(hit_local);
 
-    // Assumes ray_world.dir is unit-length (checked above).
-    const f32 t_world = glm::dot(hit_world - ray_world.origin, ray_world.dir);
+    const auto t_world = glm::dot(hit_world - ray.origin, ray.dir);
     if (t_world <= 0.0f)
     {
         return std::nullopt;

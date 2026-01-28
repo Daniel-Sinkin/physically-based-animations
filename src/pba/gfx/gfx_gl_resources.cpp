@@ -24,7 +24,7 @@
 
 namespace ds_pba
 {
-[[nodiscard]] std::optional<GLMesh> upload_mesh_pcolor_lines(const MeshDataPColor& mesh_data)
+std::optional<GLMesh> upload_mesh_pcolor_lines(const MeshDataPColor& mesh_data)
 {
     const auto& verts = mesh_data.vertices;
     if (verts.empty())
@@ -62,7 +62,7 @@ namespace ds_pba
     return mesh;
 }
 
-[[nodiscard]] std::optional<GLMesh> upload_mesh_pnt(const MeshDataPNT& mesh_data)
+std::optional<GLMesh> upload_mesh_pnt(const MeshDataPNT& mesh_data)
 {
     const auto& verts = mesh_data.vertices;
     if (verts.empty())
@@ -104,7 +104,7 @@ namespace ds_pba
     return mesh;
 }
 
-[[nodiscard]] std::optional<GLMesh> upload_mesh_pn(const MeshDataPN& mesh_data)
+std::optional<GLMesh> upload_mesh_pn(const MeshDataPN& mesh_data)
 {
     const auto& verts = mesh_data.vertices;
     if (verts.empty())

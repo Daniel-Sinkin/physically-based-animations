@@ -46,9 +46,9 @@ void GfxContext::hover_interaction(const EditorInput& input) const
     const bool spawning{input.mouse_right.pressed()};
     if (selecting || spawning)
     {  // Selecting objects
-        const f32 aspect{viewport_fbo.aspect_ratio()};
-        const ViewMatrix camera_view_matrix{scene_context->camera.view_matrix()};
-        const ProjMatrix camera_proj_matrix{scene_context->camera.proj_matrix(aspect)};
+        const auto aspect = viewport_fbo.aspect_ratio();
+        const auto camera_view_matrix = scene_context->camera.view_matrix();
+        const auto camera_proj_matrix = scene_context->camera.proj_matrix(aspect);
 
         const glm::vec2 mouse_pos{
             narrow_cast<f32>(input.ui_mouse_x), narrow_cast<f32>(input.ui_mouse_y)
@@ -61,7 +61,7 @@ void GfxContext::hover_interaction(const EditorInput& input) const
         auto rc_res = raycast(*scene_context, mouse_ray);
         if (rc_res)
         {
-            const Raycast rc = *rc_res;
+            const Raycast rc{*rc_res};
             if (selecting)
             {
                 hover_interaction_selection(input, rc);
@@ -123,13 +123,9 @@ void GfxContext::hover_interaction_holding_middle(const EditorInput& input, Came
 
     if (input.key_down(EditorKey::Shift))
     {  // Move Pivot
-        const f32 vp_h{std::max(1.0f, viewport_img_size.y)};
-
-        const f32 units_per_px{(2.0f * cam.distance * std::tan(0.5f * cam.fov_y)) / vp_h};
-
-        auto right_offset = (-dx * units_per_px) * cam.right();
-        auto up_offset = dy * units_per_px * cam.up();
-        cam.pivot += (right_offset + up_offset) * k_pan_sensitivity;
+        // $HOOK2
+        const auto pan_world = cam.pan_offset_world(dx, dy, viewport_img_size.y);
+        cam.pivot += pan_world * k_pan_sensitivity;
     }
     else
     {  // Rotate Around pivot
@@ -140,6 +136,7 @@ void GfxContext::hover_interaction_holding_middle(const EditorInput& input, Came
         scene_context->camera.pitch = std::clamp(scene_context->camera.pitch, -lim, lim);
     }
 }
+
 void GfxContext::hover_interaction_selection(const EditorInput& input, const Raycast& rc) const
 {
     auto log_action = [&](std::string_view action, ObjectId id, const char* kind) -> void

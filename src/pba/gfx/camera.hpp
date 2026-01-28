@@ -29,6 +29,13 @@ struct Camera
     [[nodiscard]] ViewMatrix view_matrix() const noexcept;
     [[nodiscard]] ProjMatrix proj_matrix(f32 aspect) const noexcept;
 
+    [[nodiscard]] f32 view_height_world() const noexcept;
+
+    [[nodiscard]] f32 units_per_pixel_y(f32 viewport_height_px) const noexcept;
+
+    [[nodiscard]] Dir3
+    pan_offset_world(f32 dx_px, f32 dy_px, f32 viewport_height_px) const noexcept;
+
     [[nodiscard]] Dir3 right() const noexcept;
     [[nodiscard]] Dir3 up() const noexcept;
 };

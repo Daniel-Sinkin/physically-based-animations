@@ -88,12 +88,12 @@ struct Contact
     usize b_idx{k_invalid_idx};
 
     Pos3 p{};           // contact point (world)
-    Dir3 n{k_axis_z};  // unit normal (world), direction is b -> a
-    f32 penetration{};       // >= 0
-    f32 lambda_n{};          // accumulated normal impulse
-    f32 lambda_t{};          // accumulated friction impulse
+    Dir3 n{k_axis_z};   // unit normal (world), direction is b -> a
+    f32 penetration{};  // >= 0
+    f32 lambda_n{};     // accumulated normal impulse
+    f32 lambda_t{};     // accumulated friction impulse
 
-    Dir3 t_hat{};     // tangent direction
+    Dir3 t_hat{};           // tangent direction
     bool has_t_hat{false};  // do we have a cached tangent direction?
     bool allow_warm_start{true};
 
@@ -172,7 +172,7 @@ struct Contact
             return ContactValidity::NegativePenetration;
         }
 
-        const f32 len2{glm::dot(n, n)};
+        const auto len2 = glm::dot(n, n);
         if (!finite_f32(len2) || len2 <= 1e-12f)
         {
             std::println(
@@ -184,8 +184,8 @@ struct Contact
             return ContactValidity::NonUnitNormal;
         }
 
-        const f32 len{std::sqrt(len2)};
-        const f32 err{std::abs(len - 1.0f)};
+        const auto len = std::sqrt(len2);
+        const auto err = std::abs(len - 1.0f);
         if (err > 1e-3f)
         {
             std::println(

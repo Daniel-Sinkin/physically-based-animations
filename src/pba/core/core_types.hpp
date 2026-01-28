@@ -131,6 +131,9 @@ struct Color3
     static const Color3 Yellow;
     static const Color3 Cyan;
     static const Color3 Magenta;
+    static const Color3 Orange;
+    static const Color3 Purple;
+    static const Color3 Gray;
 };
 inline constexpr Color3 Color3::Black   {0.0f, 0.0f, 0.0f};
 inline constexpr Color3 Color3::White   {1.0f, 1.0f, 1.0f};
@@ -140,5 +143,8 @@ inline constexpr Color3 Color3::Blue    {0.0f, 0.0f, 1.0f};
 inline constexpr Color3 Color3::Yellow  {1.0f, 1.0f, 0.0f};
 inline constexpr Color3 Color3::Cyan    {0.0f, 1.0f, 1.0f};
 inline constexpr Color3 Color3::Magenta {1.0f, 0.0f, 1.0f};
+inline constexpr Color3 Color3::Orange  {1.0f, 0.5f, 0.0f};
+inline constexpr Color3 Color3::Purple  {0.5f, 0.0f, 0.5f};
+inline constexpr Color3 Color3::Gray    {0.5f, 0.5f, 0.5f};
 // clang-format on
 }  // namespace ds_pba

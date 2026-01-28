@@ -5,6 +5,7 @@
 //
 #include <cassert>
 #include <cstddef>
+//
 #include <glad/glad.h>
 #include <gsl/assert>
 
@@ -162,44 +163,6 @@ struct ProgramHandle final
     friend constexpr bool operator==(ProgramHandle a, ProgramHandle b) noexcept
     {
         return a.id == b.id;
-    }
-};
-
-struct ShaderProgram final
-{
-    GLuint id{0};
-
-    [[nodiscard]] constexpr bool valid() const noexcept
-    {
-        return id != 0;
-    }
-
-    [[nodiscard]] constexpr ProgramHandle handle() const noexcept
-    {
-        return ProgramHandle{id};
-    }
-
-    void bind() const noexcept
-    {
-        {
-            Expects(valid());
-        }
-        glUseProgram(id);
-    }
-
-    static void unbind() noexcept
-    {
-        glUseProgram(0);
-    }
-
-    void destroy() noexcept
-    {
-        if (id == 0)
-        {
-            return;
-        }
-        glDeleteProgram(id);
-        id = 0;
     }
 };
 

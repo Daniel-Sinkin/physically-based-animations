@@ -10,7 +10,7 @@ namespace ds_pba
 {
 namespace
 {
-[[nodiscard]] bool file_exists_regular(const std::filesystem::path& p) noexcept
+bool file_exists_regular(const std::filesystem::path& p) noexcept
 {
     namespace fs = std::filesystem;
     std::error_code ec{};

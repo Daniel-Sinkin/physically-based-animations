@@ -27,15 +27,13 @@ namespace
 compute_total_kinetic_energy(std::span<const RigidBody> bodies, bool include_angular) noexcept
 {
     f32 E{0.0f};
-    for (const RigidBody& b : bodies)
+    for (const auto& b : bodies)
     {
         if (b.inv_mass <= 0.0f)
         {
             continue;
         }
-        const f32 m = 1.0f / b.inv_mass;
-        E += 0.5f * m * glm::dot(b.velocity, b.velocity);
-
+        E += 0.5f * glm::dot(b.velocity, b.velocity) / b.inv_mass;
         if (include_angular)
         {
             // TODO: Cache this directly instead of re-inverting every time
@@ -81,7 +79,7 @@ void PhysicsContext::step()
     {  // Setup debug info for this step
         debug_contacts.clear();
         debug_contacts.reserve(contacts.size());
-        for (const Contact& contact : contacts)
+        for (const auto& contact : contacts)
         {
             const RigidBody& a = bodies[contact.a_idx];
             const RigidBody& b = bodies[contact.b_idx];
@@ -99,7 +97,7 @@ void PhysicsContext::step()
     }
 
     // Pull warm-start state from cache into contacts before warm start + solve.
-    for (Contact& contact : contacts)
+    for (auto& contact : contacts)
     {
         if (!contact.allow_warm_start)
         {
@@ -118,7 +116,7 @@ void PhysicsContext::step()
         }
     }
 
-    for (Contact& contact : contacts)
+    for (auto& contact : contacts)
     {
         if (!contact.allow_warm_start)
         {
@@ -136,7 +134,7 @@ void PhysicsContext::step()
     contact_cache.clear();
     contact_cache.reserve(contacts.size() * 2zu);
 
-    for (const Contact& contact : contacts)
+    for (const auto& contact : contacts)
     {
         if (!contact.allow_warm_start)
         {

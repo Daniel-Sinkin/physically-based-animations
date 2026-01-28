@@ -20,7 +20,7 @@ namespace ds_pba
 namespace
 {
 
-[[nodiscard]] glm::mat3 inv_inertia_body_box(f32 inv_mass, const Dir3& half_extent) noexcept
+glm::mat3 inv_inertia_body_box(f32 inv_mass, const Dir3& half_extent) noexcept
 {
     if (inv_mass == k_static_mass)
     {
@@ -33,9 +33,9 @@ namespace
     const auto y = 2.0f * half_extent.y;
     const auto z = 2.0f * half_extent.z;
 
-    const f32 Ixx = (m / 12.0f) * (y * y + z * z);
-    const f32 Iyy = (m / 12.0f) * (x * x + z * z);
-    const f32 Izz = (m / 12.0f) * (x * x + y * y);
+    const auto Ixx = (m / 12.0f) * (y * y + z * z);
+    const auto Iyy = (m / 12.0f) * (x * x + z * z);
+    const auto Izz = (m / 12.0f) * (x * x + y * y);
 
     glm::mat3 invI{0.0f};
     invI[0][0] = (Ixx > 0.0f) ? (1.0f / Ixx) : 0.0f;
@@ -44,7 +44,7 @@ namespace
     return invI;
 }
 
-[[nodiscard]] glm::mat3
+glm::mat3
 inv_inertia_world_from_body(const Quaternion& q, const glm::mat3& inv_inertia_body) noexcept
 {
     const glm::mat3 R{glm::mat3_cast(q)};
@@ -179,18 +179,18 @@ void EngineContext::create_pyramid_3d(int base_n, f32 step_size, f32 base_z)
 {
     for (int layer{0}; layer < base_n; ++layer)
     {
-        const int n = base_n - layer;
-        const f32 z = base_z + static_cast<f32>(layer) * step_size;
+        const auto n = base_n - layer;
+        const auto z = base_z + static_cast<f32>(layer) * step_size;
 
-        const f32 half_span = 0.5f * static_cast<f32>(n - 1) * step_size;
+        const auto half_span = 0.5f * static_cast<f32>(n - 1) * step_size;
 
         for (int ix{0}; ix < n; ++ix)
         {
-            const f32 x = static_cast<f32>(ix) * step_size - half_span;
+            const auto x = static_cast<f32>(ix) * step_size - half_span;
 
             for (int iy{0}; iy < n; ++iy)
             {
-                const f32 y = static_cast<f32>(iy) * step_size - half_span;
+                const auto y = static_cast<f32>(iy) * step_size - half_span;
 
                 spawn_cube(
                     Pos3{x, y, z},
@@ -208,7 +208,7 @@ void EngineContext::create_pyramid_3d(int base_n, f32 step_size, f32 base_z)
     }
 }
 
-[[nodiscard]] bool EngineContext::setup()
+bool EngineContext::setup()
 {
     setup_active_scene(*this);
     gfx.scene_context = &scene;

@@ -7,8 +7,6 @@
 #include "pba/core/core_types.hpp"
 #include "pba/core/format.hpp"  // IWYU pragma: keep
 #include "pba/editor/editor_input.hpp"
-#include "pba/gfx/gl.hpp"
-#include "pba/gfx/gl_types.hpp"
 #include "pba/gfx/video_recorder.hpp"
 #include "pba/ui/ui.hpp"
 #include "pba/util/shutdown.hpp"
@@ -42,12 +40,6 @@ void GfxContext::shutdown()
         }
 
         viewport_fbo.destroy();
-
-        invalidate_uniform_cache_for_program(shader_programs.grid.handle());
-        invalidate_uniform_cache_for_program(shader_programs.obj.handle());
-        invalidate_uniform_cache_for_program(shader_programs.obj_tex.handle());
-        invalidate_uniform_cache_for_program(shader_programs.outline.handle());
-        invalidate_uniform_cache_for_program(shader_programs.pivot.handle());
 
         shader_programs.destroy();
         meshes.destroy();

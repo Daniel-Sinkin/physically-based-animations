@@ -1,7 +1,10 @@
 // pba/gfx/gfx_viewport.cpp
+#include "glm/fwd.hpp"
+#include "pba/core/constants.hpp"
 #include "pba/core/geometry.hpp"
 #include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
+#include "pba/engine/scenes.hpp"
 #include "pba/gfx/gfx_context.hpp"
 //
 #include "pba/core/core_types.hpp"
@@ -10,7 +13,6 @@
 #include "pba/engine/engine_context.hpp"
 #include "pba/engine/scene_context.hpp"
 #include "pba/engine/scene_types.hpp"
-#include "pba/gfx/gl.hpp"
 #include "pba/gfx/gl_types.hpp"
 #include "pba/gfx/raycast.hpp"
 #include "pba/ui/ui.hpp"
@@ -31,6 +33,8 @@ void GfxContext::render_to_viewport_objects(
     const ViewMatrix& camera_view_matrix, const ProjMatrix& camera_proj_matrix
 ) const
 {
+    auto& prog = shader_programs.obj;
+
     // Objects
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
@@ -38,97 +42,92 @@ void GfxContext::render_to_viewport_objects(
     glStencilMask(0x00);
     glStencilFunc(GL_ALWAYS, 0, 0xFF);
 
-    shader_programs.obj.bind();
-    set_uniform_mat4(shader_programs.obj.handle(), "uView", camera_view_matrix.m);
-    set_uniform_mat4(shader_programs.obj.handle(), "uProj", camera_proj_matrix.m);
+    prog.bind();
+    prog.set_uView(camera_view_matrix);
+    prog.set_uProj(camera_proj_matrix);
 
     if (!scene_context->cube_objects.empty())
     {  // Cubes
         meshes.cube.vao.bind();
-        for (usize i{0zu}; i < scene_context->cube_objects.size(); ++i)
+        for (const auto& o : scene_context->cube_objects)
         {
-            const Object& o{scene_context->cube_objects[i]};
             assert(o.id != k_invalid_id);
 
-            set_uniform_mat4(shader_programs.obj.handle(), "uModel", o.transform.model_matrix().m);
+            prog.set_uModel(o.transform.model_matrix());
 
             // TODO: Clean this up
             // TODO: Clean this up
-            // TODO: Clean this up
-            // TODO: Clean this up
-            // TODO: Clean this up
-            // TODO: Clean this up
-            // TODO: Clean this up
-            // TODO: Clean this up
-            // TODO: Clean this up
-            // TODO: Clean this up
-            // TODO: Clean this up
-            // TODO: Clean this up
-            // TODO: Clean this up
-            {  // Color
+            {
                 Color3 color{o.color};
-                if (phys_debug.enabled && engine_context)
+
+                if (!phys_debug.enabled || !engine_context)
                 {
-                    if (auto it = engine_context->obj_map.find(o.id);
-                        it != engine_context->obj_map.end())
-                    {
-                        const usize phys_i{it->second.physics_obj_idx};
-                        if (phys_i < engine_context->physics.bodies.size())
-                        {
-                            const RigidBody& rb = engine_context->physics.bodies[phys_i];
-                            if (!rb.is_static())
-                            {
-                                switch (phys_debug.color_mode)
-                                {
-                                    case PhysicsDebugSettings::ColorMode::Diffuse:
-                                        break;
-
-                                    case PhysicsDebugSettings::ColorMode::SleepState:
-                                        {
-                                            const f32 t =
-                                                rb.asleep
-                                                    ? 1.0f
-                                                    : std::clamp(
-                                                          static_cast<f32>(rb.sleep_frames) / 60.0f,
-                                                          0.0f,
-                                                          1.0f
-                                                      );
-                                            color =
-                                                mix(phys_debug.sleep_active_color,
-                                                    phys_debug.sleep_asleep_color,
-                                                    t);
-                                        }
-                                        break;
-
-                                    case PhysicsDebugSettings::ColorMode::KineticEnergy:
-                                        {
-                                            const auto m = 1.0f / rb.inv_mass;
-                                            auto E = 0.5f * m * glm::dot(rb.velocity, rb.velocity);
-
-                                            if (phys_debug.ke_include_angular)
-                                            {
-                                                const glm::mat3 I_world =
-                                                    glm::inverse(rb.inv_inertia_world);
-                                                E += 0.5f
-                                                     * glm::dot(
-                                                         rb.angular_velocity,
-                                                         I_world * rb.angular_velocity
-                                                     );
-                                            }
-
-                                            const auto denom = std::max(1e-6f, phys_debug.ke_max);
-                                            const auto t = std::clamp(E / denom, 0.0f, 1.0f);
-                                            color = mix(
-                                                phys_debug.ke_low_color, phys_debug.ke_high_color, t
-                                            );
-                                        }
-                                        break;
-                                }
-                            }
-                        }
-                    }
+                    prog.set_uColor(color);
+                    continue;
                 }
-                set_uniform_color3(shader_programs.obj.handle(), "uColor", color);
+
+                const auto it = engine_context->obj_map.find(o.id);
+                if (it == engine_context->obj_map.end())
+                {
+                    prog.set_uColor(color);
+                    continue;
+                }
+
+                const usize phys_i{it->second.physics_obj_idx};
+                if (phys_i >= engine_context->physics.bodies.size())
+                {
+                    prog.set_uColor(color);
+                    continue;
+                }
+
+                const RigidBody& rb = engine_context->physics.bodies[phys_i];
+                if (rb.is_static())
+                {
+                    prog.set_uColor(color);
+                    continue;
+                }
+
+                switch (phys_debug.color_mode)
+                {
+                    case PhysicsDebugSettings::ColorMode::Diffuse:
+                        break;
+
+                    case PhysicsDebugSettings::ColorMode::SleepState:
+                        {
+                            const auto t =
+                                rb.asleep
+                                    ? 1.0f
+                                    : std::clamp(
+                                          static_cast<f32>(rb.sleep_frames) / 60.0f, 0.0f, 1.0f
+                                      );
+
+                            color = mix(
+                                phys_debug.sleep_active_color, phys_debug.sleep_asleep_color, t
+                            );
+                        }
+                        break;
+
+                    case PhysicsDebugSettings::ColorMode::KineticEnergy:
+                        {
+                            const auto m = 1.0f / rb.inv_mass;
+                            auto E = 0.5f * m * glm::dot(rb.velocity, rb.velocity);
+
+                            if (phys_debug.ke_include_angular)
+                            {
+                                const glm::mat3 I_world = glm::inverse(rb.inv_inertia_world);
+                                E += 0.5f
+                                     * glm::dot(rb.angular_velocity, I_world * rb.angular_velocity);
+                            }
+
+                            const auto denom = std::max(1e-6f, phys_debug.ke_max);
+                            const auto t = std::clamp(E / denom, 0.0f, 1.0f);
+
+                            color = mix(phys_debug.ke_low_color, phys_debug.ke_high_color, t);
+                        }
+                        break;
+                }
+
+                prog.set_uColor(color);
             }
 
             glDrawArrays(GL_TRIANGLES, 0, meshes.cube.vertex_count);
@@ -144,16 +143,16 @@ void GfxContext::render_to_viewport_objects(
             const Object& o{scene_context->sphere_objects[i]};
             assert(o.id != k_invalid_id);
 
-            set_uniform_mat4(shader_programs.obj.handle(), "uModel", o.transform.model_matrix().m);
-            set_uniform_color3(shader_programs.obj.handle(), "uColor", o.color);
+            prog.set_uModel(o.transform.model_matrix());
+            prog.set_uColor(o.color);
 
             glDrawArrays(GL_TRIANGLES, 0, meshes.sphere.vertex_count);
         }
         for (const auto& o : scene_context->hitmarker_objects)
         {
             assert(o.id != k_invalid_id);
-            set_uniform_mat4(shader_programs.obj.handle(), "uModel", o.transform.model_matrix().m);
-            set_uniform_color3(shader_programs.obj.handle(), "uColor", o.color);
+            prog.set_uModel(o.transform.model_matrix());
+            prog.set_uColor(o.color);
 
             glDrawArrays(GL_TRIANGLES, 0, meshes.sphere.vertex_count);
         }
@@ -164,6 +163,7 @@ void GfxContext::render_to_viewport_objects(
     // startup speed significantly
     if (false && !scene_context->marble_bust_objects.empty())
     {  // Marble Bust
+        auto& prog_tex = shader_programs.obj_tex;
         if (!textures.marble_bust_diffuse.valid() || !textures.marble_bust_normal.valid())
         {
             std::println(
@@ -173,26 +173,24 @@ void GfxContext::render_to_viewport_objects(
             return;
         }
 
-        shader_programs.obj_tex.bind();
-        set_uniform_mat4(shader_programs.obj_tex.handle(), "uView", camera_view_matrix.m);
-        set_uniform_mat4(shader_programs.obj_tex.handle(), "uProj", camera_proj_matrix.m);
+        prog_tex.bind();
+        prog_tex.set_uView(camera_view_matrix);
+        prog_tex.set_uProj(camera_proj_matrix);
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, textures.marble_bust_diffuse.id);
-        set_uniform_int(shader_programs.obj_tex.handle(), "uDiffuseTex", 0);
+        prog_tex.set_uDiffuseTex(0);
 
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, textures.marble_bust_normal.id);
-        set_uniform_int(shader_programs.obj_tex.handle(), "uNormalTex", 1);
+        prog_tex.set_uNormalTex(1);
 
         meshes.marble_bust.vao.bind();
 
         for (const auto& o : scene_context->marble_bust_objects)
         {
             assert(o.id != k_invalid_id);
-            set_uniform_mat4(
-                shader_programs.obj_tex.handle(), "uModel", o.transform.model_matrix().m
-            );
+            prog_tex.set_uModel(o.transform.model_matrix());
             glDrawArrays(GL_TRIANGLES, 0, meshes.marble_bust.vertex_count);
         }
 
@@ -211,11 +209,13 @@ void GfxContext::render_to_viewport_grid(
     // Grid
     glDepthMask(GL_FALSE);
 
-    shader_programs.grid.bind();
-    set_uniform_mat4(shader_programs.grid.handle(), "uView", camera_view_matrix.m);
-    set_uniform_mat4(shader_programs.grid.handle(), "uProj", camera_proj_matrix.m);
-    set_uniform_float(shader_programs.grid.handle(), "uFogStart", grid.fog_start);
-    set_uniform_float(shader_programs.grid.handle(), "uFogEnd", grid.fog_end);
+    auto& prog = shader_programs.grid;
+
+    prog.bind();
+    prog.set_uView(camera_view_matrix);
+    prog.set_uProj(camera_proj_matrix);
+    prog.set_uFogStart(grid.fog_start);
+    prog.set_uFogEnd(grid.fog_end);
 
     meshes.grid.vao.bind();
     glDrawArrays(GL_LINES, 0, meshes.grid.vertex_count);
@@ -233,8 +233,7 @@ void GfxContext::render_to_viewport()
     assert((viewport_fbo.width >= 0) && (viewport_fbo.height >= 0));
     glViewport(0, 0, viewport_fbo.width, viewport_fbo.height);
 
-    ColorRGBAf bg{background_color};
-    glClearColor(bg.r(), bg.g(), bg.b(), bg.a());
+    glClearColor(background_color.r(), background_color.g(), background_color.b(), 1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
     f32 aspect{viewport_fbo.aspect_ratio()};
@@ -289,7 +288,7 @@ void GfxContext::render_to_viewport_outline(
     {
         for (const auto& b : buckets)
         {
-            for (const Object& o : *b.objects)
+            for (const auto& o : *b.objects)
             {
                 if (o.id == id)
                 {
@@ -341,10 +340,11 @@ void GfxContext::render_to_viewport_outline(
             glStencilFunc(GL_ALWAYS, 1, 0xFF);
             glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
-            shader_programs.obj.bind();
-            set_uniform_mat4(shader_programs.obj.handle(), "uView", camera_view_matrix.m);
-            set_uniform_mat4(shader_programs.obj.handle(), "uProj", camera_proj_matrix.m);
-            set_uniform_mat4(shader_programs.obj.handle(), "uModel", model_matrix.m);
+            auto& prog = shader_programs.obj;
+            prog.bind();
+            prog.set_uView(camera_view_matrix);
+            prog.set_uProj(camera_proj_matrix);
+            prog.set_uModel(model_matrix);
 
             instantiate_mesh_for_type(type);
 
@@ -364,13 +364,12 @@ void GfxContext::render_to_viewport_outline(
             const auto M_outline =
                 ModelMatrix{model_matrix.m * glm::scale(glm::mat4(1.0f), glm::vec3(1.04f))};
 
-            shader_programs.outline.bind();
-            set_uniform_mat4(shader_programs.outline.handle(), "uModel", M_outline.m);
-            set_uniform_mat4(shader_programs.outline.handle(), "uView", camera_view_matrix.m);
-            set_uniform_mat4(shader_programs.outline.handle(), "uProj", camera_proj_matrix.m);
-            set_uniform_vec3(
-                shader_programs.outline.handle(), "uColor", glm::vec3(1.0f, 0.55f, 0.0f)
-            );
+            auto& prog = shader_programs.outline;
+            prog.bind();
+            prog.set_uView(camera_view_matrix);
+            prog.set_uProj(camera_proj_matrix);
+            prog.set_uModel(M_outline);
+            prog.set_uColor(k_outline_color);
 
             instantiate_mesh_for_type(type);
 
@@ -398,21 +397,17 @@ void GfxContext::render_to_viewport_pivot(
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
 
+    const Transform t{.position = pivot_pos, .scale = {0.1f, 0.1f, 0.1f}};
+
     const GLMesh& pivot_mesh{meshes.sphere};
-
-    shader_programs.pivot.bind();
-    set_uniform_mat4(shader_programs.pivot.handle(), "uView", camera_view_matrix.m);
-    set_uniform_mat4(shader_programs.pivot.handle(), "uProj", camera_proj_matrix.m);
-
     pivot_mesh.vao.bind();
 
-    const Transform t{.position = pivot_pos, .scale = {0.1f, 0.1f, 0.1f}};
-    set_uniform_mat4(shader_programs.pivot.handle(), "uModel", t.model_matrix().m);
-    set_uniform_vec3(
-        shader_programs.pivot.handle(),
-        "uColor",
-        {196.0f / 255.0f, 209.0f / 255.0f, 102.0f / 255.0f}
-    );
+    auto& prog = shader_programs.pivot;
+    prog.bind();
+    prog.set_uView(camera_view_matrix);
+    prog.set_uProj(camera_proj_matrix);
+    prog.set_uModel(t.model_matrix());
+    prog.set_uColor(Color3{196.0f / 255.0f, 209.0f / 255.0f, 102.0f / 255.0f});
 
     glDrawArrays(GL_TRIANGLES, 0, pivot_mesh.vertex_count);
 
@@ -547,17 +542,17 @@ void GfxContext::render_to_viewport_physics_debug(
 
     auto find_scene_object = [&](ObjectId id) -> const Object*
     {
-        for (const Object& o : scene_context->cube_objects)
+        for (const auto& o : scene_context->cube_objects)
         {
             if (o.id == id)
                 return &o;
         }
-        for (const Object& o : scene_context->sphere_objects)
+        for (const auto& o : scene_context->sphere_objects)
         {
             if (o.id == id)
                 return &o;
         }
-        for (const Object& o : scene_context->hitmarker_objects)
+        for (const auto& o : scene_context->hitmarker_objects)
         {
             if (o.id == id)
                 return &o;
@@ -565,7 +560,7 @@ void GfxContext::render_to_viewport_physics_debug(
         return nullptr;
     };
 
-    for (const ObjectId id : scene_context->selected_ids)
+    for (const auto id : scene_context->selected_ids)
     {
         const RigidBody* rb_ptr{nullptr};
 
@@ -603,9 +598,9 @@ void GfxContext::render_to_viewport_physics_debug(
             extent = std::max({o->transform.scale.x, o->transform.scale.y, o->transform.scale.z});
         }
 
-        const f32 axis_len = std::max(0.0f, extent) * std::max(0.0f, phys_debug.axis_scale);
+        const auto axis_len = std::max(0.0f, extent) * std::max(0.0f, phys_debug.axis_scale);
 
-        const glm::mat3 R{glm::mat3_cast(ori)};
+        const auto R = glm::mat3_cast(ori);
         const Dir3 ax{glm::normalize(R * k_axis_x)};
         const Dir3 ay{glm::normalize(R * k_axis_y)};
         const Dir3 az{glm::normalize(R * k_axis_z)};
@@ -704,11 +699,11 @@ void GfxContext::render_to_viewport_physics_debug(
     glDisable(GL_STENCIL_TEST);
 
     shader_programs.grid.bind();
-    set_uniform_mat4(shader_programs.grid.handle(), "uView", camera_view_matrix.m);
-    set_uniform_mat4(shader_programs.grid.handle(), "uProj", camera_proj_matrix.m);
-
-    set_uniform_float(shader_programs.grid.handle(), "uFogStart", 1.0e6f);
-    set_uniform_float(shader_programs.grid.handle(), "uFogEnd", 2.0e6f);
+    auto& prog = shader_programs.grid;
+    prog.set_uView(camera_view_matrix);
+    prog.set_uProj(camera_proj_matrix);
+    prog.set_uFogStart(2.0e6f);
+    prog.set_uFogEnd(1.0e6f);
 
     meshes.debug_line.vao.bind();
     glDrawArrays(GL_LINES, 0, meshes.debug_line.vertex_count);

@@ -24,8 +24,7 @@ glm::vec3 safe_normalize(glm::vec3 v) noexcept
 
 bool is_normalized(const Dir3& v, f32 eps) noexcept
 {
-    const f32 len2 = glm::dot(v, v);
-    return std::abs(len2 - 1.0f) <= eps;
+    return std::abs(glm::dot(v, v) - 1.0f) <= eps;
 }
 
 Pos3 ModelMatrix::transform_position(const Pos3& p) const noexcept

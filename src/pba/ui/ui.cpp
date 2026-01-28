@@ -76,7 +76,7 @@ void render_physics_debug_window(EngineContext& engine_context)
 
     usize dynamic_count{0zu};
     usize asleep_count{0zu};
-    for (const RigidBody& b : physics_context.bodies)
+    for (const auto& b : physics_context.bodies)
     {
         if (!b.is_static())
         {

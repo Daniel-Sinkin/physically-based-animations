@@ -34,7 +34,7 @@ struct Scene
     SetupSceneFn setup{};
 };
 
-[[nodiscard]] constexpr usize scene_index(SceneId id) noexcept
+constexpr usize scene_index(SceneId id) noexcept
 {
     return static_cast<usize>(id);
 }
@@ -145,7 +145,7 @@ constexpr bool scenes_are_consistent() noexcept
 }
 static_assert(scenes_are_consistent(), "Scene table order or ids are inconsistent.");
 
-[[nodiscard]] constexpr const Scene* scene_ptr(SceneId id) noexcept
+constexpr const Scene* scene_ptr(SceneId id) noexcept
 {
     const usize idx = scene_index(id);
     if (idx >= k_scenes.size())
@@ -156,13 +156,13 @@ static_assert(scenes_are_consistent(), "Scene table order or ids are inconsisten
 }
 }  // namespace
 
-[[nodiscard]] const char* scene_name(SceneId id) noexcept
+const char* scene_name(SceneId id) noexcept
 {
     const Scene* s = scene_ptr(id);
     return s ? s->name : "(invalid scene)";
 }
 
-[[nodiscard]] const char* scene_description(SceneId id) noexcept
+const char* scene_description(SceneId id) noexcept
 {
     const Scene* s = scene_ptr(id);
     return s ? s->desc : "(invalid scene)";

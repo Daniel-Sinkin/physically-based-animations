@@ -9,7 +9,7 @@
 namespace ds_pba
 {
 
-[[nodiscard]] Pos3 Camera::position() const noexcept
+Pos3 Camera::position() const noexcept
 {
     const f32 cos_pitch{std::cos(pitch)};
     const f32 sin_pitch{std::sin(pitch)};
@@ -25,17 +25,17 @@ namespace ds_pba
     return pivot + offset;
 }
 
-[[nodiscard]] ViewMatrix Camera::view_matrix() const noexcept
+ViewMatrix Camera::view_matrix() const noexcept
 {
     return ViewMatrix{glm::lookAt(position(), pivot, k_axis_z)};
 }
 
-[[nodiscard]] ProjMatrix Camera::proj_matrix(f32 aspect) const noexcept
+ProjMatrix Camera::proj_matrix(f32 aspect) const noexcept
 {
     return ProjMatrix{glm::perspective(fov_y, aspect, z_near, z_far)};
 }
 
-[[nodiscard]] Dir3 Camera::right() const noexcept
+Dir3 Camera::right() const noexcept
 {
     const Pos3 pos{position()};
     const Dir3 forward{glm::normalize(pivot - pos)};
@@ -44,12 +44,35 @@ namespace ds_pba
     return right;
 }
 
-[[nodiscard]] Dir3 Camera::up() const noexcept
+Dir3 Camera::up() const noexcept
 {
     const glm::vec3 pos{position()};
     const Dir3 forward{glm::normalize(pivot - pos)};
     const Dir3 up{glm::normalize(glm::cross(right(), forward))};
     return up;
+}
+
+f32 Camera::view_height_world() const noexcept
+{
+    const auto half_fov_y_rad = 0.5f * fov_y;
+    const auto view_half_height_world = distance * std::tan(half_fov_y_rad);
+    return 2.0f * view_half_height_world;
+}
+
+f32 Camera::units_per_pixel_y(f32 viewport_height_px) const noexcept
+{
+    const auto clamped_height_px = std::max(1.0f, viewport_height_px);
+    return view_height_world() / clamped_height_px;
+}
+
+Dir3 Camera::pan_offset_world(f32 dx_px, f32 dy_px, f32 viewport_height_px) const noexcept
+{
+    const auto units_per_px_y = units_per_pixel_y(viewport_height_px);
+
+    const auto right_offset_world = (-dx_px * units_per_px_y) * right();
+    const auto up_offset_world = (dy_px * units_per_px_y) * up();
+
+    return right_offset_world + up_offset_world;
 }
 
 }  // namespace ds_pba

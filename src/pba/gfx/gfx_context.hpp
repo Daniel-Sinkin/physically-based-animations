@@ -9,6 +9,7 @@
 #include "pba/editor/editor_input.hpp"
 #include "pba/gfx/gl_texture.hpp"
 #include "pba/gfx/gl_types.hpp"
+#include "pba/gfx/shader_program.hpp"
 #include "pba/gfx/video_recorder.hpp"
 #include "pba/gfx/viewport_fbo.hpp"
 #include "pba/ui/ui_theme.hpp"
@@ -75,7 +76,7 @@ struct GfxContext
     bool loaded_glad{false};
     bool initialised_imgui{false};
 
-    ColorRGBAf background_color{0.255f, 0.255f, 0.255f, 1.0f};
+    Color3 background_color{0.102f, 0.106f, 0.149f};
 
     UiThemePack theme_pack{};
     usize theme_index{0zu};

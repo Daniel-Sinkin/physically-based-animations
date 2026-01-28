@@ -24,12 +24,12 @@ void from_json(const nlohmann::json& j, ModelConfig& c)
 
 namespace
 {
-[[nodiscard]] std::filesystem::path config_path(const std::filesystem::path& model_dir)
+std::filesystem::path config_path(const std::filesystem::path& model_dir)
 {
     return model_dir / "config.json";
 }
 
-[[nodiscard]] std::optional<nlohmann::json> read_json_file(const std::filesystem::path& p)
+std::optional<nlohmann::json> read_json_file(const std::filesystem::path& p)
 {
     std::ifstream f(p);
     if (!f.is_open())
@@ -48,7 +48,7 @@ namespace
     return j;
 }
 
-[[nodiscard]] bool write_json_file(const std::filesystem::path& p, const nlohmann::json& j)
+bool write_json_file(const std::filesystem::path& p, const nlohmann::json& j)
 {
     std::ofstream f(p);
     if (!f.is_open())
@@ -82,7 +82,7 @@ namespace
     return true;
 }
 
-[[nodiscard]] std::string model_name_from_dir(const std::filesystem::path& model_dir)
+std::string model_name_from_dir(const std::filesystem::path& model_dir)
 {
     return model_dir.filename().string();
 }

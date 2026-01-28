@@ -45,21 +45,21 @@ std::optional<Pos3> GfxContext::get_object_position(ObjectId id) const
         }
     }
 
-    for (const Object& o : scene_context->cube_objects)
+    for (const auto& o : scene_context->cube_objects)
     {
         if (o.id == id)
         {
             return o.transform.position;
         }
     }
-    for (const Object& o : scene_context->sphere_objects)
+    for (const auto& o : scene_context->sphere_objects)
     {
         if (o.id == id)
         {
             return o.transform.position;
         }
     }
-    for (const Object& o : scene_context->hitmarker_objects)
+    for (const auto& o : scene_context->hitmarker_objects)
     {
         if (o.id == id)
         {
@@ -106,7 +106,7 @@ void GfxContext::set_object_position(ObjectId id, const Pos3& p) const
     }
 
     // Non-physics objects (spheres/hitmarkers)
-    for (Object& o : scene_context->sphere_objects)
+    for (auto& o : scene_context->sphere_objects)
     {
         if (o.id == id)
         {
@@ -114,7 +114,7 @@ void GfxContext::set_object_position(ObjectId id, const Pos3& p) const
             return;
         }
     }
-    for (Object& o : scene_context->hitmarker_objects)
+    for (auto& o : scene_context->hitmarker_objects)
     {
         if (o.id == id)
         {

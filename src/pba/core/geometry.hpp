@@ -4,6 +4,9 @@
 #include "pba/core/core_types.hpp"
 #include "pba/core/math_types.hpp"
 //
+#include <algorithm>
+#include <type_traits>
+//
 #include <glm/ext/matrix_float3x3.hpp>
 #include <glm/ext/matrix_float4x4.hpp>
 
@@ -28,6 +31,120 @@ template <class T>
 
 [[nodiscard]] glm::vec3 safe_normalize(glm::vec3 v) noexcept;
 [[nodiscard]] bool is_normalized(const Dir3& v, f32 eps = 1e-4f) noexcept;
+
+// Axis Aligned Bounding Box
+struct AABB
+{
+    Pos3 min;
+    Pos3 max;
+
+    [[nodiscard]] static AABB empty() noexcept
+    {
+        return AABB{
+            .min = Pos3{+k_inf, +k_inf, +k_inf},
+            .max = Pos3{-k_inf, -k_inf, -k_inf},
+        };
+    }
+
+    [[nodiscard]] static constexpr AABB unit() noexcept
+    {
+        return AABB{
+            .min = Pos3{-0.5f, -0.5f, -0.5f},
+            .max = Pos3{+0.5f, +0.5f, +0.5f},
+        };
+    }
+
+    [[nodiscard]] static constexpr AABB unit_positive() noexcept
+    {
+        return AABB{
+            .min = Pos3{0.0f, 0.0f, 0.0f},
+            .max = Pos3{1.0f, 1.0f, 1.0f},
+        };
+    }
+
+    [[nodiscard]] static AABB
+    from_center_half_extents(const Pos3& center, const Dir3& half_extents) noexcept
+    {
+        return AABB{
+            .min = center - half_extents,
+            .max = center + half_extents,
+        };
+    }
+
+    [[nodiscard]] bool valid() const noexcept
+    {
+        return min.x <= max.x && min.y <= max.y && min.z <= max.z;
+    }
+
+    [[nodiscard]] Pos3 center() const noexcept
+    {
+        return Pos3{0.5f * (min + max)};
+    }
+
+    [[nodiscard]] Dir3 extents() const noexcept
+    {
+        return Dir3{max - min};
+    }
+
+    [[nodiscard]] Dir3 half_extents() const noexcept
+    {
+        return Dir3{0.5f * (max - min)};
+    }
+
+    [[nodiscard]] f32 surface_area() const noexcept
+    {
+        const Dir3 s = extents();
+        auto face_xy = s.x * s.y;
+        auto face_xz = s.x * s.z;
+        auto face_yz = s.y * s.z;
+        return 2.0f * (face_xy + face_xz + face_yz);
+    }
+
+    [[nodiscard]] f32 volume() const noexcept
+    {
+        const Dir3 s = extents();
+        return s.x * s.y * s.z;
+    }
+};
+
+inline void expand_to_include(AABB& aabb, const Pos3& p) noexcept
+{
+    aabb.min.x = std::min(aabb.min.x, p.x);
+    aabb.min.y = std::min(aabb.min.y, p.y);
+    aabb.min.z = std::min(aabb.min.z, p.z);
+
+    aabb.max.x = std::max(aabb.max.x, p.x);
+    aabb.max.y = std::max(aabb.max.y, p.y);
+    aabb.max.z = std::max(aabb.max.z, p.z);
+}
+
+inline void expand_to_include(AABB& aabb, const AABB& other) noexcept
+{
+    expand_to_include(aabb, other.min);
+    expand_to_include(aabb, other.max);
+}
+
+[[nodiscard]] inline bool contains(const AABB& aabb, const Pos3& p) noexcept
+{
+    auto x_axis_overlap = p.x >= aabb.min.x && p.x <= aabb.max.x;
+    auto y_axis_overlap = p.y >= aabb.min.y && p.y <= aabb.max.y;
+    auto z_axis_overlap = p.z >= aabb.min.z && p.z <= aabb.max.z;
+    return x_axis_overlap && y_axis_overlap && z_axis_overlap;
+}
+
+[[nodiscard]] inline bool contains(const AABB& outer, const AABB& inner) noexcept
+{
+    // Could also do contains(outer, inner.min) && contains(outer, inner.max)
+    return contains(outer, inner.min) && contains(outer, inner.max);
+}
+
+[[nodiscard]] inline bool overlaps(const AABB& a, const AABB& b) noexcept
+{
+    auto x_axis_overlap = a.min.x <= b.max.x && a.max.x >= b.min.x;
+    auto y_axis_overlap = a.min.y <= b.max.y && a.max.y >= b.min.y;
+    auto z_axis_overlap = a.min.z <= b.max.z && a.max.z >= b.min.z;
+    return x_axis_overlap && y_axis_overlap && z_axis_overlap;
+}
 
 struct NormalMatrix;
 struct WorldToModelMatrix;

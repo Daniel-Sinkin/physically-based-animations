@@ -30,7 +30,7 @@ struct Shader
         return handle.valid();
     }
 
-    [[nodiscard]] static constexpr bool is_valid_type(ShaderType type) noexcept
+    [[nodiscard]] static constexpr bool valid(ShaderType type) noexcept
     {
         switch (type)
         {
@@ -48,7 +48,7 @@ struct Shader
     static Shader create(ShaderType shader_type) noexcept
     {
         {
-            Expects(is_valid_type(shader_type));
+            Expects(valid(shader_type));
         }
         return Shader{
             .handle = ShaderHandle{glCreateShader(static_cast<GLenum>(shader_type))},

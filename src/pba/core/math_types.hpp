@@ -22,6 +22,10 @@ inline constexpr Quaternion k_quaternion_identity{1.0f, 0.0f, 0.0f, 0.0f};
 inline constexpr f32 k_pi{std::numbers::pi_v<f32>};
 inline constexpr f32 k_two_pi{2.0f * std::numbers::pi_v<f32>};
 
+constexpr f32 k_inf = std::numeric_limits<f32>::infinity();
+constexpr f32 k_f32_max = 1e30f;
+constexpr f32 k_f32_min = -1e30f;
+
 inline constexpr Dir3 k_axis_x{1.0f, 0.0f, 0.0f};
 inline constexpr Dir3 k_axis_y{0.0f, 1.0f, 0.0f};
 inline constexpr Dir3 k_axis_z{0.0f, 0.0f, 1.0f};
