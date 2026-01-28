@@ -332,17 +332,7 @@ void render_imgui_windows(EngineContext& engine_context)
 
     auto& world = engine_context.world;
     auto& editor_state = world.editor_state();
-    auto& cam = editor_state.camera;
-
-    auto object_label = [&](EntityId id, std::string_view type, usize ui_idx) -> std::string
-    {
-        auto it = engine_context.obj_name_map.find(id);
-        if (it != engine_context.obj_name_map.end())
-        {
-            return std::format("{} {} [{}]##{}_{}", id, it->second, type, type, ui_idx);
-        }
-        return std::format("{} [{}]##{}_{}", id, type, type, ui_idx);
-    };
+    auto& cam = editor_state.camera();
 
     {
         ImGui::Begin("Info");
@@ -479,52 +469,14 @@ void render_imgui_windows(EngineContext& engine_context)
         {
             const EntityId active_id{*editor_state.active_id};
 
-            auto find_active = [&](EntityId id) -> std::optional<std::pair<EntityType, Entity*>>
-            {
-                for (usize i{0zu}; i < world.cube_objects.size(); ++i)
-                {
-                    Entity& o = world.cube_objects[i];
-                    if (o.id == id)
-                    {
-                        return std::pair<EntityType, Entity*>{EntityType::Cube, &o};
-                    }
-                }
-                for (usize i{0zu}; i < world.sphere_objects.size(); ++i)
-                {
-                    Entity& o = world.sphere_objects[i];
-                    if (o.id == id)
-                    {
-                        return std::pair<EntityType, Entity*>{EntityType::Sphere, &o};
-                    }
-                }
-                for (usize i{0zu}; i < world.hitmarker_objects.size(); ++i)
-                {
-                    Entity& o = world.hitmarker_objects[i];
-                    if (o.id == id)
-                    {
-                        return std::pair<EntityType, Entity*>{EntityType::Hitmarker, &o};
-                    }
-                }
-                for (usize i{0zu}; i < world.marble_bust_objects.size(); ++i)
-                {
-                    Entity& o = world.marble_bust_objects[i];
-                    if (o.id == id)
-                    {
-                        return std::pair<EntityType, Entity*>{EntityType::MarbleBust, &o};
-                    }
-                }
-                return std::nullopt;
-            };
-
-            auto active_res = find_active(active_id);
+            auto active_res = world.find(active_id);
             if (!active_res)
             {
                 ImGui::Text("Active selection not found.");
                 ImGui::End();
                 return;
             }
-            auto [type, o_ptr] = *active_res;
-            Entity& o = *o_ptr;
+            Entity& o = *active_res;
 
             std::optional<usize> physics_index{};
             for (usize i{0zu}; i < physics_context.bodies.size(); ++i)
@@ -536,31 +488,16 @@ void render_imgui_windows(EngineContext& engine_context)
                 }
             }
 
-            const char* type_str{""};
-            switch (type)
-            {
-                case EntityType::Cube:
-                    type_str = "Cube";
-                    break;
-                case EntityType::Sphere:
-                    type_str = "Sphere";
-                    break;
-                case EntityType::Hitmarker:
-                    type_str = "Hitmarker";
-                    break;
-                case EntityType::MarbleBust:
-                    type_str = "MarbleBust";
-                    break;
-            }
+            std::string type_str{to_string(o.type)};
 
             if (auto it = engine_context.obj_name_map.find(o.id);
                 it != engine_context.obj_name_map.end())
             {
-                ImGui::Text("Active : %s [id=%d] [%s]", it->second.c_str(), o.id, type_str);
+                ImGui::Text("Active : %s [id=%d] [%s]", it->second.c_str(), o.id, type_str.c_str());
             }
             else
             {
-                ImGui::Text("Active : [id=%d] [%s]", o.id, type_str);
+                ImGui::Text("Active : [id=%d] [%s]", o.id, type_str.c_str());
             }
 
             ImGui::Separator();
@@ -573,7 +510,7 @@ void render_imgui_windows(EngineContext& engine_context)
                 Pos3 p = rb.position;
                 if (ImGui::DragFloat3("Position", &p.x, 0.01f))
                 {
-                    gfx_context.set_object_position(o.id, p);
+                    engine_context.world.find(o.id)->transform.position = p;
                 }
 
                 Quaternion& ori = rb.orientation;
@@ -627,14 +564,7 @@ void render_imgui_windows(EngineContext& engine_context)
 
     {
         ImGui::Begin("Scene Inspector");
-        const usize n_obj{world.cube_objects.size() + world.sphere_objects.size()};
-        ImGui::Text("There are %zu entities in the scene", n_obj);
-        if (!world.hitmarker_objects.empty())
-        {
-            ImGui::Text("There are %zu hitmarkers in the scene", world.hitmarker_objects.size());
-        }
-        ImGui::Separator();
-
+        ImGui::Text("There are %zu entities in the scene", world.entities().size());
         const ImGuiTableFlags flags{
             ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_ScrollY
         };
@@ -643,19 +573,19 @@ void render_imgui_windows(EngineContext& engine_context)
         {
             if (ImGui::BeginTable("##scene_list_table", 1, flags))
             {
-                if (!world.cube_objects.empty())
+                if (!world.entities().empty())
                 {
                     ImGui::TableNextRow();
                     ImGui::TableNextColumn();
                     ImGui::TextUnformatted("Cubes");
                     ImGui::Separator();
 
-                    for (usize i{0zu}; i < world.cube_objects.size(); ++i)
+                    for (usize i{0zu}; i < world.entities().size(); ++i)
                     {
-                        const Entity& o{world.cube_objects[i]};
-                        const bool is_selected{editor_state.is_selected(o.id)};
-
-                        const std::string label{object_label(o.id, "Cube", i)};
+                        const auto& entity = world.entities()[i];
+                        const auto is_selected = editor_state.is_selected(entity.id);
+                        const auto label =
+                            std::format("{} [{}]##scene_table_{}", entity.id, "Cube", entity.id);
 
                         ImGui::TableNextRow();
                         ImGui::TableNextColumn();
@@ -668,85 +598,15 @@ void render_imgui_windows(EngineContext& engine_context)
                             const bool shift_down{ImGui::GetIO().KeyShift};
                             if (shift_down)
                             {
-                                editor_state.toggle_selection(o.id);
+                                editor_state.toggle_selection(entity.id);
                             }
                             else
                             {
-                                editor_state.select_single(o.id);
+                                editor_state.select_single(entity.id);
                             }
                         }
                     }
                 }
-
-                if (!world.sphere_objects.empty())
-                {
-                    ImGui::TableNextRow();
-                    ImGui::TableNextColumn();
-                    ImGui::TextUnformatted("Spheres");
-                    ImGui::Separator();
-
-                    for (usize i{0zu}; i < world.sphere_objects.size(); ++i)
-                    {
-                        const Entity& o{world.sphere_objects[i]};
-                        const bool is_selected{editor_state.is_selected(o.id)};
-
-                        const std::string label{object_label(o.id, "Sphere", i)};
-
-                        ImGui::TableNextRow();
-                        ImGui::TableNextColumn();
-
-                        const bool selectable{ImGui::Selectable(
-                            label.c_str(), is_selected, ImGuiSelectableFlags_SpanAllColumns
-                        )};
-                        if (selectable)
-                        {
-                            const bool shift_down{ImGui::GetIO().KeyShift};
-                            if (shift_down)
-                            {
-                                editor_state.toggle_selection(o.id);
-                            }
-                            else
-                            {
-                                editor_state.select_single(o.id);
-                            }
-                        }
-                    }
-                }
-                if (!world.hitmarker_objects.empty())
-                {
-                    ImGui::TableNextRow();
-                    ImGui::TableNextColumn();
-                    ImGui::TextUnformatted("Hitmarkers");
-                    ImGui::Separator();
-
-                    for (usize i{0zu}; i < world.hitmarker_objects.size(); ++i)
-                    {
-                        const Entity& o{world.hitmarker_objects[i]};
-                        const bool is_selected{editor_state.is_selected(o.id)};
-
-                        const std::string label{object_label(o.id, "Hitmarker", i)};
-
-                        ImGui::TableNextRow();
-                        ImGui::TableNextColumn();
-
-                        const bool selectable{ImGui::Selectable(
-                            label.c_str(), is_selected, ImGuiSelectableFlags_SpanAllColumns
-                        )};
-                        if (selectable)
-                        {
-                            const bool shift_down{ImGui::GetIO().KeyShift};
-                            if (shift_down)
-                            {
-                                editor_state.toggle_selection(o.id);
-                            }
-                            else
-                            {
-                                editor_state.select_single(o.id);
-                            }
-                        }
-                    }
-                }
-
                 ImGui::EndTable();
             }
         }

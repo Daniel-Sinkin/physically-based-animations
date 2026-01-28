@@ -6,6 +6,8 @@
 #include "pba/core/math_types.hpp"
 #include "pba/engine/engine_context.hpp"
 #include "pba/physics/forces.hpp"
+#include "pba/scene/entity.hpp"
+#include "pba/scene/world_types.hpp"
 
 //
 #include <array>
@@ -60,24 +62,13 @@ EntityId spawn_box(
     std::string_view name = {}
 ) noexcept
 {
-    const EntityId id{e.world.allocate_entity_id()};
-
-    e.world.cube_objects.push_back(
-        Entity{
-            .id = id,
-            .type = EntityType::Cube,
-            .transform =
-                {
-                    .position = pos,
-                    .scale = half_extents * 2.0f,
-                    .orientation = ori,
-                },
-            .color = color,
-        }
+    auto entity = e.world.spawn(
+        EntityType::Cube,
+        Transform{.position = pos, .scale = half_extents * 2.0f, .orientation = ori},
+        color
     );
-
     RigidBody rb{
-        .id = id,
+        .id = entity.id,
 
         .half_extents = half_extents,
 
@@ -101,14 +92,14 @@ EntityId spawn_box(
     }
 
     e.physics.bodies.push_back(rb);
-    e.link_latest_objects(id);
+    e.link_latest_objects(entity.id);
 
     if (!name.empty())
     {
-        e.obj_name_map.insert_or_assign(id, std::string{name});
+        e.obj_name_map.insert_or_assign(entity.id, std::string{name});
     }
 
-    return id;
+    return entity.id;
 }
 
 void spawn_static_ground(
@@ -287,7 +278,7 @@ void setup_scene_attractors_and_repulsive_pivot(EngineContext& e) noexcept
         k_quaternion_identity,
         Color3{0.90f, 0.35f, 0.35f}
     );
-    e.obj_name_map.insert_or_assign(e.world.cube_objects.back().id, "Projectile Red");
+    e.obj_name_map.insert_or_assign(e.world.entities().back().id, "Projectile Red");
 
     e.spawn_cube(
         Pos3{+14.0f, 0.0f, 2.2f},
@@ -295,7 +286,7 @@ void setup_scene_attractors_and_repulsive_pivot(EngineContext& e) noexcept
         k_quaternion_identity,
         Color3{0.35f, 0.90f, 0.35f}
     );
-    e.obj_name_map.insert_or_assign(e.world.cube_objects.back().id, "Projectile Green");
+    e.obj_name_map.insert_or_assign(e.world.entities().back().id, "Projectile Green");
 
     e.spawn_cube(
         Pos3{0.0f, -14.0f, 2.0f},
@@ -303,7 +294,7 @@ void setup_scene_attractors_and_repulsive_pivot(EngineContext& e) noexcept
         k_quaternion_identity,
         Color3{0.35f, 0.55f, 0.95f}
     );
-    e.obj_name_map.insert_or_assign(e.world.cube_objects.back().id, "Projectile Blue");
+    e.obj_name_map.insert_or_assign(e.world.entities().back().id, "Projectile Blue");
 
     e.spawn_cube(
         Pos3{0.0f, +14.0f, 2.4f},
@@ -311,19 +302,14 @@ void setup_scene_attractors_and_repulsive_pivot(EngineContext& e) noexcept
         k_quaternion_identity,
         Color3{0.95f, 0.85f, 0.35f}
     );
-    e.obj_name_map.insert_or_assign(e.world.cube_objects.back().id, "Projectile Yellow");
+    e.obj_name_map.insert_or_assign(e.world.entities().back().id, "Projectile Yellow");
 
     // e.create_pyramid(16);
     e.create_pyramid_3d(10, 1.06f, 0.5f);
 
-    e.world.cube_objects.push_back(
-        Entity{
-            .id = e.world.allocate_entity_id(),
-            .type = EntityType::Cube,
-            .transform{.position{10.0f, -15.0f, -5.5f}, .scale{10.0f, 10.0f, 1.0f}}
-        }
+    e.world.spawn(
+        EntityType::Cube, Transform{.position{10.0f, -15.0f, -5.5f}, .scale{10.0f, 10.0f, 1.0f}}
     );
-
     static Pos3 origin{0.0f, 0.0f, 0.0f};
     static Pos3 pos{-20.0f, -10.0f, 10.0f};
 
@@ -345,7 +331,7 @@ void setup_scene_attractors_and_repulsive_pivot(EngineContext& e) noexcept
         .range = 4.0f,
         .min_radius = 0.5f,
     };
-    repulse_pivot.target = &e.world.editor_state().camera.pivot;
+    repulse_pivot.target = &e.world.editor_state().camera().pivot;
 
     e.physics.external_forces.push_back(
         ExternalForce{.fn = apply_attractor_force, .user = &attractor_origin}
@@ -572,7 +558,7 @@ void setup_scene_nbody_sun_3_planets(EngineContext& e) noexcept
         k_quaternion_identity,
         Color3{0.35f, 0.65f, 0.95f}
     );
-    e.obj_name_map.insert_or_assign(e.world.cube_objects.back().id, "Planet A");
+    e.obj_name_map.insert_or_assign(e.world.entities().back().id, "Planet A");
 
     e.spawn_cube(
         Pos3{0.0f, r2, 0.0f},
@@ -580,7 +566,7 @@ void setup_scene_nbody_sun_3_planets(EngineContext& e) noexcept
         k_quaternion_identity,
         Color3{0.35f, 0.95f, 0.55f}
     );
-    e.obj_name_map.insert_or_assign(e.world.cube_objects.back().id, "Planet B");
+    e.obj_name_map.insert_or_assign(e.world.entities().back().id, "Planet B");
 
     e.spawn_cube(
         Pos3{-r3, 0.0f, 0.0f},
@@ -588,7 +574,7 @@ void setup_scene_nbody_sun_3_planets(EngineContext& e) noexcept
         k_quaternion_identity,
         Color3{0.95f, 0.35f, 0.75f}
     );
-    e.obj_name_map.insert_or_assign(e.world.cube_objects.back().id, "Planet C");
+    e.obj_name_map.insert_or_assign(e.world.entities().back().id, "Planet C");
 
     const Dir3 p_total{v2, v1 - v3, 0.0f};
     const Dir3 v_sun = -(p_total / sun_mass);
@@ -826,7 +812,7 @@ void setup_scene_projectile_wall(EngineContext& e) noexcept
         k_quaternion_identity,
         Color3{0.95f, 0.35f, 0.35f}
     );
-    e.obj_name_map.insert_or_assign(e.world.cube_objects.back().id, "Wall Projectile");
+    e.obj_name_map.insert_or_assign(e.world.entities().back().id, "Wall Projectile");
 }
 
 }  // namespace ds_pba

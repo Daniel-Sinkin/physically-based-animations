@@ -265,9 +265,6 @@ struct GfxContext
     void hover_interaction_holding_middle(const EditorInput& input, Camera& cam) const;
     void hover_interaction_selection(const EditorInput& input, const Raycast& rc) const;
 
-    void set_object_position(EntityId id, const Pos3& p) const;
-    [[nodiscard]] std::optional<Pos3> get_object_position(EntityId id) const;
-
     bool is_active() const;
     void deactivate() noexcept
     {

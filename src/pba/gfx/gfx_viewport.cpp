@@ -45,15 +45,19 @@ void GfxContext::render_to_viewport_objects(
     prog.set_uView(camera_view_matrix);
     prog.set_uProj(camera_proj_matrix);
 
-    if (!engine_context->world.cube_objects.empty())
+    if (!engine_context->world.entities().empty())
     {  // Cubes
         meshes.cube.vao.bind();
-        for (const auto& o : engine_context->world.cube_objects)
+        for (const auto& o : engine_context->world.entities())
         {
             assert(o.id != k_invalid_id);
 
             prog.set_uModel(o.transform.model_matrix());
 
+            // TODO: Clean this up
+            // TODO: Clean this up
+            // TODO: Clean this up
+            // TODO: Clean this up
             // TODO: Clean this up
             // TODO: Clean this up
             // TODO: Clean this up
@@ -135,73 +139,6 @@ void GfxContext::render_to_viewport_objects(
         }
         VAO::unbind();
     }
-
-    if (!engine_context->world.sphere_objects.empty())
-    {  // Spheres
-        meshes.sphere.vao.bind();
-        for (usize i{0zu}; i < engine_context->world.sphere_objects.size(); ++i)
-        {
-            const Entity& o{engine_context->world.sphere_objects[i]};
-            assert(o.id != k_invalid_id);
-
-            prog.set_uModel(o.transform.model_matrix());
-            prog.set_uColor(o.color);
-
-            glDrawArrays(GL_TRIANGLES, 0, meshes.sphere.vertex_count);
-        }
-        for (const auto& o : engine_context->world.hitmarker_objects)
-        {
-            assert(o.id != k_invalid_id);
-            prog.set_uModel(o.transform.model_matrix());
-            prog.set_uColor(o.color);
-
-            glDrawArrays(GL_TRIANGLES, 0, meshes.sphere.vertex_count);
-        }
-        VAO::unbind();
-    }
-
-    // Temp deleted so I can avoid loading textures and meshes on start up improving
-    // startup speed significantly
-    if (false && !engine_context->world.marble_bust_objects.empty())
-    {  // Marble Bust
-        auto& prog_tex = shader_programs.obj_tex;
-        if (!textures.marble_bust_diffuse.valid() || !textures.marble_bust_normal.valid())
-        {
-            std::println(
-                stderr, "Textured mesh render requires diffuse+normal textures to be loaded"
-            );
-            VAO::unbind();
-            return;
-        }
-
-        prog_tex.bind();
-        prog_tex.set_uView(camera_view_matrix);
-        prog_tex.set_uProj(camera_proj_matrix);
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, textures.marble_bust_diffuse.id);
-        prog_tex.set_uDiffuseTex(0);
-
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, textures.marble_bust_normal.id);
-        prog_tex.set_uNormalTex(1);
-
-        meshes.marble_bust.vao.bind();
-
-        for (const auto& o : engine_context->world.marble_bust_objects)
-        {
-            assert(o.id != k_invalid_id);
-            prog_tex.set_uModel(o.transform.model_matrix());
-            glDrawArrays(GL_TRIANGLES, 0, meshes.marble_bust.vertex_count);
-        }
-
-        VAO::unbind();
-
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, 0);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, 0);
-    }
 }
 void GfxContext::render_to_viewport_grid(
     const ViewMatrix& camera_view_matrix, const ProjMatrix& camera_proj_matrix
@@ -240,7 +177,7 @@ void GfxContext::render_to_viewport()
     f32 aspect{viewport_fbo.aspect_ratio()};
 
     {
-        const Camera& cam{engine_context->world.editor_state().camera};
+        const Camera& cam{engine_context->world.editor_state().camera()};
         const ViewMatrix camera_view_matrix{cam.view_matrix()};
         const ProjMatrix camera_proj_matrix{cam.proj_matrix(aspect)};
 
@@ -268,66 +205,14 @@ void GfxContext::render_to_viewport_outline(
         return;
     }
 
-    struct FoundEntity
-    {
-        EntityType type{};
-        const Entity* object{};
-    };
-    struct EntityBucket
-    {
-        EntityType type;
-        const std::vector<Entity>* objects;
-    };
-
-    const std::array<EntityBucket, 4> buckets{{
-        {EntityType::Cube, &engine_context->world.cube_objects},
-        {EntityType::Sphere, &engine_context->world.sphere_objects},
-        {EntityType::Hitmarker, &engine_context->world.hitmarker_objects},
-        {EntityType::MarbleBust, &engine_context->world.marble_bust_objects},
-    }};
-
-    auto find_object = [&](EntityId id) -> std::optional<FoundEntity>
-    {
-        for (const auto& b : buckets)
-        {
-            for (const auto& o : *b.objects)
-            {
-                if (o.id == id)
-                {
-                    return FoundEntity{b.type, &o};
-                }
-            }
-        }
-        return std::nullopt;
-    };
-
-    auto instantiate_mesh_for_type = [&](EntityType type) -> void
-    {
-        switch (type)
-        {
-            case EntityType::Cube:
-                meshes.cube.instantiate_once();
-                break;
-            case EntityType::Sphere:
-            case EntityType::Hitmarker:
-                meshes.sphere.instantiate_once();
-                break;
-            case EntityType::MarbleBust:
-                meshes.marble_bust.instantiate_once();
-                break;
-        }
-    };
-
     for (const EntityId id : engine_context->world.editor_state().selected_ids)
     {
-        auto obj_res = find_object(id);
-        if (!obj_res)
+        auto res = engine_context->world.find(id);
+        if (!res)
         {
             continue;
         }
-
-        const auto [type, sel_ptr] = *obj_res;
-        const Entity& sel = *sel_ptr;
+        const Entity& sel = *res;
 
         const auto model_matrix{sel.transform.model_matrix()};
 
@@ -348,7 +233,7 @@ void GfxContext::render_to_viewport_outline(
             prog.set_uProj(camera_proj_matrix);
             prog.set_uModel(model_matrix);
 
-            instantiate_mesh_for_type(type);
+            meshes.cube.instantiate_once();
 
             glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
             glDepthMask(GL_TRUE);
@@ -373,7 +258,7 @@ void GfxContext::render_to_viewport_outline(
             prog.set_uModel(M_outline);
             prog.set_uColor(k_outline_color);
 
-            instantiate_mesh_for_type(type);
+            meshes.cube.instantiate_once();
 
             glEnable(GL_DEPTH_TEST);
             glDepthFunc(GL_LESS);
@@ -543,26 +428,6 @@ void GfxContext::render_to_viewport_physics_debug(
         }
     }
 
-    auto find_scene_object = [&](EntityId id) -> const Entity*
-    {
-        for (const auto& o : engine_context->world.cube_objects)
-        {
-            if (o.id == id)
-                return &o;
-        }
-        for (const auto& o : engine_context->world.sphere_objects)
-        {
-            if (o.id == id)
-                return &o;
-        }
-        for (const auto& o : engine_context->world.hitmarker_objects)
-        {
-            if (o.id == id)
-                return &o;
-        }
-        return nullptr;
-    };
-
     for (const auto id : engine_context->world.editor_state().selected_ids)
     {
         const RigidBody* rb_ptr{nullptr};
@@ -590,15 +455,17 @@ void GfxContext::render_to_viewport_physics_debug(
         }
         else
         {
-            const Entity* o = find_scene_object(id);
-            if (!o)
+            const Entity* entity = engine_context->world.find(id);
+            if (!entity)
             {
                 continue;
             }
-            com = o->transform.position;
-            ori = o->transform.orientation;
+            com = entity->transform.position;
+            ori = entity->transform.orientation;
 
-            extent = std::max({o->transform.scale.x, o->transform.scale.y, o->transform.scale.z});
+            extent = std::max(
+                {entity->transform.scale.x, entity->transform.scale.y, entity->transform.scale.z}
+            );
         }
 
         const auto axis_len = std::max(0.0f, extent) * std::max(0.0f, phys_debug.axis_scale);

@@ -8,6 +8,7 @@
 #include "pba/core/format.hpp"  // IWYU pragma: keep
 #include "pba/core/math_types.hpp"
 #include "pba/engine/scenes.hpp"
+#include "pba/scene/entity.hpp"
 #include "pba/ui/ui.hpp"
 //
 #include <algorithm>
@@ -66,7 +67,7 @@ void EngineContext::link_latest_objects(EntityId id)
     obj_map.insert_or_assign(
         id,
         EntityLink{
-            world.cube_objects.size() - 1zu,
+            world.entities().size() - 1zu,
             physics.bodies.size() - 1zu,
         }
     );
@@ -74,47 +75,33 @@ void EngineContext::link_latest_objects(EntityId id)
 
 void EngineContext::add_cube(Pos3 position)
 {
-    const EntityId id{world.allocate_entity_id()};
-
-    world.cube_objects.push_back(
-        Entity{.id = id, .type = EntityType::Cube, .transform = {.position = position}}
-    );
-
+    const auto& entity = world.spawn(EntityType::Cube, Transform{.position = position});
     physics.bodies.push_back(
         RigidBody{
-            .id = id,
+            .id = entity.id,
             .half_extents = Dir3{0.5f, 0.5f, 0.5f},
             .position = position,
             .inv_mass = 1.0f,
         }
     );
     init_box_inertia(physics.bodies.back());
-    link_latest_objects(id);
+    link_latest_objects(entity.id);
 }
 
 void EngineContext::add_ground()
 {
-    const EntityId id{world.allocate_entity_id()};
-
     constexpr Pos3 ground_center{0.0f, 0.0f, -3.5f};
     constexpr Pos3 half_extents{10.0f, 10.0f, 0.5f};
 
-    world.cube_objects.push_back(
-        Entity{
-            .id = id,
-            .type = EntityType::Cube,
-            .transform =
-                {
-                    .position = ground_center,
-                    .scale = half_extents * 2.0f,
-                },
-            .color = {0.1f, 0.1f, 0.1f},
-        }
+    const auto& entity = world.spawn(
+        EntityType::Cube,
+        Transform{.position = ground_center, .scale = half_extents * 2.0f},
+        {0.1f, 0.1f, 0.1f}
     );
 
     physics.bodies.push_back(
         RigidBody{
-            .id = id,
+            .id = entity.id,
 
             .half_extents = half_extents,
 
@@ -128,8 +115,8 @@ void EngineContext::add_ground()
 
     init_box_inertia(physics.bodies.back());
 
-    link_latest_objects(id);
-    obj_name_map.insert_or_assign(id, "Ground");
+    link_latest_objects(entity.id);
+    obj_name_map.insert_or_assign(entity.id, "Ground");
 }
 
 void EngineContext::spawn_cube(Pos3 pos, Dir3 vel, Quaternion ori, Color3 color)
@@ -142,7 +129,7 @@ void EngineContext::spawn_cube(Pos3 pos, Dir3 vel, Quaternion ori, Color3 color)
 
     rb.inv_inertia_world = inv_inertia_world_from_body(rb.orientation, rb.inv_inertia_body);
 
-    Entity& o = world.cube_objects.back();
+    Entity& o = world.entities().back();
     o.transform.orientation = rb.orientation;
     o.color = color;
 }
@@ -167,7 +154,7 @@ void EngineContext::create_pyramid(int base_n, f32 step_size, f32 base_z)
                 Color3{k_scene_object_default_color}
             );
             obj_name_map.insert_or_assign(
-                world.cube_objects.back().id, std::format("Pyramid (layer={}, idx={})", layer, ix)
+                world.entities().back().id, std::format("Pyramid (layer={}, idx={})", layer, ix)
             );
         }
     }
@@ -198,7 +185,7 @@ void EngineContext::create_pyramid_3d(int base_n, f32 step_size, f32 base_z)
                 );
 
                 obj_name_map.insert_or_assign(
-                    world.cube_objects.back().id,
+                    world.entities().back().id,
                     std::format("Pyramid3D (layer={}, ix={}, iy={})", layer, ix, iy)
                 );
             }
@@ -274,11 +261,9 @@ void EngineContext::run()
             for (const auto& [id, idxs] : obj_map)
             {
                 const auto [cube_i, phys_i] = idxs;
-                world.cube_objects[cube_i].transform.position = physics.bodies[phys_i].position;
-                world.cube_objects[cube_i].transform.orientation =
-                    physics.bodies[phys_i].orientation;
+                world.entity(cube_i).transform.position = physics.bodies[phys_i].position;
+                world.entity(cube_i).transform.orientation = physics.bodies[phys_i].orientation;
             }
-            update_active_scene(*this, static_cast<f32>(frame_dt.count()));
         }
     }
 }

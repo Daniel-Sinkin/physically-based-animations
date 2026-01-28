@@ -7,6 +7,7 @@
 
 #include <optional>
 #include <string>
+#include <utility>
 
 namespace ds_pba
 {
@@ -19,10 +20,17 @@ struct BodyHandle
 enum class EntityType
 {
     Cube,
-    Sphere,
-    Hitmarker,
-    MarbleBust
 };
+
+[[nodiscard]] constexpr std::string_view to_string(EntityType type) noexcept
+{
+    switch (type)
+    {
+        case EntityType::Cube:
+            return "Cube";
+    }
+    std::unreachable();
+}
 
 using EntityId = u32;
 inline constexpr EntityId k_invalid_id{std::numeric_limits<EntityId>::max()};

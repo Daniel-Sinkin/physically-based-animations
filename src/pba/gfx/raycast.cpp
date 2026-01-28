@@ -6,6 +6,7 @@
 //
 #include "pba/core/math_types.hpp"
 #include "pba/gfx/raycast.hpp"
+#include "pba/scene/entity.hpp"
 #include "pba/scene/world.hpp"
 
 #include <gsl/assert>
@@ -17,35 +18,29 @@ std::optional<Raycast> raycast(const World& world, const Ray& ray) noexcept
     Expects(ray.valid());
     auto best_t = k_f32_max;
 
-    bool found{false};
     u32 best_object_id{};
-    EntityType best_type{};
 
     // Forwarding reference to intersection function, see
     // https://www.scs.stanford.edu/~dm/blog/param-pack.html
-    auto check_hits = [&](const auto& objects, EntityType type, auto&& intersect_fn) -> void
+    auto check_hit = [&](const auto& entity, auto&& intersect_fn) -> void
     {
-        for (const auto& o : objects)
+        if (auto res = intersect_fn(ray, entity.transform.model_matrix()); res && *res < best_t)
         {
-            if (auto res = intersect_fn(ray, o.transform.model_matrix()))
-            {
-                const auto t = *res;
-                if (t < best_t)
-                {
-                    best_t = t;
-                    best_type = type;
-                    best_object_id = o.id;
-                    found = true;
-                }
-            }
+            best_t = *res;
+            best_object_id = entity.id;
         }
     };
+    for (const auto& entity : world.entities())
+    {
+        switch (entity.type)
+        {
+            case EntityType::Cube:
+                check_hit(entity, intersect_ray_cube);
+                break;
+        }
+    }
 
-    check_hits(world.cube_objects, EntityType::Cube, intersect_ray_cube);
-    check_hits(world.sphere_objects, EntityType::Sphere, intersect_ray_sphere);
-    check_hits(world.marble_bust_objects, EntityType::MarbleBust, intersect_ray_sphere);
-
-    if (!found)
+    if (best_t == k_f32_max)
     {
         return std::nullopt;
     }
@@ -57,7 +52,6 @@ std::optional<Raycast> raycast(const World& world, const Ray& ray) noexcept
         .hit = ray.origin + best_t * ray.dir,
         .t = best_t,
         .object_id = best_object_id,
-        .object_type = best_type,
     };
 }
 

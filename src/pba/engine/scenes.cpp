@@ -58,22 +58,4 @@ void setup_active_scene(EngineContext& e)
     load_scene(e, e.active_scene, true);
 }
 
-void update_active_scene(EngineContext& e, f32 frame_dt_s)
-{
-    if (e.active_scene == SceneId::AttractorsAndRepulsivePivot)
-    {
-        if (!e.world.marble_bust_objects.empty())
-        {
-            static f32 marble_spin_angle{k_pi};
-            marble_spin_angle += 1.2f * frame_dt_s;
-            if (marble_spin_angle > k_two_pi)
-            {
-                marble_spin_angle = std::fmod(marble_spin_angle, k_two_pi);
-            }
-            e.world.marble_bust_objects[0].transform.orientation =
-                glm::angleAxis(marble_spin_angle, k_axis_z);
-        }
-    }
-}
-
 }  // namespace ds_pba

@@ -218,31 +218,13 @@ struct formatter<ds_pba::Raycast>
     template <class FormatContext>
     auto format(const ds_pba::Raycast& rc, FormatContext& ctx) const
     {
-        const char* type_str{""};
-        switch (rc.object_type)
-        {
-            case ds_pba::EntityType::Cube:
-                type_str = "Cube";
-                break;
-            case ds_pba::EntityType::Sphere:
-                type_str = "Sphere";
-                break;
-            case ds_pba::EntityType::Hitmarker:
-                type_str = "Hitmarker";
-                break;
-            case ds_pba::EntityType::MarbleBust:
-                type_str = "MarbleBust";
-                break;
-        }
-
         return std::format_to(
             ctx.out(),
-            "Raycast{{ray={}, hit={}, t={}, object_id={}, object_type={}}}",
+            "Raycast(ray={}, hit={}, t={}, object_id={})",
             rc.ray,
             rc.hit,
             rc.t,
-            rc.object_id,
-            type_str
+            rc.object_id
         );
     }
 };

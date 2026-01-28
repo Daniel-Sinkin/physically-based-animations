@@ -19,6 +19,5 @@ struct EngineContext;
 void load_scene(EngineContext& e, SceneId id, bool pause = true);
 
 void setup_active_scene(EngineContext& e);
-void update_active_scene(EngineContext& e, f32 frame_dt_s);
 
 }  // namespace ds_pba

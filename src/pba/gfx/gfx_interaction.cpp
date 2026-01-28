@@ -27,13 +27,13 @@ void GfxContext::hover_interaction(const EditorInput& input) const
     }
     const ImGuiIO& io{ImGui::GetIO()};
 
-    Camera& cam{engine_context->world.editor_state().camera};
+    Camera& cam{engine_context->world.editor_state().camera()};
     const f32 wheel{io.MouseWheel};
     if (wheel != 0.0f)
     {  // Zooming
         cam.distance *= std::exp(-wheel * k_zoom_speed);
         cam.distance =
-            std::clamp(engine_context->world.editor_state().camera.distance, 0.75f, 200.0f);
+            std::clamp(engine_context->world.editor_state().camera().distance, 0.75f, 200.0f);
     }
 
     if (input.mouse_middle.down)
@@ -42,13 +42,12 @@ void GfxContext::hover_interaction(const EditorInput& input) const
     }
 
     const bool selecting{input.mouse_left.pressed()};
-    const bool spawning{input.mouse_right.pressed()};
-    if (selecting || spawning)
+    if (selecting)
     {  // Selecting objects
         const auto aspect = viewport_fbo.aspect_ratio();
-        const auto camera_view_matrix = engine_context->world.editor_state().camera.view_matrix();
+        const auto camera_view_matrix = engine_context->world.editor_state().camera().view_matrix();
         const auto camera_proj_matrix =
-            engine_context->world.editor_state().camera.proj_matrix(aspect);
+            engine_context->world.editor_state().camera().proj_matrix(aspect);
 
         const glm::vec2 mouse_pos{
             narrow_cast<f32>(input.ui_mouse_x), narrow_cast<f32>(input.ui_mouse_y)
@@ -65,43 +64,6 @@ void GfxContext::hover_interaction(const EditorInput& input) const
             if (selecting)
             {
                 hover_interaction_selection(input, rc);
-            }
-            if (spawning)
-            {
-                {
-                    auto it = engine_context->obj_name_map.find(rc.object_id);
-                    if (it != engine_context->obj_name_map.end())
-                    {
-                        ui_log(
-                            std::format(
-                                "Hit Entity [id={} {}] at {} [distance from camera {:.2f}]",
-                                rc.object_id,
-                                it->second,
-                                rc.hit,
-                                rc.t
-                            )
-                        );
-                    }
-                    else
-                    {
-                        ui_log(
-                            std::format(
-                                "Hit Entity [id={}] at {} [distance from camera {:.2f}]",
-                                rc.object_id,
-                                rc.hit,
-                                rc.t
-                            )
-                        );
-                    }
-                }
-                engine_context->world.hitmarker_objects.push_back(
-                    Entity{
-                        .id = engine_context->world.allocate_entity_id(),
-                        .type = EntityType::Hitmarker,
-                        .transform = {.position = rc.hit, .scale = {0.05f, 0.05f, 0.05f}},
-                        .color = {1.0f, 1.0f, 1.0f},
-                    }
-                );
             }
         }
         else if (!engine_context->world.editor_state().selected_ids.empty()
@@ -129,12 +91,12 @@ void GfxContext::hover_interaction_holding_middle(const EditorInput& input, Came
     }
     else
     {  // Rotate Around pivot
-        engine_context->world.editor_state().camera.yaw += -dx * k_sensitivity;
-        engine_context->world.editor_state().camera.pitch += dy * k_sensitivity;
+        engine_context->world.editor_state().camera().yaw += -dx * k_sensitivity;
+        engine_context->world.editor_state().camera().pitch += dy * k_sensitivity;
 
         const f32 lim{glm::radians(89.0f)};
-        engine_context->world.editor_state().camera.pitch =
-            std::clamp(engine_context->world.editor_state().camera.pitch, -lim, lim);
+        engine_context->world.editor_state().camera().pitch =
+            std::clamp(engine_context->world.editor_state().camera().pitch, -lim, lim);
     }
 }
 
@@ -154,23 +116,6 @@ void GfxContext::hover_interaction_selection(const EditorInput& input, const Ray
         ui_log(std::format("{} [id={}] [{}]", action, id, kind));
     };
 
-    const char* kind = "";
-    switch (rc.object_type)
-    {
-        case EntityType::Cube:
-            kind = "Cube";
-            break;
-        case EntityType::Sphere:
-            kind = "Sphere";
-            break;
-        case EntityType::Hitmarker:
-            kind = "Hitmarker";
-            break;
-        case EntityType::MarbleBust:
-            kind = "MarbleBust";
-            break;
-    }
-
     const bool was_selected = engine_context->world.editor_state().is_selected(rc.object_id);
 
     if (input.key_down(EditorKey::Shift))
@@ -179,11 +124,11 @@ void GfxContext::hover_interaction_selection(const EditorInput& input, const Ray
         const bool now_selected = engine_context->world.editor_state().is_selected(rc.object_id);
         if (now_selected)
         {
-            log_action("Selected", rc.object_id, kind);
+            log_action("Selected", rc.object_id, "Cube");
         }
         else
         {
-            log_action("Deselected", rc.object_id, kind);
+            log_action("Deselected", rc.object_id, "Cube");
         }
         return;
     }
@@ -191,12 +136,12 @@ void GfxContext::hover_interaction_selection(const EditorInput& input, const Ray
     if (was_selected)
     {
         engine_context->world.editor_state().toggle_selection(rc.object_id);
-        log_action("Deselected", rc.object_id, kind);
+        log_action("Deselected", rc.object_id, "Cube");
         return;
     }
 
     engine_context->world.editor_state().select_single(rc.object_id);
-    log_action("Selected", rc.object_id, kind);
+    log_action("Selected", rc.object_id, "Cube");
 }
 
 }  // namespace ds_pba

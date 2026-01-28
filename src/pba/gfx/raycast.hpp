@@ -33,7 +33,6 @@ struct Raycast
     Pos3 hit;
     f32 t;
     EntityId object_id;
-    EntityType object_type;
 };
 [[nodiscard]] Ray ray_from_imgui_rect(
     const glm::vec2& mouse_pos,
