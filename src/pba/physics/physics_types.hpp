@@ -3,6 +3,7 @@
 
 #include "pba/core/core_types.hpp"
 #include "pba/core/math_types.hpp"
+#include "pba/scene/entity.hpp"
 #include "pba/util/hash.hpp"
 //
 #include <cmath>
@@ -18,7 +19,7 @@ inline constexpr f32 k_static_mass{0.0f};
 
 struct RigidBody
 {
-    ObjectId id{k_invalid_id};
+    EntityId id{k_invalid_id};
 
     Dir3 half_extents{0.5f, 0.5f, 0.5f};
 
@@ -213,8 +214,8 @@ struct ContactCacheEntry
 
 struct ContactKey
 {
-    ObjectId a_id{};
-    ObjectId b_id{};
+    EntityId a_id{};
+    EntityId b_id{};
     i32 px{};
     i32 py{};
     i32 pz{};

@@ -4,11 +4,11 @@
 #include "pba/core/core_types.hpp"
 #include "pba/core/geometry.hpp"
 #include "pba/core/math_types.hpp"
-#include "pba/scene/scene_types.hpp"
+#include "pba/scene/entity.hpp"
 //
-#include <cmath>
-#include <glm/glm.hpp>
 #include <optional>
+//
+#include <glm/glm.hpp>
 
 struct GLFWwindow;
 
@@ -32,8 +32,8 @@ struct Raycast
     Ray ray;
     Pos3 hit;
     f32 t;
-    ObjectId object_id;
-    ObjectType object_type;
+    EntityId object_id;
+    EntityType object_type;
 };
 [[nodiscard]] Ray ray_from_imgui_rect(
     const glm::vec2& mouse_pos,

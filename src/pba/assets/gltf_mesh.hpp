@@ -2,7 +2,7 @@
 #pragma once
 
 #include "pba/assets/mesh_data.hpp"
-#include "pba/scene/scene_types.hpp"
+#include "pba/scene/world_types.hpp"
 
 #include <optional>
 #include <string>

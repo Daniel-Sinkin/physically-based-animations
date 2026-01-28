@@ -12,8 +12,8 @@
 #include "pba/gfx/gl_types.hpp"
 #include "pba/gfx/raycast.hpp"
 #include "pba/scene/scene_context.hpp"
-#include "pba/scene/scene_types.hpp"
-#include "pba/scene/scenes.hpp"
+
+#include "pba/engine/scenes.hpp"
 #include "pba/ui/ui.hpp"
 //
 #include <algorithm>
@@ -35,7 +35,7 @@ void GfxContext::render_to_viewport_objects(
 {
     auto& prog = shader_programs.obj;
 
-    // Objects
+    // Entitys
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
 
@@ -142,7 +142,7 @@ void GfxContext::render_to_viewport_objects(
         meshes.sphere.vao.bind();
         for (usize i{0zu}; i < scene_context->sphere_objects.size(); ++i)
         {
-            const Object& o{scene_context->sphere_objects[i]};
+            const Entity& o{scene_context->sphere_objects[i]};
             assert(o.id != k_invalid_id);
 
             prog.set_uModel(o.transform.model_matrix());
@@ -268,25 +268,25 @@ void GfxContext::render_to_viewport_outline(
         return;
     }
 
-    struct FoundObject
+    struct FoundEntity
     {
-        ObjectType type{};
-        const Object* object{};
+        EntityType type{};
+        const Entity* object{};
     };
-    struct ObjectBucket
+    struct EntityBucket
     {
-        ObjectType type;
-        const std::vector<Object>* objects;
+        EntityType type;
+        const std::vector<Entity>* objects;
     };
 
-    const std::array<ObjectBucket, 4> buckets{{
-        {ObjectType::Cube, &scene_context->cube_objects},
-        {ObjectType::Sphere, &scene_context->sphere_objects},
-        {ObjectType::Hitmarker, &scene_context->hitmarker_objects},
-        {ObjectType::MarbleBust, &scene_context->marble_bust_objects},
+    const std::array<EntityBucket, 4> buckets{{
+        {EntityType::Cube, &scene_context->cube_objects},
+        {EntityType::Sphere, &scene_context->sphere_objects},
+        {EntityType::Hitmarker, &scene_context->hitmarker_objects},
+        {EntityType::MarbleBust, &scene_context->marble_bust_objects},
     }};
 
-    auto find_object = [&](ObjectId id) -> std::optional<FoundObject>
+    auto find_object = [&](EntityId id) -> std::optional<FoundEntity>
     {
         for (const auto& b : buckets)
         {
@@ -294,31 +294,31 @@ void GfxContext::render_to_viewport_outline(
             {
                 if (o.id == id)
                 {
-                    return FoundObject{b.type, &o};
+                    return FoundEntity{b.type, &o};
                 }
             }
         }
         return std::nullopt;
     };
 
-    auto instantiate_mesh_for_type = [&](ObjectType type) -> void
+    auto instantiate_mesh_for_type = [&](EntityType type) -> void
     {
         switch (type)
         {
-            case ObjectType::Cube:
+            case EntityType::Cube:
                 meshes.cube.instantiate_once();
                 break;
-            case ObjectType::Sphere:
-            case ObjectType::Hitmarker:
+            case EntityType::Sphere:
+            case EntityType::Hitmarker:
                 meshes.sphere.instantiate_once();
                 break;
-            case ObjectType::MarbleBust:
+            case EntityType::MarbleBust:
                 meshes.marble_bust.instantiate_once();
                 break;
         }
     };
 
-    for (const ObjectId id : scene_context->selected_ids)
+    for (const EntityId id : scene_context->selected_ids)
     {
         auto obj_res = find_object(id);
         if (!obj_res)
@@ -327,7 +327,7 @@ void GfxContext::render_to_viewport_outline(
         }
 
         const auto [type, sel_ptr] = *obj_res;
-        const Object& sel = *sel_ptr;
+        const Entity& sel = *sel_ptr;
 
         const auto model_matrix{sel.transform.model_matrix()};
 
@@ -542,7 +542,7 @@ void GfxContext::render_to_viewport_physics_debug(
         }
     }
 
-    auto find_scene_object = [&](ObjectId id) -> const Object*
+    auto find_scene_object = [&](EntityId id) -> const Entity*
     {
         for (const auto& o : scene_context->cube_objects)
         {
@@ -589,7 +589,7 @@ void GfxContext::render_to_viewport_physics_debug(
         }
         else
         {
-            const Object* o = find_scene_object(id);
+            const Entity* o = find_scene_object(id);
             if (!o)
             {
                 continue;

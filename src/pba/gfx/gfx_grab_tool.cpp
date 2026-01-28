@@ -117,7 +117,7 @@ void GfxContext::begin_grab(const EditorInput& input)
     grab.start_positions.clear();
     grab.start_positions.reserve(scene_context->selected_ids.size());
 
-    for (const ObjectId id : scene_context->selected_ids)
+    for (const EntityId id : scene_context->selected_ids)
     {
         if (auto p = get_object_position(id))
         {

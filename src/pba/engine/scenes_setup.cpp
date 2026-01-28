@@ -6,7 +6,7 @@
 #include "pba/core/math_types.hpp"
 #include "pba/engine/engine_context.hpp"
 #include "pba/physics/forces.hpp"
-#include "pba/scene/scene_types.hpp"
+
 //
 #include <array>
 #include <cmath>
@@ -48,7 +48,7 @@ inv_inertia_world_from_body(const Quaternion& q, const glm::mat3& inv_inertia_bo
     return R * inv_inertia_body * glm::transpose(R);
 }
 
-ObjectId spawn_box(
+EntityId spawn_box(
     EngineContext& e,
     Pos3 pos,
     Dir3 half_extents,
@@ -60,12 +60,12 @@ ObjectId spawn_box(
     std::string_view name = {}
 ) noexcept
 {
-    const ObjectId id{next_object_id()};
+    const EntityId id{next_object_id()};
 
     e.scene.cube_objects.push_back(
-        Object{
+        Entity{
             .id = id,
-            .type = ObjectType::Cube,
+            .type = EntityType::Cube,
             .transform =
                 {
                     .position = pos,
@@ -317,9 +317,9 @@ void setup_scene_attractors_and_repulsive_pivot(EngineContext& e) noexcept
     e.create_pyramid_3d(10, 1.06f, 0.5f);
 
     e.scene.cube_objects.push_back(
-        Object{
+        Entity{
             .id = next_object_id(),
-            .type = ObjectType::Cube,
+            .type = EntityType::Cube,
             .transform{.position{10.0f, -15.0f, -5.5f}, .scale{10.0f, 10.0f, 1.0f}}
         }
     );
@@ -501,7 +501,7 @@ void setup_scene_motors_elongated_no_gravity(EngineContext& e) noexcept
             (i % 2 == 0) ? k_quaternion_identity : glm::angleAxis(0.30f * k_pi, k_axis_z);
         const Dir3 angular_velocty{k_zero_dir};
 
-        const ObjectId id = spawn_box(
+        const EntityId id = spawn_box(
             e,
             pos,
             half_extents,
@@ -546,7 +546,7 @@ void setup_scene_nbody_sun_3_planets(EngineContext& e) noexcept
     );
 
     constexpr auto sun_mass = 1200.0f;
-    const ObjectId sun_id = spawn_box(
+    const EntityId sun_id = spawn_box(
         e,
         Pos3{0.0f, 0.0f, 0.0f},
         Dir3{2.2f, 2.2f, 2.2f},

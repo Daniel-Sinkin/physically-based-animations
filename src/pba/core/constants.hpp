@@ -3,17 +3,11 @@
 
 #include "pba/core/core_types.hpp"
 #include "pba/core/math_types.hpp"
-#include "pba/core/scene_types.hpp"
 //
 #include <string_view>
 
 namespace ds_pba
 {
-//
-// Scenes
-//
-inline constexpr SceneId k_default_scene = SceneId::AttractorsAndRepulsivePivot;
-
 //
 // Interface
 //

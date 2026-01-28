@@ -6,6 +6,7 @@
 #include "pba/assets/model_config.hpp"
 #include "pba/core/core_types.hpp"
 #include "pba/core/math_types.hpp"
+#include "pba/scene/world_types.hpp"
 #include "pba/util/scope_timer.hpp"
 //
 #include <gsl/assert>

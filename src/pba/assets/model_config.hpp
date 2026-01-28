@@ -1,7 +1,7 @@
 // pba/assets/model_config.hpp
 #pragma once
 
-#include "pba/scene/scene_types.hpp"
+#include "pba/scene/world_types.hpp"
 
 #include <filesystem>
 #include <json.hpp>

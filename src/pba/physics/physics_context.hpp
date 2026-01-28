@@ -29,8 +29,8 @@ struct PhysicsContext
 
     struct DebugContact
     {
-        ObjectId a_id{k_invalid_id};
-        ObjectId b_id{k_invalid_id};
+        EntityId a_id{k_invalid_id};
+        EntityId b_id{k_invalid_id};
         Pos3 p{};
         Dir3 n{k_axis_z};
         f32 penetration{};

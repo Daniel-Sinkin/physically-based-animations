@@ -41,21 +41,7 @@ using Clock = std::chrono::steady_clock;
 using TimePoint = Clock::time_point;
 using Duration = std::chrono::duration<f64>;
 
-using ObjectId = u32;
-inline constexpr ObjectId k_invalid_id{std::numeric_limits<ObjectId>::max()};
 inline constexpr usize k_invalid_idx{std::numeric_limits<usize>::max()};
-
-[[nodiscard]] inline ObjectId next_object_id() noexcept
-{
-    static std::atomic<ObjectId> counter{0};
-    const ObjectId id{counter.fetch_add(1u, std::memory_order_relaxed)};
-    if (id == k_invalid_id)
-    {
-        std::println(stderr, "Generated invalid id");
-        std::abort();
-    }
-    return id;
-}
 
 template <typename T>
 struct Rect

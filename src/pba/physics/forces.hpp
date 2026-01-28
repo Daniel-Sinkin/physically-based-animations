@@ -5,6 +5,7 @@
 #include "pba/core/math_types.hpp"
 #include "pba/physics/constants.hpp"
 #include "pba/physics/physics_types.hpp"
+#include "pba/scene/entity.hpp"
 
 #include <vector>
 
@@ -132,7 +133,7 @@ inline void apply_repulsion_force(std::vector<RigidBody>& bodies, f32, void* use
 
 struct Motor
 {
-    ObjectId id{};
+    EntityId id{};
     Dir3 torque{};
 };
 

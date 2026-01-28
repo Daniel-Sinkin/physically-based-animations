@@ -251,8 +251,8 @@ bool obb_obb_overlap(
 
 ContactKey make_contact_key(const RigidBody& a, const RigidBody& b, const Pos3& p) noexcept
 {
-    const ObjectId id0 = std::min(a.id, b.id);
-    const ObjectId id1 = std::max(a.id, b.id);
+    const EntityId id0 = std::min(a.id, b.id);
+    const EntityId id1 = std::max(a.id, b.id);
 
     constexpr auto k_cell = 0.02f;
 

@@ -3,6 +3,7 @@
 //
 #include "pba/assets/model_config.hpp"
 #include "pba/assets/serialization.hpp"  // IWYU pragma: keep
+#include "pba/scene/world_types.hpp"
 //
 
 #include <json.hpp>

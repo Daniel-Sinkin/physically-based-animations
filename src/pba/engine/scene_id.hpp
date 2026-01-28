@@ -1,4 +1,4 @@
-// pba/core/scene_types.hpp
+// pba/engine/scene_id.hpp
 #pragma once
 
 #include "pba/core/core_types.hpp"
@@ -26,4 +26,6 @@ enum class SceneId : u32
 
     Count
 };
-}
+inline constexpr SceneId k_default_scene = SceneId::AttractorsAndRepulsivePivot;
+
+}  // namespace ds_pba

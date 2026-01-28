@@ -19,11 +19,11 @@ std::optional<Raycast> raycast(const SceneContext& scene_context, const Ray& ray
 
     bool found{false};
     u32 best_object_id{};
-    ObjectType best_type{};
+    EntityType best_type{};
 
     // Forwarding reference to intersection function, see
     // https://www.scs.stanford.edu/~dm/blog/param-pack.html
-    auto check_hits = [&](const auto& objects, ObjectType type, auto&& intersect_fn) -> void
+    auto check_hits = [&](const auto& objects, EntityType type, auto&& intersect_fn) -> void
     {
         for (const auto& o : objects)
         {
@@ -41,9 +41,9 @@ std::optional<Raycast> raycast(const SceneContext& scene_context, const Ray& ray
         }
     };
 
-    check_hits(scene_context.cube_objects, ObjectType::Cube, intersect_ray_cube);
-    check_hits(scene_context.sphere_objects, ObjectType::Sphere, intersect_ray_sphere);
-    check_hits(scene_context.marble_bust_objects, ObjectType::MarbleBust, intersect_ray_sphere);
+    check_hits(scene_context.cube_objects, EntityType::Cube, intersect_ray_cube);
+    check_hits(scene_context.sphere_objects, EntityType::Sphere, intersect_ray_sphere);
+    check_hits(scene_context.marble_bust_objects, EntityType::MarbleBust, intersect_ray_sphere);
 
     if (!found)
     {

@@ -9,7 +9,7 @@
 #include "pba/engine/engine_context.hpp"
 #include "pba/gfx/raycast.hpp"
 #include "pba/scene/scene_context.hpp"
-#include "pba/scene/scene_types.hpp"
+
 #include "pba/ui/ui.hpp"
 //
 #include <imgui.h>
@@ -22,7 +22,7 @@
 
 namespace ds_pba
 {
-std::optional<Pos3> GfxContext::get_object_position(ObjectId id) const
+std::optional<Pos3> GfxContext::get_object_position(EntityId id) const
 {
     if (!scene_context)
     {
@@ -69,7 +69,7 @@ std::optional<Pos3> GfxContext::get_object_position(ObjectId id) const
 
     return std::nullopt;
 }
-void GfxContext::set_object_position(ObjectId id, const Pos3& p) const
+void GfxContext::set_object_position(EntityId id, const Pos3& p) const
 {
     if (!scene_context)
     {

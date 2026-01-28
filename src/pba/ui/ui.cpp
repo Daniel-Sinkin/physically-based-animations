@@ -10,7 +10,7 @@
 #include "pba/gfx/gfx_context.hpp"
 #include "pba/physics/physics_context.hpp"
 #include "pba/scene/scene_context.hpp"
-#include "pba/scene/scene_types.hpp"
+
 //
 #include <glm/gtc/quaternion.hpp>
 #include <glm/trigonometric.hpp>
@@ -331,7 +331,7 @@ void render_imgui_windows(EngineContext& engine_context)
     GfxContext& gfx_context = engine_context.gfx;
     SceneContext& scene_context = engine_context.scene;
 
-    auto object_label = [&](ObjectId id, std::string_view type, usize ui_idx) -> std::string
+    auto object_label = [&](EntityId id, std::string_view type, usize ui_idx) -> std::string
     {
         auto it = engine_context.obj_name_map.find(id);
         if (it != engine_context.obj_name_map.end())
@@ -472,43 +472,43 @@ void render_imgui_windows(EngineContext& engine_context)
     }
 
     {
-        ImGui::Begin("Object Inspector");
+        ImGui::Begin("Entity Inspector");
         if (scene_context.active_id.has_value())
         {
-            const ObjectId active_id{*scene_context.active_id};
+            const EntityId active_id{*scene_context.active_id};
 
-            auto find_active = [&](ObjectId id) -> std::optional<std::pair<ObjectType, Object*>>
+            auto find_active = [&](EntityId id) -> std::optional<std::pair<EntityType, Entity*>>
             {
                 for (usize i{0zu}; i < scene_context.cube_objects.size(); ++i)
                 {
-                    Object& o = scene_context.cube_objects[i];
+                    Entity& o = scene_context.cube_objects[i];
                     if (o.id == id)
                     {
-                        return std::pair<ObjectType, Object*>{ObjectType::Cube, &o};
+                        return std::pair<EntityType, Entity*>{EntityType::Cube, &o};
                     }
                 }
                 for (usize i{0zu}; i < scene_context.sphere_objects.size(); ++i)
                 {
-                    Object& o = scene_context.sphere_objects[i];
+                    Entity& o = scene_context.sphere_objects[i];
                     if (o.id == id)
                     {
-                        return std::pair<ObjectType, Object*>{ObjectType::Sphere, &o};
+                        return std::pair<EntityType, Entity*>{EntityType::Sphere, &o};
                     }
                 }
                 for (usize i{0zu}; i < scene_context.hitmarker_objects.size(); ++i)
                 {
-                    Object& o = scene_context.hitmarker_objects[i];
+                    Entity& o = scene_context.hitmarker_objects[i];
                     if (o.id == id)
                     {
-                        return std::pair<ObjectType, Object*>{ObjectType::Hitmarker, &o};
+                        return std::pair<EntityType, Entity*>{EntityType::Hitmarker, &o};
                     }
                 }
                 for (usize i{0zu}; i < scene_context.marble_bust_objects.size(); ++i)
                 {
-                    Object& o = scene_context.marble_bust_objects[i];
+                    Entity& o = scene_context.marble_bust_objects[i];
                     if (o.id == id)
                     {
-                        return std::pair<ObjectType, Object*>{ObjectType::MarbleBust, &o};
+                        return std::pair<EntityType, Entity*>{EntityType::MarbleBust, &o};
                     }
                 }
                 return std::nullopt;
@@ -523,7 +523,7 @@ void render_imgui_windows(EngineContext& engine_context)
             }
 
             auto [type, o_ptr] = *active_res;
-            Object& o = *o_ptr;
+            Entity& o = *o_ptr;
 
             std::optional<usize> physics_index{};
             for (usize i{0zu}; i < physics_context.bodies.size(); ++i)
@@ -538,16 +538,16 @@ void render_imgui_windows(EngineContext& engine_context)
             const char* type_str{""};
             switch (type)
             {
-                case ObjectType::Cube:
+                case EntityType::Cube:
                     type_str = "Cube";
                     break;
-                case ObjectType::Sphere:
+                case EntityType::Sphere:
                     type_str = "Sphere";
                     break;
-                case ObjectType::Hitmarker:
+                case EntityType::Hitmarker:
                     type_str = "Hitmarker";
                     break;
-                case ObjectType::MarbleBust:
+                case EntityType::MarbleBust:
                     type_str = "MarbleBust";
                     break;
             }
@@ -653,7 +653,7 @@ void render_imgui_windows(EngineContext& engine_context)
 
                     for (usize i{0zu}; i < scene_context.cube_objects.size(); ++i)
                     {
-                        const Object& o{scene_context.cube_objects[i]};
+                        const Entity& o{scene_context.cube_objects[i]};
                         const bool is_selected{scene_context.is_selected(o.id)};
 
                         const std::string label{object_label(o.id, "Cube", i)};
@@ -688,7 +688,7 @@ void render_imgui_windows(EngineContext& engine_context)
 
                     for (usize i{0zu}; i < scene_context.sphere_objects.size(); ++i)
                     {
-                        const Object& o{scene_context.sphere_objects[i]};
+                        const Entity& o{scene_context.sphere_objects[i]};
                         const bool is_selected{scene_context.is_selected(o.id)};
 
                         const std::string label{object_label(o.id, "Sphere", i)};
@@ -722,7 +722,7 @@ void render_imgui_windows(EngineContext& engine_context)
 
                     for (usize i{0zu}; i < scene_context.hitmarker_objects.size(); ++i)
                     {
-                        const Object& o{scene_context.hitmarker_objects[i]};
+                        const Entity& o{scene_context.hitmarker_objects[i]};
                         const bool is_selected{scene_context.is_selected(o.id)};
 
                         const std::string label{object_label(o.id, "Hitmarker", i)};

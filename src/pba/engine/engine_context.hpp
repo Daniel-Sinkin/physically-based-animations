@@ -3,8 +3,10 @@
 
 #include "pba/core/core_types.hpp"
 #include "pba/core/math_types.hpp"
+#include "pba/engine/scene_id.hpp"
 #include "pba/gfx/gfx_context.hpp"
 #include "pba/physics/physics_context.hpp"
+#include "pba/scene/entity.hpp"
 #include "pba/scene/scene_context.hpp"
 //
 #include <string>
@@ -15,7 +17,7 @@ namespace ds_pba
 
 struct EngineContext
 {
-    struct ObjectLink
+    struct EntityLink
     {
         usize cube_obj_idx;
         usize physics_obj_idx;
@@ -25,15 +27,15 @@ struct EngineContext
     GfxContext gfx{};
     PhysicsContext physics{};
 
-    std::unordered_map<ObjectId, ObjectLink> obj_map{};
-    std::unordered_map<ObjectId, std::string> obj_name_map{};
+    std::unordered_map<EntityId, EntityLink> obj_map{};
+    std::unordered_map<EntityId, std::string> obj_name_map{};
 
     TimePoint frame_time = Clock::now();
     Duration accumulator{};
 
     bool paused{true};
 
-    void link_latest_objects(ObjectId id);
+    void link_latest_objects(EntityId id);
 
     SceneId active_scene{k_default_scene};
 

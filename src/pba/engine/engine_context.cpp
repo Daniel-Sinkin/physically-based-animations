@@ -7,8 +7,8 @@
 #include "pba/core/core_types.hpp"
 #include "pba/core/format.hpp"  // IWYU pragma: keep
 #include "pba/core/math_types.hpp"
-#include "pba/scene/scene_types.hpp"
-#include "pba/scene/scenes.hpp"
+
+#include "pba/engine/scenes.hpp"
 #include "pba/ui/ui.hpp"
 //
 #include <algorithm>
@@ -59,7 +59,7 @@ void init_box_inertia(RigidBody& b) noexcept
 
 }  // namespace
 
-void EngineContext::link_latest_objects(ObjectId id)
+void EngineContext::link_latest_objects(EntityId id)
 {
     {
         Expects(!scene.cube_objects.empty());
@@ -67,7 +67,7 @@ void EngineContext::link_latest_objects(ObjectId id)
     }
     obj_map.insert_or_assign(
         id,
-        ObjectLink{
+        EntityLink{
             scene.cube_objects.size() - 1zu,
             physics.bodies.size() - 1zu,
         }
@@ -76,10 +76,10 @@ void EngineContext::link_latest_objects(ObjectId id)
 
 void EngineContext::add_cube(Pos3 position)
 {
-    const ObjectId id{next_object_id()};
+    const EntityId id{next_object_id()};
 
     scene.cube_objects.push_back(
-        Object{.id = id, .type = ObjectType::Cube, .transform = {.position = position}}
+        Entity{.id = id, .type = EntityType::Cube, .transform = {.position = position}}
     );
 
     physics.bodies.push_back(
@@ -96,15 +96,15 @@ void EngineContext::add_cube(Pos3 position)
 
 void EngineContext::add_ground()
 {
-    const ObjectId id{next_object_id()};
+    const EntityId id{next_object_id()};
 
     constexpr Pos3 ground_center{0.0f, 0.0f, -3.5f};
     constexpr Pos3 half_extents{10.0f, 10.0f, 0.5f};
 
     scene.cube_objects.push_back(
-        Object{
+        Entity{
             .id = id,
-            .type = ObjectType::Cube,
+            .type = EntityType::Cube,
             .transform =
                 {
                     .position = ground_center,
@@ -144,7 +144,7 @@ void EngineContext::spawn_cube(Pos3 pos, Dir3 vel, Quaternion ori, Color3 color)
 
     rb.inv_inertia_world = inv_inertia_world_from_body(rb.orientation, rb.inv_inertia_body);
 
-    Object& o = scene.cube_objects.back();
+    Entity& o = scene.cube_objects.back();
     o.transform.orientation = rb.orientation;
     o.color = color;
 }

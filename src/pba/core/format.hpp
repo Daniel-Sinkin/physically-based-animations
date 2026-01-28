@@ -2,7 +2,7 @@
 #pragma once
 
 #include "pba/gfx/raycast.hpp"
-#include "pba/scene/scene_types.hpp"
+#include "pba/scene/entity.hpp"
 
 #include <format>
 #include <glm/glm.hpp>
@@ -221,16 +221,16 @@ struct formatter<ds_pba::Raycast>
         const char* type_str{""};
         switch (rc.object_type)
         {
-            case ds_pba::ObjectType::Cube:
+            case ds_pba::EntityType::Cube:
                 type_str = "Cube";
                 break;
-            case ds_pba::ObjectType::Sphere:
+            case ds_pba::EntityType::Sphere:
                 type_str = "Sphere";
                 break;
-            case ds_pba::ObjectType::Hitmarker:
+            case ds_pba::EntityType::Hitmarker:
                 type_str = "Hitmarker";
                 break;
-            case ds_pba::ObjectType::MarbleBust:
+            case ds_pba::EntityType::MarbleBust:
                 type_str = "MarbleBust";
                 break;
         }

@@ -11,8 +11,8 @@
 #include "pba/core/math_types.hpp"
 #include "pba/engine/engine_context.hpp"
 #include "pba/gfx/raycast.hpp"
+#include "pba/scene/entity.hpp"
 #include "pba/scene/scene_context.hpp"
-#include "pba/scene/scene_types.hpp"
 #include "pba/ui/ui.hpp"
 //
 #include <GLFW/glfw3.h>
@@ -74,7 +74,7 @@ void GfxContext::hover_interaction(const EditorInput& input) const
                     {
                         ui_log(
                             std::format(
-                                "Hit Object [id={} {}] at {} [distance from camera {:.2f}]",
+                                "Hit Entity [id={} {}] at {} [distance from camera {:.2f}]",
                                 rc.object_id,
                                 it->second,
                                 rc.hit,
@@ -86,7 +86,7 @@ void GfxContext::hover_interaction(const EditorInput& input) const
                     {
                         ui_log(
                             std::format(
-                                "Hit Object [id={}] at {} [distance from camera {:.2f}]",
+                                "Hit Entity [id={}] at {} [distance from camera {:.2f}]",
                                 rc.object_id,
                                 rc.hit,
                                 rc.t
@@ -95,9 +95,9 @@ void GfxContext::hover_interaction(const EditorInput& input) const
                     }
                 }
                 scene_context->hitmarker_objects.push_back(
-                    Object{
+                    Entity{
                         .id = next_object_id(),
-                        .type = ObjectType::Hitmarker,
+                        .type = EntityType::Hitmarker,
                         .transform = {.position = rc.hit, .scale = {0.05f, 0.05f, 0.05f}},
                         .color = {1.0f, 1.0f, 1.0f},
                     }
@@ -139,7 +139,7 @@ void GfxContext::hover_interaction_holding_middle(const EditorInput& input, Came
 
 void GfxContext::hover_interaction_selection(const EditorInput& input, const Raycast& rc) const
 {
-    auto log_action = [&](std::string_view action, ObjectId id, const char* kind) -> void
+    auto log_action = [&](std::string_view action, EntityId id, const char* kind) -> void
     {
         if (engine_context)
         {
@@ -156,16 +156,16 @@ void GfxContext::hover_interaction_selection(const EditorInput& input, const Ray
     const char* kind = "";
     switch (rc.object_type)
     {
-        case ObjectType::Cube:
+        case EntityType::Cube:
             kind = "Cube";
             break;
-        case ObjectType::Sphere:
+        case EntityType::Sphere:
             kind = "Sphere";
             break;
-        case ObjectType::Hitmarker:
+        case EntityType::Hitmarker:
             kind = "Hitmarker";
             break;
-        case ObjectType::MarbleBust:
+        case EntityType::MarbleBust:
             kind = "MarbleBust";
             break;
     }
