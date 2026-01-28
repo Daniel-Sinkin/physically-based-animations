@@ -26,8 +26,6 @@ struct EngineContext
         usize cube_obj_idx;
         usize physics_obj_idx;
     };
-    std::unordered_map<EntityId, EntityLink> obj_map{};
-    std::unordered_map<EntityId, std::string> obj_name_map{};
 
     TimePoint frame_time = Clock::now();
     Duration accumulator{};
@@ -38,15 +36,17 @@ struct EngineContext
 
     SceneId active_scene{k_default_scene};
 
-    void add_cube(Pos3 position);
-    void spawn_cube(
+    Entity& spawn_cube(
         Pos3 pos,
-        Dir3 vel = Dir3{0.0f, 0.0f, 0.0f},
-        Quaternion ori = Quaternion{1.0f, 0.0f, 0.0f, 0.0f},
-        Color3 color = Color3{0.80f, 0.80f, 0.80f}
+        Dir3 half_extents,
+        f32 inv_mass,
+        Dir3 vel,
+        Quaternion ori,
+        Dir3 ang_vel,
+        Color3 color,
+        std::string_view name
     );
-
-    void add_ground();
+    Entity& add_ground();
 
     void create_pyramid(int base_n, f32 step_size = 1.06f, f32 base_z = 0.5f);
     void create_pyramid_3d(int base_n, f32 step_size = 1.06f, f32 base_z = 0.5f);

@@ -3,7 +3,7 @@
 
 #include "pba/core/core_types.hpp"
 #include "pba/core/math_types.hpp"
-#include "pba/scene/entity.hpp"
+#include "pba/scene/entity_id.hpp"
 #include "pba/util/hash.hpp"
 //
 #include <cmath>
@@ -14,6 +14,11 @@
 
 namespace ds_pba
 {
+
+struct BodyHandle
+{
+    u32 index{};
+};
 
 inline constexpr f32 k_static_mass{0.0f};
 

@@ -490,15 +490,7 @@ void render_imgui_windows(EngineContext& engine_context)
 
             std::string type_str{to_string(o.type)};
 
-            if (auto it = engine_context.obj_name_map.find(o.id);
-                it != engine_context.obj_name_map.end())
-            {
-                ImGui::Text("Active : %s [id=%d] [%s]", it->second.c_str(), o.id, type_str.c_str());
-            }
-            else
-            {
-                ImGui::Text("Active : [id=%d] [%s]", o.id, type_str.c_str());
-            }
+            ImGui::Text("Active : %s [id=%d] [%s]", o.name.c_str(), o.id, type_str.c_str());
 
             ImGui::Separator();
 

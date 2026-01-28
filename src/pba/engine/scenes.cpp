@@ -30,9 +30,6 @@ void reset_engine_world(EngineContext& e) noexcept
     e.physics.debug_total_kinetic_energy = 0.0f;
     e.physics.debug_energy_sample_accum = Duration{0.0};
     e.physics.debug_total_kinetic_energy_history.clear();
-
-    e.obj_map.clear();
-    e.obj_name_map.clear();
 }
 }  // namespace
 

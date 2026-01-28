@@ -15,6 +15,24 @@ namespace ds_pba
 struct PhysicsContext
 {
     std::vector<RigidBody> bodies;
+    [[nodiscard]] BodyHandle add_body(RigidBody b)
+    {
+        bodies.push_back(std::move(b));
+        return BodyHandle{static_cast<u32>(bodies.size() - 1zu)};
+    }
+
+    [[nodiscard]] RigidBody* try_body(BodyHandle h) noexcept
+    {
+        const auto i = static_cast<usize>(h.index);
+        return (i < bodies.size()) ? &bodies[i] : nullptr;
+    }
+
+    [[nodiscard]] const RigidBody* try_body(BodyHandle h) const noexcept
+    {
+        const auto i = static_cast<usize>(h.index);
+        return (i < bodies.size()) ? &bodies[i] : nullptr;
+    }
+
     std::vector<ExternalForce> external_forces{};
 
     TimePoint time{};

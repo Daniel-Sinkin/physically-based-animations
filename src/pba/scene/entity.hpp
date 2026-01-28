@@ -3,20 +3,15 @@
 
 #include "pba/core/constants.hpp"
 #include "pba/core/core_types.hpp"
+#include "pba/physics/physics_types.hpp"
+#include "pba/scene/entity_id.hpp"
 #include "pba/scene/world_types.hpp"
 
-#include <optional>
 #include <string>
 #include <utility>
 
 namespace ds_pba
 {
-struct BodyHandle
-{
-    u32 index{};
-    u32 generation{};
-};
-
 enum class EntityType
 {
     Cube,
@@ -31,9 +26,6 @@ enum class EntityType
     }
     std::unreachable();
 }
-
-using EntityId = u32;
-inline constexpr EntityId k_invalid_id{std::numeric_limits<EntityId>::max()};
 
 struct Entity
 {

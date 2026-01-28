@@ -46,15 +46,15 @@ inline constexpr usize k_invalid_idx{std::numeric_limits<usize>::max()};
 template <typename T>
 struct Rect
 {
-    T x{}, y{}, width{}, height{};
+    T x{}, y{}, w{}, h{};
 
     [[nodiscard]] f32 aspect_ratio() const noexcept
     {
-        if (height == 0)
+        if (h == 0)
         {
             return 1.0f;
         }
-        return static_cast<f32>(width) / static_cast<f32>(height);
+        return static_cast<f32>(w) / static_cast<f32>(h);
     }
 };
 
