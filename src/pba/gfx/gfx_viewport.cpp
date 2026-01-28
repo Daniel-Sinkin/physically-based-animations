@@ -9,14 +9,13 @@
 #include "pba/core/geometry.hpp"
 #include "pba/core/math_types.hpp"
 #include "pba/engine/engine_context.hpp"
+#include "pba/engine/scenes.hpp"
 #include "pba/gfx/gl_types.hpp"
 #include "pba/gfx/raycast.hpp"
-#include "pba/scene/scene_context.hpp"
-
-#include "pba/engine/scenes.hpp"
 #include "pba/ui/ui.hpp"
 //
 #include <algorithm>
+#include <gsl/assert>
 #include <optional>
 #include <print>
 #include <utility>
@@ -46,10 +45,10 @@ void GfxContext::render_to_viewport_objects(
     prog.set_uView(camera_view_matrix);
     prog.set_uProj(camera_proj_matrix);
 
-    if (!scene_context->cube_objects.empty())
+    if (!engine_context->world.cube_objects.empty())
     {  // Cubes
         meshes.cube.vao.bind();
-        for (const auto& o : scene_context->cube_objects)
+        for (const auto& o : engine_context->world.cube_objects)
         {
             assert(o.id != k_invalid_id);
 
@@ -137,12 +136,12 @@ void GfxContext::render_to_viewport_objects(
         VAO::unbind();
     }
 
-    if (!scene_context->sphere_objects.empty())
+    if (!engine_context->world.sphere_objects.empty())
     {  // Spheres
         meshes.sphere.vao.bind();
-        for (usize i{0zu}; i < scene_context->sphere_objects.size(); ++i)
+        for (usize i{0zu}; i < engine_context->world.sphere_objects.size(); ++i)
         {
-            const Entity& o{scene_context->sphere_objects[i]};
+            const Entity& o{engine_context->world.sphere_objects[i]};
             assert(o.id != k_invalid_id);
 
             prog.set_uModel(o.transform.model_matrix());
@@ -150,7 +149,7 @@ void GfxContext::render_to_viewport_objects(
 
             glDrawArrays(GL_TRIANGLES, 0, meshes.sphere.vertex_count);
         }
-        for (const auto& o : scene_context->hitmarker_objects)
+        for (const auto& o : engine_context->world.hitmarker_objects)
         {
             assert(o.id != k_invalid_id);
             prog.set_uModel(o.transform.model_matrix());
@@ -163,7 +162,7 @@ void GfxContext::render_to_viewport_objects(
 
     // Temp deleted so I can avoid loading textures and meshes on start up improving
     // startup speed significantly
-    if (false && !scene_context->marble_bust_objects.empty())
+    if (false && !engine_context->world.marble_bust_objects.empty())
     {  // Marble Bust
         auto& prog_tex = shader_programs.obj_tex;
         if (!textures.marble_bust_diffuse.valid() || !textures.marble_bust_normal.valid())
@@ -189,7 +188,7 @@ void GfxContext::render_to_viewport_objects(
 
         meshes.marble_bust.vao.bind();
 
-        for (const auto& o : scene_context->marble_bust_objects)
+        for (const auto& o : engine_context->world.marble_bust_objects)
         {
             assert(o.id != k_invalid_id);
             prog_tex.set_uModel(o.transform.model_matrix());
@@ -241,7 +240,7 @@ void GfxContext::render_to_viewport()
     f32 aspect{viewport_fbo.aspect_ratio()};
 
     {
-        const Camera& cam{scene_context->camera};
+        const Camera& cam{engine_context->world.editor_state.camera};
         const ViewMatrix camera_view_matrix{cam.view_matrix()};
         const ProjMatrix camera_proj_matrix{cam.proj_matrix(aspect)};
 
@@ -263,7 +262,8 @@ void GfxContext::render_to_viewport_outline(
     const ViewMatrix& camera_view_matrix, const ProjMatrix& camera_proj_matrix
 ) const
 {
-    if (!scene_context || scene_context->selected_ids.empty())
+    Expects(engine_context);
+    if (!engine_context || engine_context->world.editor_state.selected_ids.empty())
     {
         return;
     }
@@ -280,10 +280,10 @@ void GfxContext::render_to_viewport_outline(
     };
 
     const std::array<EntityBucket, 4> buckets{{
-        {EntityType::Cube, &scene_context->cube_objects},
-        {EntityType::Sphere, &scene_context->sphere_objects},
-        {EntityType::Hitmarker, &scene_context->hitmarker_objects},
-        {EntityType::MarbleBust, &scene_context->marble_bust_objects},
+        {EntityType::Cube, &engine_context->world.cube_objects},
+        {EntityType::Sphere, &engine_context->world.sphere_objects},
+        {EntityType::Hitmarker, &engine_context->world.hitmarker_objects},
+        {EntityType::MarbleBust, &engine_context->world.marble_bust_objects},
     }};
 
     auto find_object = [&](EntityId id) -> std::optional<FoundEntity>
@@ -318,7 +318,7 @@ void GfxContext::render_to_viewport_outline(
         }
     };
 
-    for (const EntityId id : scene_context->selected_ids)
+    for (const EntityId id : engine_context->world.editor_state.selected_ids)
     {
         auto obj_res = find_object(id);
         if (!obj_res)
@@ -500,11 +500,12 @@ void GfxContext::render_to_viewport_physics_debug(
     const ViewMatrix& camera_view_matrix, const ProjMatrix& camera_proj_matrix
 )
 {
+    Expects(engine_context);
     if (!phys_debug.enabled)
     {
         return;
     }
-    if (!scene_context || !engine_context)
+    if (!engine_context)
     {
         return;
     }
@@ -544,17 +545,17 @@ void GfxContext::render_to_viewport_physics_debug(
 
     auto find_scene_object = [&](EntityId id) -> const Entity*
     {
-        for (const auto& o : scene_context->cube_objects)
+        for (const auto& o : engine_context->world.cube_objects)
         {
             if (o.id == id)
                 return &o;
         }
-        for (const auto& o : scene_context->sphere_objects)
+        for (const auto& o : engine_context->world.sphere_objects)
         {
             if (o.id == id)
                 return &o;
         }
-        for (const auto& o : scene_context->hitmarker_objects)
+        for (const auto& o : engine_context->world.hitmarker_objects)
         {
             if (o.id == id)
                 return &o;
@@ -562,7 +563,7 @@ void GfxContext::render_to_viewport_physics_debug(
         return nullptr;
     };
 
-    for (const auto id : scene_context->selected_ids)
+    for (const auto id : engine_context->world.editor_state.selected_ids)
     {
         const RigidBody* rb_ptr{nullptr};
 

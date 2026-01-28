@@ -1,5 +1,4 @@
 // pba/gfx/gfx_interaction.cpp
-#include "pba/core/geometry.hpp"
 #include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/editor/editor_input.hpp"
@@ -12,7 +11,6 @@
 #include "pba/engine/engine_context.hpp"
 #include "pba/gfx/raycast.hpp"
 #include "pba/scene/entity.hpp"
-#include "pba/scene/scene_context.hpp"
 #include "pba/ui/ui.hpp"
 //
 #include <GLFW/glfw3.h>
@@ -29,12 +27,13 @@ void GfxContext::hover_interaction(const EditorInput& input) const
     }
     const ImGuiIO& io{ImGui::GetIO()};
 
-    Camera& cam{scene_context->camera};
+    Camera& cam{engine_context->world.editor_state.camera};
     const f32 wheel{io.MouseWheel};
     if (wheel != 0.0f)
     {  // Zooming
         cam.distance *= std::exp(-wheel * k_zoom_speed);
-        cam.distance = std::clamp(scene_context->camera.distance, 0.75f, 200.0f);
+        cam.distance =
+            std::clamp(engine_context->world.editor_state.camera.distance, 0.75f, 200.0f);
     }
 
     if (input.mouse_middle.down)
@@ -47,8 +46,9 @@ void GfxContext::hover_interaction(const EditorInput& input) const
     if (selecting || spawning)
     {  // Selecting objects
         const auto aspect = viewport_fbo.aspect_ratio();
-        const auto camera_view_matrix = scene_context->camera.view_matrix();
-        const auto camera_proj_matrix = scene_context->camera.proj_matrix(aspect);
+        const auto camera_view_matrix = engine_context->world.editor_state.camera.view_matrix();
+        const auto camera_proj_matrix =
+            engine_context->world.editor_state.camera.proj_matrix(aspect);
 
         const glm::vec2 mouse_pos{
             narrow_cast<f32>(input.ui_mouse_x), narrow_cast<f32>(input.ui_mouse_y)
@@ -58,7 +58,7 @@ void GfxContext::hover_interaction(const EditorInput& input) const
             mouse_pos, viewport_img_pos, viewport_img_size, camera_view_matrix, camera_proj_matrix
         )};
 
-        auto rc_res = raycast(*scene_context, mouse_ray);
+        auto rc_res = raycast(engine_context->world, mouse_ray);
         if (rc_res)
         {
             const Raycast rc{*rc_res};
@@ -94,7 +94,7 @@ void GfxContext::hover_interaction(const EditorInput& input) const
                         );
                     }
                 }
-                scene_context->hitmarker_objects.push_back(
+                engine_context->world.hitmarker_objects.push_back(
                     Entity{
                         .id = next_object_id(),
                         .type = EntityType::Hitmarker,
@@ -104,12 +104,13 @@ void GfxContext::hover_interaction(const EditorInput& input) const
                 );
             }
         }
-        else if (!scene_context->selected_ids.empty() && !input.key_down(EditorKey::Shift))
+        else if (!engine_context->world.editor_state.selected_ids.empty()
+                 && !input.key_down(EditorKey::Shift))
         {
             // Deselect on clicking on background
-            if (!scene_context->selected_ids.empty())
+            if (!engine_context->world.editor_state.selected_ids.empty())
             {
-                scene_context->clear_selection();
+                engine_context->world.editor_state.clear_selection();
                 ui_log("Deselected all");
             }
         }
@@ -123,17 +124,17 @@ void GfxContext::hover_interaction_holding_middle(const EditorInput& input, Came
 
     if (input.key_down(EditorKey::Shift))
     {  // Move Pivot
-        // $HOOK2
         const auto pan_world = cam.pan_offset_world(dx, dy, viewport_img_size.y);
         cam.pivot += pan_world * k_pan_sensitivity;
     }
     else
     {  // Rotate Around pivot
-        scene_context->camera.yaw += -dx * k_sensitivity;
-        scene_context->camera.pitch += dy * k_sensitivity;
+        engine_context->world.editor_state.camera.yaw += -dx * k_sensitivity;
+        engine_context->world.editor_state.camera.pitch += dy * k_sensitivity;
 
         const f32 lim{glm::radians(89.0f)};
-        scene_context->camera.pitch = std::clamp(scene_context->camera.pitch, -lim, lim);
+        engine_context->world.editor_state.camera.pitch =
+            std::clamp(engine_context->world.editor_state.camera.pitch, -lim, lim);
     }
 }
 
@@ -170,12 +171,12 @@ void GfxContext::hover_interaction_selection(const EditorInput& input, const Ray
             break;
     }
 
-    const bool was_selected = scene_context->is_selected(rc.object_id);
+    const bool was_selected = engine_context->world.editor_state.is_selected(rc.object_id);
 
     if (input.key_down(EditorKey::Shift))
     {
-        scene_context->toggle_selection(rc.object_id);
-        const bool now_selected = scene_context->is_selected(rc.object_id);
+        engine_context->world.editor_state.toggle_selection(rc.object_id);
+        const bool now_selected = engine_context->world.editor_state.is_selected(rc.object_id);
         if (now_selected)
         {
             log_action("Selected", rc.object_id, kind);
@@ -189,12 +190,12 @@ void GfxContext::hover_interaction_selection(const EditorInput& input, const Ray
 
     if (was_selected)
     {
-        scene_context->toggle_selection(rc.object_id);
+        engine_context->world.editor_state.toggle_selection(rc.object_id);
         log_action("Deselected", rc.object_id, kind);
         return;
     }
 
-    scene_context->select_single(rc.object_id);
+    engine_context->world.editor_state.select_single(rc.object_id);
     log_action("Selected", rc.object_id, kind);
 }
 

@@ -7,6 +7,7 @@
 #include "pba/core/core_types.hpp"
 #include "pba/core/format.hpp"  // IWYU pragma: keep
 #include "pba/editor/editor_input.hpp"
+#include "pba/gfx/camera.hpp"
 #include "pba/gfx/video_recorder.hpp"
 #include "pba/ui/ui.hpp"
 #include "pba/util/shutdown.hpp"
@@ -84,7 +85,6 @@ void GfxContext::request_close() noexcept
 
 void GfxContext::step()
 {
-    Expects(scene_context && "Scene Context not set for GfxContext");
     Expects(engine_context && "Scene Context not set for GfxContext");
     using namespace ds_pba;
 

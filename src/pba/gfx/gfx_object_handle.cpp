@@ -8,10 +8,9 @@
 #include "pba/core/math_types.hpp"
 #include "pba/engine/engine_context.hpp"
 #include "pba/gfx/raycast.hpp"
-#include "pba/scene/scene_context.hpp"
-
 #include "pba/ui/ui.hpp"
 //
+#include <gsl/assert>
 #include <imgui.h>
 #include <optional>
 #include <utility>
@@ -24,42 +23,40 @@ namespace ds_pba
 {
 std::optional<Pos3> GfxContext::get_object_position(EntityId id) const
 {
-    if (!scene_context)
+    Expects(engine_context);
+    if (!engine_context)
     {
         return std::nullopt;
     }
 
-    if (engine_context)
+    if (auto it = engine_context->obj_map.find(id); it != engine_context->obj_map.end())
     {
-        if (auto it = engine_context->obj_map.find(id); it != engine_context->obj_map.end())
+        const auto [scene_i, phys_i] = it->second;
+        if (phys_i < engine_context->physics.bodies.size())
         {
-            const auto [scene_i, phys_i] = it->second;
-            if (phys_i < engine_context->physics.bodies.size())
-            {
-                return engine_context->physics.bodies[phys_i].position;
-            }
-            if (scene_i < scene_context->cube_objects.size())
-            {
-                return scene_context->cube_objects[scene_i].transform.position;
-            }
+            return engine_context->physics.bodies[phys_i].position;
+        }
+        if (scene_i < engine_context->world.cube_objects.size())
+        {
+            return engine_context->world.cube_objects[scene_i].transform.position;
         }
     }
 
-    for (const auto& o : scene_context->cube_objects)
+    for (const auto& o : engine_context->world.cube_objects)
     {
         if (o.id == id)
         {
             return o.transform.position;
         }
     }
-    for (const auto& o : scene_context->sphere_objects)
+    for (const auto& o : engine_context->world.sphere_objects)
     {
         if (o.id == id)
         {
             return o.transform.position;
         }
     }
-    for (const auto& o : scene_context->hitmarker_objects)
+    for (const auto& o : engine_context->world.hitmarker_objects)
     {
         if (o.id == id)
         {
@@ -71,7 +68,8 @@ std::optional<Pos3> GfxContext::get_object_position(EntityId id) const
 }
 void GfxContext::set_object_position(EntityId id, const Pos3& p) const
 {
-    if (!scene_context)
+    Expects(engine_context);
+    if (!engine_context)
     {
         return;
     }
@@ -97,16 +95,16 @@ void GfxContext::set_object_position(EntityId id, const Pos3& p) const
                 rb.sleep_frames = 0;
             }
 
-            if (scene_i < scene_context->cube_objects.size())
+            if (scene_i < engine_context->world.cube_objects.size())
             {
-                scene_context->cube_objects[scene_i].transform.position = p;
+                engine_context->world.cube_objects[scene_i].transform.position = p;
             }
             return;
         }
     }
 
     // Non-physics objects (spheres/hitmarkers)
-    for (auto& o : scene_context->sphere_objects)
+    for (auto& o : engine_context->world.sphere_objects)
     {
         if (o.id == id)
         {
@@ -114,7 +112,7 @@ void GfxContext::set_object_position(EntityId id, const Pos3& p) const
             return;
         }
     }
-    for (auto& o : scene_context->hitmarker_objects)
+    for (auto& o : engine_context->world.hitmarker_objects)
     {
         if (o.id == id)
         {

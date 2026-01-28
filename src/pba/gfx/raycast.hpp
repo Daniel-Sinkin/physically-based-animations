@@ -14,7 +14,7 @@ struct GLFWwindow;
 
 namespace ds_pba
 {
-struct SceneContext;
+struct World;
 
 struct Ray
 {
@@ -48,5 +48,5 @@ intersect_ray_cube(const Ray& ray, const ModelMatrix& model) noexcept;
 [[nodiscard]] std::optional<f32>
 intersect_ray_sphere(const Ray& ray, const ModelMatrix& model) noexcept;
 
-[[nodiscard]] std::optional<Raycast> raycast(const SceneContext& context, const Ray& ray) noexcept;
+[[nodiscard]] std::optional<Raycast> raycast(const World& context, const Ray& ray) noexcept;
 }  // namespace ds_pba

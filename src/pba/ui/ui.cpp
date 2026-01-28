@@ -9,7 +9,6 @@
 #include "pba/engine/engine_context.hpp"
 #include "pba/gfx/gfx_context.hpp"
 #include "pba/physics/physics_context.hpp"
-#include "pba/scene/scene_context.hpp"
 
 //
 #include <glm/gtc/quaternion.hpp>
@@ -24,8 +23,9 @@ void render_physics_debug_window(EngineContext& engine_context)
 {
     auto& physics_context = engine_context.physics;
     auto& gfx_context = engine_context.gfx;
-    auto& scene_context = engine_context.scene;
     auto& dbg = gfx_context.phys_debug;
+
+    auto& editor_state = engine_context.world.editor_state;
 
     ImGui::Begin("Physics Debug");
 
@@ -95,7 +95,7 @@ void render_physics_debug_window(EngineContext& engine_context)
         asleep_count
     );
     ImGui::Text("Contacts (last step): %zu", physics_context.debug_contacts.size());
-    ImGui::Text("Selected: %zu", scene_context.selected_ids.size());
+    ImGui::Text("Selected: %zu", editor_state.selected_ids.size());
 
     ImGui::Separator();
     ImGui::Text(
@@ -329,7 +329,10 @@ void render_imgui_windows(EngineContext& engine_context)
 {
     PhysicsContext& physics_context = engine_context.physics;
     GfxContext& gfx_context = engine_context.gfx;
-    SceneContext& scene_context = engine_context.scene;
+
+    auto& world = engine_context.world;
+    auto& editor_state = world.editor_state;
+    auto& cam = editor_state.camera;
 
     auto object_label = [&](EntityId id, std::string_view type, usize ui_idx) -> std::string
     {
@@ -341,7 +344,6 @@ void render_imgui_windows(EngineContext& engine_context)
         return std::format("{} [{}]##{}_{}", id, type, type, ui_idx);
     };
 
-    auto& cam = scene_context.camera;
     {
         ImGui::Begin("Info");
         const auto gl_string = [](GLenum name) -> const char*
@@ -473,39 +475,39 @@ void render_imgui_windows(EngineContext& engine_context)
 
     {
         ImGui::Begin("Entity Inspector");
-        if (scene_context.active_id.has_value())
+        if (editor_state.active_id.has_value())
         {
-            const EntityId active_id{*scene_context.active_id};
+            const EntityId active_id{*editor_state.active_id};
 
             auto find_active = [&](EntityId id) -> std::optional<std::pair<EntityType, Entity*>>
             {
-                for (usize i{0zu}; i < scene_context.cube_objects.size(); ++i)
+                for (usize i{0zu}; i < world.cube_objects.size(); ++i)
                 {
-                    Entity& o = scene_context.cube_objects[i];
+                    Entity& o = world.cube_objects[i];
                     if (o.id == id)
                     {
                         return std::pair<EntityType, Entity*>{EntityType::Cube, &o};
                     }
                 }
-                for (usize i{0zu}; i < scene_context.sphere_objects.size(); ++i)
+                for (usize i{0zu}; i < world.sphere_objects.size(); ++i)
                 {
-                    Entity& o = scene_context.sphere_objects[i];
+                    Entity& o = world.sphere_objects[i];
                     if (o.id == id)
                     {
                         return std::pair<EntityType, Entity*>{EntityType::Sphere, &o};
                     }
                 }
-                for (usize i{0zu}; i < scene_context.hitmarker_objects.size(); ++i)
+                for (usize i{0zu}; i < world.hitmarker_objects.size(); ++i)
                 {
-                    Entity& o = scene_context.hitmarker_objects[i];
+                    Entity& o = world.hitmarker_objects[i];
                     if (o.id == id)
                     {
                         return std::pair<EntityType, Entity*>{EntityType::Hitmarker, &o};
                     }
                 }
-                for (usize i{0zu}; i < scene_context.marble_bust_objects.size(); ++i)
+                for (usize i{0zu}; i < world.marble_bust_objects.size(); ++i)
                 {
-                    Entity& o = scene_context.marble_bust_objects[i];
+                    Entity& o = world.marble_bust_objects[i];
                     if (o.id == id)
                     {
                         return std::pair<EntityType, Entity*>{EntityType::MarbleBust, &o};
@@ -521,7 +523,6 @@ void render_imgui_windows(EngineContext& engine_context)
                 ImGui::End();
                 return;
             }
-
             auto [type, o_ptr] = *active_res;
             Entity& o = *o_ptr;
 
@@ -626,13 +627,11 @@ void render_imgui_windows(EngineContext& engine_context)
 
     {
         ImGui::Begin("Scene Inspector");
-        const usize n_obj{scene_context.cube_objects.size() + scene_context.sphere_objects.size()};
+        const usize n_obj{world.cube_objects.size() + world.sphere_objects.size()};
         ImGui::Text("There are %zu objects in the scene", n_obj);
-        if (!scene_context.hitmarker_objects.empty())
+        if (!world.hitmarker_objects.empty())
         {
-            ImGui::Text(
-                "There are %zu hitmarkers in the scene", scene_context.hitmarker_objects.size()
-            );
+            ImGui::Text("There are %zu hitmarkers in the scene", world.hitmarker_objects.size());
         }
         ImGui::Separator();
 
@@ -644,17 +643,17 @@ void render_imgui_windows(EngineContext& engine_context)
         {
             if (ImGui::BeginTable("##scene_list_table", 1, flags))
             {
-                if (!scene_context.cube_objects.empty())
+                if (!world.cube_objects.empty())
                 {
                     ImGui::TableNextRow();
                     ImGui::TableNextColumn();
                     ImGui::TextUnformatted("Cubes");
                     ImGui::Separator();
 
-                    for (usize i{0zu}; i < scene_context.cube_objects.size(); ++i)
+                    for (usize i{0zu}; i < world.cube_objects.size(); ++i)
                     {
-                        const Entity& o{scene_context.cube_objects[i]};
-                        const bool is_selected{scene_context.is_selected(o.id)};
+                        const Entity& o{world.cube_objects[i]};
+                        const bool is_selected{editor_state.is_selected(o.id)};
 
                         const std::string label{object_label(o.id, "Cube", i)};
 
@@ -669,27 +668,27 @@ void render_imgui_windows(EngineContext& engine_context)
                             const bool shift_down{ImGui::GetIO().KeyShift};
                             if (shift_down)
                             {
-                                scene_context.toggle_selection(o.id);
+                                editor_state.toggle_selection(o.id);
                             }
                             else
                             {
-                                scene_context.select_single(o.id);
+                                editor_state.select_single(o.id);
                             }
                         }
                     }
                 }
 
-                if (!scene_context.sphere_objects.empty())
+                if (!world.sphere_objects.empty())
                 {
                     ImGui::TableNextRow();
                     ImGui::TableNextColumn();
                     ImGui::TextUnformatted("Spheres");
                     ImGui::Separator();
 
-                    for (usize i{0zu}; i < scene_context.sphere_objects.size(); ++i)
+                    for (usize i{0zu}; i < world.sphere_objects.size(); ++i)
                     {
-                        const Entity& o{scene_context.sphere_objects[i]};
-                        const bool is_selected{scene_context.is_selected(o.id)};
+                        const Entity& o{world.sphere_objects[i]};
+                        const bool is_selected{editor_state.is_selected(o.id)};
 
                         const std::string label{object_label(o.id, "Sphere", i)};
 
@@ -704,26 +703,26 @@ void render_imgui_windows(EngineContext& engine_context)
                             const bool shift_down{ImGui::GetIO().KeyShift};
                             if (shift_down)
                             {
-                                scene_context.toggle_selection(o.id);
+                                editor_state.toggle_selection(o.id);
                             }
                             else
                             {
-                                scene_context.select_single(o.id);
+                                editor_state.select_single(o.id);
                             }
                         }
                     }
                 }
-                if (!scene_context.hitmarker_objects.empty())
+                if (!world.hitmarker_objects.empty())
                 {
                     ImGui::TableNextRow();
                     ImGui::TableNextColumn();
                     ImGui::TextUnformatted("Hitmarkers");
                     ImGui::Separator();
 
-                    for (usize i{0zu}; i < scene_context.hitmarker_objects.size(); ++i)
+                    for (usize i{0zu}; i < world.hitmarker_objects.size(); ++i)
                     {
-                        const Entity& o{scene_context.hitmarker_objects[i]};
-                        const bool is_selected{scene_context.is_selected(o.id)};
+                        const Entity& o{world.hitmarker_objects[i]};
+                        const bool is_selected{editor_state.is_selected(o.id)};
 
                         const std::string label{object_label(o.id, "Hitmarker", i)};
 
@@ -738,11 +737,11 @@ void render_imgui_windows(EngineContext& engine_context)
                             const bool shift_down{ImGui::GetIO().KeyShift};
                             if (shift_down)
                             {
-                                scene_context.toggle_selection(o.id);
+                                editor_state.toggle_selection(o.id);
                             }
                             else
                             {
-                                scene_context.select_single(o.id);
+                                editor_state.select_single(o.id);
                             }
                         }
                     }

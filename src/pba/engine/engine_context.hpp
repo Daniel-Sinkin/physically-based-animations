@@ -7,26 +7,25 @@
 #include "pba/gfx/gfx_context.hpp"
 #include "pba/physics/physics_context.hpp"
 #include "pba/scene/entity.hpp"
-#include "pba/scene/scene_context.hpp"
+#include "pba/scene/world.hpp"
 //
 #include <string>
 #include <unordered_map>
 
 namespace ds_pba
 {
-
 struct EngineContext
 {
+    GfxContext gfx{};
+    PhysicsContext physics{};
+
+    World world{};
+
     struct EntityLink
     {
         usize cube_obj_idx;
         usize physics_obj_idx;
     };
-
-    SceneContext scene{};
-    GfxContext gfx{};
-    PhysicsContext physics{};
-
     std::unordered_map<EntityId, EntityLink> obj_map{};
     std::unordered_map<EntityId, std::string> obj_name_map{};
 

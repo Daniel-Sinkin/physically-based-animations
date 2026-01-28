@@ -6,13 +6,13 @@
 //
 #include "pba/core/math_types.hpp"
 #include "pba/gfx/raycast.hpp"
-#include "pba/scene/scene_context.hpp"
+#include "pba/scene/world.hpp"
 
 #include <gsl/assert>
 
 namespace ds_pba
 {
-std::optional<Raycast> raycast(const SceneContext& scene_context, const Ray& ray) noexcept
+std::optional<Raycast> raycast(const World& world, const Ray& ray) noexcept
 {
     Expects(ray.valid());
     auto best_t = k_f32_max;
@@ -41,9 +41,9 @@ std::optional<Raycast> raycast(const SceneContext& scene_context, const Ray& ray
         }
     };
 
-    check_hits(scene_context.cube_objects, EntityType::Cube, intersect_ray_cube);
-    check_hits(scene_context.sphere_objects, EntityType::Sphere, intersect_ray_sphere);
-    check_hits(scene_context.marble_bust_objects, EntityType::MarbleBust, intersect_ray_sphere);
+    check_hits(world.cube_objects, EntityType::Cube, intersect_ray_cube);
+    check_hits(world.sphere_objects, EntityType::Sphere, intersect_ray_sphere);
+    check_hits(world.marble_bust_objects, EntityType::MarbleBust, intersect_ray_sphere);
 
     if (!found)
     {

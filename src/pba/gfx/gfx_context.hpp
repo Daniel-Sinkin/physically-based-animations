@@ -31,7 +31,6 @@ struct PhysicsContext;
 struct EngineContext;
 struct Raycast;
 struct Camera;
-
 struct GfxContext
 {
     GfxContext() = default;
@@ -105,8 +104,6 @@ struct GfxContext
     bool viewport_fb_rect_valid{false};
     bool viewport_image_hovered{false};
 
-    SceneContext* scene_context{};
-    // This is only intended for ImGUI don't access values for the GfxContext through it
     EngineContext* engine_context{};
 
     bool is_active_{true};

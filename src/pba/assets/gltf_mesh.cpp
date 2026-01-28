@@ -4,6 +4,7 @@
 #include "pba/assets/gltf_mesh.hpp"
 #include "pba/assets/mesh_data.hpp"
 #include "pba/assets/model_config.hpp"
+#include "pba/core/constants.hpp"
 #include "pba/core/core_types.hpp"
 #include "pba/core/math_types.hpp"
 #include "pba/scene/world_types.hpp"
@@ -131,17 +132,16 @@ read_indices_u32(const tinygltf::Model& model, int accessor_index)
 
     const tinygltf::Buffer& buf{model.buffers[static_cast<usize>(bv.buffer)]};
 
-    const usize base_off{static_cast<usize>(bv.byteOffset) + static_cast<usize>(a.byteOffset)};
-    const usize count{static_cast<usize>(a.count)};
+    const auto base_off = static_cast<usize>(bv.byteOffset) + static_cast<usize>(a.byteOffset);
+    const auto count = static_cast<usize>(a.count);
 
-    const usize elem_size{
-        static_cast<usize>(tinygltf::GetComponentSizeInBytes(static_cast<u32>(a.componentType)))
-    };
+    const auto elem_size =
+        static_cast<usize>(tinygltf::GetComponentSizeInBytes(static_cast<u32>(a.componentType)));
 
     // byteStride == 0 is allowed and just means tightly packed
     // https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#data-alignment
-    const usize stride{(bv.byteStride != 0) ? static_cast<usize>(bv.byteStride) : elem_size};
-    const usize buf_size{buf.data.size()};
+    const auto stride = (bv.byteStride != 0) ? static_cast<usize>(bv.byteStride) : elem_size;
+    const auto buf_size = buf.data.size();
 
     if (count == 0zu)
     {
@@ -150,19 +150,24 @@ read_indices_u32(const tinygltf::Model& model, int accessor_index)
 
     const usize last_off{(count - 1zu) * stride};
 
-    if (base_off > buf_size || last_off > buf_size - base_off
-        || elem_size > buf_size - base_off - last_off)
-    {
-        std::println(
-            stderr,
-            "Index accessor OOB: base_off={}, count={}, stride={}, elem_size={}, buffer_size={}",
-            base_off,
-            count,
-            stride,
-            elem_size,
-            buf_size
-        );
-        return std::nullopt;
+    {  // Bounds check
+        const auto base_out_of_bounds = base_off > buf_size;
+        const auto last_out_of_bounds = last_off > buf_size - base_off;
+        const auto elem_out_of_bounds = elem_size > buf_size - base_off - last_off;
+        if (base_out_of_bounds || last_out_of_bounds || elem_out_of_bounds)
+        {
+            std::println(
+                stderr,
+                "Index accessor OOB: base_off={}, count={}, stride={}, elem_size={}, "
+                "buffer_size={}",
+                base_off,
+                count,
+                stride,
+                elem_size,
+                buf_size
+            );
+            return std::nullopt;
+        }
     }
 
     const std::byte* base{reinterpret_cast<const std::byte*>(buf.data.data() + base_off)};
@@ -231,8 +236,8 @@ static std::optional<AccessorView> get_vec3_f32_view(const tinygltf::Model& m, i
 
     const tinygltf::Buffer& buf{m.buffers[static_cast<usize>(bv.buffer)]};
 
-    constexpr usize size_elem{3zu * sizeof(f32)};
-    const usize stride{(bv.byteStride != 0) ? static_cast<usize>(bv.byteStride) : size_elem};
+    constexpr auto size_elem = 3zu * sizeof(f32);
+    const auto stride = (bv.byteStride != 0) ? static_cast<usize>(bv.byteStride) : size_elem;
     if (stride < size_elem)
     {
         std::println(stderr, "Invalid vec3 stride {} (< {})", stride, size_elem);
@@ -289,11 +294,9 @@ static std::optional<Vec2AccessorView> get_vec2_view(const tinygltf::Model& m, i
         return std::nullopt;
     }
 
-    const bool supported_component = (a.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT)
-                                     || (a.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE)
-                                     || (a.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT);
-
-    if (!supported_component)
+    if (a.componentType != TINYGLTF_COMPONENT_TYPE_FLOAT
+        && a.componentType != TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE
+        && a.componentType != TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT)
     {
         std::println(stderr, "Unsupported vec2 componentType={}", a.componentType);
         return std::nullopt;
@@ -317,16 +320,16 @@ static std::optional<Vec2AccessorView> get_vec2_view(const tinygltf::Model& m, i
     const auto comp_size =
         static_cast<usize>(tinygltf::GetComponentSizeInBytes(static_cast<u32>(a.componentType)));
 
-    const usize elem = 2zu * comp_size;
-    const usize stride{(bv.byteStride != 0) ? static_cast<usize>(bv.byteStride) : elem};
+    const auto elem = 2zu * comp_size;
+    const auto stride = (bv.byteStride != 0) ? static_cast<usize>(bv.byteStride) : elem;
     if (stride < elem)
     {
         std::println(stderr, "Invalid vec2 stride {} (< {})", stride, elem);
         return std::nullopt;
     }
 
-    const usize base_off{static_cast<usize>(bv.byteOffset) + static_cast<usize>(a.byteOffset)};
-    const usize count{static_cast<usize>(a.count)};
+    const auto base_off = static_cast<usize>(bv.byteOffset) + static_cast<usize>(a.byteOffset);
+    const auto count = static_cast<usize>(a.count);
 
     if (base_off > buf.data.size())
     {
@@ -403,9 +406,9 @@ static glm::vec2 read_vec2_as_f32(const Vec2AccessorView& v, usize i)
 
 static std::optional<tinygltf::Model> load_tinygltf_model(const std::string& path)
 {
-    tinygltf::Model model;
-    std::string err;
-    std::string warn;
+    tinygltf::Model model{};
+    std::string err{};
+    std::string warn{};
 
     tinygltf::TinyGLTF loader;
     bool res{};
@@ -500,13 +503,12 @@ std::optional<MeshDataPN> load_gltf_mesh(const std::string& path, const Transfor
     const AccessorView pos_view{*pos_view_opt};
 
     const std::byte* pos_base{pos_view.base};
-    const usize pos_stride{pos_view.stride};
-    const usize vertex_count{pos_view.count};
+    const auto pos_stride = pos_view.stride;
+    const auto vertex_count = pos_view.count;
 
-    bool has_normals{false};
+    auto has_normals = false;
     const std::byte* nrm_base{};
-    usize nrm_stride{0};
-
+    usize nrm_stride{0zu};
     if (auto it_n = prim.attributes.find("NORMAL"); it_n != prim.attributes.end())
     {
         const int nrm_accessor_index{it_n->second};
@@ -554,10 +556,10 @@ std::optional<MeshDataPN> load_gltf_mesh(const std::string& path, const Transfor
         return normalized(n);
     };
 
-    std::vector<MeshV_PN> verts;
+    std::vector<MeshV_PN> verts{};
     if (!idx.empty())
     {
-        if ((idx.size() % 3u) != 0u)
+        if ((idx.size() % 3zu) != 0zu)
         {
             std::println(
                 stderr, "glTF '{}' indices are not triangles (count={})", path, idx.size()
@@ -569,9 +571,9 @@ std::optional<MeshDataPN> load_gltf_mesh(const std::string& path, const Transfor
 
         for (usize t{0zu}; t < idx.size(); t += 3)
         {
-            const u32 i0{idx[t + 0]};
-            const u32 i1{idx[t + 1]};
-            const u32 i2{idx[t + 2]};
+            const auto i0 = idx[t + 0];
+            const auto i1 = idx[t + 1];
+            const auto i2 = idx[t + 2];
 
             if (i0 >= vertex_count || i1 >= vertex_count || i2 >= vertex_count)
             {
@@ -619,9 +621,9 @@ std::optional<MeshDataPN> load_gltf_mesh(const std::string& path, const Transfor
         u32 vertex_idx{0};
         while (vertex_idx < vertex_count)
         {
-            const u32 i0{vertex_idx++};
-            const u32 i1{vertex_idx++};
-            const u32 i2{vertex_idx++};
+            const auto i0 = vertex_idx++;
+            const auto i1 = vertex_idx++;
+            const auto i2 = vertex_idx++;
 
             const Pos3 p0{read_pos(i0)};
             const Pos3 p1{read_pos(i1)};
@@ -726,11 +728,9 @@ std::optional<MeshDataPNT> load_gltf_mesh_pnt(const std::string& path, const Tra
     const usize pos_stride{pos_view.stride};
     const usize vertex_count{pos_view.count};
 
-    // Normal
-    bool has_normals{false};
+    auto has_normals = false;
     const std::byte* nrm_base{};
     usize nrm_stride{0};
-
     if (auto it_n = prim.attributes.find("NORMAL"); it_n != prim.attributes.end())
     {
         const int nrm_accessor_index{it_n->second};
@@ -830,9 +830,9 @@ std::optional<MeshDataPNT> load_gltf_mesh_pnt(const std::string& path, const Tra
 
         for (usize t{0zu}; t < idx.size(); t += 3)
         {
-            const u32 i0{idx[t + 0]};
-            const u32 i1{idx[t + 1]};
-            const u32 i2{idx[t + 2]};
+            const auto i0 = idx[t + 0];
+            const auto i1 = idx[t + 1];
+            const auto i2 = idx[t + 2];
 
             if (i0 >= vertex_count || i1 >= vertex_count || i2 >= vertex_count)
             {
@@ -884,13 +884,13 @@ std::optional<MeshDataPNT> load_gltf_mesh_pnt(const std::string& path, const Tra
         u32 vertex_idx{0};
         while (vertex_idx < vertex_count)
         {
-            const u32 i0{vertex_idx++};
-            const u32 i1{vertex_idx++};
-            const u32 i2{vertex_idx++};
+            const auto i0 = vertex_idx++;
+            const auto i1 = vertex_idx++;
+            const auto i2 = vertex_idx++;
 
-            const glm::vec3 p0{read_pos(i0)};
-            const glm::vec3 p1{read_pos(i1)};
-            const glm::vec3 p2{read_pos(i2)};
+            const Pos3 p0{read_pos(i0)};
+            const Pos3 p1{read_pos(i1)};
+            const Pos3 p2{read_pos(i2)};
 
             const Dir3 fn{has_normals ? glm::vec3{} : face_normal(p0, p1, p2)};
 
@@ -913,7 +913,7 @@ std::optional<MeshDataPNT> load_gltf_mesh_pnt(const std::string& path, const Tra
 std::optional<MeshDataPNT> load_model_mesh_pnt(std::string_view model_name)
 {
     namespace fs = std::filesystem;
-    const fs::path model_dir = fs::path{k_fp_assets} / k_fp_assets_models / model_name;
+    const auto model_dir = fs::path{k_fp_assets} / k_fp_assets_models / model_name;
 
     auto cfg_res = load_or_create_model_config(model_dir);
     if (!cfg_res)
@@ -929,7 +929,7 @@ std::optional<MeshDataPNT> load_model_mesh_pnt(std::string_view model_name)
         return std::nullopt;
     }
 
-    const std::string path{file_res->string()};
+    const auto path = file_res->string();
     return load_gltf_mesh_pnt(path, cfg_res->transform);
 }
 

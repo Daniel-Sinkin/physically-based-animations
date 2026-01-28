@@ -1,26 +1,22 @@
-// pba/scene/scene_context.hpp
+// pba/scene/world.hpp
 #pragma once
 
-#include "pba/core/core_types.hpp"
 #include "pba/gfx/camera.hpp"
-
-//
-#include <algorithm>
-#include <optional>
-#include <vector>
+#include "pba/scene/entity.hpp"
 
 namespace ds_pba
 {
-struct SceneContext
+struct EditorState
 {
     Camera camera{};
-    std::vector<Entity> cube_objects{};
-    std::vector<Entity> sphere_objects{};
-    std::vector<Entity> hitmarker_objects{};
-    std::vector<Entity> marble_bust_objects{};
-
     std::vector<EntityId> selected_ids{};
     std::optional<EntityId> active_id{};
+
+    void clear()
+    {
+        clear_selection();
+        camera.pivot = k_camera_pivot;
+    }
 
     [[nodiscard]] bool has_selection() const noexcept
     {
@@ -81,4 +77,20 @@ struct SceneContext
     }
 };
 
+struct World
+{
+    EditorState editor_state{};
+    std::vector<Entity> cube_objects{};
+    std::vector<Entity> sphere_objects{};
+    std::vector<Entity> hitmarker_objects{};
+    std::vector<Entity> marble_bust_objects{};
+
+    void clear()
+    {
+        cube_objects.clear();
+        sphere_objects.clear();
+        hitmarker_objects.clear();
+        marble_bust_objects.clear();
+    }
+};
 }  // namespace ds_pba

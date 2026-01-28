@@ -7,7 +7,6 @@
 #include "pba/core/core_types.hpp"
 #include "pba/core/format.hpp"  // IWYU pragma: keep
 #include "pba/core/math_types.hpp"
-
 #include "pba/engine/scenes.hpp"
 #include "pba/ui/ui.hpp"
 //
@@ -62,13 +61,12 @@ void init_box_inertia(RigidBody& b) noexcept
 void EngineContext::link_latest_objects(EntityId id)
 {
     {
-        Expects(!scene.cube_objects.empty());
         Expects(!physics.bodies.empty());
     }
     obj_map.insert_or_assign(
         id,
         EntityLink{
-            scene.cube_objects.size() - 1zu,
+            world.cube_objects.size() - 1zu,
             physics.bodies.size() - 1zu,
         }
     );
@@ -78,7 +76,7 @@ void EngineContext::add_cube(Pos3 position)
 {
     const EntityId id{next_object_id()};
 
-    scene.cube_objects.push_back(
+    world.cube_objects.push_back(
         Entity{.id = id, .type = EntityType::Cube, .transform = {.position = position}}
     );
 
@@ -101,7 +99,7 @@ void EngineContext::add_ground()
     constexpr Pos3 ground_center{0.0f, 0.0f, -3.5f};
     constexpr Pos3 half_extents{10.0f, 10.0f, 0.5f};
 
-    scene.cube_objects.push_back(
+    world.cube_objects.push_back(
         Entity{
             .id = id,
             .type = EntityType::Cube,
@@ -144,7 +142,7 @@ void EngineContext::spawn_cube(Pos3 pos, Dir3 vel, Quaternion ori, Color3 color)
 
     rb.inv_inertia_world = inv_inertia_world_from_body(rb.orientation, rb.inv_inertia_body);
 
-    Entity& o = scene.cube_objects.back();
+    Entity& o = world.cube_objects.back();
     o.transform.orientation = rb.orientation;
     o.color = color;
 }
@@ -169,7 +167,7 @@ void EngineContext::create_pyramid(int base_n, f32 step_size, f32 base_z)
                 Color3{k_scene_object_default_color}
             );
             obj_name_map.insert_or_assign(
-                scene.cube_objects.back().id, std::format("Pyramid (layer={}, idx={})", layer, ix)
+                world.cube_objects.back().id, std::format("Pyramid (layer={}, idx={})", layer, ix)
             );
         }
     }
@@ -200,7 +198,7 @@ void EngineContext::create_pyramid_3d(int base_n, f32 step_size, f32 base_z)
                 );
 
                 obj_name_map.insert_or_assign(
-                    scene.cube_objects.back().id,
+                    world.cube_objects.back().id,
                     std::format("Pyramid3D (layer={}, ix={}, iy={})", layer, ix, iy)
                 );
             }
@@ -211,7 +209,6 @@ void EngineContext::create_pyramid_3d(int base_n, f32 step_size, f32 base_z)
 bool EngineContext::setup()
 {
     setup_active_scene(*this);
-    gfx.scene_context = &scene;
     gfx.engine_context = this;
     if (!gfx.setup())
     {
@@ -277,8 +274,8 @@ void EngineContext::run()
             for (const auto& [id, idxs] : obj_map)
             {
                 const auto [cube_i, phys_i] = idxs;
-                scene.cube_objects[cube_i].transform.position = physics.bodies[phys_i].position;
-                scene.cube_objects[cube_i].transform.orientation =
+                world.cube_objects[cube_i].transform.position = physics.bodies[phys_i].position;
+                world.cube_objects[cube_i].transform.orientation =
                     physics.bodies[phys_i].orientation;
             }
             update_active_scene(*this, static_cast<f32>(frame_dt.count()));

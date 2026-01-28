@@ -6,7 +6,7 @@
 #include "pba/core/core_types.hpp"
 #include "pba/core/format.hpp"  // IWYU pragma: keep
 #include "pba/core/math_types.hpp"
-#include "pba/scene/scene_context.hpp"
+#include "pba/engine/engine_context.hpp"
 #include "pba/ui/ui.hpp"
 //
 #include <optional>
@@ -98,10 +98,10 @@ void GfxContext::set_grab_constraint(EditorState::GrabConstraint c)
 void GfxContext::begin_grab(const EditorInput& input)
 {
     {
-        Expects(scene_context);
+        Expects(engine_context);
     }
 
-    if (scene_context->selected_ids.empty())
+    if (engine_context->world.editor_state.selected_ids.empty())
     {
         ui_log("Grab (G): nothing selected");
         return;
@@ -115,23 +115,20 @@ void GfxContext::begin_grab(const EditorInput& input)
     grab.constraint = EditorState::GrabConstraint::None;
 
     grab.start_positions.clear();
-    grab.start_positions.reserve(scene_context->selected_ids.size());
-
-    for (const EntityId id : scene_context->selected_ids)
+    const auto& selected_ids = engine_context->world.editor_state.selected_ids;
+    grab.start_positions.reserve(selected_ids.size());
+    for (const EntityId id : selected_ids)
     {
         if (auto p = get_object_position(id))
         {
             grab.start_positions.emplace_back(id, *p);
         }
     }
-
     ui_log("Grab: move mouse. X/Y/Z constrain. LMB/Enter confirm. RMB/Esc cancel.");
 }
 
 void GfxContext::update_grab(const EditorInput& input)
 {
-    assert(scene_context);
-
     auto& grab = editor.grab;
     if (!grab.active)
     {
@@ -143,7 +140,7 @@ void GfxContext::update_grab(const EditorInput& input)
         set_grab_constraint(c);
     }
 
-    const Camera& cam{scene_context->camera};
+    const auto& cam = engine_context->world.editor_state.camera;
 
     const auto vp_h = std::max(1.0f, viewport_img_size.y);
     const auto units_per_px = (2.0f * cam.distance * std::tan(0.5f * cam.fov_y)) / vp_h;

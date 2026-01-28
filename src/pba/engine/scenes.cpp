@@ -20,12 +20,7 @@ namespace
 {
 void reset_engine_world(EngineContext& e) noexcept
 {
-    e.scene.cube_objects.clear();
-    e.scene.sphere_objects.clear();
-    e.scene.hitmarker_objects.clear();
-    e.scene.marble_bust_objects.clear();
-    e.scene.clear_selection();
-    e.scene.camera.pivot = k_camera_pivot;
+    e.world.clear();
 
     e.physics.bodies.clear();
     e.physics.external_forces.clear();
@@ -67,7 +62,7 @@ void update_active_scene(EngineContext& e, f32 frame_dt_s)
 {
     if (e.active_scene == SceneId::AttractorsAndRepulsivePivot)
     {
-        if (!e.scene.marble_bust_objects.empty())
+        if (!e.world.marble_bust_objects.empty())
         {
             static f32 marble_spin_angle{k_pi};
             marble_spin_angle += 1.2f * frame_dt_s;
@@ -75,7 +70,7 @@ void update_active_scene(EngineContext& e, f32 frame_dt_s)
             {
                 marble_spin_angle = std::fmod(marble_spin_angle, k_two_pi);
             }
-            e.scene.marble_bust_objects[0].transform.orientation =
+            e.world.marble_bust_objects[0].transform.orientation =
                 glm::angleAxis(marble_spin_angle, k_axis_z);
         }
     }

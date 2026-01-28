@@ -13,12 +13,12 @@ namespace
 bool file_exists_regular(const std::filesystem::path& p) noexcept
 {
     namespace fs = std::filesystem;
-    std::error_code ec{};
-    if (!fs::exists(p, ec) || ec)
+    std::error_code error_code{};
+    if (!fs::exists(p, error_code) || error_code)
     {
         return false;
     }
-    if (!fs::is_regular_file(p, ec) || ec)
+    if (!fs::is_regular_file(p, error_code) || error_code)
     {
         return false;
     }
@@ -47,8 +47,7 @@ load_image_rgba8(const std::filesystem::path& path, TextureLoadOptions opt)
 
     stbi_set_flip_vertically_on_load(opt.flip_y ? 1 : 0);
 
-    int w{0};
-    int h{0};
+    int w{0}, h{0};
     int comp_in_file{0};
 
     const auto req_comp = opt.force_rgba ? 4 : 0;
@@ -79,7 +78,6 @@ load_image_rgba8(const std::filesystem::path& path, TextureLoadOptions opt)
     const auto w_u = static_cast<usize>(w);
     const auto h_u = static_cast<usize>(h);
     const auto c_u = static_cast<usize>(out_comp);
-
     if (w_u > (std::numeric_limits<usize>::max() / h_u))
     {
         stbi_image_free(data);
