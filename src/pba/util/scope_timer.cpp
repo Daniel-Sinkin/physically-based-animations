@@ -14,18 +14,15 @@ ScopeTimer::ScopeTimer(std::string_view label) noexcept : label_(label), start_(
 
 ScopeTimer::~ScopeTimer() noexcept
 {
-    const TimePoint end{Clock::now()};
-    const auto dt = end - start_;
-
-    const double seconds{std::chrono::duration<double>(dt).count()};
+    const auto dt = Clock::now() - start_;
+    const auto seconds = std::chrono::duration<f64>(dt).count();
     if (seconds >= 2.0)
     {
         std::println("{}: {:.2f} s", label_, seconds);
     }
     else
     {
-        const double ms{seconds * 1000.0};
-        std::println("{}: {:.3f} ms", label_, ms);
+        std::println("{}: {:.3f} ms", label_, seconds * 1000.0);
     }
 }
 

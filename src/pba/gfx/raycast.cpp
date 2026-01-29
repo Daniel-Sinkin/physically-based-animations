@@ -112,10 +112,10 @@ std::optional<f32> intersect_ray_sphere(const Ray& ray, const ModelMatrix& model
         return std::nullopt;
     }
 
-    const Pos3 hit_local{origin_local + t_local * dir_local};
-    const Pos3 hit_world{model_matrix.transform_position(hit_local)};
+    const auto hit_local = origin_local + t_local * dir_local;
+    const auto hit_world = model_matrix.transform_position(hit_local);
 
-    const f32 t_world{glm::dot(hit_world - ray.origin, ray.dir)};
+    const auto t_world = glm::dot(hit_world - ray.origin, ray.dir);
     if (t_world <= 0.0f)
     {
         return std::nullopt;

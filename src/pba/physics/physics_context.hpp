@@ -33,7 +33,8 @@ struct PhysicsContext
         return (i < bodies.size()) ? &bodies[i] : nullptr;
     }
 
-    std::vector<ExternalForce> external_forces{};
+    std::vector<SimpleForce> simple_forces{};
+    std::vector<ComplexForce> complex_forces{};
 
     TimePoint time{};
     Duration time_step{std::chrono::duration<f64>(1.0 / 120.0)};

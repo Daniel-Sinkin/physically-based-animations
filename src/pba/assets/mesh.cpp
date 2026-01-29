@@ -361,7 +361,7 @@ MeshDataPColor create_grid_mesh(GridSettings grid)
     // x = const -> y axis parallels
     for (int i{-n_lines_per_side}; i <= n_lines_per_side; ++i)
     {
-        const f32 x{static_cast<f32>(i) * grid.spacing};
+        const auto x = static_cast<f32>(i) * grid.spacing;
         if (i == 0)
         {
             push_line({x, -he, 0.0f}, {x, he, 0.0f}, 0.15f, 0.90f, 0.25f, grid.axis_alpha);

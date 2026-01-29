@@ -27,10 +27,10 @@ void GfxContext::hover_interaction(const EditorInput& input) const
     {
         Expects(viewport_fb_rect_valid && "If viewport hovered then it must be valid");
     }
-    const ImGuiIO& io{ImGui::GetIO()};
+    const auto& imgui_io = ImGui::GetIO();
 
-    Camera& cam{engine_context->world.editor_state().camera()};
-    const f32 wheel{io.MouseWheel};
+    auto& cam{engine_context->world.editor_state().camera()};
+    const f32 wheel{imgui_io.MouseWheel};
     if (wheel != 0.0f)
     {  // Zooming
         cam.distance *= std::exp(-wheel * k_zoom_speed);
@@ -96,9 +96,9 @@ void GfxContext::hover_interaction_holding_middle(const EditorInput& input, Came
         engine_context->world.editor_state().camera().yaw += -dx * k_sensitivity;
         engine_context->world.editor_state().camera().pitch += dy * k_sensitivity;
 
-        const f32 lim{glm::radians(89.0f)};
+        const auto pitch_lim = glm::radians(k_camera_pitch_lim_deg);
         engine_context->world.editor_state().camera().pitch =
-            std::clamp(engine_context->world.editor_state().camera().pitch, -lim, lim);
+            std::clamp(engine_context->world.editor_state().camera().pitch, -pitch_lim, pitch_lim);
     }
 }
 

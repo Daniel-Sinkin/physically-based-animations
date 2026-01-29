@@ -56,22 +56,25 @@ void set_entity_and_body_position(EngineContext& e, EntityId id, const Pos3& pos
 
 void GfxContext::cancel_grab()
 {
-    auto& grab = editor.grab;
-    if (!grab.active)
+    Expects(engine_context);
+    Expects(editor.grab.active);
+    if (!editor.grab.active)
     {
         return;
     }
 
-    Expects(engine_context);
-
-    for (const auto& [id, start_pos] : grab.start_positions)
+    for (const auto& [id, start_pos] : editor.grab.start_positions)
     {
+        find(auto entity_res = engine_context->world.find(id); entity_res)
+        {
+            *entity_res.grabbed = false;
+        }
         set_entity_and_body_position(*engine_context, id, start_pos);
     }
 
-    grab.active = false;
-    grab.start_positions.clear();
-    grab.constraint = EditorState::GrabConstraint::None;
+    editor.grab.active = false;
+    editor.grab.start_positions.clear();
+    editor.grab.constraint = EditorState::GrabConstraint::None;
 
     ui_log("Grab cancelled");
 }
@@ -97,6 +100,7 @@ void GfxContext::confirm_grab()
                 if (auto* rb = engine_context->physics.try_body(*entity->body))
                 {
                     rb->position = entity->transform.position;
+                    rb->grabbed = false;
                 }
             }
         }

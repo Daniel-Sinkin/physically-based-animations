@@ -19,6 +19,7 @@
 #include <filesystem>
 #include <glm/vec2.hpp>
 #include <string>
+#include <tuple>
 #include <unordered_map>
 #include <vector>
 
@@ -31,6 +32,9 @@ struct PhysicsContext;
 struct EngineContext;
 struct Raycast;
 struct Camera;
+struct Entity;
+struct RigidBody;
+
 struct GfxContext
 {
     GfxContext() = default;
@@ -275,5 +279,31 @@ struct GfxContext
     {
         is_active_ = true;
     }
+
+  private:
+    // Physics debug rendering helpers (split from render_to_viewport_physics_debug)
+    [[nodiscard]] bool should_render_physics_debug_() const noexcept;
+
+    void push_debug_line_(const Pos3& a, const Pos3& b, f32 r, f32 g, f32 bl, f32 al) noexcept;
+
+    void append_contact_debug_lines_();
+    void append_selected_entity_debug_lines_();
+
+    [[nodiscard]] auto
+    selected_entity_frame_(const Entity& entity, const RigidBody* rigid_body) const noexcept
+        -> std::tuple<Pos3, Quaternion, f32>;
+
+    void append_selected_velocity_debug_lines_(const RigidBody& rigid_body, const Pos3& com);
+    void
+    append_selected_angular_velocity_debug_lines_(const RigidBody& rigid_body, const Pos3& com);
+
+    void ensure_debug_line_mesh_created_();
+    void upload_debug_lines_to_gpu_();
+
+    void configure_physics_debug_gl_state_() const noexcept;
+
+    void draw_debug_lines_(
+        const ViewMatrix& camera_view_matrix, const ProjMatrix& camera_proj_matrix
+    ) const;
 };
 }  // namespace ds_pba

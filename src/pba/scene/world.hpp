@@ -2,6 +2,7 @@
 #pragma once
 
 #include "pba/core/constants.hpp"
+#include "pba/engine/engine_context.hpp"
 #include "pba/scene/camera.hpp"
 #include "pba/scene/entity.hpp"
 
@@ -10,6 +11,8 @@
 
 namespace ds_pba
 {
+struct EngineContext;
+
 class EditorState
 {
   public:
@@ -233,6 +236,7 @@ class World
     EntityId next_id_{0u};
 
     EditorState editor_state_{};
+    EngineContext* engine_{};
 
     std::vector<Entity> entities_{};
     std::unordered_map<EntityId, usize> id_to_index_{};

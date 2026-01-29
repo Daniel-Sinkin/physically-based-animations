@@ -3,11 +3,7 @@
 //
 #include "pba/engine/scenes.hpp"
 //
-#include "pba/core/constants.hpp"
-#include "pba/core/math_types.hpp"
 #include "pba/engine/engine_context.hpp"
-//
-#include <cmath>
 //
 #include <glm/ext/quaternion_trigonometric.hpp>
 
@@ -18,12 +14,13 @@ void setup_scene_by_id(EngineContext& e, SceneId id) noexcept;
 
 namespace
 {
-void reset_engine_world(EngineContext& e) noexcept
+auto reset_engine_world(EngineContext& e) noexcept -> void
 {
     e.world.clear();
 
     e.physics.bodies.clear();
-    e.physics.external_forces.clear();
+    e.physics.simple_forces.clear();
+    e.physics.complex_forces.clear();
     e.physics.contact_cache.clear();
 
     e.physics.debug_contacts.clear();
@@ -33,7 +30,7 @@ void reset_engine_world(EngineContext& e) noexcept
 }
 }  // namespace
 
-void load_scene(EngineContext& e, SceneId id, bool pause)
+auto load_scene(EngineContext& e, SceneId id, bool pause) -> void
 {
     e.active_scene = id;
 
@@ -50,7 +47,7 @@ void load_scene(EngineContext& e, SceneId id, bool pause)
     e.physics.time = e.frame_time;
 }
 
-void setup_active_scene(EngineContext& e)
+auto setup_active_scene(EngineContext& e) -> void
 {
     load_scene(e, e.active_scene, true);
 }

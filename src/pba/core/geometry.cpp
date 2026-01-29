@@ -69,7 +69,7 @@ Dir3 NormalMatrix::transform_normal_unit(const Dir3& n) const noexcept
 
 Pos3 ClipToWorldMatrix::unproject_ndc(f32 x_ndc, f32 y_ndc, f32 z_ndc) const noexcept
 {
-    glm::vec4 p = m * glm::vec4{x_ndc, y_ndc, z_ndc, 1.0f};
+    auto p = m * glm::vec4{x_ndc, y_ndc, z_ndc, 1.0f};
     p /= p.w;
     return Pos3{p};
 }

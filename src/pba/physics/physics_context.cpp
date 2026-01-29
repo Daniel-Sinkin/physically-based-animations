@@ -8,6 +8,7 @@
 #include "pba/core/format.hpp"  // IWYU pragma: keep
 #include "pba/core/math_types.hpp"
 #include "pba/physics/collision.hpp"
+#include "pba/physics/forces.hpp"
 #include "pba/physics/solver.hpp"
 //
 #include <chrono>
@@ -58,18 +59,16 @@ void PhysicsContext::step()
 
     update_inv_inertia_world(bodies);
 
-    // TODO: Should also have parallelizable "single body"
-    // forces that don't need information about the other
-    // bodies, those I could easily split into seperate
-    // threads using OpenMP and applying "batched" multiple
-    // forces per body is more cache friendly
-    for (const auto& f : external_forces)
-    {  // Apply all registered external forces
-        assert(f.fn);
-        if (f.fn)
+    for (auto& b : bodies)
+    {
+        for (auto& force : simple_forces)
         {
-            f.fn(bodies, dt_s, f.user);
+            apply_force(b, force);
         }
+    }
+    for (auto& force : complex_forces)
+    {
+        apply_force(bodies, force);
     }
 
     integrate_forces(bodies, dt_s);

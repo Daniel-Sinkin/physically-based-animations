@@ -8,6 +8,7 @@
 #include "pba/engine/engine_context.hpp"
 #include "pba/physics/forces.hpp"
 #include "pba/scene/entity.hpp"
+#include "pba/scene/entity_id.hpp"
 #include "pba/scene/world_types.hpp"
 //
 #include <array>
@@ -21,7 +22,7 @@ namespace ds_pba
 namespace
 {
 
-[[nodiscard]] EntityId spawn_box(
+[[nodiscard]] auto spawn_box(
     EngineContext& e,
     Pos3 pos,
     Dir3 half_extents,
@@ -31,33 +32,33 @@ namespace
     Dir3 ang_vel = k_zero_dir,
     Color3 color = Color3{k_scene_object_default_color},
     std::string_view name = {}
-) noexcept
+) noexcept -> EntityId
 {
     Entity& ent = e.spawn_cube(pos, half_extents, inv_mass, vel, ori, ang_vel, color, name);
     return ent.id;
 }
 
-EntityId spawn_cube(
+auto spawn_cube(
     EngineContext& e,
     Pos3 pos,
     Dir3 vel = k_zero_dir,
     Quaternion ori = k_quaternion_identity,
     Color3 color = Color3{k_scene_object_default_color},
     std::string_view name = {}
-) noexcept
+) noexcept -> EntityId
 {
     constexpr Dir3 k_half_extents{0.5f, 0.5f, 0.5f};
     constexpr f32 k_inv_mass{1.0f};
     return spawn_box(e, pos, k_half_extents, k_inv_mass, vel, ori, k_zero_dir, color, name);
 }
 
-void spawn_static_ground(
+auto spawn_static_ground(
     EngineContext& e,
     Pos3 center,
     Dir3 half_extents,
     Color3 color = Color3{0.10f, 0.10f, 0.10f},
     std::string_view name = "Ground"
-) noexcept
+) noexcept -> void
 {
     (void) spawn_box(
         e,
@@ -72,7 +73,7 @@ void spawn_static_ground(
     );
 }
 
-void create_pyramid_3d(EngineContext& e, int base_n, f32 step_size, f32 base_z) noexcept
+auto create_pyramid_3d(EngineContext& e, int base_n, f32 step_size, f32 base_z) noexcept -> void
 {
     for (int layer{0}; layer < base_n; ++layer)
     {
@@ -99,7 +100,7 @@ void create_pyramid_3d(EngineContext& e, int base_n, f32 step_size, f32 base_z) 
     }
 }
 
-Dir3 tangent_ccw_xy(const Dir3& r) noexcept
+auto tangent_ccw_xy(const Dir3& r) noexcept -> Dir3
 {
     const Dir3 t{-r.y, r.x, 0.0f};
     const auto t2 = glm::dot(t, t);
@@ -110,119 +111,115 @@ Dir3 tangent_ccw_xy(const Dir3& r) noexcept
     return t / std::sqrt(t2);
 }
 
-void apply_keep_awake(std::span<RigidBody> bodies, f32, void*) noexcept
+struct DynamicForces
 {
-    for (auto& b : bodies)
-    {
-        if (b.is_static())
-        {
-            continue;
-        }
-        b.asleep = false;
-        b.sleep_frames = 0;
-    }
-}
+    bool keep_awake{false};
 
-struct NBodyForceParams
-{
-    f32 G{1.0f};
-    f32 softening{1e-3f};
+    const Pos3* pivot_ptr{};
+    usize repulsion_force_idx{k_invalid_idx};
+
+    f32 moving_time_s{0.0f};
+    f32 moving_omega{0.7f};
+    f32 moving_radius{18.0f};
+    f32 moving_z{2.0f};
+    usize moving_attractor_force_idx{k_invalid_idx};
+
+    f32 osc_time_s{0.0f};
+    f32 osc_omega{1.3f};
+    Dir3 osc_base_accel{k_gravity};
+    f32 osc_amp_xy{10.0f};
+    usize osc_gravity_force_idx{k_invalid_idx};
 };
 
-void apply_nbody_gravity_fixed(std::span<RigidBody> bodies, f32, void* user) noexcept
+static DynamicForces g_dyn{};
+
+}  // namespace
+
+auto update_scene_dynamic_forces(EngineContext& e, f32 dt_s) noexcept -> void
 {
-    auto& p = *static_cast<NBodyForceParams*>(user);
-    const usize n = bodies.size();
-    for (usize i{0}; i < n; ++i)
+    // Keep-awake policy (not a force)
+    if (g_dyn.keep_awake)
     {
-        RigidBody& a = bodies[i];
-        if (a.is_static() || a.asleep)
+        for (auto& b : e.physics.bodies)
         {
-            continue;
-        }
-
-        const auto ma = (a.inv_mass > 0.0f) ? (1.0f / a.inv_mass) : 0.0f;
-
-        for (usize j{0zu}; j < n; ++j)
-        {
-            if (i == j)
-            {
-                continue;
-            }
-            const RigidBody& b = bodies[j];
             if (b.is_static())
             {
                 continue;
             }
-
-            const auto mb = (b.inv_mass > 0.0f) ? (1.0f / b.inv_mass) : 0.0f;
-
-            const Dir3 r{b.position - a.position};
-            const auto r2 = glm::dot(r, r) + p.softening * p.softening;
-            const auto inv_r = 1.0f / std::sqrt(r2);
-            const auto inv_r3 = inv_r * inv_r * inv_r;
-
-            a.force_accum += (p.G * ma * mb) * r * inv_r3;
+            b.asleep = false;
+            b.sleep_frames = 0;
         }
+    }
+
+    // Repulsion target follows camera pivot
+    if (g_dyn.pivot_ptr && g_dyn.repulsion_force_idx != k_invalid_idx
+        && g_dyn.repulsion_force_idx < e.physics.simple_forces.size())
+    {
+        auto& force = e.physics.simple_forces[g_dyn.repulsion_force_idx];
+        std::visit(
+            overloaded{
+                [&](RepulsionForce& r) noexcept { r.target = *g_dyn.pivot_ptr; },
+                [&](auto&) noexcept {},
+            },
+            force
+        );
+    }
+
+    // Moving attractor target
+    if (g_dyn.moving_attractor_force_idx != k_invalid_idx
+        && g_dyn.moving_attractor_force_idx < e.physics.simple_forces.size())
+    {
+        g_dyn.moving_time_s += dt_s;
+        const f32 ang = g_dyn.moving_omega * g_dyn.moving_time_s;
+
+        const Pos3 target{
+            g_dyn.moving_radius * std::cos(ang),
+            g_dyn.moving_radius * std::sin(ang),
+            g_dyn.moving_z,
+        };
+
+        auto& force = e.physics.simple_forces[g_dyn.moving_attractor_force_idx];
+        std::visit(
+            overloaded{
+                [&](AttractorForce& a) noexcept { a.target = target; },
+                [&](auto&) noexcept {},
+            },
+            force
+        );
+    }
+
+    // Oscillating uniform (gravity + rotating horizontal wind)
+    if (g_dyn.osc_gravity_force_idx != k_invalid_idx
+        && g_dyn.osc_gravity_force_idx < e.physics.simple_forces.size())
+    {
+        g_dyn.osc_time_s += dt_s;
+        const f32 ang = g_dyn.osc_omega * g_dyn.osc_time_s;
+
+        const Dir3 wind{
+            g_dyn.osc_amp_xy * std::cos(ang),
+            g_dyn.osc_amp_xy * std::sin(ang),
+            0.0f,
+        };
+
+        auto& force = e.physics.simple_forces[g_dyn.osc_gravity_force_idx];
+        std::visit(
+            overloaded{
+                [&](GravityForce& g) noexcept { g.accel = g_dyn.osc_base_accel + wind; },
+                [&](auto&) noexcept {},
+            },
+            force
+        );
     }
 }
 
-struct MovingAttractor
+// -----------------------------------------------------------------------------
+// Scenes
+// -----------------------------------------------------------------------------
+
+auto setup_scene_attractors_and_repulsive_pivot(EngineContext& e) noexcept -> void
 {
-    Pos3 target{};
-    f32 time_s{0.0f};
-    f32 omega{0.6f};
-    f32 radius{16.0f};
-    f32 z{2.0f};
+    g_dyn = {};
 
-    AttractorForce attractor{};
-};
-
-void apply_moving_attractor(std::span<RigidBody> bodies, f32 dt_s, void* user) noexcept
-{
-    auto& m = *static_cast<MovingAttractor*>(user);
-
-    m.time_s += dt_s;
-    const auto ang = m.omega * m.time_s;
-
-    m.target = Pos3{
-        m.radius * std::cos(ang),
-        m.radius * std::sin(ang),
-        m.z,
-    };
-
-    apply_attractor_force(bodies, dt_s, &m.attractor);
-}
-
-struct OscillatingUniform
-{
-    f32 time_s{0.0f};
-    f32 omega{1.6f};
-
-    Dir3 base_accel{};
-    f32 amp_xy{8.0f};
-};
-
-void apply_oscillating_uniform(std::span<RigidBody> bodies, f32 dt_s, void* user) noexcept
-{
-    auto& f = *static_cast<OscillatingUniform*>(user);
-    f.time_s += dt_s;
-
-    const auto ang = f.omega * f.time_s;
-    const Dir3 wind{
-        f.amp_xy * std::cos(ang),
-        f.amp_xy * std::sin(ang),
-        0.0f,
-    };
-
-    UniformForce uf{.accel = f.base_accel + wind};
-    apply_uniform_force(bodies, dt_s, &uf);
-}
-
-}  // namespace
-
-void setup_scene_attractors_and_repulsive_pivot(EngineContext& e) noexcept
-{
     spawn_cube(
         e,
         Pos3{-14.0f, 0.0f, 2.0f},
@@ -259,7 +256,6 @@ void setup_scene_attractors_and_repulsive_pivot(EngineContext& e) noexcept
         "Projectile Yellow"
     );
 
-    // e.create_pyramid(16);
     e.create_pyramid_3d(10, 1.06f, 0.5f);
 
     e.world.spawn(
@@ -274,41 +270,35 @@ void setup_scene_attractors_and_repulsive_pivot(EngineContext& e) noexcept
     static Pos3 origin{0.0f, 0.0f, 0.0f};
     static Pos3 pos{-20.0f, -10.0f, 10.0f};
 
-    static AttractorForce attractor_origin{
-        .target = &origin,
-        .accel_mag = 15.0f,
+    e.physics.simple_forces.push_back(SimpleForce{AttractorForce{
+        .target = origin,
+        .magnitude = 15.0f,
         .min_radius = 0.5f,
-    };
+    }});
 
-    static AttractorForce attractor_pos{
-        .target = &pos,
-        .accel_mag = 15.0f,
+    e.physics.simple_forces.push_back(SimpleForce{AttractorForce{
+        .target = pos,
+        .magnitude = 15.0f,
         .min_radius = 0.5f,
-    };
+    }});
 
-    static RepulsionForce repulse_pivot{
-        .target = nullptr,
+    // Repulsion from camera pivot (dynamic target)
+    e.physics.simple_forces.push_back(SimpleForce{RepulsionForce{
+        .target = e.world.editor_state().camera().pivot,
         .accel_max = 100.0f,
         .range = 4.0f,
         .min_radius = 0.5f,
-    };
-    repulse_pivot.target = &e.world.editor_state().camera().pivot;
+    }});
 
-    e.physics.external_forces.push_back(
-        ExternalForce{.fn = apply_attractor_force, .user = &attractor_origin}
-    );
-    e.physics.external_forces.push_back(
-        ExternalForce{.fn = apply_repulsion_force, .user = &repulse_pivot}
-    );
-    e.physics.external_forces.push_back(
-        ExternalForce{.fn = apply_attractor_force, .user = &attractor_pos}
-    );
+    g_dyn.pivot_ptr = &e.world.editor_state().camera().pivot;
+    g_dyn.repulsion_force_idx = e.physics.simple_forces.size() - 1zu;
 }
 
-void setup_scene_small_pyramid_projectiles_gravity(EngineContext& e) noexcept
+auto setup_scene_small_pyramid_projectiles_gravity(EngineContext& e) noexcept -> void
 {
-    static UniformForce gravity{.accel = k_gravity};
-    e.physics.external_forces.push_back(ExternalForce{.fn = apply_uniform_force, .user = &gravity});
+    g_dyn = {};
+
+    e.physics.simple_forces.push_back(SimpleForce{GravityForce{.accel = k_gravity}});
 
     spawn_cube(
         e,
@@ -342,15 +332,17 @@ void setup_scene_small_pyramid_projectiles_gravity(EngineContext& e) noexcept
     e.create_pyramid(8, 1.06f, 7.0f);
 }
 
-void setup_scene_attractor_origin_no_gravity(EngineContext& e) noexcept
+auto setup_scene_attractor_origin_no_gravity(EngineContext& e) noexcept -> void
 {
+    g_dyn = {};
+
     static Pos3 origin{0.0f, 0.0f, 0.0f};
-    static AttractorForce a{
-        .target = &origin,
-        .accel_mag = 14.0f,
+
+    e.physics.simple_forces.push_back(SimpleForce{AttractorForce{
+        .target = origin,
+        .magnitude = 14.0f,
         .min_radius = 0.9f,
-    };
-    e.physics.external_forces.push_back(ExternalForce{.fn = apply_attractor_force, .user = &a});
+    }});
 
     constexpr auto n = 30;
     const auto r = 16.0f;
@@ -368,18 +360,18 @@ void setup_scene_attractor_origin_no_gravity(EngineContext& e) noexcept
     }
 }
 
-void setup_scene_attractor_origin_with_gravity(EngineContext& e) noexcept
+auto setup_scene_attractor_origin_with_gravity(EngineContext& e) noexcept -> void
 {
-    static UniformForce gravity{.accel = k_gravity};
-    e.physics.external_forces.push_back(ExternalForce{.fn = apply_uniform_force, .user = &gravity});
+    g_dyn = {};
+
+    e.physics.simple_forces.push_back(SimpleForce{GravityForce{.accel = k_gravity}});
 
     static Pos3 origin{0.0f, 0.0f, 0.0f};
-    static AttractorForce a{
-        .target = &origin,
-        .accel_mag = 10.0f,
+    e.physics.simple_forces.push_back(SimpleForce{AttractorForce{
+        .target = origin,
+        .magnitude = 10.0f,
         .min_radius = 1.0f,
-    };
-    e.physics.external_forces.push_back(ExternalForce{.fn = apply_attractor_force, .user = &a});
+    }});
 
     constexpr auto n = 26;
     const auto r = 14.0f;
@@ -397,22 +389,24 @@ void setup_scene_attractor_origin_with_gravity(EngineContext& e) noexcept
     }
 }
 
-void setup_scene_large_pyramid15_ground_gravity(EngineContext& e) noexcept
+auto setup_scene_large_pyramid15_ground_gravity(EngineContext& e) noexcept -> void
 {
+    g_dyn = {};
+
     spawn_static_ground(e, Pos3{0.0f, 0.0f, -3.5f}, Dir3{40.0f, 40.0f, 0.5f});
 
-    static UniformForce gravity{.accel = k_gravity};
-    e.physics.external_forces.push_back(ExternalForce{.fn = apply_uniform_force, .user = &gravity});
+    e.physics.simple_forces.push_back(SimpleForce{GravityForce{.accel = k_gravity}});
 
     e.create_pyramid(15, 1.06f, -2.5f);
 }
 
-void setup_scene_pyramid3d_heavy_cube_drop(EngineContext& e) noexcept
+auto setup_scene_pyramid3d_heavy_cube_drop(EngineContext& e) noexcept -> void
 {
+    g_dyn = {};
+
     spawn_static_ground(e, Pos3{0.0f, 0.0f, -3.5f}, Dir3{45.0f, 45.0f, 0.5f});
 
-    static UniformForce gravity{.accel = k_gravity};
-    e.physics.external_forces.push_back(ExternalForce{.fn = apply_uniform_force, .user = &gravity});
+    e.physics.simple_forces.push_back(SimpleForce{GravityForce{.accel = k_gravity}});
 
     create_pyramid_3d(e, 7, 1.06f, -2.5f);
 
@@ -430,11 +424,13 @@ void setup_scene_pyramid3d_heavy_cube_drop(EngineContext& e) noexcept
     );
 }
 
-void setup_scene_motors_elongated_no_gravity(EngineContext& e) noexcept
+auto setup_scene_motors_elongated_no_gravity(EngineContext& e) noexcept -> void
 {
+    g_dyn = {};
+
     struct MotorPack
     {
-        std::array<Motor, 8> motors{};
+        std::array<MotorForce, 8> motors{};
         usize count{0};
     };
     static MotorPack pack{};
@@ -464,13 +460,12 @@ void setup_scene_motors_elongated_no_gravity(EngineContext& e) noexcept
             std::format("Motor Rod {}", i)
         );
 
-        pack.motors[pack.count] = Motor{
+        pack.motors[pack.count] = MotorForce{
             .id = id,
             .torque = Dir3{0.0f, 0.0f, (i % 2 == 0) ? 70.0f : -70.0f},
         };
-        e.physics.external_forces.push_back(
-            ExternalForce{.fn = apply_motor_torque, .user = &pack.motors[pack.count]}
-        );
+
+        e.physics.simple_forces.push_back(SimpleForce{pack.motors[pack.count]});
         ++pack.count;
     }
 
@@ -483,17 +478,16 @@ void setup_scene_motors_elongated_no_gravity(EngineContext& e) noexcept
     }
 }
 
-void setup_scene_nbody_sun_3_planets(EngineContext& e) noexcept
+auto setup_scene_nbody_sun_3_planets(EngineContext& e) noexcept -> void
 {
-    static NBodyForceParams params{
+    g_dyn = {};
+    g_dyn.keep_awake = true;
+
+    static NBodyForce params{
         .G = 3.0f,
         .softening = 0.6f,
     };
-
-    e.physics.external_forces.push_back(ExternalForce{.fn = apply_keep_awake, .user = nullptr});
-    e.physics.external_forces.push_back(
-        ExternalForce{.fn = apply_nbody_gravity_fixed, .user = &params}
-    );
+    e.physics.complex_forces.push_back(ComplexForce{params});
 
     constexpr auto sun_mass = 1200.0f;
     const EntityId sun_id = spawn_box(
@@ -556,15 +550,16 @@ void setup_scene_nbody_sun_3_planets(EngineContext& e) noexcept
     }
 }
 
-void setup_scene_nbody_three_body_equal(EngineContext& e) noexcept
+auto setup_scene_nbody_three_body_equal(EngineContext& e) noexcept -> void
 {
-    static NBodyForceParams p{
+    g_dyn = {};
+    g_dyn.keep_awake = true;
+
+    static NBodyForce params{
         .G = 40.0f,
         .softening = 0.5f,
     };
-
-    e.physics.external_forces.push_back(ExternalForce{.fn = apply_keep_awake, .user = nullptr});
-    e.physics.external_forces.push_back(ExternalForce{.fn = apply_nbody_gravity_fixed, .user = &p});
+    e.physics.complex_forces.push_back(ComplexForce{params});
 
     constexpr auto m = 60.0f;
     const auto inv_m = 1.0f / m;
@@ -578,7 +573,7 @@ void setup_scene_nbody_three_body_equal(EngineContext& e) noexcept
         Pos3{-0.5f * R, -y, 0.0f},
     };
 
-    const auto v = std::sqrt(p.G * m / (std::sqrt(3.0f) * R));
+    const auto v = std::sqrt(params.G * m / (std::sqrt(3.0f) * R));
 
     for (int i{0}; i < 3; ++i)
     {
@@ -599,10 +594,12 @@ void setup_scene_nbody_three_body_equal(EngineContext& e) noexcept
     }
 }
 
-void setup_scene_moving_attractor_circle(EngineContext& e) noexcept
+auto setup_scene_moving_attractor_circle(EngineContext& e) noexcept -> void
 {
+    g_dyn = {};
+
     constexpr int n = 42;
-    for (int i = 0; i < n; ++i)
+    for (int i{0}; i < n; ++i)
     {
         const auto t = static_cast<f32>(i) / static_cast<f32>(n);
         const auto ang = t * k_two_pi;
@@ -622,19 +619,24 @@ void setup_scene_moving_attractor_circle(EngineContext& e) noexcept
         spawn_cube(e, p, v, k_quaternion_identity, Color3{0.80f, 0.85f, 0.90f});
     }
 
-    static MovingAttractor m{.time_s = 0.0f, .omega = 0.7f, .radius = 18.0f, .z = 2.0f};
-
-    m.attractor = AttractorForce{
-        .target = &m.target,
-        .accel_mag = 18.0f,
+    // Store an attractor; we mutate its target each step.
+    e.physics.simple_forces.push_back(SimpleForce{AttractorForce{
+        .target = Pos3{g_dyn.moving_radius, 0.0f, g_dyn.moving_z},  // initial
+        .magnitude = 18.0f,
         .min_radius = 1.0f,
-    };
+    }});
 
-    e.physics.external_forces.push_back(ExternalForce{.fn = apply_moving_attractor, .user = &m});
+    g_dyn.moving_time_s = 0.0f;
+    g_dyn.moving_omega = 0.7f;
+    g_dyn.moving_radius = 18.0f;
+    g_dyn.moving_z = 2.0f;
+    g_dyn.moving_attractor_force_idx = e.physics.simple_forces.size() - 1zu;
 }
 
-void setup_scene_oscillating_uniform_force(EngineContext& e) noexcept
+auto setup_scene_oscillating_uniform_force(EngineContext& e) noexcept -> void
 {
+    g_dyn = {};
+
     spawn_static_ground(e, Pos3{0.0f, 0.0f, -3.5f}, Dir3{35.0f, 35.0f, 0.5f});
 
     for (int i = 0; i < 12; ++i)
@@ -642,19 +644,23 @@ void setup_scene_oscillating_uniform_force(EngineContext& e) noexcept
         spawn_cube(e, Pos3{0.0f, 0.0f, -2.5f + 1.02f * static_cast<f32>(i)});
     }
 
-    static OscillatingUniform f{
-        .time_s = 0.0f, .omega = 1.3f, .base_accel = k_gravity, .amp_xy = 10.0f
-    };
+    // Use GravityForce as the "uniform accel" carrier; we mutate accel each step.
+    e.physics.simple_forces.push_back(SimpleForce{GravityForce{.accel = k_gravity}});
 
-    e.physics.external_forces.push_back(ExternalForce{.fn = apply_oscillating_uniform, .user = &f});
+    g_dyn.osc_time_s = 0.0f;
+    g_dyn.osc_omega = 1.3f;
+    g_dyn.osc_base_accel = k_gravity;
+    g_dyn.osc_amp_xy = 10.0f;
+    g_dyn.osc_gravity_force_idx = e.physics.simple_forces.size() - 1zu;
 }
 
-void setup_scene_inclined_plane(EngineContext& e) noexcept
+auto setup_scene_inclined_plane(EngineContext& e) noexcept -> void
 {
+    g_dyn = {};
+
     spawn_static_ground(e, Pos3{0.0f, 0.0f, -4.0f}, Dir3{50.0f, 50.0f, 0.5f});
 
-    static UniformForce gravity{.accel = k_gravity};
-    e.physics.external_forces.push_back(ExternalForce{.fn = apply_uniform_force, .user = &gravity});
+    e.physics.simple_forces.push_back(SimpleForce{GravityForce{.accel = k_gravity}});
 
     const Quaternion ramp_q = glm::angleAxis(-0.22f * k_pi, k_axis_y);
     (void) spawn_box(
@@ -682,10 +688,11 @@ void setup_scene_inclined_plane(EngineContext& e) noexcept
     }
 }
 
-void setup_scene_box_drop_container(EngineContext& e) noexcept
+auto setup_scene_box_drop_container(EngineContext& e) noexcept -> void
 {
-    static UniformForce gravity{.accel = k_gravity};
-    e.physics.external_forces.push_back(ExternalForce{.fn = apply_uniform_force, .user = &gravity});
+    g_dyn = {};
+
+    e.physics.simple_forces.push_back(SimpleForce{GravityForce{.accel = k_gravity}});
 
     spawn_static_ground(e, Pos3{0.0f, 0.0f, -3.5f}, Dir3{22.0f, 22.0f, 0.5f});
 
@@ -751,10 +758,11 @@ void setup_scene_box_drop_container(EngineContext& e) noexcept
     }
 }
 
-void setup_scene_projectile_wall(EngineContext& e) noexcept
+auto setup_scene_projectile_wall(EngineContext& e) noexcept -> void
 {
-    static UniformForce gravity{.accel = k_gravity};
-    e.physics.external_forces.push_back(ExternalForce{.fn = apply_uniform_force, .user = &gravity});
+    g_dyn = {};
+
+    e.physics.simple_forces.push_back(SimpleForce{GravityForce{.accel = k_gravity}});
 
     spawn_static_ground(e, Pos3{0.0f, 0.0f, -3.5f}, Dir3{45.0f, 45.0f, 0.5f});
 

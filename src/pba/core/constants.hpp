@@ -80,6 +80,7 @@ inline constexpr f32 k_camera_pitch{30.0f};
 inline constexpr f32 k_camera_fov_y{60.0f};
 inline constexpr f32 k_camera_z_near{0.1f};
 inline constexpr f32 k_camera_z_far{1000.0f};
+inline constexpr f32 k_camera_pitch_lim_deg{89.0f};
 
 //
 // Render

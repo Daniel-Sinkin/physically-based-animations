@@ -1,4 +1,5 @@
 // pba/engine/engine_context.cpp
+#include "glm/fwd.hpp"
 #include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/engine/engine_context.hpp"
@@ -8,6 +9,7 @@
 #include "pba/core/format.hpp"  // IWYU pragma: keep
 #include "pba/core/math_types.hpp"
 #include "pba/engine/scenes.hpp"
+#include "pba/physics/physics_types.hpp"
 #include "pba/ui/ui.hpp"
 //
 #include <algorithm>
@@ -19,7 +21,8 @@ namespace ds_pba
 namespace
 {
 
-[[nodiscard]] glm::mat3 inv_inertia_body_box(f32 inv_mass, const Dir3& half_extents) noexcept
+[[nodiscard]] auto inv_inertia_body_box(f32 inv_mass, const Dir3& half_extents) noexcept
+    -> glm::mat3
 {
     if (inv_mass == k_static_mass)
     {
@@ -27,15 +30,19 @@ namespace
     }
 
     Expects(inv_mass > 0.0f);
-    const f32 m = 1.0f / inv_mass;
+    if (inv_mass <= 0.0f)
+    {
+        return glm::mat3(0.0f);
+    }
+    const auto m = 1.0f / inv_mass;
 
-    const f32 x = 2.0f * half_extents.x;
-    const f32 y = 2.0f * half_extents.y;
-    const f32 z = 2.0f * half_extents.z;
+    const auto x = 2.0f * half_extents.x;
+    const auto y = 2.0f * half_extents.y;
+    const auto z = 2.0f * half_extents.z;
 
-    const f32 Ixx = (m / 12.0f) * (y * y + z * z);
-    const f32 Iyy = (m / 12.0f) * (x * x + z * z);
-    const f32 Izz = (m / 12.0f) * (x * x + y * y);
+    const auto Ixx = (m / 12.0f) * (y * y + z * z);
+    const auto Iyy = (m / 12.0f) * (x * x + z * z);
+    const auto Izz = (m / 12.0f) * (x * x + y * y);
 
     glm::mat3 invI{0.0f};
     invI[0][0] = (Ixx > 0.0f) ? (1.0f / Ixx) : 0.0f;
@@ -44,14 +51,15 @@ namespace
     return invI;
 }
 
-[[nodiscard]] glm::mat3
+[[nodiscard]] auto
 inv_inertia_world_from_body(const Quaternion& q, const glm::mat3& inv_inertia_body) noexcept
+    -> glm::mat3
 {
     const glm::mat3 R{glm::mat3_cast(q)};
     return R * inv_inertia_body * glm::transpose(R);
 }
 
-void init_box_inertia(RigidBody& b) noexcept
+auto init_box_inertia(RigidBody& b) noexcept -> void
 {
     b.inv_inertia_body = inv_inertia_body_box(b.inv_mass, b.half_extents);
     b.inv_inertia_world = inv_inertia_world_from_body(b.orientation, b.inv_inertia_body);
@@ -59,7 +67,21 @@ void init_box_inertia(RigidBody& b) noexcept
 
 }  // namespace
 
-Entity& EngineContext::spawn_cube(
+auto EngineContext::create_box_body(const Entity& e, f32 inv_mass, Dir3 velo) const -> RigidBody
+{
+    RigidBody rb{
+        .id = e.id,
+        .half_extents = e.transform.scale * 0.5f,
+        .position = e.transform.position,
+        .velocity = velo,
+        .inv_mass = inv_mass,
+        .orientation = e.transform.orientation
+    };
+    init_box_inertia(rb);
+    return rb;
+}
+
+auto EngineContext::spawn_cube(
     Pos3 pos,
     Dir3 half_extents,
     f32 inv_mass,
@@ -68,7 +90,7 @@ Entity& EngineContext::spawn_cube(
     Dir3 ang_vel,
     Color3 color,
     std::string_view name
-)
+) -> Entity&
 {
     Entity& e = world.spawn(
         EntityType::Cube,
@@ -96,7 +118,7 @@ Entity& EngineContext::spawn_cube(
     return e;
 }
 
-Entity& EngineContext::add_ground()
+auto EngineContext::add_ground() -> Entity&
 {
     return spawn_cube(
         Pos3{0.0f, 0.0f, -3.5f},
@@ -110,19 +132,19 @@ Entity& EngineContext::add_ground()
     );
 }
 
-void EngineContext::create_pyramid(int base_n, f32 step_size, f32 base_z)
+auto EngineContext::create_pyramid(int base_n, f32 step_size, f32 base_z) -> void
 {
     for (int layer{0}; layer < base_n; ++layer)
     {
-        const int n = base_n - layer;
-        const f32 z = base_z + static_cast<f32>(layer) * step_size;
-        const f32 half_span = 0.5f * static_cast<f32>(n - 1) * step_size;
+        const auto n = base_n - layer;
+        const auto z = base_z + static_cast<f32>(layer) * step_size;
+        const auto half_span = 0.5f * static_cast<f32>(n - 1) * step_size;
 
-        for (int ix{0}; ix < n; ++ix)
+        for (int i{0}; i < n; ++i)
         {
-            const f32 x = static_cast<f32>(ix) * step_size - half_span;
+            const auto x = static_cast<f32>(i) * step_size - half_span;
 
-            Entity& e = spawn_cube(
+            auto& entity = spawn_cube(
                 Pos3{x, 0.0f, z},
                 Dir3{0.5f, 0.5f, 0.5f},
                 1.0f,
@@ -133,28 +155,28 @@ void EngineContext::create_pyramid(int base_n, f32 step_size, f32 base_z)
                 {}
             );
 
-            e.name = std::format("Pyramid (layer={}, idx={})", layer, ix);
+            entity.name = std::format("Pyramid (layer={}, idx={})", layer, i);
         }
     }
 }
 
-void EngineContext::create_pyramid_3d(int base_n, f32 step_size, f32 base_z)
+auto EngineContext::create_pyramid_3d(int base_n, f32 step_size, f32 base_z) -> void
 {
     for (int layer{0}; layer < base_n; ++layer)
     {
-        const int n = base_n - layer;
-        const f32 z = base_z + static_cast<f32>(layer) * step_size;
-        const f32 half_span = 0.5f * static_cast<f32>(n - 1) * step_size;
+        const auto n = base_n - layer;
+        const auto z = base_z + static_cast<f32>(layer) * step_size;
+        const auto half_span = 0.5f * static_cast<f32>(n - 1) * step_size;
 
-        for (int ix{0}; ix < n; ++ix)
+        for (int i{0}; i < n; ++i)
         {
-            const f32 x = static_cast<f32>(ix) * step_size - half_span;
+            const auto x = static_cast<f32>(i) * step_size - half_span;
 
-            for (int iy{0}; iy < n; ++iy)
+            for (int j{0}; j < n; ++j)
             {
-                const f32 y = static_cast<f32>(iy) * step_size - half_span;
+                const auto y = static_cast<f32>(j) * step_size - half_span;
 
-                Entity& e = spawn_cube(
+                auto& e = spawn_cube(
                     Pos3{x, y, z},
                     Dir3{0.5f, 0.5f, 0.5f},
                     1.0f,
@@ -165,13 +187,13 @@ void EngineContext::create_pyramid_3d(int base_n, f32 step_size, f32 base_z)
                     {}
                 );
 
-                e.name = std::format("Pyramid3D (layer={}, ix={}, iy={})", layer, ix, iy);
+                e.name = std::format("Pyramid3D (layer={}, ix={}, iy={})", layer, i, j);
             }
         }
     }
 }
 
-bool EngineContext::setup()
+auto EngineContext::setup() -> bool
 {
     setup_active_scene(*this);
 
@@ -188,7 +210,23 @@ bool EngineContext::setup()
     return true;
 }
 
-void EngineContext::run()
+auto EngineContext::sync_physics_to_world() -> void
+{
+    for (Entity& e : world.entities())
+    {
+        if (!e.body)
+        {
+            continue;
+        }
+        if (const RigidBody* rb = physics.try_body(*e.body))
+        {
+            e.transform.position = rb->position;
+            e.transform.orientation = rb->orientation;
+        }
+    }
+}
+
+auto EngineContext::run() -> void
 {
     const Duration fixed_dt{physics.time_step};
     const Duration max_frame_dt{0.25};
@@ -241,18 +279,7 @@ void EngineContext::run()
             accumulator -= fixed_dt;
         }
 
-        for (Entity& e : world.entities())
-        {
-            if (!e.body)
-            {
-                continue;
-            }
-            if (const RigidBody* rb = physics.try_body(*e.body))
-            {
-                e.transform.position = rb->position;
-                e.transform.orientation = rb->orientation;
-            }
-        }
+        sync_physics_to_world();
     }
 }
 

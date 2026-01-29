@@ -99,8 +99,7 @@ void render_physics_debug_window(EngineContext& engine_context)
 
     ImGui::Separator();
     ImGui::Text(
-        "Total kinetic energy: %.3f",
-        static_cast<double>(physics_context.debug_total_kinetic_energy)
+        "Total kinetic energy: %.3f", static_cast<f64>(physics_context.debug_total_kinetic_energy)
     );
 
     if (!physics_context.debug_total_kinetic_energy_history.empty())
@@ -345,24 +344,23 @@ void render_imgui_windows(EngineContext& engine_context)
         ImGui::Separator();
 
         ImGui::Text("Camera:");
-        ImGui::Text("  distance: %.3f", static_cast<double>(cam.distance));
-        ImGui::Text("  yaw(deg):  %.2f", static_cast<double>(glm::degrees(cam.yaw)));
-        ImGui::Text("  pitch(deg):%.2f", static_cast<double>(glm::degrees(cam.pitch)));
-        auto pivot_x_d = static_cast<double>(cam.pivot.x);
-        auto pivot_y_d = static_cast<double>(cam.pivot.y);
-        auto pivot_z_d = static_cast<double>(cam.pivot.z);
+        ImGui::Text("  distance: %.3f", static_cast<f64>(cam.distance));
+        ImGui::Text("  yaw(deg):  %.2f", static_cast<f64>(glm::degrees(cam.yaw)));
+        ImGui::Text("  pitch(deg):%.2f", static_cast<f64>(glm::degrees(cam.pitch)));
+        auto pivot_x_d = static_cast<f64>(cam.pivot.x);
+        auto pivot_y_d = static_cast<f64>(cam.pivot.y);
+        auto pivot_z_d = static_cast<f64>(cam.pivot.z);
         ImGui::Text("  pivot:     (%.2f, %.2f, %.2f)", pivot_x_d, pivot_y_d, pivot_z_d);
         ImGui::Separator();
 
         ImGui::Text("Frame Counter: %d", gfx_context.frame_count);
 
-        const TimePoint now{std::chrono::steady_clock::now()};
-        const auto dur{now - gfx_context.run_start};
+        const auto dur{Clock::now() - gfx_context.run_start};
 
-        const double seconds{std::chrono::duration<double>(dur).count()};
+        const auto seconds = std::chrono::duration<f64>(dur).count();
 
-        const double frame_count_d{static_cast<double>(gfx_context.frame_count)};
-        const double fps{(seconds > 0.0) ? frame_count_d / seconds : 0.0};
+        const auto frame_count_d = static_cast<f64>(gfx_context.frame_count);
+        const auto fps = (seconds > 0.0) ? frame_count_d / seconds : 0.0;
 
         ImGui::Text("Total Runtime: %.2f s", seconds);
         ImGui::Text("Average FPS: %.2f", fps);
@@ -375,15 +373,15 @@ void render_imgui_windows(EngineContext& engine_context)
         {
             apply_theme(t);
 
-            ImGuiIO& io = ImGui::GetIO();
-            ImFont* chosen = gfx_context.default_font;
+            auto& imgui_io = ImGui::GetIO();
+            auto chosen_font = gfx_context.default_font;
 
             if (t.font_id)
             {
                 if (auto it = gfx_context.fonts_by_id.find(*t.font_id);
                     it != gfx_context.fonts_by_id.end())
                 {
-                    chosen = it->second;
+                    chosen_font = it->second;
                 }
                 else
                 {
@@ -396,7 +394,7 @@ void render_imgui_windows(EngineContext& engine_context)
                 }
             }
 
-            io.FontDefault = chosen;
+            imgui_io.FontDefault = chosen_font;
         };
 
         auto& grid = gfx_context.grid;
@@ -409,7 +407,7 @@ void render_imgui_windows(EngineContext& engine_context)
             {
                 for (usize i{0zu}; i < gfx_context.theme_pack.themes.size(); ++i)
                 {
-                    const bool selected{i == gfx_context.theme_index};
+                    const auto selected = i == gfx_context.theme_index;
                     if (ImGui::Selectable(gfx_context.theme_pack.themes[i].name.c_str(), selected))
                     {
                         gfx_context.theme_index = i;
@@ -465,11 +463,9 @@ void render_imgui_windows(EngineContext& engine_context)
 
     {
         ImGui::Begin("Entity Inspector");
-        if (editor_state.active_id.has_value())
+        if (editor_state.active_id)
         {
-            const EntityId active_id{*editor_state.active_id};
-
-            auto active_res = world.find(active_id);
+            auto active_res = world.find(*editor_state.active_id);
             if (!active_res)
             {
                 ImGui::Text("Active selection not found.");
@@ -498,8 +494,8 @@ void render_imgui_windows(EngineContext& engine_context)
 
             if (physics_index)
             {
-                RigidBody& rb = physics_context.bodies[*physics_index];
-                Pos3 p = rb.position;
+                auto& rb = physics_context.bodies[*physics_index];
+                auto p = rb.position;
                 if (ImGui::DragFloat3("Position", &p.x, 0.01f))
                 {
                     engine_context.world.find(o.id)->transform.position = p;
@@ -509,28 +505,28 @@ void render_imgui_windows(EngineContext& engine_context)
                 const EulerDeg3& rot{glm::degrees(glm::eulerAngles(ori))};
                 ImGui::Text(
                     "Orientation (Quaternion) (%.2f,%.2f,%.2f,%.2f)",
-                    static_cast<double>(ori.x),
-                    static_cast<double>(ori.y),
-                    static_cast<double>(ori.z),
-                    static_cast<double>(ori.w)
+                    static_cast<f64>(ori.x),
+                    static_cast<f64>(ori.y),
+                    static_cast<f64>(ori.z),
+                    static_cast<f64>(ori.w)
                 );
                 ImGui::Text(
                     "Orientation (Degrees) (%.2f°,%.2f°,%.2f°)",
-                    static_cast<double>(rot.x),
-                    static_cast<double>(rot.y),
-                    static_cast<double>(rot.z)
+                    static_cast<f64>(rot.x),
+                    static_cast<f64>(rot.y),
+                    static_cast<f64>(rot.z)
                 );
                 ImGui::Text(
                     "Scaling (%.2f,%.2f,%.2f)",
-                    static_cast<double>(o.transform.scale.x),
-                    static_cast<double>(o.transform.scale.y),
-                    static_cast<double>(o.transform.scale.z)
+                    static_cast<f64>(o.transform.scale.x),
+                    static_cast<f64>(o.transform.scale.y),
+                    static_cast<f64>(o.transform.scale.z)
                 );
                 ImGui::Text(
                     "Velocity (%.2f,%.2f,%.2f)",
-                    static_cast<double>(rb.velocity.x),
-                    static_cast<double>(rb.velocity.y),
-                    static_cast<double>(rb.velocity.z)
+                    static_cast<f64>(rb.velocity.x),
+                    static_cast<f64>(rb.velocity.y),
+                    static_cast<f64>(rb.velocity.z)
                 );
             }
             else
@@ -582,12 +578,12 @@ void render_imgui_windows(EngineContext& engine_context)
                         ImGui::TableNextRow();
                         ImGui::TableNextColumn();
 
-                        const bool selectable{ImGui::Selectable(
+                        const auto is_selectable = ImGui::Selectable(
                             label.c_str(), is_selected, ImGuiSelectableFlags_SpanAllColumns
-                        )};
-                        if (selectable)
+                        );
+                        if (is_selectable)
                         {
-                            const bool shift_down{ImGui::GetIO().KeyShift};
+                            const auto shift_down = ImGui::GetIO().KeyShift;
                             if (shift_down)
                             {
                                 editor_state.toggle_selection(entity.id);
