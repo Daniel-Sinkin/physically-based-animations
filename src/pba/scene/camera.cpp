@@ -1,8 +1,8 @@
-// pba/gfx/camera.cpp
+// pba/scene/camera.cpp
 #include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/core/geometry.hpp"
-#include "pba/gfx/camera.hpp"
+#include "pba/scene/camera.hpp"
 //
 #include "pba/core/math_types.hpp"
 

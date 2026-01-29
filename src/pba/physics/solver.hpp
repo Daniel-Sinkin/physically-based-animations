@@ -3,27 +3,26 @@
 
 #include "pba/physics/physics_types.hpp"
 
-#include <vector>
+#include <span>
 
 namespace ds_pba
 {
+auto update_inv_inertia_world(std::span<RigidBody> bodies) noexcept -> void;
 
-void update_inv_inertia_world(std::vector<RigidBody>& bodies) noexcept;
+auto integrate_forces(std::span<RigidBody> bodies, f32 dt_s) noexcept -> void;
 
-void integrate_forces(std::vector<RigidBody>& bodies, f32 dt_s) noexcept;
+auto integrate_velocities(std::span<RigidBody> bodies, f32 dt_s) noexcept -> void;
 
-void integrate_velocities(std::vector<RigidBody>& bodies, f32 dt_s) noexcept;
+auto warm_start_contact(std::span<RigidBody> bodies, Contact& contact) noexcept -> void;
 
-void warm_start_contact(std::vector<RigidBody>& bodies, Contact& contact) noexcept;
+auto solve_velocity_constraints(
+    std::span<RigidBody> bodies, std::span<Contact> contacts, f32 dt_s
+) noexcept -> void;
 
-void solve_velocity_constraints(
-    std::vector<RigidBody>& bodies, Contacts& contacts, f32 dt_s
-) noexcept;
+auto solve_position_constraints(std::span<RigidBody> bodies, std::span<Contact> contacts) noexcept
+    -> void;
 
-void solve_position_constraints(std::vector<RigidBody>& bodies, const Contacts& contacts) noexcept;
+auto apply_sleep_and_damping(std::span<RigidBody> bodies, f32 dt_s) noexcept -> void;
 
-void apply_sleep_and_damping(std::vector<RigidBody>& bodies, f32 dt_s) noexcept;
-
-void clear_accumulators(std::vector<RigidBody>& bodies) noexcept;
-
+auto clear_accumulators(std::span<RigidBody> bodies) noexcept -> void;
 }  // namespace ds_pba

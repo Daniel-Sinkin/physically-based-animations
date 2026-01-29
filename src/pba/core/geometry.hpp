@@ -48,9 +48,10 @@ struct AABB
 
     [[nodiscard]] static constexpr AABB unit() noexcept
     {
+        auto h = 0.5f;
         return AABB{
-            .min = Pos3{-0.5f, -0.5f, -0.5f},
-            .max = Pos3{+0.5f, +0.5f, +0.5f},
+            .min = Pos3{-h, -h, -h},
+            .max = Pos3{h, h, h},
         };
     }
 
@@ -134,7 +135,6 @@ inline void expand_to_include(AABB& aabb, const AABB& other) noexcept
 
 [[nodiscard]] inline bool contains(const AABB& outer, const AABB& inner) noexcept
 {
-    // Could also do contains(outer, inner.min) && contains(outer, inner.max)
     return contains(outer, inner.min) && contains(outer, inner.max);
 }
 

@@ -108,8 +108,8 @@ static void reduce_contact_points_to_4(
 
 std::array<Dir3, 3> obb_axes_world(const RigidBody& b) noexcept
 {
-    // In an AABB the faces are already aligned with the standard basis so rotating
-    // an AABB and rotating the local axis is the same thing.
+    // In an AABB the faces are already aligned with the standard basis so
+    // rotating an AABB and rotating the local axis is the same thing.
     const auto R = glm::mat3_cast(b.orientation);
     // GLM (and OpenGL) store array in column major
     return {
@@ -122,8 +122,8 @@ std::array<Dir3, 3> obb_axes_world(const RigidBody& b) noexcept
 std::array<Pos3, 8> box_world_corners(const RigidBody& b) noexcept
 {
     const auto [ax, ay, az] = obb_axes_world(b);
-    // From center of mass move towards one of the faces == move along rotated axis
-    // so we just need to do one step of length of the half extent.
+    // From center of mass move towards one of the faces == move along rotated
+    // axis so we just need to do one step of length of the half extent.
     const Dir3 ex{ax * b.half_extents.x};
     const Dir3 ey{ay * b.half_extents.y};
     const Dir3 ez{az * b.half_extents.z};
@@ -251,8 +251,8 @@ bool obb_obb_overlap(
 
 ContactKey make_contact_key(const RigidBody& a, const RigidBody& b, const Pos3& p) noexcept
 {
-    const ObjectId id0 = std::min(a.id, b.id);
-    const ObjectId id1 = std::max(a.id, b.id);
+    const EntityId id0 = std::min(a.id, b.id);
+    const EntityId id1 = std::max(a.id, b.id);
 
     constexpr auto k_cell = 0.02f;
 

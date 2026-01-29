@@ -7,6 +7,7 @@
 #include "pba/assets/gltf_mesh.hpp"
 #include "pba/assets/mesh.hpp"
 #include "pba/assets/mesh_data.hpp"
+#include "pba/core/constants.hpp"
 #include "pba/core/core_types.hpp"
 #include "pba/core/format.hpp"  // IWYU pragma: keep
 #include "pba/gfx/gl.hpp"

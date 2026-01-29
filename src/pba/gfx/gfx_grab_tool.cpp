@@ -6,10 +6,8 @@
 #include "pba/core/core_types.hpp"
 #include "pba/core/format.hpp"  // IWYU pragma: keep
 #include "pba/core/math_types.hpp"
-#include "pba/engine/scene_context.hpp"
+#include "pba/engine/engine_context.hpp"
 #include "pba/ui/ui.hpp"
-//
-#include <optional>
 
 namespace ds_pba
 {
@@ -37,6 +35,23 @@ grab_constraint_from_key(const EditorInput& in) noexcept
 
     return GC::None;
 }
+
+void set_entity_and_body_position(EngineContext& e, EntityId id, const Pos3& pos) noexcept
+{
+    if (auto* entity = e.world.find(id))
+    {
+        entity->transform.position = pos;
+
+        if (entity->body)
+        {
+            if (auto* rb = e.physics.try_body(*entity->body))
+            {
+                rb->position = pos;
+            }
+        }
+    }
+}
+
 }  // namespace
 
 void GfxContext::cancel_grab()
@@ -47,14 +62,17 @@ void GfxContext::cancel_grab()
         return;
     }
 
+    Expects(engine_context);
+
     for (const auto& [id, start_pos] : grab.start_positions)
     {
-        set_object_position(id, start_pos);
+        set_entity_and_body_position(*engine_context, id, start_pos);
     }
 
     grab.active = false;
     grab.start_positions.clear();
     grab.constraint = EditorState::GrabConstraint::None;
+
     ui_log("Grab cancelled");
 }
 
@@ -66,9 +84,28 @@ void GfxContext::confirm_grab()
         return;
     }
 
+    Expects(engine_context);
+
+    // During dragging we update Entity::transform.position.
+    // Confirm must synchronize physics bodies to the final transform positions.
+    for (const auto& [id, _start_pos] : grab.start_positions)
+    {
+        if (auto* entity = engine_context->world.find(id))
+        {
+            if (entity->body)
+            {
+                if (auto* rb = engine_context->physics.try_body(*entity->body))
+                {
+                    rb->position = entity->transform.position;
+                }
+            }
+        }
+    }
+
     grab.active = false;
     grab.start_positions.clear();
     grab.constraint = EditorState::GrabConstraint::None;
+
     ui_log("Grab confirmed");
 }
 
@@ -97,11 +134,10 @@ void GfxContext::set_grab_constraint(EditorState::GrabConstraint c)
 
 void GfxContext::begin_grab(const EditorInput& input)
 {
-    {
-        Expects(scene_context);
-    }
+    Expects(engine_context);
 
-    if (scene_context->selected_ids.empty())
+    const auto& selected_ids = engine_context->world.editor_state().selected_ids;
+    if (selected_ids.empty())
     {
         ui_log("Grab (G): nothing selected");
         return;
@@ -115,13 +151,29 @@ void GfxContext::begin_grab(const EditorInput& input)
     grab.constraint = EditorState::GrabConstraint::None;
 
     grab.start_positions.clear();
-    grab.start_positions.reserve(scene_context->selected_ids.size());
+    grab.start_positions.reserve(selected_ids.size());
 
-    for (const ObjectId id : scene_context->selected_ids)
+    for (const EntityId id : selected_ids)
     {
-        if (auto p = get_object_position(id))
+        if (auto* entity = engine_context->world.find(id))
         {
-            grab.start_positions.emplace_back(id, *p);
+            Pos3 start_pos = entity->transform.position;
+
+            if (entity->body)
+            {
+                if (auto* rb = engine_context->physics.try_body(*entity->body))
+                {
+                    rb->grabbed = true;
+                    rb->asleep = false;
+                    rb->sleep_frames = 0;
+                    rb->velocity = Dir3{};
+                    rb->angular_velocity = Dir3{};
+                    start_pos = rb->position;
+                    entity->transform.position = start_pos;
+                }
+            }
+
+            grab.start_positions.emplace_back(id, start_pos);
         }
     }
 
@@ -130,20 +182,20 @@ void GfxContext::begin_grab(const EditorInput& input)
 
 void GfxContext::update_grab(const EditorInput& input)
 {
-    assert(scene_context);
-
     auto& grab = editor.grab;
     if (!grab.active)
     {
         return;
     }
 
+    Expects(engine_context);
+
     if (const auto c = grab_constraint_from_key(input); c != EditorState::GrabConstraint::None)
     {
         set_grab_constraint(c);
     }
 
-    const Camera& cam{scene_context->camera};
+    const auto& cam = engine_context->world.editor_state().camera();
 
     const auto vp_h = std::max(1.0f, viewport_img_size.y);
     const auto units_per_px = (2.0f * cam.distance * std::tan(0.5f * cam.fov_y)) / vp_h;
@@ -169,9 +221,10 @@ void GfxContext::update_grab(const EditorInput& input)
             delta = Dir3{0.0f, 0.0f, delta.z};
             break;
     }
+
     for (const auto& [id, start_pos] : grab.start_positions)
     {
-        set_object_position(id, start_pos + delta);
+        set_entity_and_body_position(*engine_context, id, start_pos + delta);
     }
 }
 

@@ -1,0 +1,41 @@
+// pba/scene/entity.hpp
+#pragma once
+
+#include "pba/core/constants.hpp"
+#include "pba/core/core_types.hpp"
+#include "pba/physics/physics_types.hpp"
+#include "pba/scene/entity_id.hpp"
+#include "pba/scene/world_types.hpp"
+
+#include <string>
+#include <utility>
+
+namespace ds_pba
+{
+enum class EntityType
+{
+    Cube,
+};
+
+[[nodiscard]] constexpr std::string_view to_string(EntityType type) noexcept
+{
+    switch (type)
+    {
+        case EntityType::Cube:
+            return "Cube";
+    }
+    std::unreachable();
+}
+
+struct Entity
+{
+    EntityId id{k_invalid_id};
+    EntityType type{EntityType::Cube};
+
+    Transform transform{};
+    Color3 color{k_scene_object_default_color};
+
+    std::optional<BodyHandle> body{};
+    std::string name{};
+};
+}  // namespace ds_pba

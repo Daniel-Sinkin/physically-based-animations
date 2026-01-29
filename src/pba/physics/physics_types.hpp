@@ -3,6 +3,7 @@
 
 #include "pba/core/core_types.hpp"
 #include "pba/core/math_types.hpp"
+#include "pba/scene/entity_id.hpp"
 #include "pba/util/hash.hpp"
 //
 #include <cmath>
@@ -10,15 +11,21 @@
 //
 #include <glm/geometric.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include <vector>
 
 namespace ds_pba
 {
+
+struct BodyHandle
+{
+    u32 index{};
+};
 
 inline constexpr f32 k_static_mass{0.0f};
 
 struct RigidBody
 {
-    ObjectId id{k_invalid_id};
+    EntityId id{k_invalid_id};
 
     Dir3 half_extents{0.5f, 0.5f, 0.5f};
 
@@ -36,6 +43,8 @@ struct RigidBody
 
     bool asleep{false};
     int sleep_frames{0};
+
+    bool grabbed{false};
 
     [[nodiscard]] bool is_static() const noexcept
     {
@@ -201,7 +210,8 @@ struct Contact
         return ContactValidity::Ok;
     }
 };
-using Contacts = std::pmr::vector<Contact>;
+
+using ContactList = std::pmr::vector<Contact>;
 
 struct ContactCacheEntry
 {
@@ -213,8 +223,8 @@ struct ContactCacheEntry
 
 struct ContactKey
 {
-    ObjectId a_id{};
-    ObjectId b_id{};
+    EntityId a_id{};
+    EntityId b_id{};
     i32 px{};
     i32 py{};
     i32 pz{};

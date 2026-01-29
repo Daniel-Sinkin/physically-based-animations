@@ -1,216 +1,242 @@
 // pba/gfx/gfx_viewport.cpp
-#include "glm/fwd.hpp"
-#include "pba/core/constants.hpp"
-#include "pba/core/geometry.hpp"
 #include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
-#include "pba/engine/scenes.hpp"
 #include "pba/gfx/gfx_context.hpp"
 //
+#include "pba/core/constants.hpp"
 #include "pba/core/core_types.hpp"
 #include "pba/core/format.hpp"  // IWYU pragma: keep
-#include "pba/core/math_types.hpp"
 #include "pba/engine/engine_context.hpp"
-#include "pba/engine/scene_context.hpp"
-#include "pba/engine/scene_types.hpp"
-#include "pba/gfx/gl_types.hpp"
-#include "pba/gfx/raycast.hpp"
-#include "pba/ui/ui.hpp"
 //
 #include <algorithm>
-#include <imgui.h>
+#include <cmath>
 #include <optional>
 #include <print>
-#include <utility>
+//
+#include <gsl/assert>
 //
 #include <GLFW/glfw3.h>
-#include <glm/ext/matrix_float4x4.hpp>
-#include <json.hpp>
+#include <glm/ext/matrix_transform.hpp>
+#include <imgui.h>
 
 namespace ds_pba
 {
+namespace
+{
+[[nodiscard]] std::optional<RectInt> compute_viewport_fb_rect(
+    GLFWwindow& window, const glm::vec2& img_pos_screen, const glm::vec2& img_size_screen
+) noexcept
+{
+    int fb_width{0}, fb_height{0};
+    glfwGetFramebufferSize(&window, &fb_width, &fb_height);
+
+    int win_width{0}, win_height{0};
+    glfwGetWindowSize(&window, &win_width, &win_height);
+
+    if (fb_width <= 0 || fb_height <= 0 || win_width <= 0 || win_height <= 0)
+    {
+        return std::nullopt;
+    }
+
+    const auto fb_width_f = static_cast<f32>(fb_width);
+    const auto fb_height_f = static_cast<f32>(fb_height);
+    const auto win_width_f = static_cast<f32>(win_width);
+    const auto win_height_f = static_cast<f32>(win_height);
+
+    const auto scale_x = fb_width_f / win_width_f;
+    const auto scale_y = fb_height_f / win_height_f;
+
+    const auto left_px = img_pos_screen.x * scale_x;
+    const auto width_px = img_size_screen.x * scale_x;
+
+    // ImGui screen coords: origin top-left; OpenGL framebuffer coords: origin bottom-left.
+    const auto bottom_px = fb_height_f - (img_pos_screen.y + img_size_screen.y) * scale_y;
+    const auto height_px = img_size_screen.y * scale_y;
+
+    const auto vx = static_cast<int>(std::lround(left_px));
+    const auto vw = static_cast<int>(std::lround(width_px));
+    const auto vy = static_cast<int>(std::lround(bottom_px));
+    const auto vh = static_cast<int>(std::lround(height_px));
+
+    RectInt r{};
+    r.x = std::clamp(vx, 0, fb_width - 1);
+    r.y = std::clamp(vy, 0, fb_height - 1);
+    r.w = std::clamp(vw, 1, fb_width - r.x);
+    r.h = std::clamp(vh, 1, fb_height - r.y);
+    return r;
+}
+
+[[nodiscard]] const RigidBody* try_entity_body(EngineContext& e, const Entity& ent) noexcept
+{
+    if (!ent.body)
+    {
+        return nullptr;
+    }
+    return e.physics.try_body(*ent.body);
+}
+
+[[nodiscard]] Color3 compute_entity_color(GfxContext& gfx, const Entity& ent) noexcept
+{
+    Expects(gfx.engine_context);
+    Color3 color{ent.color};
+
+    if (!gfx.phys_debug.enabled)
+    {
+        return color;
+    }
+
+    EngineContext* e = gfx.engine_context;
+    if (!e)
+    {
+        return color;
+    }
+
+    const RigidBody* rb = try_entity_body(*e, ent);
+    if (!rb || rb->is_static())
+    {
+        return color;
+    }
+
+    using CM = GfxContext::PhysicsDebugSettings::ColorMode;
+    switch (gfx.phys_debug.color_mode)
+    {
+        case CM::Diffuse:
+            return color;
+
+        case CM::SleepState:
+            {
+                const f32 t =
+                    rb->asleep ? 1.0f
+                               : std::clamp(static_cast<f32>(rb->sleep_frames) / 60.0f, 0.0f, 1.0f);
+
+                return mix(gfx.phys_debug.sleep_active_color, gfx.phys_debug.sleep_asleep_color, t);
+            }
+
+        case CM::KineticEnergy:
+            {
+                const f32 m = 1.0f / rb->inv_mass;
+
+                f32 E = 0.5f * m * glm::dot(rb->velocity, rb->velocity);
+
+                if (gfx.phys_debug.ke_include_angular)
+                {
+                    // TODO: Should prolly cache this
+                    const glm::mat3 I_world = glm::inverse(rb->inv_inertia_world);
+                    E += 0.5f * glm::dot(rb->angular_velocity, I_world * rb->angular_velocity);
+                }
+
+                const f32 denom = std::max(1e-6f, gfx.phys_debug.ke_max);
+                const f32 t = std::clamp(E / denom, 0.0f, 1.0f);
+
+                return mix(gfx.phys_debug.ke_low_color, gfx.phys_debug.ke_high_color, t);
+            }
+    }
+
+    return color;
+}
+
+struct GLStateSnapshot
+{
+    GLboolean depth_test{};
+    GLboolean cull_face{};
+    GLboolean stencil_test{};
+    GLboolean blend{};
+};
+
+[[nodiscard]] GLStateSnapshot snapshot_gl_state() noexcept
+{
+    return GLStateSnapshot{
+        .depth_test = glIsEnabled(GL_DEPTH_TEST),
+        .cull_face = glIsEnabled(GL_CULL_FACE),
+        .stencil_test = glIsEnabled(GL_STENCIL_TEST),
+        .blend = glIsEnabled(GL_BLEND),
+    };
+}
+
+void restore_gl_state(const GLStateSnapshot& s) noexcept
+{
+    if (s.depth_test)
+    {
+        glEnable(GL_DEPTH_TEST);
+    }
+    else
+    {
+        glDisable(GL_DEPTH_TEST);
+    }
+
+    if (s.cull_face)
+    {
+        glEnable(GL_CULL_FACE);
+    }
+    else
+    {
+        glDisable(GL_CULL_FACE);
+    }
+
+    if (s.stencil_test)
+    {
+        glEnable(GL_STENCIL_TEST);
+    }
+    else
+    {
+        glDisable(GL_STENCIL_TEST);
+    }
+
+    if (s.blend)
+    {
+        glEnable(GL_BLEND);
+    }
+    else
+    {
+        glDisable(GL_BLEND);
+    }
+}
+
+}  // namespace
+
 void GfxContext::render_to_viewport_objects(
     const ViewMatrix& camera_view_matrix, const ProjMatrix& camera_proj_matrix
 ) const
 {
-    auto& prog = shader_programs.obj;
+    Expects(engine_context);
 
-    // Objects
+    const auto ents = engine_context->world.entities();
+    if (ents.empty())
+    {
+        return;
+    }
+
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
 
     glStencilMask(0x00);
     glStencilFunc(GL_ALWAYS, 0, 0xFF);
 
+    const auto& prog = shader_programs.obj;
     prog.bind();
     prog.set_uView(camera_view_matrix);
     prog.set_uProj(camera_proj_matrix);
 
-    if (!scene_context->cube_objects.empty())
-    {  // Cubes
-        meshes.cube.vao.bind();
-        for (const auto& o : scene_context->cube_objects)
-        {
-            assert(o.id != k_invalid_id);
+    meshes.cube.vao.bind();
+    for (const Entity& ent : ents)
+    {
+        Expects(ent.id != k_invalid_id);
 
-            prog.set_uModel(o.transform.model_matrix());
+        prog.set_uModel(ent.transform.model_matrix());
+        prog.set_uColor(compute_entity_color(*const_cast<GfxContext*>(this), ent));
 
-            // TODO: Clean this up
-            // TODO: Clean this up
-            {
-                Color3 color{o.color};
-
-                if (!phys_debug.enabled || !engine_context)
-                {
-                    prog.set_uColor(color);
-                    continue;
-                }
-
-                const auto it = engine_context->obj_map.find(o.id);
-                if (it == engine_context->obj_map.end())
-                {
-                    prog.set_uColor(color);
-                    continue;
-                }
-
-                const usize phys_i{it->second.physics_obj_idx};
-                if (phys_i >= engine_context->physics.bodies.size())
-                {
-                    prog.set_uColor(color);
-                    continue;
-                }
-
-                const RigidBody& rb = engine_context->physics.bodies[phys_i];
-                if (rb.is_static())
-                {
-                    prog.set_uColor(color);
-                    continue;
-                }
-
-                switch (phys_debug.color_mode)
-                {
-                    case PhysicsDebugSettings::ColorMode::Diffuse:
-                        break;
-
-                    case PhysicsDebugSettings::ColorMode::SleepState:
-                        {
-                            const auto t =
-                                rb.asleep
-                                    ? 1.0f
-                                    : std::clamp(
-                                          static_cast<f32>(rb.sleep_frames) / 60.0f, 0.0f, 1.0f
-                                      );
-
-                            color = mix(
-                                phys_debug.sleep_active_color, phys_debug.sleep_asleep_color, t
-                            );
-                        }
-                        break;
-
-                    case PhysicsDebugSettings::ColorMode::KineticEnergy:
-                        {
-                            const auto m = 1.0f / rb.inv_mass;
-                            auto E = 0.5f * m * glm::dot(rb.velocity, rb.velocity);
-
-                            if (phys_debug.ke_include_angular)
-                            {
-                                const glm::mat3 I_world = glm::inverse(rb.inv_inertia_world);
-                                E += 0.5f
-                                     * glm::dot(rb.angular_velocity, I_world * rb.angular_velocity);
-                            }
-
-                            const auto denom = std::max(1e-6f, phys_debug.ke_max);
-                            const auto t = std::clamp(E / denom, 0.0f, 1.0f);
-
-                            color = mix(phys_debug.ke_low_color, phys_debug.ke_high_color, t);
-                        }
-                        break;
-                }
-
-                prog.set_uColor(color);
-            }
-
-            glDrawArrays(GL_TRIANGLES, 0, meshes.cube.vertex_count);
-        }
-        VAO::unbind();
+        glDrawArrays(GL_TRIANGLES, 0, meshes.cube.vertex_count);
     }
-
-    if (!scene_context->sphere_objects.empty())
-    {  // Spheres
-        meshes.sphere.vao.bind();
-        for (usize i{0zu}; i < scene_context->sphere_objects.size(); ++i)
-        {
-            const Object& o{scene_context->sphere_objects[i]};
-            assert(o.id != k_invalid_id);
-
-            prog.set_uModel(o.transform.model_matrix());
-            prog.set_uColor(o.color);
-
-            glDrawArrays(GL_TRIANGLES, 0, meshes.sphere.vertex_count);
-        }
-        for (const auto& o : scene_context->hitmarker_objects)
-        {
-            assert(o.id != k_invalid_id);
-            prog.set_uModel(o.transform.model_matrix());
-            prog.set_uColor(o.color);
-
-            glDrawArrays(GL_TRIANGLES, 0, meshes.sphere.vertex_count);
-        }
-        VAO::unbind();
-    }
-
-    // Temp deleted so I can avoid loading textures and meshes on start up improving
-    // startup speed significantly
-    if (false && !scene_context->marble_bust_objects.empty())
-    {  // Marble Bust
-        auto& prog_tex = shader_programs.obj_tex;
-        if (!textures.marble_bust_diffuse.valid() || !textures.marble_bust_normal.valid())
-        {
-            std::println(
-                stderr, "Textured mesh render requires diffuse+normal textures to be loaded"
-            );
-            VAO::unbind();
-            return;
-        }
-
-        prog_tex.bind();
-        prog_tex.set_uView(camera_view_matrix);
-        prog_tex.set_uProj(camera_proj_matrix);
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, textures.marble_bust_diffuse.id);
-        prog_tex.set_uDiffuseTex(0);
-
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, textures.marble_bust_normal.id);
-        prog_tex.set_uNormalTex(1);
-
-        meshes.marble_bust.vao.bind();
-
-        for (const auto& o : scene_context->marble_bust_objects)
-        {
-            assert(o.id != k_invalid_id);
-            prog_tex.set_uModel(o.transform.model_matrix());
-            glDrawArrays(GL_TRIANGLES, 0, meshes.marble_bust.vertex_count);
-        }
-
-        VAO::unbind();
-
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, 0);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, 0);
-    }
+    VAO::unbind();
 }
+
 void GfxContext::render_to_viewport_grid(
     const ViewMatrix& camera_view_matrix, const ProjMatrix& camera_proj_matrix
 ) const
 {
-    // Grid
     glDepthMask(GL_FALSE);
 
-    auto& prog = shader_programs.grid;
-
+    const auto& prog = shader_programs.grid;
     prog.bind();
     prog.set_uView(camera_view_matrix);
     prog.set_uProj(camera_proj_matrix);
@@ -226,112 +252,58 @@ void GfxContext::render_to_viewport_grid(
 
 void GfxContext::render_to_viewport()
 {
+    Expects(engine_context);
     Expects(viewport_fb_rect_valid && "Should only render to valid viewports");
-    const ImVec2 content_size{ImGui::GetContentRegionAvail()};
+
+    const ImVec2 img_size = ImGui::GetContentRegionAvail();
 
     glBindFramebuffer(GL_FRAMEBUFFER, viewport_fbo.fbo);
-    assert((viewport_fbo.width >= 0) && (viewport_fbo.height >= 0));
     glViewport(0, 0, viewport_fbo.width, viewport_fbo.height);
 
-    glClearColor(background_color.r(), background_color.g(), background_color.b(), 1.0);
+    glClearColor(background_color.r(), background_color.g(), background_color.b(), 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-    f32 aspect{viewport_fbo.aspect_ratio()};
+    const f32 aspect = viewport_fbo.aspect_ratio();
+    const Camera& cam = engine_context->world.editor_state().camera();
 
-    {
-        const Camera& cam{scene_context->camera};
-        const ViewMatrix camera_view_matrix{cam.view_matrix()};
-        const ProjMatrix camera_proj_matrix{cam.proj_matrix(aspect)};
+    const ViewMatrix V{cam.view_matrix()};
+    const ProjMatrix P{cam.proj_matrix(aspect)};
 
-        render_to_viewport_grid(camera_view_matrix, camera_proj_matrix);
-        render_to_viewport_objects(camera_view_matrix, camera_proj_matrix);
-        render_to_viewport_pivot(cam.pivot, camera_view_matrix, camera_proj_matrix);
-        render_to_viewport_outline(camera_view_matrix, camera_proj_matrix);
-        render_to_viewport_physics_debug(camera_view_matrix, camera_proj_matrix);
-    }
+    render_to_viewport_grid(V, P);
+    render_to_viewport_objects(V, P);
+    render_to_viewport_pivot(cam.pivot, V, P);
+    render_to_viewport_outline(V, P);
+    render_to_viewport_physics_debug(V, P);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    ImGui::Image(
-        viewport_fbo.imgui_texture_id(), content_size, ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f)
-    );
+    ImGui::Image(viewport_fbo.imgui_texture_id(), img_size, ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
 }
 
 void GfxContext::render_to_viewport_outline(
     const ViewMatrix& camera_view_matrix, const ProjMatrix& camera_proj_matrix
 ) const
 {
-    if (!scene_context || scene_context->selected_ids.empty())
+    Expects(engine_context);
+
+    const auto& selected = engine_context->world.editor_state().selected_ids;
+    if (selected.empty())
     {
         return;
     }
 
-    struct FoundObject
+    for (const EntityId id : selected)
     {
-        ObjectType type{};
-        const Object* object{};
-    };
-    struct ObjectBucket
-    {
-        ObjectType type;
-        const std::vector<Object>* objects;
-    };
-
-    const std::array<ObjectBucket, 4> buckets{{
-        {ObjectType::Cube, &scene_context->cube_objects},
-        {ObjectType::Sphere, &scene_context->sphere_objects},
-        {ObjectType::Hitmarker, &scene_context->hitmarker_objects},
-        {ObjectType::MarbleBust, &scene_context->marble_bust_objects},
-    }};
-
-    auto find_object = [&](ObjectId id) -> std::optional<FoundObject>
-    {
-        for (const auto& b : buckets)
-        {
-            for (const auto& o : *b.objects)
-            {
-                if (o.id == id)
-                {
-                    return FoundObject{b.type, &o};
-                }
-            }
-        }
-        return std::nullopt;
-    };
-
-    auto instantiate_mesh_for_type = [&](ObjectType type) -> void
-    {
-        switch (type)
-        {
-            case ObjectType::Cube:
-                meshes.cube.instantiate_once();
-                break;
-            case ObjectType::Sphere:
-            case ObjectType::Hitmarker:
-                meshes.sphere.instantiate_once();
-                break;
-            case ObjectType::MarbleBust:
-                meshes.marble_bust.instantiate_once();
-                break;
-        }
-    };
-
-    for (const ObjectId id : scene_context->selected_ids)
-    {
-        auto obj_res = find_object(id);
-        if (!obj_res)
+        const Entity* sel = engine_context->world.find(id);
+        if (!sel)
         {
             continue;
         }
 
-        const auto [type, sel_ptr] = *obj_res;
-        const Object& sel = *sel_ptr;
-
-        const auto model_matrix{sel.transform.model_matrix()};
-
+        const ModelMatrix M{sel->transform.model_matrix()};
         glClear(GL_STENCIL_BUFFER_BIT);
 
-        {  // Pass 1: write stencil
+        {  // Pass 1: write stencil (invisible)
             glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
             glDepthMask(GL_FALSE);
             glDisable(GL_DEPTH_TEST);
@@ -340,13 +312,13 @@ void GfxContext::render_to_viewport_outline(
             glStencilFunc(GL_ALWAYS, 1, 0xFF);
             glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
-            auto& prog = shader_programs.obj;
+            const auto& prog = shader_programs.obj;
             prog.bind();
             prog.set_uView(camera_view_matrix);
             prog.set_uProj(camera_proj_matrix);
-            prog.set_uModel(model_matrix);
+            prog.set_uModel(M);
 
-            instantiate_mesh_for_type(type);
+            meshes.cube.instantiate_once();
 
             glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
             glDepthMask(GL_TRUE);
@@ -361,17 +333,16 @@ void GfxContext::render_to_viewport_outline(
             glDisable(GL_DEPTH_TEST);
             glDisable(GL_CULL_FACE);
 
-            const auto M_outline =
-                ModelMatrix{model_matrix.m * glm::scale(glm::mat4(1.0f), glm::vec3(1.04f))};
+            const ModelMatrix M_outline{M.m * glm::scale(glm::mat4(1.0f), glm::vec3(1.04f))};
 
-            auto& prog = shader_programs.outline;
+            const auto& prog = shader_programs.outline;
             prog.bind();
             prog.set_uView(camera_view_matrix);
             prog.set_uProj(camera_proj_matrix);
             prog.set_uModel(M_outline);
             prog.set_uColor(k_outline_color);
 
-            instantiate_mesh_for_type(type);
+            meshes.cube.instantiate_once();
 
             glEnable(GL_DEPTH_TEST);
             glDepthFunc(GL_LESS);
@@ -399,98 +370,79 @@ void GfxContext::render_to_viewport_pivot(
 
     const Transform t{.position = pivot_pos, .scale = {0.1f, 0.1f, 0.1f}};
 
-    const GLMesh& pivot_mesh{meshes.sphere};
-    pivot_mesh.vao.bind();
-
-    auto& prog = shader_programs.pivot;
+    const auto& prog = shader_programs.pivot;
     prog.bind();
     prog.set_uView(camera_view_matrix);
     prog.set_uProj(camera_proj_matrix);
     prog.set_uModel(t.model_matrix());
     prog.set_uColor(Color3{196.0f / 255.0f, 209.0f / 255.0f, 102.0f / 255.0f});
 
-    glDrawArrays(GL_TRIANGLES, 0, pivot_mesh.vertex_count);
-
+    meshes.sphere.vao.bind();
+    glDrawArrays(GL_TRIANGLES, 0, meshes.sphere.vertex_count);
     VAO::unbind();
 }
 
 void GfxContext::viewport_window()
 {
-    ImGuiWindowFlags vp_flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse
-                                | ImGuiWindowFlags_NoCollapse;
+    const ImGuiWindowFlags flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse
+                                   | ImGuiWindowFlags_NoCollapse;
 
-    ImGui::Begin("Viewport", nullptr, vp_flags);
-    const ImVec2 content_pos{ImGui::GetCursorScreenPos()};
-    const ImVec2 content_size{ImGui::GetContentRegionAvail()};
+    ImGui::Begin("Viewport", nullptr, flags);
 
-    viewport_img_pos = glm::vec2{content_pos.x, content_pos.y};
-    viewport_img_size = glm::vec2{content_size.x, content_size.y};
+    const ImVec2 pos = ImGui::GetCursorScreenPos();
+    const ImVec2 size = ImGui::GetContentRegionAvail();
 
-    viewport_fb_rect_valid = true;
+    viewport_img_pos = {pos.x, pos.y};
+    viewport_img_size = {size.x, size.y};
 
-    int fbw{0}, fbh{0};
-    glfwGetFramebufferSize(window, &fbw, &fbh);
-    if (fbw == 0 || fbh == 0)
+    viewport_fb_rect_valid = false;
+    viewport_image_hovered = false;
+
+    if (!window)
     {
-        std::println("[Warning] Got empty Framebuffer, skipping framebuffer setting");
-        viewport_fb_rect_valid = false;
-    }
-
-    int win_w{1}, win_h{1};
-    glfwGetWindowSize(window, &win_w, &win_h);
-    if (win_w == 0 || win_h == 0)
-    {
-        std::println("[Warning] Got empty Window, skipping framebuffer setting");
-        viewport_fb_rect_valid = false;
-    }
-
-    if (viewport_fb_rect_valid)
-    {
-        const auto win_w_f = static_cast<f32>(win_w);
-        const auto win_h_f = static_cast<f32>(win_h);
-        const auto fbw_f = static_cast<f32>(fbw);
-        const auto fbh_f = static_cast<f32>(fbh);
-
-        const f32 scale_x{(win_w_f > 0.0f) ? (fbw_f / win_w_f) : 1.0f};
-        const f32 scale_y{(win_h_f > 0.0f) ? (fbh_f / win_h_f) : 1.0f};
-
-        const f32 left_px{viewport_img_pos.x * scale_x};
-        const f32 width_px{viewport_img_size.x * scale_x};
-        const f32 height_px{viewport_img_size.y * scale_y};
-
-        const f32 bottom_px{fbh_f - (viewport_img_pos.y + viewport_img_size.y) * scale_y};
-
-        const auto vx = static_cast<int>(std::lround(left_px));
-        const auto vw = static_cast<int>(std::lround(width_px));
-        const auto vy = static_cast<int>(std::lround(bottom_px));
-        const auto vh = static_cast<int>(std::lround(height_px));
-
-        viewport_fb_rect.x = std::clamp(vx, 0, std::max(0, fbw - 1));
-        viewport_fb_rect.y = std::clamp(vy, 0, std::max(0, fbh - 1));
-        viewport_fb_rect.width = std::clamp(vw, 1, fbw - viewport_fb_rect.x);
-        viewport_fb_rect.height = std::clamp(vh, 1, fbh - viewport_fb_rect.y);
-
-        const int fbo_w{viewport_fb_rect.width};
-        const int fbo_h{viewport_fb_rect.height};
-        viewport_fb_rect_valid = (fbo_w > 8 && fbo_h > 8) && viewport_fbo.ensure_size(fbo_w, fbo_h);
-    }
-
-    if (viewport_fb_rect_valid)
-    {
-        viewport_valid_warning_shown = false;
-        render_to_viewport();
-        viewport_image_hovered =
-            ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem);
-    }
-    else
-    {
-        viewport_image_hovered = false;
         if (!viewport_valid_warning_shown)
         {
-            std::println("[Warning] Viewport is not valid!");
+            std::println("[Warning] Viewport window not created");
             viewport_valid_warning_shown = true;
         }
+        ImGui::End();
+        return;
     }
+
+    const auto rect_opt = compute_viewport_fb_rect(*window, viewport_img_pos, viewport_img_size);
+    if (!rect_opt)
+    {
+        if (!viewport_valid_warning_shown)
+        {
+            std::println("[Warning] Viewport is not valid (empty framebuffer/window)");
+            viewport_valid_warning_shown = true;
+        }
+        ImGui::End();
+        return;
+    }
+
+    viewport_fb_rect = *rect_opt;
+
+    const int fbo_w = viewport_fb_rect.w;
+    const int fbo_h = viewport_fb_rect.h;
+
+    viewport_fb_rect_valid = (fbo_w > 8 && fbo_h > 8) && viewport_fbo.ensure_size(fbo_w, fbo_h);
+    if (!viewport_fb_rect_valid)
+    {
+        if (!viewport_valid_warning_shown)
+        {
+            std::println("[Warning] Viewport is not valid (too small or FBO resize failed)");
+            viewport_valid_warning_shown = true;
+        }
+        ImGui::End();
+        return;
+    }
+
+    viewport_valid_warning_shown = false;
+
+    render_to_viewport();
+    viewport_image_hovered = ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem);
+
     ImGui::End();
 }
 
@@ -498,22 +450,16 @@ void GfxContext::render_to_viewport_physics_debug(
     const ViewMatrix& camera_view_matrix, const ProjMatrix& camera_proj_matrix
 )
 {
-    if (!phys_debug.enabled)
-    {
-        return;
-    }
-    if (!scene_context || !engine_context)
-    {
-        return;
-    }
-    if (!shader_programs.grid.valid() || !loaded_glad)
+    Expects(engine_context);
+
+    if (!phys_debug.enabled || !loaded_glad || !shader_programs.grid.valid())
     {
         return;
     }
 
     debug_line_vertices.clear();
 
-    auto push_line = [&](const Pos3& a, const Pos3& b, f32 r, f32 g, f32 bl, f32 al) -> void
+    auto push_line = [&](const Pos3& a, const Pos3& b, f32 r, f32 g, f32 bl, f32 al) noexcept
     {
         debug_line_vertices.push_back(DebugLineV_PColor{a.x, a.y, a.z, r, g, bl, al});
         debug_line_vertices.push_back(DebugLineV_PColor{b.x, b.y, b.z, r, g, bl, al});
@@ -522,8 +468,9 @@ void GfxContext::render_to_viewport_physics_debug(
     if (phys_debug.show_contacts)
     {
         const PhysicsContext& phys = engine_context->physics;
-        const f32 s{std::max(0.0f, phys_debug.contact_marker_size)};
-        const f32 nscale{std::max(0.0f, phys_debug.contact_normal_scale)};
+
+        const f32 s = std::max(0.0f, phys_debug.contact_marker_size);
+        const f32 nscale = std::max(0.0f, phys_debug.contact_normal_scale);
 
         for (const auto& c : phys.debug_contacts)
         {
@@ -540,70 +487,41 @@ void GfxContext::render_to_viewport_physics_debug(
         }
     }
 
-    auto find_scene_object = [&](ObjectId id) -> const Object*
+    const auto& selected = engine_context->world.editor_state().selected_ids;
+    for (const EntityId id : selected)
     {
-        for (const auto& o : scene_context->cube_objects)
+        const Entity* ent = engine_context->world.find(id);
+        if (!ent)
         {
-            if (o.id == id)
-                return &o;
+            continue;
         }
-        for (const auto& o : scene_context->sphere_objects)
-        {
-            if (o.id == id)
-                return &o;
-        }
-        for (const auto& o : scene_context->hitmarker_objects)
-        {
-            if (o.id == id)
-                return &o;
-        }
-        return nullptr;
-    };
 
-    for (const auto id : scene_context->selected_ids)
-    {
-        const RigidBody* rb_ptr{nullptr};
-
-        if (auto it = engine_context->obj_map.find(id); it != engine_context->obj_map.end())
-        {
-            const usize phys_i = it->second.physics_obj_idx;
-            if (phys_i < engine_context->physics.bodies.size())
-            {
-                rb_ptr = &engine_context->physics.bodies[phys_i];
-            }
-        }
+        const RigidBody* rb = ent->body ? engine_context->physics.try_body(*ent->body) : nullptr;
 
         Pos3 com{};
         Quaternion ori{};
         f32 extent{1.0f};
 
-        if (rb_ptr)
+        if (rb)
         {
-            const RigidBody& rb{*rb_ptr};
-            com = rb.position;
-            ori = rb.orientation;
-
-            extent = 2.0f * std::max({rb.half_extents.x, rb.half_extents.y, rb.half_extents.z});
+            com = rb->position;
+            ori = rb->orientation;
+            extent = 2.0f * std::max({rb->half_extents.x, rb->half_extents.y, rb->half_extents.z});
         }
         else
         {
-            const Object* o = find_scene_object(id);
-            if (!o)
-            {
-                continue;
-            }
-            com = o->transform.position;
-            ori = o->transform.orientation;
-
-            extent = std::max({o->transform.scale.x, o->transform.scale.y, o->transform.scale.z});
+            com = ent->transform.position;
+            ori = ent->transform.orientation;
+            auto& scale = ent->transform.scale;
+            extent = std::max({scale.x, scale.y, scale.z});
         }
 
-        const auto axis_len = std::max(0.0f, extent) * std::max(0.0f, phys_debug.axis_scale);
+        const f32 axis_len = std::max(0.0f, extent) * std::max(0.0f, phys_debug.axis_scale);
 
-        const auto R = glm::mat3_cast(ori);
-        const Dir3 ax{glm::normalize(R * k_axis_x)};
-        const Dir3 ay{glm::normalize(R * k_axis_y)};
-        const Dir3 az{glm::normalize(R * k_axis_z)};
+        const glm::mat3 R = glm::mat3_cast(ori);
+        const Dir3 ax = glm::normalize(R * k_axis_x);
+        const Dir3 ay = glm::normalize(R * k_axis_y);
+        const Dir3 az = glm::normalize(R * k_axis_z);
 
         if (phys_debug.show_selected_axes)
         {
@@ -612,26 +530,24 @@ void GfxContext::render_to_viewport_physics_debug(
             push_line(com, com + axis_len * az, 0, 0, 1, 1);
         }
 
-        if (rb_ptr)
+        if (rb)
         {
-            const RigidBody& rb{*rb_ptr};
-
             if (phys_debug.show_selected_velocity)
             {
-                const f32 v2{glm::dot(rb.velocity, rb.velocity)};
+                const f32 v2 = glm::dot(rb->velocity, rb->velocity);
                 if (v2 > 1e-8f)
                 {
-                    push_line(com, com + rb.velocity * phys_debug.vel_scale, 1, 1, 0, 1);
+                    push_line(com, com + rb->velocity * phys_debug.vel_scale, 1, 1, 0, 1);
                 }
             }
 
             if (phys_debug.show_selected_angular_velocity)
             {
-                const f32 w2{glm::dot(rb.angular_velocity, rb.angular_velocity)};
+                const f32 w2 = glm::dot(rb->angular_velocity, rb->angular_velocity);
                 if (w2 > 1e-8f)
                 {
                     push_line(
-                        com, com + rb.angular_velocity * phys_debug.ang_vel_scale, 0, 1, 1, 1
+                        com, com + rb->angular_velocity * phys_debug.ang_vel_scale, 0, 1, 1, 1
                     );
                 }
             }
@@ -679,9 +595,7 @@ void GfxContext::render_to_viewport_physics_debug(
         );
     }
 
-    const GLboolean prev_depth_test = glIsEnabled(GL_DEPTH_TEST);
-    const GLboolean prev_cull_face = glIsEnabled(GL_CULL_FACE);
-    const GLboolean prev_stencil_test = glIsEnabled(GL_STENCIL_TEST);
+    const GLStateSnapshot prev = snapshot_gl_state();
 
     if (phys_debug.depth_test)
     {
@@ -695,46 +609,23 @@ void GfxContext::render_to_viewport_physics_debug(
 
     glDisable(GL_CULL_FACE);
     glEnable(GL_BLEND);
-
     glDisable(GL_STENCIL_TEST);
 
-    shader_programs.grid.bind();
-    auto& prog = shader_programs.grid;
+    constexpr f32 k_no_fog_start = 1.0e6f;
+    constexpr f32 k_no_fog_end = 2.0e6f;
+
+    const auto& prog = shader_programs.grid;
+    prog.bind();
     prog.set_uView(camera_view_matrix);
     prog.set_uProj(camera_proj_matrix);
-    prog.set_uFogStart(2.0e6f);
-    prog.set_uFogEnd(1.0e6f);
+    prog.set_uFogStart(k_no_fog_start);
+    prog.set_uFogEnd(k_no_fog_end);
 
     meshes.debug_line.vao.bind();
     glDrawArrays(GL_LINES, 0, meshes.debug_line.vertex_count);
     VAO::unbind();
 
-    if (prev_depth_test)
-    {
-        glEnable(GL_DEPTH_TEST);
-    }
-    else
-    {
-        glDisable(GL_DEPTH_TEST);
-    }
-
-    if (prev_cull_face)
-    {
-        glEnable(GL_CULL_FACE);
-    }
-    else
-    {
-        glDisable(GL_CULL_FACE);
-    }
-
-    if (prev_stencil_test)
-    {
-        glEnable(GL_STENCIL_TEST);
-    }
-    else
-    {
-        glDisable(GL_STENCIL_TEST);
-    }
+    restore_gl_state(prev);
 }
 
 }  // namespace ds_pba

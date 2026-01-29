@@ -1,8 +1,6 @@
-// pba/engine/scene_types.hpp
+// pba/scene/scene_types.hpp
 #pragma once
 
-#include "pba/core/constants.hpp"
-#include "pba/core/core_types.hpp"  // IWYU pragma: keep
 #include "pba/core/geometry.hpp"
 #include "pba/core/math_types.hpp"
 //
@@ -27,21 +25,6 @@ struct Transform
         M = glm::scale(M, scale);
         return ModelMatrix{M};
     }
-};
-
-enum class ObjectType
-{
-    Cube,
-    Sphere,
-    Hitmarker,
-    MarbleBust
-};
-struct Object
-{
-    ObjectId id{k_invalid_id};
-    ObjectType type{ObjectType::Cube};
-    Transform transform{};
-    Color3 color{k_scene_object_default_color};
 };
 
 }  // namespace ds_pba

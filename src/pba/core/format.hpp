@@ -1,10 +1,11 @@
 // pba/core/format.hpp
 #pragma once
 
-#include "pba/engine/scene_types.hpp"
 #include "pba/gfx/raycast.hpp"
-
+#include "pba/scene/world_types.hpp"
+//
 #include <format>
+//
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 
@@ -218,31 +219,13 @@ struct formatter<ds_pba::Raycast>
     template <class FormatContext>
     auto format(const ds_pba::Raycast& rc, FormatContext& ctx) const
     {
-        const char* type_str{""};
-        switch (rc.object_type)
-        {
-            case ds_pba::ObjectType::Cube:
-                type_str = "Cube";
-                break;
-            case ds_pba::ObjectType::Sphere:
-                type_str = "Sphere";
-                break;
-            case ds_pba::ObjectType::Hitmarker:
-                type_str = "Hitmarker";
-                break;
-            case ds_pba::ObjectType::MarbleBust:
-                type_str = "MarbleBust";
-                break;
-        }
-
         return std::format_to(
             ctx.out(),
-            "Raycast{{ray={}, hit={}, t={}, object_id={}, object_type={}}}",
+            "Raycast(ray={}, hit={}, t={}, object_id={})",
             rc.ray,
             rc.hit,
             rc.t,
-            rc.object_id,
-            type_str
+            rc.object_id
         );
     }
 };

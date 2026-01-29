@@ -1,12 +1,14 @@
-// pba/engine/scenes_setup.cpp
+// pba/scene/scenes_setup.cpp
 #include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/core/constants.hpp"
 #include "pba/core/core_types.hpp"
+#include "pba/core/format.hpp"  // IWYU pragma: keep
 #include "pba/core/math_types.hpp"
 #include "pba/engine/engine_context.hpp"
-#include "pba/engine/scene_types.hpp"
 #include "pba/physics/forces.hpp"
+#include "pba/scene/entity.hpp"
+#include "pba/scene/world_types.hpp"
 //
 #include <array>
 #include <cmath>
@@ -18,97 +20,35 @@ namespace ds_pba
 {
 namespace
 {
-glm::mat3 inv_inertia_body_box(f32 inv_mass, const Dir3& half_extent) noexcept
-{
-    if (inv_mass == k_static_mass)
-    {
-        return glm::mat3(0.0f);
-    }
-    const auto m = 1.0f / inv_mass;
 
-    const auto x = 2.0f * half_extent.x;
-    const auto y = 2.0f * half_extent.y;
-    const auto z = 2.0f * half_extent.z;
-
-    const auto Ixx = (m / 12.0f) * (y * y + z * z);
-    const auto Iyy = (m / 12.0f) * (x * x + z * z);
-    const auto Izz = (m / 12.0f) * (x * x + y * y);
-
-    glm::mat3 invI{0.0f};
-    invI[0][0] = (Ixx > 0.0f) ? (1.0f / Ixx) : 0.0f;
-    invI[1][1] = (Iyy > 0.0f) ? (1.0f / Iyy) : 0.0f;
-    invI[2][2] = (Izz > 0.0f) ? (1.0f / Izz) : 0.0f;
-    return invI;
-}
-
-glm::mat3
-inv_inertia_world_from_body(const Quaternion& q, const glm::mat3& inv_inertia_body) noexcept
-{
-    const auto R = glm::mat3_cast(q);
-    return R * inv_inertia_body * glm::transpose(R);
-}
-
-ObjectId spawn_box(
+[[nodiscard]] EntityId spawn_box(
     EngineContext& e,
     Pos3 pos,
     Dir3 half_extents,
     f32 inv_mass,
-    Dir3 vel = Dir3{0.0f, 0.0f, 0.0f},
-    Quaternion ori = Quaternion{1.0f, 0.0f, 0.0f, 0.0f},
-    Dir3 ang_vel = Dir3{0.0f, 0.0f, 0.0f},
+    Dir3 vel = k_zero_dir,
+    Quaternion ori = k_quaternion_identity,
+    Dir3 ang_vel = k_zero_dir,
     Color3 color = Color3{k_scene_object_default_color},
     std::string_view name = {}
 ) noexcept
 {
-    const ObjectId id{next_object_id()};
+    Entity& ent = e.spawn_cube(pos, half_extents, inv_mass, vel, ori, ang_vel, color, name);
+    return ent.id;
+}
 
-    e.scene.cube_objects.push_back(
-        Object{
-            .id = id,
-            .type = ObjectType::Cube,
-            .transform =
-                {
-                    .position = pos,
-                    .scale = half_extents * 2.0f,
-                    .orientation = ori,
-                },
-            .color = color,
-        }
-    );
-
-    RigidBody rb{
-        .id = id,
-
-        .half_extents = half_extents,
-
-        .position = pos,
-        .velocity = vel,
-        .force_accum = Dir3{},
-        .inv_mass = inv_mass,
-
-        .orientation = ori,
-        .angular_velocity = ang_vel,
-        .torque_accum = Dir3{},
-
-        .inv_inertia_body = glm::mat3(0.0f),
-        .inv_inertia_world = glm::mat3(0.0f),
-    };
-
-    if (inv_mass != k_static_mass)
-    {
-        rb.inv_inertia_body = inv_inertia_body_box(inv_mass, half_extents);
-        rb.inv_inertia_world = inv_inertia_world_from_body(rb.orientation, rb.inv_inertia_body);
-    }
-
-    e.physics.bodies.push_back(rb);
-    e.link_latest_objects(id);
-
-    if (!name.empty())
-    {
-        e.obj_name_map.insert_or_assign(id, std::string{name});
-    }
-
-    return id;
+EntityId spawn_cube(
+    EngineContext& e,
+    Pos3 pos,
+    Dir3 vel = k_zero_dir,
+    Quaternion ori = k_quaternion_identity,
+    Color3 color = Color3{k_scene_object_default_color},
+    std::string_view name = {}
+) noexcept
+{
+    constexpr Dir3 k_half_extents{0.5f, 0.5f, 0.5f};
+    constexpr f32 k_inv_mass{1.0f};
+    return spawn_box(e, pos, k_half_extents, k_inv_mass, vel, ori, k_zero_dir, color, name);
 }
 
 void spawn_static_ground(
@@ -119,7 +59,7 @@ void spawn_static_ground(
     std::string_view name = "Ground"
 ) noexcept
 {
-    spawn_box(
+    (void) spawn_box(
         e,
         center,
         half_extents,
@@ -136,18 +76,19 @@ void create_pyramid_3d(EngineContext& e, int base_n, f32 step_size, f32 base_z) 
 {
     for (int layer{0}; layer < base_n; ++layer)
     {
-        const auto n = base_n - layer;
-        const auto z = base_z + static_cast<f32>(layer) * step_size;
+        const int n = base_n - layer;
+        const f32 z = base_z + static_cast<f32>(layer) * step_size;
 
-        const auto half_span = 0.5f * static_cast<f32>(n - 1) * step_size;
+        const f32 half_span = 0.5f * static_cast<f32>(n - 1) * step_size;
 
         for (int ix{0}; ix < n; ++ix)
         {
-            const auto x = static_cast<f32>(ix) * step_size - half_span;
+            const f32 x = static_cast<f32>(ix) * step_size - half_span;
             for (int iy{0}; iy < n; ++iy)
             {
-                const auto y = static_cast<f32>(iy) * step_size - half_span;
-                e.spawn_cube(
+                const f32 y = static_cast<f32>(iy) * step_size - half_span;
+                spawn_cube(
+                    e,
                     Pos3{x, y, z},
                     k_zero_dir,
                     k_quaternion_identity,
@@ -169,7 +110,7 @@ Dir3 tangent_ccw_xy(const Dir3& r) noexcept
     return t / std::sqrt(t2);
 }
 
-void apply_keep_awake(std::vector<RigidBody>& bodies, f32, void*) noexcept
+void apply_keep_awake(std::span<RigidBody> bodies, f32, void*) noexcept
 {
     for (auto& b : bodies)
     {
@@ -188,7 +129,7 @@ struct NBodyForceParams
     f32 softening{1e-3f};
 };
 
-void apply_nbody_gravity_fixed(std::vector<RigidBody>& bodies, f32, void* user) noexcept
+void apply_nbody_gravity_fixed(std::span<RigidBody> bodies, f32, void* user) noexcept
 {
     auto& p = *static_cast<NBodyForceParams*>(user);
     const usize n = bodies.size();
@@ -237,7 +178,7 @@ struct MovingAttractor
     AttractorForce attractor{};
 };
 
-void apply_moving_attractor(std::vector<RigidBody>& bodies, f32 dt_s, void* user) noexcept
+void apply_moving_attractor(std::span<RigidBody> bodies, f32 dt_s, void* user) noexcept
 {
     auto& m = *static_cast<MovingAttractor*>(user);
 
@@ -262,7 +203,7 @@ struct OscillatingUniform
     f32 amp_xy{8.0f};
 };
 
-void apply_oscillating_uniform(std::vector<RigidBody>& bodies, f32 dt_s, void* user) noexcept
+void apply_oscillating_uniform(std::span<RigidBody> bodies, f32 dt_s, void* user) noexcept
 {
     auto& f = *static_cast<OscillatingUniform*>(user);
     f.time_s += dt_s;
@@ -277,51 +218,57 @@ void apply_oscillating_uniform(std::vector<RigidBody>& bodies, f32 dt_s, void* u
     UniformForce uf{.accel = f.base_accel + wind};
     apply_uniform_force(bodies, dt_s, &uf);
 }
+
 }  // namespace
 
 void setup_scene_attractors_and_repulsive_pivot(EngineContext& e) noexcept
 {
-    e.spawn_cube(
+    spawn_cube(
+        e,
         Pos3{-14.0f, 0.0f, 2.0f},
         Dir3{+28.0f, 0.0f, 0.0f},
         k_quaternion_identity,
-        Color3{0.90f, 0.35f, 0.35f}
+        Color3{0.90f, 0.35f, 0.35f},
+        "Projectile Red"
     );
-    e.obj_name_map.insert_or_assign(e.scene.cube_objects.back().id, "Projectile Red");
 
-    e.spawn_cube(
+    spawn_cube(
+        e,
         Pos3{+14.0f, 0.0f, 2.2f},
         Dir3{-28.0f, 0.0f, 0.0f},
         k_quaternion_identity,
-        Color3{0.35f, 0.90f, 0.35f}
+        Color3{0.35f, 0.90f, 0.35f},
+        "Projectile Green"
     );
-    e.obj_name_map.insert_or_assign(e.scene.cube_objects.back().id, "Projectile Green");
 
-    e.spawn_cube(
+    spawn_cube(
+        e,
         Pos3{0.0f, -14.0f, 2.0f},
         Dir3{0.0f, +28.0f, 0.0f},
         k_quaternion_identity,
-        Color3{0.35f, 0.55f, 0.95f}
+        Color3{0.35f, 0.55f, 0.95f},
+        "Projectile Blue"
     );
-    e.obj_name_map.insert_or_assign(e.scene.cube_objects.back().id, "Projectile Blue");
 
-    e.spawn_cube(
+    spawn_cube(
+        e,
         Pos3{0.0f, +14.0f, 2.4f},
         Dir3{0.0f, -28.0f, -2.0f},
         k_quaternion_identity,
-        Color3{0.95f, 0.85f, 0.35f}
+        Color3{0.95f, 0.85f, 0.35f},
+        "Projectile Yellow"
     );
-    e.obj_name_map.insert_or_assign(e.scene.cube_objects.back().id, "Projectile Yellow");
 
     // e.create_pyramid(16);
     e.create_pyramid_3d(10, 1.06f, 0.5f);
 
-    e.scene.cube_objects.push_back(
-        Object{
-            .id = next_object_id(),
-            .type = ObjectType::Cube,
-            .transform{.position{10.0f, -15.0f, -5.5f}, .scale{10.0f, 10.0f, 1.0f}}
-        }
+    e.world.spawn(
+        EntityType::Cube,
+        Transform{
+            .position = Pos3{10.0f, -15.0f, -5.5f},
+            .scale = Dir3{10.0f, 10.0f, 1.0f},
+        },
+        Color3{0.12f, 0.12f, 0.12f}
     );
 
     static Pos3 origin{0.0f, 0.0f, 0.0f};
@@ -345,7 +292,7 @@ void setup_scene_attractors_and_repulsive_pivot(EngineContext& e) noexcept
         .range = 4.0f,
         .min_radius = 0.5f,
     };
-    repulse_pivot.target = &e.scene.camera.pivot;
+    repulse_pivot.target = &e.world.editor_state().camera().pivot;
 
     e.physics.external_forces.push_back(
         ExternalForce{.fn = apply_attractor_force, .user = &attractor_origin}
@@ -363,25 +310,29 @@ void setup_scene_small_pyramid_projectiles_gravity(EngineContext& e) noexcept
     static UniformForce gravity{.accel = k_gravity};
     e.physics.external_forces.push_back(ExternalForce{.fn = apply_uniform_force, .user = &gravity});
 
-    e.spawn_cube(
+    spawn_cube(
+        e,
         Pos3{-12.0f, 0.0f, 10.0f},
         Dir3{+24.0f, 0.0f, 0.0f},
         k_quaternion_identity,
         Color3{0.90f, 0.35f, 0.35f}
     );
-    e.spawn_cube(
+    spawn_cube(
+        e,
         Pos3{+12.0f, 0.0f, 10.2f},
         Dir3{-24.0f, 0.0f, 0.0f},
         k_quaternion_identity,
         Color3{0.35f, 0.90f, 0.35f}
     );
-    e.spawn_cube(
+    spawn_cube(
+        e,
         Pos3{0.0f, -12.0f, 10.0f},
         Dir3{0.0f, +24.0f, 0.0f},
         k_quaternion_identity,
         Color3{0.35f, 0.55f, 0.95f}
     );
-    e.spawn_cube(
+    spawn_cube(
+        e,
         Pos3{0.0f, +12.0f, 10.4f},
         Dir3{0.0f, -24.0f, -2.0f},
         k_quaternion_identity,
@@ -413,7 +364,7 @@ void setup_scene_attractor_origin_no_gravity(EngineContext& e) noexcept
         const Pos3 p{r * std::cos(ang), r * std::sin(ang), 2.0f};
         const Dir3 v{vmag * (-std::sin(ang)), vmag * (std::cos(ang)), 0.0f};
 
-        e.spawn_cube(p, v, k_quaternion_identity, Color3{0.82f, 0.82f, 0.86f});
+        spawn_cube(e, p, v, k_quaternion_identity, Color3{0.82f, 0.82f, 0.86f});
     }
 }
 
@@ -442,7 +393,7 @@ void setup_scene_attractor_origin_with_gravity(EngineContext& e) noexcept
         const Pos3 p{r * std::cos(ang), r * std::sin(ang), 12.0f + 0.15f * static_cast<f32>(i)};
         const Dir3 v{vmag * (-std::sin(ang)), vmag * (std::cos(ang)), 0.0f};
 
-        e.spawn_cube(p, v, k_quaternion_identity, Color3{0.86f, 0.86f, 0.86f});
+        spawn_cube(e, p, v, k_quaternion_identity, Color3{0.86f, 0.86f, 0.86f});
     }
 }
 
@@ -466,7 +417,7 @@ void setup_scene_pyramid3d_heavy_cube_drop(EngineContext& e) noexcept
     create_pyramid_3d(e, 7, 1.06f, -2.5f);
 
     constexpr auto heavy_mass = 350.0f;
-    spawn_box(
+    (void) spawn_box(
         e,
         Pos3{1.5f, 0.0f, 18.0f},
         Dir3{2.8f, 2.8f, 2.8f},
@@ -501,7 +452,7 @@ void setup_scene_motors_elongated_no_gravity(EngineContext& e) noexcept
             (i % 2 == 0) ? k_quaternion_identity : glm::angleAxis(0.30f * k_pi, k_axis_z);
         const Dir3 angular_velocty{k_zero_dir};
 
-        const ObjectId id = spawn_box(
+        const EntityId id = spawn_box(
             e,
             pos,
             half_extents,
@@ -510,9 +461,8 @@ void setup_scene_motors_elongated_no_gravity(EngineContext& e) noexcept
             ori,
             angular_velocty,
             Color3{0.80f, 0.82f, 0.88f},
-            std::string_view{}
+            std::format("Motor Rod {}", i)
         );
-        e.obj_name_map.insert_or_assign(id, std::format("Motor Rod {}", i));
 
         pack.motors[pack.count] = Motor{
             .id = id,
@@ -527,8 +477,8 @@ void setup_scene_motors_elongated_no_gravity(EngineContext& e) noexcept
     for (int i = 0; i < 20; ++i)
     {
         const auto y = -9.0f + 0.95f * static_cast<f32>(i);
-        e.spawn_cube(
-            Pos3{6.0f, y, 2.0f}, k_zero_dir, k_quaternion_identity, Color3{0.45f, 0.70f, 0.95f}
+        spawn_cube(
+            e, Pos3{6.0f, y, 2.0f}, k_zero_dir, k_quaternion_identity, Color3{0.45f, 0.70f, 0.95f}
         );
     }
 }
@@ -546,7 +496,7 @@ void setup_scene_nbody_sun_3_planets(EngineContext& e) noexcept
     );
 
     constexpr auto sun_mass = 1200.0f;
-    const ObjectId sun_id = spawn_box(
+    const EntityId sun_id = spawn_box(
         e,
         Pos3{0.0f, 0.0f, 0.0f},
         Dir3{2.2f, 2.2f, 2.2f},
@@ -566,29 +516,32 @@ void setup_scene_nbody_sun_3_planets(EngineContext& e) noexcept
     const auto v2 = std::sqrt(params.G * sun_mass / r2);
     const auto v3 = std::sqrt(params.G * sun_mass / r3);
 
-    e.spawn_cube(
+    spawn_cube(
+        e,
         Pos3{r1, 0.0f, 0.0f},
         Dir3{0.0f, v1, 0.0f},
         k_quaternion_identity,
-        Color3{0.35f, 0.65f, 0.95f}
+        Color3{0.35f, 0.65f, 0.95f},
+        "Planet A"
     );
-    e.obj_name_map.insert_or_assign(e.scene.cube_objects.back().id, "Planet A");
 
-    e.spawn_cube(
+    spawn_cube(
+        e,
         Pos3{0.0f, r2, 0.0f},
         Dir3{-v2, 0.0f, 0.0f},
         k_quaternion_identity,
-        Color3{0.35f, 0.95f, 0.55f}
+        Color3{0.35f, 0.95f, 0.55f},
+        "Planet B"
     );
-    e.obj_name_map.insert_or_assign(e.scene.cube_objects.back().id, "Planet B");
 
-    e.spawn_cube(
+    spawn_cube(
+        e,
         Pos3{-r3, 0.0f, 0.0f},
         Dir3{0.0f, -v3, 0.0f},
         k_quaternion_identity,
-        Color3{0.95f, 0.35f, 0.75f}
+        Color3{0.95f, 0.35f, 0.75f},
+        "Planet C"
     );
-    e.obj_name_map.insert_or_assign(e.scene.cube_objects.back().id, "Planet C");
 
     const Dir3 p_total{v2, v1 - v3, 0.0f};
     const Dir3 v_sun = -(p_total / sun_mass);
@@ -632,7 +585,7 @@ void setup_scene_nbody_three_body_equal(EngineContext& e) noexcept
         const Dir3 r{pos[static_cast<usize>(i)]};
         const Dir3 t{tangent_ccw_xy(r)};
 
-        spawn_box(
+        (void) spawn_box(
             e,
             pos[static_cast<usize>(i)],
             Dir3{0.8f, 0.8f, 0.8f},
@@ -666,7 +619,7 @@ void setup_scene_moving_attractor_circle(EngineContext& e) noexcept
             0.0f,
         };
 
-        e.spawn_cube(p, v, k_quaternion_identity, Color3{0.80f, 0.85f, 0.90f});
+        spawn_cube(e, p, v, k_quaternion_identity, Color3{0.80f, 0.85f, 0.90f});
     }
 
     static MovingAttractor m{.time_s = 0.0f, .omega = 0.7f, .radius = 18.0f, .z = 2.0f};
@@ -686,7 +639,7 @@ void setup_scene_oscillating_uniform_force(EngineContext& e) noexcept
 
     for (int i = 0; i < 12; ++i)
     {
-        e.spawn_cube(Pos3{0.0f, 0.0f, -2.5f + 1.02f * static_cast<f32>(i)});
+        spawn_cube(e, Pos3{0.0f, 0.0f, -2.5f + 1.02f * static_cast<f32>(i)});
     }
 
     static OscillatingUniform f{
@@ -704,7 +657,7 @@ void setup_scene_inclined_plane(EngineContext& e) noexcept
     e.physics.external_forces.push_back(ExternalForce{.fn = apply_uniform_force, .user = &gravity});
 
     const Quaternion ramp_q = glm::angleAxis(-0.22f * k_pi, k_axis_y);
-    spawn_box(
+    (void) spawn_box(
         e,
         Pos3{-6.0f, 0.0f, -1.5f},
         Dir3{18.0f, 6.0f, 0.6f},
@@ -718,7 +671,8 @@ void setup_scene_inclined_plane(EngineContext& e) noexcept
 
     for (int i{0}; i < 24; ++i)
     {
-        e.spawn_cube(
+        spawn_cube(
+            e,
             Pos3{
                 -18.0f + 1.2f * static_cast<f32>(i),
                 0.0f,
@@ -740,7 +694,7 @@ void setup_scene_box_drop_container(EngineContext& e) noexcept
     const auto inner = 17.0f;
     const auto wall_cz = -3.0f + wall_hz;
 
-    spawn_box(
+    (void) spawn_box(
         e,
         Pos3{+(inner + wall_th), 0.0f, wall_cz},
         Dir3{wall_th, inner, wall_hz},
@@ -751,7 +705,7 @@ void setup_scene_box_drop_container(EngineContext& e) noexcept
         Color3{0.12f, 0.12f, 0.12f},
         "+X Wall"
     );
-    spawn_box(
+    (void) spawn_box(
         e,
         Pos3{-(inner + wall_th), 0.0f, wall_cz},
         Dir3{wall_th, inner, wall_hz},
@@ -762,7 +716,7 @@ void setup_scene_box_drop_container(EngineContext& e) noexcept
         Color3{0.12f, 0.12f, 0.12f},
         "-X Wall"
     );
-    spawn_box(
+    (void) spawn_box(
         e,
         Pos3{0.0f, +(inner + wall_th), wall_cz},
         Dir3{inner, wall_th, wall_hz},
@@ -773,7 +727,7 @@ void setup_scene_box_drop_container(EngineContext& e) noexcept
         Color3{0.12f, 0.12f, 0.12f},
         "+Y Wall"
     );
-    spawn_box(
+    (void) spawn_box(
         e,
         Pos3{0.0f, -(inner + wall_th), wall_cz},
         Dir3{inner, wall_th, wall_hz},
@@ -793,7 +747,7 @@ void setup_scene_box_drop_container(EngineContext& e) noexcept
         const auto x = (fx * 2.0f - 1.0f) * (inner - 2.5f);
         const auto y = (fy * 2.0f - 1.0f) * (inner - 2.5f);
         const auto z = 2.0f + 0.32f * static_cast<f32>(i);
-        e.spawn_cube(Pos3{x, y, z});
+        spawn_cube(e, Pos3{x, y, z});
     }
 }
 
@@ -814,19 +768,20 @@ void setup_scene_projectile_wall(EngineContext& e) noexcept
     {
         for (int ix = 0; ix < nx; ++ix)
         {
-            e.spawn_cube(
-                Pos3{x0 + static_cast<f32>(ix) * step, 0.0f, z0 + static_cast<f32>(iz) * step}
+            spawn_cube(
+                e, Pos3{x0 + static_cast<f32>(ix) * step, 0.0f, z0 + static_cast<f32>(iz) * step}
             );
         }
     }
 
-    e.spawn_cube(
+    spawn_cube(
+        e,
         Pos3{0.0f, -22.0f, 2.5f},
         Dir3{0.0f, +36.0f, 0.0f},
         k_quaternion_identity,
-        Color3{0.95f, 0.35f, 0.35f}
+        Color3{0.95f, 0.35f, 0.35f},
+        "Wall Projectile"
     );
-    e.obj_name_map.insert_or_assign(e.scene.cube_objects.back().id, "Wall Projectile");
 }
 
 }  // namespace ds_pba

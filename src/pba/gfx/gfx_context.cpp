@@ -84,7 +84,6 @@ void GfxContext::request_close() noexcept
 
 void GfxContext::step()
 {
-    Expects(scene_context && "Scene Context not set for GfxContext");
     Expects(engine_context && "Scene Context not set for GfxContext");
     using namespace ds_pba;
 

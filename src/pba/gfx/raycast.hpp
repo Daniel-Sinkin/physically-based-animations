@@ -4,17 +4,17 @@
 #include "pba/core/core_types.hpp"
 #include "pba/core/geometry.hpp"
 #include "pba/core/math_types.hpp"
-#include "pba/engine/scene_types.hpp"
+#include "pba/scene/entity_id.hpp"
 //
-#include <cmath>
-#include <glm/glm.hpp>
 #include <optional>
+//
+#include <glm/glm.hpp>
 
 struct GLFWwindow;
 
 namespace ds_pba
 {
-struct SceneContext;
+class World;
 
 struct Ray
 {
@@ -32,8 +32,7 @@ struct Raycast
     Ray ray;
     Pos3 hit;
     f32 t;
-    ObjectId object_id;
-    ObjectType object_type;
+    EntityId object_id;
 };
 [[nodiscard]] Ray ray_from_imgui_rect(
     const glm::vec2& mouse_pos,
@@ -48,5 +47,5 @@ intersect_ray_cube(const Ray& ray, const ModelMatrix& model) noexcept;
 [[nodiscard]] std::optional<f32>
 intersect_ray_sphere(const Ray& ray, const ModelMatrix& model) noexcept;
 
-[[nodiscard]] std::optional<Raycast> raycast(const SceneContext& context, const Ray& ray) noexcept;
+[[nodiscard]] std::optional<Raycast> raycast(const World& context, const Ray& ray) noexcept;
 }  // namespace ds_pba

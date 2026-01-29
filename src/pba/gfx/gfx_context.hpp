@@ -12,6 +12,7 @@
 #include "pba/gfx/shader_program.hpp"
 #include "pba/gfx/video_recorder.hpp"
 #include "pba/gfx/viewport_fbo.hpp"
+#include "pba/scene/entity_id.hpp"
 #include "pba/ui/ui_theme.hpp"
 
 #include <chrono>
@@ -19,7 +20,6 @@
 #include <glm/vec2.hpp>
 #include <string>
 #include <unordered_map>
-#include <utility>
 #include <vector>
 
 struct GLFWwindow;
@@ -31,7 +31,6 @@ struct PhysicsContext;
 struct EngineContext;
 struct Raycast;
 struct Camera;
-
 struct GfxContext
 {
     GfxContext() = default;
@@ -105,8 +104,6 @@ struct GfxContext
     bool viewport_fb_rect_valid{false};
     bool viewport_image_hovered{false};
 
-    SceneContext* scene_context{};
-    // This is only intended for ImGUI don't access values for the GfxContext through it
     EngineContext* engine_context{};
 
     bool is_active_{true};
@@ -235,7 +232,7 @@ struct GfxContext
             f64 start_mouse_x{0.0};
             f64 start_mouse_y{0.0};
             GrabConstraint constraint{GrabConstraint::None};
-            std::vector<std::pair<ObjectId, Pos3>> start_positions{};
+            std::vector<std::pair<EntityId, Pos3>> start_positions{};
         };
 
         Grab grab{};
@@ -267,9 +264,6 @@ struct GfxContext
     void hover_interaction(const EditorInput& input) const;
     void hover_interaction_holding_middle(const EditorInput& input, Camera& cam) const;
     void hover_interaction_selection(const EditorInput& input, const Raycast& rc) const;
-
-    void set_object_position(ObjectId id, const Pos3& p) const;
-    [[nodiscard]] std::optional<Pos3> get_object_position(ObjectId id) const;
 
     bool is_active() const;
     void deactivate() noexcept

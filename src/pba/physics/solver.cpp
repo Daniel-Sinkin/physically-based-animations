@@ -6,6 +6,7 @@
 #include "pba/core/constants.hpp"
 #include "pba/core/core_types.hpp"
 #include "pba/core/math_types.hpp"
+#include "pba/physics/physics_types.hpp"
 //
 #include <algorithm>
 #include <cassert>
@@ -247,54 +248,9 @@ void apply_impulse_contact(
     apply_impulse_contact_friction(a, b, contact, r_a, r_b, n);
 }
 
-void positional_correction_contacts(
-    std::vector<RigidBody>& bodies, const Contacts& contacts
-) noexcept
-{
-    for (const auto& contact : contacts)
-    {
-        auto& a = bodies[contact.a_idx];
-        auto& b = bodies[contact.b_idx];
-
-        if (a.is_static() && b.is_static())
-        {
-            continue;
-        }
-        const f32 pen{contact.penetration};
-        if (pen <= k_pen_tolerance)
-        {
-            continue;
-        }
-
-        const Dir3 n{contact.n};
-
-        const auto inv_mass_a = a.inv_mass;
-        const auto inv_mass_b = b.inv_mass;
-        const auto inv_mass_sum = inv_mass_a + inv_mass_b;
-
-        if (inv_mass_sum <= 1e-12f)
-        {
-            continue;
-        }
-
-        auto corr_mag = k_pen_percent * (pen - k_pen_tolerance);
-        corr_mag = std::clamp(corr_mag, 0.0f, k_pen_max_correction);
-        const Dir3 correction{(corr_mag / inv_mass_sum) * n};
-
-        if (!a.is_static())
-        {
-            a.position += correction * inv_mass_a;
-        }
-        if (!b.is_static())
-        {
-            b.position -= correction * inv_mass_b;
-        }
-    }
-}
-
 }  // namespace
 
-void update_inv_inertia_world(std::vector<RigidBody>& bodies) noexcept
+void update_inv_inertia_world(std::span<RigidBody> bodies) noexcept
 {
     for (auto& b : bodies)
     {
@@ -307,11 +263,11 @@ void update_inv_inertia_world(std::vector<RigidBody>& bodies) noexcept
     }
 }
 
-void integrate_forces(std::vector<RigidBody>& bodies, f32 dt_s) noexcept
+void integrate_forces(std::span<RigidBody> bodies, f32 dt_s) noexcept
 {
     for (auto& b : bodies)
     {
-        if (b.is_static() || b.asleep)
+        if (b.is_static() || b.asleep || b.grabbed)
         {
             continue;
         }
@@ -325,11 +281,11 @@ void integrate_forces(std::vector<RigidBody>& bodies, f32 dt_s) noexcept
     }
 }
 
-void integrate_velocities(std::vector<RigidBody>& bodies, f32 dt_s) noexcept
+void integrate_velocities(std::span<RigidBody> bodies, f32 dt_s) noexcept
 {
     for (auto& b : bodies)
     {
-        if (b.is_static() || b.asleep)
+        if (b.is_static() || b.asleep || b.grabbed)
         {
             continue;
         }
@@ -341,7 +297,7 @@ void integrate_velocities(std::vector<RigidBody>& bodies, f32 dt_s) noexcept
     }
 }
 
-void warm_start_contact(std::vector<RigidBody>& bodies, Contact& contact) noexcept
+void warm_start_contact(std::span<RigidBody> bodies, Contact& contact) noexcept
 {
 
     auto& a = bodies[contact.a_idx];
@@ -351,7 +307,7 @@ void warm_start_contact(std::vector<RigidBody>& bodies, Contact& contact) noexce
     {
         return;
     }
-    if (a.asleep || b.asleep)
+    if (a.asleep || b.asleep || a.grabbed || b.grabbed)
     {
         return;
     }
@@ -396,73 +352,125 @@ void warm_start_contact(std::vector<RigidBody>& bodies, Contact& contact) noexce
     }
 }
 
-void solve_velocity_constraints(
-    std::vector<RigidBody>& bodies, Contacts& contacts, f32 dt_s
-) noexcept
+[[nodiscard]] inline auto
+get_velocity_at_world_point(const RigidBody& b, const Pos3& world_p) noexcept -> Dir3
 {
+    return b.velocity + glm::cross(b.angular_velocity, world_p - b.position);
+}
+
+[[nodiscard]] inline auto get_relative_velocity_at_world_point(
+    const RigidBody& a, const RigidBody& b, const Pos3& world_p
+) noexcept -> Dir3
+{
+    return get_velocity_at_world_point(a, world_p) - get_velocity_at_world_point(b, world_p);
+}
+
+auto solve_velocity_constraints(
+    std::span<RigidBody> bodies, std::span<Contact> contacts, f32 dt_s
+) noexcept -> void
+{
+    for (auto& contact : contacts)
+    {  // Should any wake up?
+        auto& a = bodies[contact.a_idx];
+        auto& b = bodies[contact.b_idx];
+
+        auto can_wake_up = [](RigidBody& rb) -> bool { return rb.is_static() || !rb.asleep; };
+        if (can_wake_up(a) && can_wake_up(b))
+        {
+            continue;
+        }
+
+        const bool should_wake = [&]() -> bool
+        {
+            if (contact.penetration > k_pen_tolerance)
+            {
+                return true;
+            }
+            const auto v_rel = get_relative_velocity_at_world_point(a, b, contact.p);
+            return glm::dot(contact.n, v_rel) < -0.05f;
+        }();
+        if (should_wake && (wake_up(a) || wake_up(b)))
+        {
+            contact.lambda_n = 0.0f;
+            contact.lambda_t = 0.0f;
+            contact.has_t_hat = false;
+        }
+    }
+
     for (usize i{0zu}; i < k_solver_iterations; ++i)
     {
         for (auto& contact : contacts)
         {
-            RigidBody& a{bodies[contact.a_idx]};
-            RigidBody& b{bodies[contact.b_idx]};
+            auto& a{bodies[contact.a_idx]};
+            auto& b{bodies[contact.b_idx]};
             if (a.is_static() && b.is_static())
             {
                 continue;
             }
-
-            const auto pen_eff = contact.penetration - k_pen_tolerance;
-            bool woke{false};
-            if (pen_eff > 0.0f)
-            {
-                woke |= wake_up(a);
-                woke |= wake_up(b);
-            }
-            else
-            {
-                const Dir3 n{contact.n};
-                const Dir3 ra{contact.p - a.position};
-                const Dir3 rb{contact.p - b.position};
-
-                const Dir3 pa_dot{a.velocity + glm::cross(a.angular_velocity, ra)};
-                const Dir3 pb_dot{b.velocity + glm::cross(b.angular_velocity, rb)};
-                const auto v_rel_n = glm::dot(n, pa_dot - pb_dot);
-
-                if (v_rel_n < -0.05f)
-                {
-                    woke |= wake_up(a);
-                    woke |= wake_up(b);
-                }
-            }
-            if (woke)
+            if (a.grabbed || b.grabbed)
             {
                 contact.lambda_n = 0.0f;
                 contact.lambda_t = 0.0f;
                 contact.has_t_hat = false;
+                continue;
             }
-
             if (a.asleep && b.asleep)
             {
                 continue;
             }
-
             apply_impulse_contact(a, b, contact, k_restitution, dt_s);
         }
     }
 }
 
-void solve_position_constraints(std::vector<RigidBody>& bodies, const Contacts& contacts) noexcept
+void solve_position_constraints(std::span<RigidBody> bodies, std::span<Contact> contacts) noexcept
 {
     for (usize i{0zu}; i < k_position_iterations; ++i)
     {
-        positional_correction_contacts(bodies, contacts);
+        for (const auto& contact : contacts)
+        {
+            auto& a = bodies[contact.a_idx];
+            auto& b = bodies[contact.b_idx];
+
+            if ((a.is_static() && b.is_static()) || contact.penetration <= k_pen_tolerance)
+            {
+                continue;
+            }
+
+            const auto inv_mass_sum = a.inv_mass + b.inv_mass;
+            if (inv_mass_sum <= 1e-12f)
+            {
+                continue;
+            }
+
+            const Dir3 correction = [&]()
+            {
+                const auto pen_excess = contact.penetration - k_pen_tolerance;
+                const auto mag = std::clamp(k_pen_percent * pen_excess, 0.0f, k_pen_max_correction);
+                return (mag / inv_mass_sum) * contact.n;
+            }();
+            if (!a.is_static())
+            {
+                a.position += correction * a.inv_mass;
+            }
+            if (!b.is_static())
+            {
+                b.position -= correction * b.inv_mass;
+            }
+        }
     }
 }
 
-void apply_sleep_and_damping(std::vector<RigidBody>& bodies, f32 dt_s) noexcept
+void apply_sleep_and_damping(std::span<RigidBody> bodies, f32 dt_s) noexcept
 {
     for (auto& b : bodies)
     {
+        if (b.grabbed)
+        {
+            b.velocity = Dir3{};
+            b.angular_velocity = Dir3{};
+            continue;
+        }
         if (b.is_static() || b.asleep)
         {
             continue;
@@ -471,11 +479,11 @@ void apply_sleep_and_damping(std::vector<RigidBody>& bodies, f32 dt_s) noexcept
         const f32 v2{glm::dot(b.velocity, b.velocity)};
         const f32 w2{glm::dot(b.angular_velocity, b.angular_velocity)};
 
-        const bool slow =
+        const bool is_slow =
             (v2 < k_linear_sleep_speed_threshold * k_linear_sleep_speed_threshold)
             && (w2 < k_angular_sleep_speed_threshold * k_angular_sleep_speed_threshold);
 
-        if (slow)
+        if (is_slow)
         {
             ++b.sleep_frames;
             if (b.sleep_frames > 60)
@@ -491,13 +499,12 @@ void apply_sleep_and_damping(std::vector<RigidBody>& bodies, f32 dt_s) noexcept
         {
             b.sleep_frames = 0;
         }
-
         b.velocity *= std::exp(-k_linear_damping * dt_s);
         b.angular_velocity *= std::exp(-k_angular_damping * dt_s);
     }
 }
 
-void clear_accumulators(std::vector<RigidBody>& bodies) noexcept
+void clear_accumulators(std::span<RigidBody> bodies) noexcept
 {
     for (auto& b : bodies)
     {

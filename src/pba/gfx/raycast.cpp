@@ -5,47 +5,42 @@
 #include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/core/math_types.hpp"
-#include "pba/engine/scene_context.hpp"
 #include "pba/gfx/raycast.hpp"
+#include "pba/scene/entity.hpp"
+#include "pba/scene/world.hpp"
 
 #include <gsl/assert>
 
 namespace ds_pba
 {
-std::optional<Raycast> raycast(const SceneContext& scene_context, const Ray& ray) noexcept
+std::optional<Raycast> raycast(const World& world, const Ray& ray) noexcept
 {
     Expects(ray.valid());
     auto best_t = k_f32_max;
 
-    bool found{false};
     u32 best_object_id{};
-    ObjectType best_type{};
 
     // Forwarding reference to intersection function, see
     // https://www.scs.stanford.edu/~dm/blog/param-pack.html
-    auto check_hits = [&](const auto& objects, ObjectType type, auto&& intersect_fn) -> void
+    auto check_hit = [&](const auto& entity, auto&& intersect_fn) -> void
     {
-        for (const auto& o : objects)
+        if (auto res = intersect_fn(ray, entity.transform.model_matrix()); res && *res < best_t)
         {
-            if (auto res = intersect_fn(ray, o.transform.model_matrix()))
-            {
-                const auto t = *res;
-                if (t < best_t)
-                {
-                    best_t = t;
-                    best_type = type;
-                    best_object_id = o.id;
-                    found = true;
-                }
-            }
+            best_t = *res;
+            best_object_id = entity.id;
         }
     };
+    for (const auto& entity : world.entities())
+    {
+        switch (entity.type)
+        {
+            case EntityType::Cube:
+                check_hit(entity, intersect_ray_cube);
+                break;
+        }
+    }
 
-    check_hits(scene_context.cube_objects, ObjectType::Cube, intersect_ray_cube);
-    check_hits(scene_context.sphere_objects, ObjectType::Sphere, intersect_ray_sphere);
-    check_hits(scene_context.marble_bust_objects, ObjectType::MarbleBust, intersect_ray_sphere);
-
-    if (!found)
+    if (best_t == k_f32_max)
     {
         return std::nullopt;
     }
@@ -57,7 +52,6 @@ std::optional<Raycast> raycast(const SceneContext& scene_context, const Ray& ray
         .hit = ray.origin + best_t * ray.dir,
         .t = best_t,
         .object_id = best_object_id,
-        .object_type = best_type,
     };
 }
 
