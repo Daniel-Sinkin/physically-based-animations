@@ -2,9 +2,10 @@
 #pragma once
 
 #include "pba/gfx/raycast.hpp"
-#include "pba/scene/entity.hpp"
-
+#include "pba/scene/world_types.hpp"
+//
 #include <format>
+//
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 

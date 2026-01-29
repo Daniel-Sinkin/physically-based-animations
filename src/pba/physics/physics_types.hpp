@@ -11,6 +11,7 @@
 //
 #include <glm/geometric.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include <vector>
 
 namespace ds_pba
 {
@@ -42,6 +43,8 @@ struct RigidBody
 
     bool asleep{false};
     int sleep_frames{0};
+
+    bool grabbed{false};
 
     [[nodiscard]] bool is_static() const noexcept
     {
@@ -207,7 +210,8 @@ struct Contact
         return ContactValidity::Ok;
     }
 };
-using Contacts = std::pmr::vector<Contact>;
+
+using ContactList = std::pmr::vector<Contact>;
 
 struct ContactCacheEntry
 {

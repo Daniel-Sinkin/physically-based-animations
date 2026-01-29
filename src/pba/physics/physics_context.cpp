@@ -49,7 +49,7 @@ void PhysicsContext::step()
 {
     // Per step arena allocator is very cheap to reset
     step_arena.release();
-    Contacts contacts{&step_arena};
+    auto contacts = ContactList{&step_arena};
 
     // How long the frame lasted, we do physics processing
     // until physics time reaches that time.

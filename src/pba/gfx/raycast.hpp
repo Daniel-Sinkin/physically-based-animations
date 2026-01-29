@@ -4,7 +4,7 @@
 #include "pba/core/core_types.hpp"
 #include "pba/core/geometry.hpp"
 #include "pba/core/math_types.hpp"
-#include "pba/scene/entity.hpp"
+#include "pba/scene/entity_id.hpp"
 //
 #include <optional>
 //

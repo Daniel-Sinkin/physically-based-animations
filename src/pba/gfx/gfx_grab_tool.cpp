@@ -35,6 +35,23 @@ grab_constraint_from_key(const EditorInput& in) noexcept
 
     return GC::None;
 }
+
+void set_entity_and_body_position(EngineContext& e, EntityId id, const Pos3& pos) noexcept
+{
+    if (auto* entity = e.world.find(id))
+    {
+        entity->transform.position = pos;
+
+        if (entity->body)
+        {
+            if (auto* rb = e.physics.try_body(*entity->body))
+            {
+                rb->position = pos;
+            }
+        }
+    }
+}
+
 }  // namespace
 
 void GfxContext::cancel_grab()
@@ -45,14 +62,17 @@ void GfxContext::cancel_grab()
         return;
     }
 
+    Expects(engine_context);
+
     for (const auto& [id, start_pos] : grab.start_positions)
     {
-        engine_context->world.find(id)->transform.position = start_pos;
+        set_entity_and_body_position(*engine_context, id, start_pos);
     }
 
     grab.active = false;
     grab.start_positions.clear();
     grab.constraint = EditorState::GrabConstraint::None;
+
     ui_log("Grab cancelled");
 }
 
@@ -64,9 +84,28 @@ void GfxContext::confirm_grab()
         return;
     }
 
+    Expects(engine_context);
+
+    // During dragging we update Entity::transform.position.
+    // Confirm must synchronize physics bodies to the final transform positions.
+    for (const auto& [id, _start_pos] : grab.start_positions)
+    {
+        if (auto* entity = engine_context->world.find(id))
+        {
+            if (entity->body)
+            {
+                if (auto* rb = engine_context->physics.try_body(*entity->body))
+                {
+                    rb->position = entity->transform.position;
+                }
+            }
+        }
+    }
+
     grab.active = false;
     grab.start_positions.clear();
     grab.constraint = EditorState::GrabConstraint::None;
+
     ui_log("Grab confirmed");
 }
 
@@ -95,11 +134,10 @@ void GfxContext::set_grab_constraint(EditorState::GrabConstraint c)
 
 void GfxContext::begin_grab(const EditorInput& input)
 {
-    {
-        Expects(engine_context);
-    }
+    Expects(engine_context);
 
-    if (engine_context->world.editor_state().selected_ids.empty())
+    const auto& selected_ids = engine_context->world.editor_state().selected_ids;
+    if (selected_ids.empty())
     {
         ui_log("Grab (G): nothing selected");
         return;
@@ -113,15 +151,32 @@ void GfxContext::begin_grab(const EditorInput& input)
     grab.constraint = EditorState::GrabConstraint::None;
 
     grab.start_positions.clear();
-    const auto& selected_ids = engine_context->world.editor_state().selected_ids;
     grab.start_positions.reserve(selected_ids.size());
+
     for (const EntityId id : selected_ids)
     {
-        if (auto entity = engine_context->world.find(id))
+        if (auto* entity = engine_context->world.find(id))
         {
-            grab.start_positions.emplace_back(id, entity->transform.position);
+            Pos3 start_pos = entity->transform.position;
+
+            if (entity->body)
+            {
+                if (auto* rb = engine_context->physics.try_body(*entity->body))
+                {
+                    rb->grabbed = true;
+                    rb->asleep = false;
+                    rb->sleep_frames = 0;
+                    rb->velocity = Dir3{};
+                    rb->angular_velocity = Dir3{};
+                    start_pos = rb->position;
+                    entity->transform.position = start_pos;
+                }
+            }
+
+            grab.start_positions.emplace_back(id, start_pos);
         }
     }
+
     ui_log("Grab: move mouse. X/Y/Z constrain. LMB/Enter confirm. RMB/Esc cancel.");
 }
 
@@ -132,6 +187,8 @@ void GfxContext::update_grab(const EditorInput& input)
     {
         return;
     }
+
+    Expects(engine_context);
 
     if (const auto c = grab_constraint_from_key(input); c != EditorState::GrabConstraint::None)
     {
@@ -164,9 +221,10 @@ void GfxContext::update_grab(const EditorInput& input)
             delta = Dir3{0.0f, 0.0f, delta.z};
             break;
     }
+
     for (const auto& [id, start_pos] : grab.start_positions)
     {
-        engine_context->world.find(id)->transform.position = start_pos + delta;
+        set_entity_and_body_position(*engine_context, id, start_pos + delta);
     }
 }
 

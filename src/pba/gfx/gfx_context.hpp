@@ -12,7 +12,7 @@
 #include "pba/gfx/shader_program.hpp"
 #include "pba/gfx/video_recorder.hpp"
 #include "pba/gfx/viewport_fbo.hpp"
-#include "pba/scene/entity.hpp"
+#include "pba/scene/entity_id.hpp"
 #include "pba/ui/ui_theme.hpp"
 
 #include <chrono>

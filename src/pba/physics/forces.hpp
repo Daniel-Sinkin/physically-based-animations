@@ -12,7 +12,7 @@
 namespace ds_pba
 {
 
-using ExternalForceFn = void (*)(std::vector<RigidBody>& bodies, f32 dt_s, void* user) noexcept;
+using ExternalForceFn = void (*)(std::span<RigidBody> bodies, f32 dt_s, void* user) noexcept;
 
 struct ExternalForce
 {
@@ -24,7 +24,7 @@ struct UniformForce
 {
     Dir3 accel{k_earth_gravity};
 };
-inline void apply_uniform_force(std::vector<RigidBody>& bodies, f32, void* user) noexcept
+inline void apply_uniform_force(std::span<RigidBody> bodies, f32, void* user) noexcept
 {
     const auto& uf = *static_cast<const UniformForce*>(user);
 
@@ -45,7 +45,7 @@ struct AttractorForce
     f32 min_radius{0.25f};
 };
 
-inline void apply_attractor_force(std::vector<RigidBody>& bodies, f32, void* user) noexcept
+inline void apply_attractor_force(std::span<RigidBody> bodies, f32, void* user) noexcept
 {
     const auto& a = *static_cast<const AttractorForce*>(user);
     if (!a.target)
@@ -87,7 +87,7 @@ struct RepulsionForce
     f32 range{5.0f};
     f32 min_radius{0.5f};
 };
-inline void apply_repulsion_force(std::vector<RigidBody>& bodies, f32, void* user) noexcept
+inline void apply_repulsion_force(std::span<RigidBody> bodies, f32, void* user) noexcept
 {
     const auto& r = *static_cast<const RepulsionForce*>(user);
     if (!r.target)
@@ -137,7 +137,7 @@ struct Motor
     Dir3 torque{};
 };
 
-inline void apply_motor_torque(std::vector<RigidBody>& bodies, f32, void* user) noexcept
+inline void apply_motor_torque(std::span<RigidBody> bodies, f32, void* user) noexcept
 {
     auto& m = *static_cast<Motor*>(user);
     for (auto& b : bodies)
@@ -156,7 +156,7 @@ struct NBodyParams
     f32 softening{1e-3f};
 };
 
-inline void apply_nbody_gravity(std::vector<RigidBody>& bodies, f32, void* user) noexcept
+inline void apply_nbody_gravity(std::span<RigidBody> bodies, f32, void* user) noexcept
 {
     auto& p = *static_cast<NBodyParams*>(user);
     const auto n = bodies.size();

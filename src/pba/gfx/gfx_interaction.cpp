@@ -15,7 +15,9 @@
 //
 #include <GLFW/glfw3.h>
 #include <glm/ext/matrix_float4x4.hpp>
+#include <gsl/assert>
 #include <json.hpp>
+#include <print>
 
 namespace ds_pba
 {
@@ -102,18 +104,22 @@ void GfxContext::hover_interaction_holding_middle(const EditorInput& input, Came
 
 void GfxContext::hover_interaction_selection(const EditorInput& input, const Raycast& rc) const
 {
+    Expects(engine_context);
+    if (!engine_context)
+    {
+        std::println("Engine Context ist not initialised, cna do hover_interaction_selection");
+        return;
+    }
     auto log_action = [&](std::string_view action, EntityId id, const char* kind) -> void
     {
-        if (engine_context)
+        if (auto entity = engine_context->world.find(id); entity)
         {
-            if (auto it = engine_context->obj_name_map.find(id);
-                it != engine_context->obj_name_map.end())
-            {
-                ui_log(std::format("{} {} [id={}] [{}]", action, it->second, id, kind));
-                return;
-            }
+            ui_log(std::format("{} {} [id={}] [{}]", action, entity->name, id, kind));
         }
-        ui_log(std::format("{} [id={}] [{}]", action, id, kind));
+        else
+        {
+            ui_log(std::format("{} [id={}] [{}]", action, id, kind));
+        }
     };
 
     const bool was_selected = engine_context->world.editor_state().is_selected(rc.object_id);
