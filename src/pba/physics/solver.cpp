@@ -248,51 +248,6 @@ void apply_impulse_contact(
     apply_impulse_contact_friction(a, b, contact, r_a, r_b, n);
 }
 
-void positional_correction_contacts(
-    std::span<RigidBody> bodies, const std::span<Contact>& contacts
-) noexcept
-{
-    for (const auto& contact : contacts)
-    {
-        auto& a = bodies[contact.a_idx];
-        auto& b = bodies[contact.b_idx];
-
-        if (a.is_static() && b.is_static())
-        {
-            continue;
-        }
-        const f32 pen{contact.penetration};
-        if (pen <= k_pen_tolerance)
-        {
-            continue;
-        }
-
-        const Dir3 n{contact.n};
-
-        const auto inv_mass_a = a.inv_mass;
-        const auto inv_mass_b = b.inv_mass;
-        const auto inv_mass_sum = inv_mass_a + inv_mass_b;
-
-        if (inv_mass_sum <= 1e-12f)
-        {
-            continue;
-        }
-
-        auto corr_mag = k_pen_percent * (pen - k_pen_tolerance);
-        corr_mag = std::clamp(corr_mag, 0.0f, k_pen_max_correction);
-        const Dir3 correction{(corr_mag / inv_mass_sum) * n};
-
-        if (!a.is_static())
-        {
-            a.position += correction * inv_mass_a;
-        }
-        if (!b.is_static())
-        {
-            b.position -= correction * inv_mass_b;
-        }
-    }
-}
-
 }  // namespace
 
 void update_inv_inertia_world(std::span<RigidBody> bodies) noexcept
@@ -397,49 +352,48 @@ void warm_start_contact(std::span<RigidBody> bodies, Contact& contact) noexcept
     }
 }
 
-void solve_velocity_constraints(
+[[nodiscard]] inline auto
+get_velocity_at_world_point(const RigidBody& b, const Pos3& world_p) noexcept -> Dir3
+{
+    return b.velocity + glm::cross(b.angular_velocity, world_p - b.position);
+}
+
+[[nodiscard]] inline auto get_relative_velocity_at_world_point(
+    const RigidBody& a, const RigidBody& b, const Pos3& world_p
+) noexcept -> Dir3
+{
+    return get_velocity_at_world_point(a, world_p) - get_velocity_at_world_point(b, world_p);
+}
+
+auto solve_velocity_constraints(
     std::span<RigidBody> bodies, std::span<Contact> contacts, f32 dt_s
-) noexcept
+) noexcept -> void
 {
     for (auto& contact : contacts)
-    {
-        RigidBody& a = bodies[contact.a_idx];
-        RigidBody& b = bodies[contact.b_idx];
+    {  // Should any wake up?
+        auto& a = bodies[contact.a_idx];
+        auto& b = bodies[contact.b_idx];
 
-        if ((a.is_static() || !a.asleep) && (b.is_static() || !b.asleep))
+        auto can_wake_up = [](RigidBody& rb) -> bool { return rb.is_static() || !rb.asleep; };
+        if (can_wake_up(a) && can_wake_up(b))
         {
             continue;
         }
 
-        auto should_wake = false;
-        const auto pen_eff = contact.penetration - k_pen_tolerance;
-
-        if (pen_eff > 0.0f)
+        const bool should_wake = [&]() -> bool
         {
-            should_wake = true;
-        }
-        else
-        {
-            const auto ra = contact.p - a.position;
-            const auto rb = contact.p - b.position;
-            const auto pa_dot = a.velocity + glm::cross(a.angular_velocity, ra);
-            const auto pb_dot = b.velocity + glm::cross(b.angular_velocity, rb);
-            const auto v_rel_n = glm::dot(contact.n, pa_dot - pb_dot);
-
-            if (v_rel_n < -0.05f)
+            if (contact.penetration > k_pen_tolerance)
             {
-                should_wake = true;
+                return true;
             }
-        }
-
-        if (should_wake)
+            const auto v_rel = get_relative_velocity_at_world_point(a, b, contact.p);
+            return glm::dot(contact.n, v_rel) < -0.05f;
+        }();
+        if (should_wake && (wake_up(a) || wake_up(b)))
         {
-            if (wake_up(a) || wake_up(b))
-            {
-                contact.lambda_n = 0.0f;
-                contact.lambda_t = 0.0f;
-                contact.has_t_hat = false;
-            }
+            contact.lambda_n = 0.0f;
+            contact.lambda_t = 0.0f;
+            contact.has_t_hat = false;
         }
     }
 
@@ -447,8 +401,8 @@ void solve_velocity_constraints(
     {
         for (auto& contact : contacts)
         {
-            RigidBody& a{bodies[contact.a_idx]};
-            RigidBody& b{bodies[contact.b_idx]};
+            auto& a{bodies[contact.a_idx]};
+            auto& b{bodies[contact.b_idx]};
             if (a.is_static() && b.is_static())
             {
                 continue;
@@ -473,7 +427,37 @@ void solve_position_constraints(std::span<RigidBody> bodies, std::span<Contact> 
 {
     for (usize i{0zu}; i < k_position_iterations; ++i)
     {
-        positional_correction_contacts(bodies, contacts);
+        for (const auto& contact : contacts)
+        {
+            auto& a = bodies[contact.a_idx];
+            auto& b = bodies[contact.b_idx];
+
+            if ((a.is_static() && b.is_static()) || contact.penetration <= k_pen_tolerance)
+            {
+                continue;
+            }
+
+            const auto inv_mass_sum = a.inv_mass + b.inv_mass;
+            if (inv_mass_sum <= 1e-12f)
+            {
+                continue;
+            }
+
+            const Dir3 correction = [&]()
+            {
+                const auto pen_excess = contact.penetration - k_pen_tolerance;
+                const auto mag = std::clamp(k_pen_percent * pen_excess, 0.0f, k_pen_max_correction);
+                return (mag / inv_mass_sum) * contact.n;
+            }();
+            if (!a.is_static())
+            {
+                a.position += correction * a.inv_mass;
+            }
+            if (!b.is_static())
+            {
+                b.position -= correction * b.inv_mass;
+            }
+        }
     }
 }
 
@@ -485,8 +469,9 @@ void apply_sleep_and_damping(std::span<RigidBody> bodies, f32 dt_s) noexcept
         {
             b.velocity = Dir3{};
             b.angular_velocity = Dir3{};
+            continue;
         }
-        if (b.is_static() || b.asleep || b.grabbed)
+        if (b.is_static() || b.asleep)
         {
             continue;
         }
@@ -494,11 +479,11 @@ void apply_sleep_and_damping(std::span<RigidBody> bodies, f32 dt_s) noexcept
         const f32 v2{glm::dot(b.velocity, b.velocity)};
         const f32 w2{glm::dot(b.angular_velocity, b.angular_velocity)};
 
-        const bool slow =
+        const bool is_slow =
             (v2 < k_linear_sleep_speed_threshold * k_linear_sleep_speed_threshold)
             && (w2 < k_angular_sleep_speed_threshold * k_angular_sleep_speed_threshold);
 
-        if (slow)
+        if (is_slow)
         {
             ++b.sleep_frames;
             if (b.sleep_frames > 60)
@@ -514,7 +499,6 @@ void apply_sleep_and_damping(std::span<RigidBody> bodies, f32 dt_s) noexcept
         {
             b.sleep_frames = 0;
         }
-
         b.velocity *= std::exp(-k_linear_damping * dt_s);
         b.angular_velocity *= std::exp(-k_angular_damping * dt_s);
     }
