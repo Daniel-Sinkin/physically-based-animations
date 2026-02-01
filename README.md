@@ -1,4 +1,16 @@
 # Physically Based Animations
+
+
+## Coding Standard
+* The coding style is heavily inspired by Herb Sutters AAA (almost always auto) style (see [SutterAAA])
+* Compile with warnings as errors and compiler flags active
+* Every variable should be brace initialised unless it has an auto type then it must be assignment initialised
+  * This also applies to loop variables, e.g. use for(usize x{0zu}; ...) instead of for(usize x = 0; ...)
+* Implicit conversions are to be avoided as much as possible (for example use correct string literals `usize x{0zu}` instead of `usize x{zu}`)
+* To be more aligned with fstring formatting use `zu` instead of `uz` string literal
+* The gsl (see [GSL]) is used for `narrow_cast` and `Expects`, `Ensures`, which are used to prepare for integration of contracts once C++26 is released.
+* Due to the nature of this program most errors will result in the program terminating. If a subsystem will later be built with error recoverability in mind then errors as values (via `std::expected`) will be preferred to exceptions.
+
 ## Building
 ```
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
@@ -7,14 +19,6 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
 ```
 cmake --build build -j
 ```
-
-## Coding Standard
-This is a solo dev project but I still try to stick to high coding standards and to keep stylistic consistentcy. General rules:
-* Compile with all compiler flags set in the CMakeLists.
-* Every variable should be brace initialised unless it has an auto type then it must be assignment initialised (TODO: Insert reference to that initialiser list bug / weird behavior on auto x{...})
-  * This also applies to loop variables, e.g. use for(usize x{0zu}; ...) instead of for(usize x = 0; ...)
-* Implicit conversions are to be avoided as much as possible (for example use correct string literals `usize x{0zu}` instead of `usize x{zu}`)
-* To be more aligned with fstring formatting use `zu` instead of `uz` string literal (although if I wouldn't need that for ImGui I'd probably go for the latter)
 
 ## Notes
 ### NLohnman ADL serializer
@@ -54,10 +58,6 @@ if(ImGui::BeginTable(/*args*/)){
 }
 ```
 
-## References
-* https://www.scs.stanford.edu/~dm/blog/param-pack.html
-* https://en.cppreference.com/w/cpp/language/value_category.html#Forwarding_references
-
 ## References (Papers) 
 * [PBRT4] Physically Based Rendering, 4th Edition — Matt Pharr, Wenzel Jakob, Greg Humphreys — https://pbr-book.org/4ed/
   * Rendering basics, camera transforms, ray–shape intersection, shading
@@ -71,6 +71,12 @@ if(ImGui::BeginTable(/*args*/)){
   * Rigid Body Dynamics II: Motion with Constraints — https://www.cs.cmu.edu/~baraff/sigcourse/notesd2.pdf
 * [Box2D] Box2D Physics Engine — Erin Catto - https://github.com/erincatto/box2d  
 * [SoftwareDesign] C++ Software Design - Klaus Iglberger, 2023
+
+## References
+* [SutterAAA] https://herbsutter.com/2013/08/12/gotw-94-solution-aaa-style-almost-always-auto/
+* https://www.scs.stanford.edu/~dm/blog/param-pack.html
+* https://en.cppreference.com/w/cpp/language/value_category.html#Forwarding_references
+* [GSL] https://github.com/microsoft/GSL
 
 ### Assets
 * PolyHaven
