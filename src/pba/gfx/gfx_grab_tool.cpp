@@ -65,9 +65,18 @@ void GfxContext::cancel_grab()
 
     for (const auto& [id, start_pos] : editor.grab.start_positions)
     {
-        find(auto entity_res = engine_context->world.find(id); entity_res)
+        if (auto* entity = engine_context->world.find(id))
         {
-            *entity_res.grabbed = false;
+            if (entity->body)
+            {
+                if (auto* rb = engine_context->physics.try_body(*entity->body))
+                {
+                    rb->position = start_pos;
+                    rb->grabbed = false;
+                    rb->velocity = Dir3{};
+                    rb->angular_velocity = Dir3{};
+                }
+            }
         }
         set_entity_and_body_position(*engine_context, id, start_pos);
     }
