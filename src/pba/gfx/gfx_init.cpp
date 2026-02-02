@@ -4,7 +4,7 @@
 
 namespace ds_pba
 {
-[[nodiscard]] bool GfxContext::setup()
+[[nodiscard]] auto GfxContext::setup() -> bool
 {
     using namespace ds_pba;
 

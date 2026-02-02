@@ -12,7 +12,7 @@
 namespace ds_pba
 {
 
-glm::vec3 safe_normalize(glm::vec3 v) noexcept
+auto safe_normalize(glm::vec3 v) noexcept -> glm::vec3
 {
     const auto len = glm::length(v);
     if (len <= 1e-12f)
@@ -22,59 +22,59 @@ glm::vec3 safe_normalize(glm::vec3 v) noexcept
     return v / len;
 }
 
-bool is_normalized(const Dir3& v, f32 eps) noexcept
+auto is_normalized(const Dir3& v, f32 eps) noexcept -> bool
 {
     return std::abs(glm::dot(v, v) - 1.0f) <= eps;
 }
 
-Pos3 ModelMatrix::transform_position(const Pos3& p) const noexcept
+auto ModelMatrix::transform_position(const Pos3& p) const noexcept -> Pos3
 {
     return Pos3{m * glm::vec4(p, 1.0f)};
 }
 
-Dir3 ModelMatrix::transform_direction(const Dir3& v) const noexcept
+auto ModelMatrix::transform_direction(const Dir3& v) const noexcept -> Dir3
 {
     return Dir3{m * glm::vec4(v, 0.0f)};
 }
 
-NormalMatrix ModelMatrix::normal_matrix() const noexcept
+auto ModelMatrix::normal_matrix() const noexcept -> NormalMatrix
 {
     return NormalMatrix{glm::inverseTranspose(glm::mat3(m))};
 }
 
-WorldToModelMatrix ModelMatrix::world_to_model() const noexcept
+auto ModelMatrix::world_to_model() const noexcept -> WorldToModelMatrix
 {
     return WorldToModelMatrix{glm::inverse(m)};
 }
 
-Pos3 WorldToModelMatrix::transform_position(const Pos3& p) const noexcept
+auto WorldToModelMatrix::transform_position(const Pos3& p) const noexcept -> Pos3
 {
     return Pos3{m * glm::vec4(p, 1.0f)};
 }
 
-Dir3 WorldToModelMatrix::transform_direction(const Dir3& v) const noexcept
+auto WorldToModelMatrix::transform_direction(const Dir3& v) const noexcept -> Dir3
 {
     return Dir3{m * glm::vec4(v, 0.0f)};
 }
 
-Dir3 NormalMatrix::transform_normal(const Dir3& n) const noexcept
+auto NormalMatrix::transform_normal(const Dir3& n) const noexcept -> Dir3
 {
     return Dir3{m * n};
 }
 
-Dir3 NormalMatrix::transform_normal_unit(const Dir3& n) const noexcept
+auto NormalMatrix::transform_normal_unit(const Dir3& n) const noexcept -> Dir3
 {
     return safe_normalize(transform_normal(n));
 }
 
-Pos3 ClipToWorldMatrix::unproject_ndc(f32 x_ndc, f32 y_ndc, f32 z_ndc) const noexcept
+auto ClipToWorldMatrix::unproject_ndc(f32 x_ndc, f32 y_ndc, f32 z_ndc) const noexcept -> Pos3
 {
     auto p = m * glm::vec4{x_ndc, y_ndc, z_ndc, 1.0f};
     p /= p.w;
     return Pos3{p};
 }
 
-ClipToWorldMatrix clip_to_world(const ProjMatrix& P, const ViewMatrix& V) noexcept
+auto clip_to_world(const ProjMatrix& P, const ViewMatrix& V) noexcept -> ClipToWorldMatrix
 {
     return ClipToWorldMatrix{glm::inverse(P.m * V.m)};
 }

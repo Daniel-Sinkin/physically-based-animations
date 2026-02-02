@@ -2,8 +2,10 @@
 #pragma once
 
 #include "pba/core/core_types.hpp"
+#include "pba/core/gsl.hpp"
 
 #include <filesystem>
+#include <gsl/string_span>
 #include <imgui.h>
 #include <json.hpp>
 #include <optional>
@@ -28,24 +30,6 @@ enum class UiThemeError
     UnknownColorKey,
     InvalidColorValue,
 };
-
-[[nodiscard]] constexpr const char* to_string(UiThemeError e) noexcept
-{
-    switch (e)
-    {
-        case UiThemeError::FileOpenFailed:
-            return "FileOpenFailed";
-        case UiThemeError::JsonParseError:
-            return "JsonParseError";
-        case UiThemeError::InvalidFormat:
-            return "InvalidFormat";
-        case UiThemeError::UnknownColorKey:
-            return "UnknownColorKey";
-        case UiThemeError::InvalidColorValue:
-            return "InvalidColorValue";
-    }
-    return "Unknown";
-}
 
 struct ColorAssign
 {
@@ -102,14 +86,16 @@ struct UiThemePack
     std::optional<usize> default_index{};
 };
 
-[[nodiscard]] std::optional<UiThemePack> load_theme_pack_json(const std::filesystem::path& path);
+// File IO: return std::nullopt on any error (logs internally)
+[[nodiscard]] auto load_theme_pack_json(const std::filesystem::path& path)
+    -> std::optional<UiThemePack>;
 
-void apply_theme(const UiTheme& theme);
+auto apply_theme(const UiTheme& theme) -> void;
 
-void to_json(nlohmann::json& j, const UiTheme& theme);
-void from_json(const nlohmann::json& j, UiTheme& theme);
+auto to_json(nlohmann::json& j, const UiTheme& theme) -> void;
+auto from_json(const nlohmann::json& j, UiTheme& theme) -> void;
 
-void to_json(nlohmann::json& j, const UiThemePack& pack);
-void from_json(const nlohmann::json& j, UiThemePack& pack);
+auto to_json(nlohmann::json& j, const UiThemePack& pack) -> void;
+auto from_json(const nlohmann::json& j, UiThemePack& pack) -> void;
 
 }  // namespace ds_pba

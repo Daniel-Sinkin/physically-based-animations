@@ -34,7 +34,7 @@ struct ShaderProgram
         UniformLocation uDiffuseTex{k_uniform_not_set};
         UniformLocation uNormalTex{k_uniform_not_set};
 
-        void reset() noexcept
+        auto reset() noexcept -> void
         {
             uView = k_uniform_not_set;
             uProj = k_uniform_not_set;
@@ -54,27 +54,27 @@ struct ShaderProgram
     {
     }
 
-    [[nodiscard]] bool valid() const noexcept
+    [[nodiscard]] auto valid() const noexcept -> bool
     {
         return id != 0;
     }
-    [[nodiscard]] ProgramHandle handle() const noexcept
+    [[nodiscard]] auto handle() const noexcept -> ProgramHandle
     {
         return ProgramHandle{id};
     }
 
-    void bind() const noexcept
+    auto bind() const noexcept -> void
     {
         Expects(valid());
         glUseProgram(id);
     }
 
-    static void unbind() noexcept
+    static auto unbind() noexcept -> void
     {
         glUseProgram(0);
     }
 
-    void destroy() noexcept
+    auto destroy() noexcept -> void
     {
         if (id == 0)
         {
@@ -85,7 +85,7 @@ struct ShaderProgram
         u.reset();
     }
 
-    void init_uniform_locations() noexcept
+    auto init_uniform_locations() noexcept -> void
     {
         {
             Expects(valid());
@@ -102,7 +102,7 @@ struct ShaderProgram
         u.uNormalTex = glGetUniformLocation(id, "uNormalTex");
     }
 
-    void set_uView(const ViewMatrix& view_matrix) const noexcept
+    auto set_uView(const ViewMatrix& view_matrix) const noexcept -> void
     {
         {
             Expects(u.uView != k_uniform_not_set);
@@ -114,7 +114,7 @@ struct ShaderProgram
         glUniformMatrix4fv(u.uView, 1, GL_FALSE, glm::value_ptr(view_matrix.m));
     }
 
-    void set_uProj(const ProjMatrix& proj_matrix) const noexcept
+    auto set_uProj(const ProjMatrix& proj_matrix) const noexcept -> void
     {
         {
             Expects(u.uProj != k_uniform_not_set);
@@ -126,7 +126,7 @@ struct ShaderProgram
         glUniformMatrix4fv(u.uProj, 1, GL_FALSE, glm::value_ptr(proj_matrix.m));
     }
 
-    void set_uModel(const ModelMatrix& model_matrix) const noexcept
+    auto set_uModel(const ModelMatrix& model_matrix) const noexcept -> void
     {
         {
             Expects(u.uModel != k_uniform_not_set);
@@ -138,7 +138,7 @@ struct ShaderProgram
         glUniformMatrix4fv(u.uModel, 1, GL_FALSE, glm::value_ptr(model_matrix.m));
     }
 
-    void set_uColor(const Color3& c) const noexcept
+    auto set_uColor(const Color3& c) const noexcept -> void
     {
         {
             Expects(u.uColor != k_uniform_not_set);
@@ -150,7 +150,7 @@ struct ShaderProgram
         glUniform3f(u.uColor, c.r(), c.g(), c.b());
     }
 
-    void set_uFogStart(f32 v) const noexcept
+    auto set_uFogStart(f32 v) const noexcept -> void
     {
         {
             Expects(u.uFogStart != k_uniform_not_set);
@@ -162,7 +162,7 @@ struct ShaderProgram
         glUniform1f(u.uFogStart, v);
     }
 
-    void set_uFogEnd(f32 v) const noexcept
+    auto set_uFogEnd(f32 v) const noexcept -> void
     {
         {
             Expects(u.uFogEnd != k_uniform_not_set);
@@ -174,7 +174,7 @@ struct ShaderProgram
         glUniform1f(u.uFogEnd, v);
     }
 
-    void set_uDiffuseTex(int unit) const noexcept
+    auto set_uDiffuseTex(int unit) const noexcept -> void
     {
         {
             Expects(u.uDiffuseTex != k_uniform_not_set);
@@ -186,7 +186,7 @@ struct ShaderProgram
         glUniform1i(u.uDiffuseTex, unit);
     }
 
-    void set_uNormalTex(int unit) const noexcept
+    auto set_uNormalTex(int unit) const noexcept -> void
     {
         {
             Expects(u.uNormalTex != k_uniform_not_set);

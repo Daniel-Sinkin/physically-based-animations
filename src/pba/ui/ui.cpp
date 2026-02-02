@@ -19,7 +19,7 @@ namespace ds_pba
 {
 namespace
 {
-void render_physics_debug_window(EngineContext& engine_context)
+auto render_physics_debug_window(EngineContext& engine_context) -> void
 {
     auto& physics_context = engine_context.physics;
     auto& gfx_context = engine_context.gfx;
@@ -135,7 +135,7 @@ struct TerminalState
     std::array<char, 512> input_buf{};
     bool scroll_to_bottom{false};
 
-    void add_line(std::string s)
+    auto add_line(std::string s) -> void
     {
         lines.push_back(std::move(s));
         scroll_to_bottom = true;
@@ -155,7 +155,7 @@ TerminalState& terminal()
     return t;
 }
 
-constexpr ImVec4 rgba_u32(u32 rgba) noexcept
+constexpr auto rgba_u32(u32 rgba) noexcept -> ImVec4
 {
     constexpr float inv{1.0f / 255.0f};
     const auto r = static_cast<float>((rgba >> 24) & 0xFFu);
@@ -165,7 +165,7 @@ constexpr ImVec4 rgba_u32(u32 rgba) noexcept
     return ImVec4(r * inv, g * inv, b * inv, a * inv);
 }
 
-void render_terminal_window(GfxContext& render_context)
+auto render_terminal_window(EngineContext& engine_context) -> void
 {
     TerminalState& t = terminal();
 
@@ -200,7 +200,7 @@ void render_terminal_window(GfxContext& render_context)
         std::string cmd = t.input_buf.data();
         if (cmd == "exit")
         {
-            render_context.deactivate();
+            engine_context.deactivate();
         }
         if (!cmd.empty())
         {
@@ -221,12 +221,12 @@ void render_terminal_window(GfxContext& render_context)
 
 }  // namespace
 
-void ui_log(std::string_view msg)
+auto ui_log(std::string_view msg) -> void
 {
     terminal().add_line(std::string(msg));
 }
 
-void apply_blender_style()
+auto apply_blender_style() -> void
 {
 
     ImGui::StyleColorsDark();
@@ -324,7 +324,7 @@ void apply_blender_style()
     }
 }
 
-void render_imgui_windows(EngineContext& engine_context)
+auto render_imgui_windows(EngineContext& engine_context) -> void
 {
     PhysicsContext& physics_context = engine_context.physics;
     GfxContext& gfx_context = engine_context.gfx;
@@ -602,10 +602,10 @@ void render_imgui_windows(EngineContext& engine_context)
         ImGui::End();
     }
     render_physics_debug_window(engine_context);
-    render_terminal_window(gfx_context);
+    render_terminal_window(engine_context);
 }
 
-void render_menu_bar(GfxContext& gfx_context)
+auto render_menu_bar(GfxContext& gfx_context) -> void
 {
     if (ImGui::BeginMenu("File"))
     {

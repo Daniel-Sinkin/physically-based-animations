@@ -15,19 +15,19 @@ namespace ds_pba
 struct PhysicsContext
 {
     std::vector<RigidBody> bodies;
-    [[nodiscard]] BodyHandle add_body(RigidBody b)
+    [[nodiscard]] auto add_body(RigidBody b) -> BodyHandle
     {
         bodies.push_back(std::move(b));
         return BodyHandle{static_cast<u32>(bodies.size() - 1zu)};
     }
 
-    [[nodiscard]] RigidBody* try_body(BodyHandle h) noexcept
+    [[nodiscard]] auto try_body(BodyHandle h) noexcept -> RigidBody*
     {
         const auto i = static_cast<usize>(h.index);
         return (i < bodies.size()) ? &bodies[i] : nullptr;
     }
 
-    [[nodiscard]] const RigidBody* try_body(BodyHandle h) const noexcept
+    [[nodiscard]] auto try_body(BodyHandle h) const noexcept -> const RigidBody*
     {
         const auto i = static_cast<usize>(h.index);
         return (i < bodies.size()) ? &bodies[i] : nullptr;

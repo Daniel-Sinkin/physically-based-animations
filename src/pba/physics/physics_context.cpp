@@ -19,13 +19,14 @@ namespace ds_pba
 namespace
 {
 
-[[nodiscard]] f32 dt_f32(const Duration& dt) noexcept
+[[nodiscard]] auto dt_f32(const Duration& dt) noexcept -> f32
 {
     return static_cast<f32>(dt.count());
 }
 
-[[nodiscard]] f32
+[[nodiscard]] auto
 compute_total_kinetic_energy(std::span<const RigidBody> bodies, bool include_angular) noexcept
+    -> f32
 {
     f32 E{0.0f};
     for (const auto& b : bodies)
@@ -46,7 +47,7 @@ compute_total_kinetic_energy(std::span<const RigidBody> bodies, bool include_ang
 }
 }  // namespace
 
-void PhysicsContext::step()
+auto PhysicsContext::step() -> void
 {
     // Per step arena allocator is very cheap to reset
     step_arena.release();

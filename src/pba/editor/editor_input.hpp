@@ -2,6 +2,7 @@
 #pragma once
 
 #include "pba/core/core_types.hpp"
+#include "pba/core/gsl.hpp"
 //
 #include <array>
 #include <utility>
@@ -122,11 +123,13 @@ struct EditorInput
     f64 prev_win_mouse_x{};
     f64 prev_win_mouse_y{};
 
-    [[nodiscard]] f64 win_dx() const noexcept
+    f32 wheel{};
+
+    [[nodiscard]] auto win_dx() const noexcept -> f64
     {
         return win_mouse_x - prev_win_mouse_x;
     }
-    [[nodiscard]] f64 win_dy() const noexcept
+    [[nodiscard]] auto win_dy() const noexcept -> f64
     {
         return win_mouse_y - prev_win_mouse_y;
     }
@@ -136,20 +139,20 @@ struct EditorInput
     f64 prev_ui_mouse_x{};
     f64 prev_ui_mouse_y{};
 
-    [[nodiscard]] f64 ui_dx() const noexcept
+    [[nodiscard]] auto ui_dx() const noexcept -> f32
     {
-        return ui_mouse_x - prev_ui_mouse_x;
+        return narrow_cast<f32>(ui_mouse_x - prev_ui_mouse_x);
     }
-    [[nodiscard]] f64 ui_dy() const noexcept
+    [[nodiscard]] auto ui_dy() const noexcept -> f32
     {
-        return ui_mouse_y - prev_ui_mouse_y;
+        return narrow_cast<f32>(ui_mouse_y - prev_ui_mouse_y);
     }
 
-    void update(not_null<GLFWwindow*> window) noexcept;
-    void sync_imgui_mouse() noexcept;
+    auto update(not_null<GLFWwindow*> window) noexcept -> void;
+    auto sync_imgui_mouse() noexcept -> void;
 
-    [[nodiscard]] bool key_down(EditorKey k) const noexcept;
-    [[nodiscard]] bool key_pressed(EditorKey k) const noexcept;
+    [[nodiscard]] auto key_down(EditorKey k) const noexcept -> bool;
+    [[nodiscard]] auto key_pressed(EditorKey k) const noexcept -> bool;
 };
 
 }  // namespace ds_pba

@@ -11,7 +11,7 @@
 namespace ds_pba
 {
 
-f32 ViewportFBO::aspect_ratio() const noexcept
+auto ViewportFBO::aspect_ratio() const noexcept -> f32
 {
     if (height <= 0)
     {
@@ -20,7 +20,7 @@ f32 ViewportFBO::aspect_ratio() const noexcept
     return static_cast<f32>(width) / static_cast<f32>(height);
 }
 
-void ViewportFBO::destroy() noexcept
+auto ViewportFBO::destroy() noexcept -> void
 {
     if (depth_rbo != 0)
     {
@@ -41,7 +41,7 @@ void ViewportFBO::destroy() noexcept
     height = 0;
 }
 
-bool ViewportFBO::ensure_size(int w, int h) noexcept
+auto ViewportFBO::ensure_size(int w, int h) noexcept -> bool
 {
     w = std::max(1, w);
     h = std::max(1, h);

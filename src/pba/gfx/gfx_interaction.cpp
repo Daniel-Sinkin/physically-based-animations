@@ -1,4 +1,5 @@
 // pba/gfx/gfx_interaction.cpp
+#include "imgui.h"
 #include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/editor/editor_input.hpp"
@@ -22,7 +23,7 @@
 namespace ds_pba
 {
 
-void GfxContext::hover_interaction(const EditorInput& input) const
+auto GfxContext::hover_interaction(EditorInput& input) const -> void
 {
     {
         Expects(viewport_fb_rect_valid && "If viewport hovered then it must be valid");
@@ -51,9 +52,7 @@ void GfxContext::hover_interaction(const EditorInput& input) const
         const auto camera_proj_matrix =
             engine_context->world.editor_state().camera().proj_matrix(aspect);
 
-        const glm::vec2 mouse_pos{
-            narrow_cast<f32>(input.ui_mouse_x), narrow_cast<f32>(input.ui_mouse_y)
-        };
+        const glm::vec2 mouse_pos{input.ui_mouse_x, input.ui_mouse_y};
 
         const Ray mouse_ray{ray_from_imgui_rect(
             mouse_pos, viewport_img_pos, viewport_img_size, camera_view_matrix, camera_proj_matrix
@@ -81,10 +80,10 @@ void GfxContext::hover_interaction(const EditorInput& input) const
     }
 }
 
-void GfxContext::hover_interaction_holding_middle(const EditorInput& input, Camera& cam) const
+auto GfxContext::hover_interaction_holding_middle(EditorInput& input, Camera& cam) const -> void
 {
-    const auto dx = static_cast<f32>(input.ui_dx());
-    const auto dy = static_cast<f32>(input.ui_dy());
+    const auto dx = input.ui_dx();
+    const auto dy = input.ui_dy();
 
     if (input.key_down(EditorKey::Shift))
     {  // Move Pivot
@@ -93,16 +92,17 @@ void GfxContext::hover_interaction_holding_middle(const EditorInput& input, Came
     }
     else
     {  // Rotate Around pivot
-        engine_context->world.editor_state().camera().yaw += -dx * k_sensitivity;
-        engine_context->world.editor_state().camera().pitch += dy * k_sensitivity;
+        constexpr bool k_invert_mouse_pivot_y{false};
+
+        cam.yaw += -dx * k_sensitivity;
+        cam.pitch += (k_invert_mouse_pivot_y ? -1.0f : 1.0f) * dy * k_sensitivity;
 
         const auto pitch_lim = glm::radians(k_camera_pitch_lim_deg);
-        engine_context->world.editor_state().camera().pitch =
-            std::clamp(engine_context->world.editor_state().camera().pitch, -pitch_lim, pitch_lim);
+        cam.pitch = std::clamp(cam.pitch, -pitch_lim, pitch_lim);
     }
 }
 
-void GfxContext::hover_interaction_selection(const EditorInput& input, const Raycast& rc) const
+auto GfxContext::hover_interaction_selection(EditorInput& input, const Raycast& rc) const -> void
 {
     Expects(engine_context);
     if (!engine_context)

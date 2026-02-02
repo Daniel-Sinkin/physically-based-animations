@@ -25,12 +25,12 @@ struct Shader
     ShaderHandle handle{};
     ShaderType type{};
 
-    [[nodiscard]] constexpr bool valid() const noexcept
+    [[nodiscard]] constexpr auto valid() const noexcept -> bool
     {
         return handle.valid();
     }
 
-    [[nodiscard]] static constexpr bool valid(ShaderType type) noexcept
+    [[nodiscard]] static constexpr auto valid(ShaderType type) noexcept -> bool
     {
         switch (type)
         {
@@ -45,7 +45,7 @@ struct Shader
         }
     }
 
-    static Shader create(ShaderType shader_type) noexcept
+    static auto create(ShaderType shader_type) noexcept -> Shader
     {
         {
             Expects(valid(shader_type));
@@ -56,7 +56,7 @@ struct Shader
         };
     }
 
-    void compile(const std::string& source) const noexcept
+    auto compile(const std::string& source) const noexcept -> void
     {
         {
             Expects(valid());
@@ -67,14 +67,15 @@ struct Shader
         glCompileShader(handle.id);
     }
 
-    static Shader create_and_compile(ShaderType shader_type, const std::string& source) noexcept
+    static auto create_and_compile(ShaderType shader_type, const std::string& source) noexcept
+        -> Shader
     {
         Shader shader{Shader::create(shader_type)};
         shader.compile(source);
         return shader;
     }
 
-    [[nodiscard]] bool compiled_ok() const noexcept
+    [[nodiscard]] auto compiled_ok() const noexcept -> bool
     {
         {
             Expects(valid());
@@ -84,7 +85,7 @@ struct Shader
         return ok == GL_TRUE;
     }
 
-    [[nodiscard]] std::string info_log() const
+    [[nodiscard]] auto info_log() const -> std::string
     {
         {
             Expects(valid());
@@ -96,7 +97,7 @@ struct Shader
         return log;
     }
 
-    void destroy() noexcept
+    auto destroy() noexcept -> void
     {
         if (valid())
         {

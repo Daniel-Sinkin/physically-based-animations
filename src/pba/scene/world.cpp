@@ -6,46 +6,46 @@
 namespace ds_pba
 {
 
-Camera& EditorState::camera() noexcept
+auto EditorState::camera() noexcept -> Camera&
 {
     return camera_;
 }
 
-const Camera& EditorState::camera() const noexcept
+auto EditorState::camera() const noexcept -> const Camera&
 {
     return camera_;
 }
 
-void EditorState::clear() noexcept
+auto EditorState::clear() noexcept -> void
 {
     clear_selection();
     camera_.pivot = k_camera_pivot;
 }
 
-bool EditorState::has_selection() const noexcept
+auto EditorState::has_selection() const noexcept -> bool
 {
     return !selected_ids.empty();
 }
 
-bool EditorState::is_selected(EntityId id) const noexcept
+auto EditorState::is_selected(EntityId id) const noexcept -> bool
 {
     return std::find(selected_ids.begin(), selected_ids.end(), id) != selected_ids.end();
 }
 
-void EditorState::clear_selection() noexcept
+auto EditorState::clear_selection() noexcept -> void
 {
     selected_ids.clear();
     active_id.reset();
 }
 
-void EditorState::select_single(EntityId id) noexcept
+auto EditorState::select_single(EntityId id) noexcept -> void
 {
     selected_ids.clear();
     selected_ids.push_back(id);
     active_id = id;
 }
 
-void EditorState::toggle_selection(EntityId id) noexcept
+auto EditorState::toggle_selection(EntityId id) noexcept -> void
 {
     auto it = std::find(selected_ids.begin(), selected_ids.end(), id);
     if (it != selected_ids.end())
@@ -74,7 +74,7 @@ void EditorState::toggle_selection(EntityId id) noexcept
     }
 }
 
-void EditorState::erase_from_selection(EntityId id) noexcept
+auto EditorState::erase_from_selection(EntityId id) noexcept -> void
 {
     auto it = std::find(selected_ids.begin(), selected_ids.end(), id);
     if (it != selected_ids.end())
@@ -92,7 +92,7 @@ void EditorState::erase_from_selection(EntityId id) noexcept
     }
 }
 
-void World::clear(bool reset_ids) noexcept
+auto World::clear(bool reset_ids) noexcept -> void
 {
     editor_state_.clear();
 
@@ -105,7 +105,7 @@ void World::clear(bool reset_ids) noexcept
     }
 }
 
-Entity& World::spawn(EntityType type, const Transform& t, Color3 c)
+auto World::spawn(EntityType type, const Transform& t, Color3 c) -> Entity&
 {
     const EntityId id = allocate_entity_id();
 
@@ -128,7 +128,7 @@ Entity& World::spawn(EntityType type, const Transform& t, Color3 c)
     return entities_.back();
 }
 
-void World::remove_entity(EntityId id) noexcept
+auto World::remove_entity(EntityId id) noexcept -> void
 {
     auto it = id_to_index_.find(id);
     if (it == id_to_index_.end())
@@ -151,64 +151,64 @@ void World::remove_entity(EntityId id) noexcept
     entities_.pop_back();
 }
 
-Entity* World::find(EntityId id) noexcept
+auto World::find(EntityId id) noexcept -> Entity*
 {
     auto it = id_to_index_.find(id);
     return (it == id_to_index_.end()) ? nullptr : &entities_[it->second];
 }
 
-const Entity* World::find(EntityId id) const noexcept
+auto World::find(EntityId id) const noexcept -> const Entity*
 {
     auto it = id_to_index_.find(id);
     return (it == id_to_index_.end()) ? nullptr : &entities_[it->second];
 }
 
-bool World::contains(EntityId id) const noexcept
+auto World::contains(EntityId id) const noexcept -> bool
 {
     return id_to_index_.contains(id);
 }
 
-std::span<Entity> World::entities() noexcept
+auto World::entities() noexcept -> std::span<Entity>
 {
     return {entities_.data(), entities_.size()};
 }
 
-std::span<const Entity> World::entities() const noexcept
+auto World::entities() const noexcept -> std::span<const Entity>
 {
     return {entities_.data(), entities_.size()};
 }
 
-Entity& World::entity(usize i) noexcept
+auto World::entity(usize i) noexcept -> Entity&
 {
     return entities_[i];
 }
 
-const Entity& World::entity(usize i) const noexcept
+auto World::entity(usize i) const noexcept -> const Entity&
 {
     return entities_[i];
 }
 
-Entity& World::entity_at(usize i)
+auto World::entity_at(usize i) -> Entity&
 {
     return entities_.at(i);
 }
 
-const Entity& World::entity_at(usize i) const
+auto World::entity_at(usize i) const -> const Entity&
 {
     return entities_.at(i);
 }
 
-EditorState& World::editor_state() noexcept
+auto World::editor_state() noexcept -> EditorState&
 {
     return editor_state_;
 }
 
-const EditorState& World::editor_state() const noexcept
+auto World::editor_state() const noexcept -> const EditorState&
 {
     return editor_state_;
 }
 
-EntityId World::allocate_entity_id() noexcept
+auto World::allocate_entity_id() noexcept -> EntityId
 {
     const EntityId id = next_id_++;
     if (id == k_invalid_id)

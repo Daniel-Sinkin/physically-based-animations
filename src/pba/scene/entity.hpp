@@ -17,7 +17,7 @@ enum class EntityType
     Cube,
 };
 
-[[nodiscard]] constexpr std::string_view to_string(EntityType type) noexcept
+[[nodiscard]] constexpr auto to_string(EntityType type) noexcept -> std::string_view
 {
     switch (type)
     {

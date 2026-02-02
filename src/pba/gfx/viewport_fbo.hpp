@@ -16,13 +16,12 @@ struct ViewportFBO
     int width{0};
     int height{0};
 
-    [[nodiscard]] f32 aspect_ratio() const noexcept;
+    [[nodiscard]] auto aspect_ratio() const noexcept -> f32;
 
-    void destroy() noexcept;
+    auto destroy() noexcept -> void;
 
-    [[nodiscard]] bool ensure_size(int w, int h) noexcept;
-
-    [[nodiscard]] ImTextureID imgui_texture_id() const noexcept;
+    [[nodiscard]] auto ensure_size(int w, int h) noexcept -> bool;
+    [[nodiscard]] auto imgui_texture_id() const noexcept -> ImTextureID;
 };
 
 }  // namespace ds_pba

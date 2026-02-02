@@ -21,12 +21,12 @@ struct GLTexture2D
     int width{0};
     int height{0};
 
-    [[nodiscard]] bool valid() const noexcept
+    [[nodiscard]] auto valid() const noexcept -> bool
     {
         return id != 0 && width > 0 && height > 0;
     }
 
-    void destroy() noexcept
+    auto destroy() noexcept -> void
     {
         if (id != 0)
         {
@@ -44,7 +44,7 @@ struct GLTextureUploadOptions
     bool srgb{false};
 };
 
-[[nodiscard]] std::expected<GLTexture2D, GLTextureError>
-upload_texture_2d_rgba8(const ImageRGBA8& img, GLTextureUploadOptions opt = {});
+[[nodiscard]] auto upload_texture_2d_rgba8(const ImageRGBA8& img, GLTextureUploadOptions opt = {})
+    -> std::expected<GLTexture2D, GLTextureError>;
 
 }  // namespace ds_pba

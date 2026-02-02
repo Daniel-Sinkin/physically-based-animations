@@ -8,7 +8,7 @@
 namespace ds_pba
 {
 
-void EditorInput::update(not_null<GLFWwindow*> w) noexcept
+auto EditorInput::update(not_null<GLFWwindow*> w) noexcept -> void
 {
     for (usize i{0zu}; i < k_editor_key_count; ++i)
     {
@@ -36,30 +36,28 @@ void EditorInput::update(not_null<GLFWwindow*> w) noexcept
     mouse_middle.down = glfwGetMouseButton(w, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS;
     mouse_right.down = glfwGetMouseButton(w, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
 
+    {  // ImGui Sync
+        const ImGuiIO& io = ImGui::GetIO();
+
+        prev_ui_mouse_x = ui_mouse_x;
+        prev_ui_mouse_y = ui_mouse_y;
+
+        ui_mouse_x = static_cast<f64>(io.MousePos.x);
+        ui_mouse_y = static_cast<f64>(io.MousePos.y);
+    }
+
     prev_win_mouse_x = win_mouse_x;
     prev_win_mouse_y = win_mouse_y;
     glfwGetCursorPos(w, &win_mouse_x, &win_mouse_y);
 }
 
-bool EditorInput::key_down(EditorKey k) const noexcept
+auto EditorInput::key_down(EditorKey k) const noexcept -> bool
 {
     return keys[static_cast<usize>(k)].down;
 }
 
-bool EditorInput::key_pressed(EditorKey k) const noexcept
+auto EditorInput::key_pressed(EditorKey k) const noexcept -> bool
 {
     return keys[static_cast<usize>(k)].pressed();
 }
-
-void EditorInput::sync_imgui_mouse() noexcept
-{
-    const ImGuiIO& io = ImGui::GetIO();
-
-    prev_ui_mouse_x = ui_mouse_x;
-    prev_ui_mouse_y = ui_mouse_y;
-
-    ui_mouse_x = static_cast<f64>(io.MousePos.x);
-    ui_mouse_y = static_cast<f64>(io.MousePos.y);
-}
-
 }  // namespace ds_pba

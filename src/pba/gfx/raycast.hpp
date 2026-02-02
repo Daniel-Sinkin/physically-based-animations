@@ -34,18 +34,19 @@ struct Raycast
     f32 t;
     EntityId object_id;
 };
-[[nodiscard]] Ray ray_from_imgui_rect(
+[[nodiscard]] auto ray_from_imgui_rect(
     const glm::vec2& mouse_pos,
     const glm::vec2& rect_pos,
     const glm::vec2& rect_size,
     const ViewMatrix& camera_view_matrix,
     const ProjMatrix& camera_proj_matrix
-) noexcept;
+) noexcept -> Ray;
 
-[[nodiscard]] std::optional<f32>
-intersect_ray_cube(const Ray& ray, const ModelMatrix& model) noexcept;
-[[nodiscard]] std::optional<f32>
-intersect_ray_sphere(const Ray& ray, const ModelMatrix& model) noexcept;
+[[nodiscard]] auto intersect_ray_cube(const Ray& ray, const ModelMatrix& model) noexcept
+    -> std::optional<f32>;
+[[nodiscard]] auto intersect_ray_sphere(const Ray& ray, const ModelMatrix& model) noexcept
+    -> std::optional<f32>;
 
-[[nodiscard]] std::optional<Raycast> raycast(const World& context, const Ray& ray) noexcept;
+[[nodiscard]]
+auto raycast(const World& context, const Ray& ray) noexcept -> std::optional<Raycast>;
 }  // namespace ds_pba

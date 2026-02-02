@@ -11,6 +11,7 @@
 #include "pba/engine/scenes.hpp"
 #include "pba/physics/physics_types.hpp"
 #include "pba/ui/ui.hpp"
+#include "pba/util/shutdown.hpp"
 //
 #include <algorithm>
 #include <glm/gtc/quaternion.hpp>
@@ -237,11 +238,25 @@ auto EngineContext::run() -> void
 
     bool prev_paused{paused};
 
-    while (gfx.is_active())
+    while (is_active())
     {
-        gfx.step();
+        {  // See shutdown.hpp for details on our signal handling
+            if (g_request_close_sig)
+            {
+                g_request_close.store(true, std::memory_order_relaxed);
+                g_request_close_sig = 0;
+            }
+            if (g_request_close.load(std::memory_order_relaxed))
+            {
+                request_close();
+            }
+        }
 
-        if (!gfx.imgui_uses_keyboard && gfx.editor_input.key_pressed(EditorKey::Space))
+        glfwPollEvents();
+        editor_input.update(not_null{gfx.window});
+        gfx.step(editor_input);
+
+        if (!gfx.imgui_uses_keyboard && editor_input.key_pressed(EditorKey::Space))
         {
             paused = !paused;
         }

@@ -7,8 +7,9 @@
 
 namespace ds_pba
 {
-[[nodiscard]] ContactKey
-make_contact_key(const RigidBody& a, const RigidBody& b, const Pos3& p) noexcept;
+[[nodiscard]] auto make_contact_key(const RigidBody& a, const RigidBody& b, const Pos3& p) noexcept
+    -> ContactKey;
 
-void generate_obb_contacts(std::span<const RigidBody> bodies, std::pmr::vector<Contact>& out);
+auto generate_obb_contacts(std::span<const RigidBody> bodies, std::pmr::vector<Contact>& out)
+    -> void;
 }  // namespace ds_pba

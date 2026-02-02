@@ -25,9 +25,9 @@ namespace ds_pba
 {
 namespace
 {
-[[nodiscard]] std::optional<RectInt> compute_viewport_fb_rect(
+[[nodiscard]] auto compute_viewport_fb_rect(
     GLFWwindow& window, const glm::vec2& img_pos_screen, const glm::vec2& img_size_screen
-) noexcept
+) noexcept -> std::optional<RectInt>
 {
     int fb_width{0}, fb_height{0};
     glfwGetFramebufferSize(&window, &fb_width, &fb_height);
@@ -68,7 +68,7 @@ namespace
     return r;
 }
 
-[[nodiscard]] const RigidBody* try_entity_body(EngineContext& e, const Entity& ent) noexcept
+[[nodiscard]] auto try_entity_body(EngineContext& e, const Entity& ent) noexcept -> const RigidBody*
 {
     if (!ent.body)
     {
@@ -77,7 +77,7 @@ namespace
     return e.physics.try_body(*ent.body);
 }
 
-[[nodiscard]] Color3 compute_entity_color(GfxContext& gfx, const Entity& ent) noexcept
+[[nodiscard]] auto compute_entity_color(GfxContext& gfx, const Entity& ent) noexcept -> Color3
 {
     Expects(gfx.engine_context);
     Color3 color{ent.color};
@@ -141,7 +141,7 @@ struct GLStateSnapshot
     GLboolean blend{};
 };
 
-[[nodiscard]] GLStateSnapshot snapshot_gl_state() noexcept
+[[nodiscard]] auto snapshot_gl_state() noexcept -> GLStateSnapshot
 {
     return GLStateSnapshot{
         .depth_test = glIsEnabled(GL_DEPTH_TEST),
@@ -151,7 +151,7 @@ struct GLStateSnapshot
     };
 }
 
-void restore_gl_state(const GLStateSnapshot& s) noexcept
+auto restore_gl_state(const GLStateSnapshot& s) noexcept -> void
 {
     if (s.depth_test)
     {
@@ -192,9 +192,9 @@ void restore_gl_state(const GLStateSnapshot& s) noexcept
 
 }  // namespace
 
-void GfxContext::render_to_viewport_objects(
+auto GfxContext::render_to_viewport_objects(
     const ViewMatrix& camera_view_matrix, const ProjMatrix& camera_proj_matrix
-) const
+) const -> void
 {
     Expects(engine_context);
 
@@ -228,9 +228,9 @@ void GfxContext::render_to_viewport_objects(
     VAO::unbind();
 }
 
-void GfxContext::render_to_viewport_grid(
+auto GfxContext::render_to_viewport_grid(
     const ViewMatrix& camera_view_matrix, const ProjMatrix& camera_proj_matrix
-) const
+) const -> void
 {
     glDepthMask(GL_FALSE);
 
@@ -248,7 +248,7 @@ void GfxContext::render_to_viewport_grid(
     glDepthMask(GL_TRUE);
 }
 
-void GfxContext::render_to_viewport()
+auto GfxContext::render_to_viewport() -> void
 {
     Expects(engine_context);
     Expects(viewport_fb_rect_valid && "Should only render to valid viewports");
@@ -280,9 +280,9 @@ void GfxContext::render_to_viewport()
     ImGui::Image(tex_ref, image_size, uv0, uv1);
 }
 
-void GfxContext::render_to_viewport_outline(
+auto GfxContext::render_to_viewport_outline(
     const ViewMatrix& camera_view_matrix, const ProjMatrix& camera_proj_matrix
-) const
+) const -> void
 {
     Expects(engine_context);
 

@@ -17,7 +17,7 @@ using UniformLocation = GLint;
 // OpenGL uses void* offsets, helper to avoid having this casting workaround everywhere
 struct GLPtr final
 {
-    static constexpr const void* offset0() noexcept
+    static constexpr auto offset0() noexcept -> const void*
     {
         return static_cast<const void*>(nullptr);
     }
@@ -37,12 +37,12 @@ struct ShaderHandle final
     {
     }
 
-    [[nodiscard]] constexpr bool valid() const noexcept
+    [[nodiscard]] constexpr auto valid() const noexcept -> bool
     {
         return id != 0;
     }
 
-    friend constexpr bool operator==(ShaderHandle a, ShaderHandle b) noexcept
+    friend constexpr auto operator==(ShaderHandle a, ShaderHandle b) noexcept -> bool
     {
         return a.id == b.id;
     }
@@ -52,17 +52,17 @@ struct VAO final
 {
     GLuint id{0};
 
-    constexpr GLuint* ptr() noexcept
+    constexpr auto ptr() noexcept -> GLuint*
     {
         return &id;
     }
 
-    [[nodiscard]] constexpr bool valid() const noexcept
+    [[nodiscard]] constexpr auto valid() const noexcept -> bool
     {
         return id != 0;
     }
 
-    void destroy() noexcept
+    auto destroy() noexcept -> void
     {
         if (valid())
         {
@@ -71,7 +71,7 @@ struct VAO final
         }
     }
 
-    void bind() const noexcept
+    auto bind() const noexcept -> void
     {
         {
             Expects(valid() && "Attempting to bind invalid VAO (id == 0)");
@@ -79,19 +79,19 @@ struct VAO final
         glBindVertexArray(id);
     }
 
-    static void bind(GLuint v) noexcept
+    static auto bind(GLuint v) noexcept -> void
     {
         glBindVertexArray(v);
     }
 
-    [[nodiscard]] static GLuint current_binding() noexcept
+    [[nodiscard]] static auto current_binding() noexcept -> GLuint
     {
         GLint v{0};
         glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &v);
         return static_cast<GLuint>(v);
     }
 
-    static void unbind() noexcept
+    static auto unbind() noexcept -> void
     {
         glBindVertexArray(0);
     }
@@ -101,17 +101,17 @@ struct VBO final
 {
     GLuint id{0};
 
-    constexpr GLuint* ptr() noexcept
+    constexpr auto ptr() noexcept -> GLuint*
     {
         return &id;
     }
 
-    [[nodiscard]] constexpr bool valid() const noexcept
+    [[nodiscard]] constexpr auto valid() const noexcept -> bool
     {
         return id != 0;
     }
 
-    void destroy() noexcept
+    auto destroy() noexcept -> void
     {
         if (valid())
         {
@@ -120,7 +120,7 @@ struct VBO final
         }
     }
 
-    void bind_array_buffer() const noexcept
+    auto bind_array_buffer() const noexcept -> void
     {
         {
             Expects(valid() && "Attempting to bind invalid VBO (id == 0)");
@@ -128,12 +128,12 @@ struct VBO final
         glBindBuffer(GL_ARRAY_BUFFER, id);
     }
 
-    static void bind_array_buffer(GLuint v) noexcept
+    static auto bind_array_buffer(GLuint v) noexcept -> void
     {
         glBindBuffer(GL_ARRAY_BUFFER, v);
     }
 
-    [[nodiscard]] static GLuint current_array_buffer_binding() noexcept
+    [[nodiscard]] static auto current_array_buffer_binding() noexcept -> GLuint
     {
         GLint v{0};
         glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &v);
@@ -155,12 +155,12 @@ struct ProgramHandle final
     {
     }
 
-    [[nodiscard]] constexpr bool valid() const noexcept
+    [[nodiscard]] constexpr auto valid() const noexcept -> bool
     {
         return id != 0;
     }
 
-    friend constexpr bool operator==(ProgramHandle a, ProgramHandle b) noexcept
+    friend constexpr auto operator==(ProgramHandle a, ProgramHandle b) noexcept -> bool
     {
         return a.id == b.id;
     }
@@ -172,7 +172,7 @@ struct GLMesh final
     VBO vbo{};
     GLsizei vertex_count{0};
 
-    void instantiate_once() const noexcept
+    auto instantiate_once() const noexcept -> void
     {
         const GLuint prev{VAO::current_binding()};
         vao.bind();
@@ -180,7 +180,7 @@ struct GLMesh final
         VAO::bind(prev);
     }
 
-    void destroy() noexcept
+    auto destroy() noexcept -> void
     {
         vbo.destroy();
         vao.destroy();
@@ -222,7 +222,7 @@ namespace std
 template <>
 struct hash<ds_pba::ProgramHandle>
 {
-    ds_pba::usize operator()(ds_pba::ProgramHandle h) const noexcept
+    auto operator()(ds_pba::ProgramHandle h) const noexcept -> ds_pba::usize
     {
         return std::hash<GLuint>{}(h.id);
     }

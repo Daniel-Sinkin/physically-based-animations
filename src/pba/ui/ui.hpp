@@ -9,8 +9,8 @@ struct GfxContext;
 struct PhysicsContext;
 struct EngineContext;
 
-void apply_blender_style();
-void ui_log(std::string_view msg);
-void render_imgui_windows(EngineContext& engine_context);
-void render_menu_bar(GfxContext& render_context);
+auto apply_blender_style() -> void;
+auto ui_log(std::string_view msg) -> void;
+auto render_imgui_windows(EngineContext& engine_context) -> void;
+auto render_menu_bar(GfxContext& render_context) -> void;
 }  // namespace ds_pba

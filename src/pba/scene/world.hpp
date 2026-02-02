@@ -17,18 +17,18 @@ struct EngineContext;
 class EditorState
 {
   public:
-    [[nodiscard]] Camera& camera() noexcept;
-    [[nodiscard]] const Camera& camera() const noexcept;
+    [[nodiscard]] auto camera() noexcept -> Camera&;
+    [[nodiscard]] auto camera() const noexcept -> const Camera&;
 
-    void clear() noexcept;
+    auto clear() noexcept -> void;
 
-    [[nodiscard]] bool has_selection() const noexcept;
-    [[nodiscard]] bool is_selected(EntityId id) const noexcept;
+    [[nodiscard]] auto has_selection() const noexcept -> bool;
+    [[nodiscard]] auto is_selected(EntityId id) const noexcept -> bool;
 
-    void clear_selection() noexcept;
-    void select_single(EntityId id) noexcept;
-    void toggle_selection(EntityId id) noexcept;
-    void erase_from_selection(EntityId id) noexcept;
+    auto clear_selection() noexcept -> void;
+    auto select_single(EntityId id) noexcept -> void;
+    auto toggle_selection(EntityId id) noexcept -> void;
+    auto erase_from_selection(EntityId id) noexcept -> void;
 
     std::vector<EntityId> selected_ids{};
     std::optional<EntityId> active_id{};
@@ -44,27 +44,22 @@ class World
 
     void clear(bool reset_ids = true) noexcept;
 
-    Entity&
-    spawn(EntityType type, const Transform& t = {}, Color3 c = k_scene_object_default_color);
+    auto spawn(EntityType type, const Transform& t = {}, Color3 c = k_scene_object_default_color)
+        -> Entity&;
 
-    void remove_entity(EntityId id) noexcept;
+    auto remove_entity(EntityId id) noexcept -> void;
 
-    [[nodiscard]] Entity* find(EntityId id) noexcept;
-    [[nodiscard]] const Entity* find(EntityId id) const noexcept;
-
-    [[nodiscard]] bool contains(EntityId id) const noexcept;
-
-    [[nodiscard]] std::span<Entity> entities() noexcept;
-    [[nodiscard]] std::span<const Entity> entities() const noexcept;
-
-    [[nodiscard]] Entity& entity(usize i) noexcept;
-    [[nodiscard]] const Entity& entity(usize i) const noexcept;
-
-    [[nodiscard]] Entity& entity_at(usize i);
-    [[nodiscard]] const Entity& entity_at(usize i) const;
-
-    [[nodiscard]] EditorState& editor_state() noexcept;
-    [[nodiscard]] const EditorState& editor_state() const noexcept;
+    [[nodiscard]] auto find(EntityId id) noexcept -> Entity*;
+    [[nodiscard]] auto find(EntityId id) const noexcept -> const Entity*;
+    [[nodiscard]] auto contains(EntityId id) const noexcept -> bool;
+    [[nodiscard]] auto entities() noexcept -> std::span<Entity>;
+    [[nodiscard]] auto entities() const noexcept -> std::span<const Entity>;
+    [[nodiscard]] auto entity(usize i) noexcept -> Entity&;
+    [[nodiscard]] auto entity(usize i) const noexcept -> const Entity&;
+    [[nodiscard]] auto entity_at(usize i) -> Entity&;
+    [[nodiscard]] auto entity_at(usize i) const -> const Entity&;
+    [[nodiscard]] auto editor_state() noexcept -> EditorState&;
+    [[nodiscard]] auto editor_state() const noexcept -> const EditorState&;
 
   private:
     [[nodiscard]] EntityId allocate_entity_id() noexcept;

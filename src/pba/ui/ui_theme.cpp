@@ -1,4 +1,5 @@
 // pba/ui/ui_theme.cpp
+#include "pba/core/gsl.hpp"
 #include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/ui/ui_theme.hpp"
@@ -13,12 +14,12 @@ namespace ds_pba
 namespace
 {
 
-constexpr bool is_hex_digit(char c) noexcept
+constexpr auto is_hex_digit(char c) noexcept -> bool
 {
     return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
 }
 
-std::optional<u32> parse_rgba_u32_from_string(std::string_view s) noexcept
+auto parse_rgba_u32_from_string(std::string_view s) noexcept -> std::optional<u32>
 {
     // 0xRRGGBBAA or RRGGBBAA
     while (!s.empty() && std::isspace(static_cast<unsigned char>(s.front())))
@@ -65,7 +66,7 @@ std::optional<u32> parse_rgba_u32_from_string(std::string_view s) noexcept
     return v;
 }
 
-std::optional<u32> parse_rgba_u32(const nlohmann::json& j) noexcept
+auto parse_rgba_u32(const nlohmann::json& j) noexcept -> std::optional<u32>
 {
     if (const auto* u = j.get_ptr<const nlohmann::json::number_unsigned_t*>())
     {
@@ -86,7 +87,7 @@ std::optional<u32> parse_rgba_u32(const nlohmann::json& j) noexcept
     return std::nullopt;
 }
 
-std::optional<f32> get_f32(const nlohmann::json& j) noexcept
+auto get_f32(const nlohmann::json& j) noexcept -> std::optional<f32>
 {
     if (const auto* f = j.get_ptr<const nlohmann::json::number_float_t*>())
     {
@@ -103,7 +104,7 @@ std::optional<f32> get_f32(const nlohmann::json& j) noexcept
     return std::nullopt;
 }
 
-std::optional<ImVec2> get_vec2(const nlohmann::json& j) noexcept
+auto get_vec2(const nlohmann::json& j) noexcept -> std::optional<ImVec2>
 {
     if (!j.is_array() || j.size() != 2)
     {
@@ -118,7 +119,7 @@ std::optional<ImVec2> get_vec2(const nlohmann::json& j) noexcept
     return ImVec2{*fx, *fy};
 }
 
-std::optional<ThemeBase> parse_base(std::string_view s) noexcept
+auto parse_base(std::string_view s) noexcept -> std::optional<ThemeBase>
 {
     auto lower = [](std::string_view in) -> std::string
     {
@@ -147,7 +148,7 @@ std::optional<ThemeBase> parse_base(std::string_view s) noexcept
     return std::nullopt;
 }
 
-constexpr const char* base_to_string(ThemeBase b) noexcept
+constexpr auto base_to_c_string(ThemeBase b) noexcept -> czstring
 {
     switch (b)
     {
@@ -233,7 +234,7 @@ std::optional<std::string_view> name_from_col(ImGuiCol col) noexcept
     return std::nullopt;
 }
 
-std::string rgba_to_hex(u32 rgba)
+auto rgba_to_hex(u32 rgba) -> std::string
 {
     // 0xRRGGBBAA
     return std::format("0x{:08X}", rgba);
@@ -241,7 +242,7 @@ std::string rgba_to_hex(u32 rgba)
 
 }  // namespace
 
-std::optional<UiThemePack> load_theme_pack_json(const std::filesystem::path& path)
+auto load_theme_pack_json(const std::filesystem::path& path) -> std::optional<UiThemePack>
 {
     std::ifstream f(path);
     if (!f.is_open())
@@ -274,7 +275,7 @@ std::optional<UiThemePack> load_theme_pack_json(const std::filesystem::path& pat
     }
 }
 
-void apply_theme(const UiTheme& theme)
+auto apply_theme(const UiTheme& theme) -> void
 {
     switch (theme.base)
     {
@@ -342,11 +343,11 @@ void apply_theme(const UiTheme& theme)
     }
 }
 
-void to_json(nlohmann::json& j, const UiTheme& theme)
+auto to_json(nlohmann::json& j, const UiTheme& theme) -> void
 {
     j = nlohmann::json::object();
     j["name"] = theme.name;
-    j["base"] = base_to_string(theme.base);
+    j["base"] = base_to_c_string(theme.base);
 
     if (!theme.colors.empty())
     {
@@ -418,7 +419,7 @@ void to_json(nlohmann::json& j, const UiTheme& theme)
     }
 }
 
-void from_json(const nlohmann::json& j, UiTheme& theme)
+auto from_json(const nlohmann::json& j, UiTheme& theme) -> void
 {
     if (!j.is_object())
     {
@@ -555,7 +556,7 @@ void from_json(const nlohmann::json& j, UiTheme& theme)
     theme = std::move(out);
 }
 
-void to_json(nlohmann::json& j, const UiThemePack& pack)
+auto to_json(nlohmann::json& j, const UiThemePack& pack) -> void
 {
     j = nlohmann::json::object();
     j["themes"] = pack.themes;
@@ -574,7 +575,7 @@ void to_json(nlohmann::json& j, const UiThemePack& pack)
     }
 }
 
-void from_json(const nlohmann::json& j, UiThemePack& pack)
+auto from_json(const nlohmann::json& j, UiThemePack& pack) -> void
 {
     if (!j.is_object())
     {

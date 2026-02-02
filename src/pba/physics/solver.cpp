@@ -19,7 +19,7 @@ namespace ds_pba
 namespace
 {
 
-inline bool wake_up(RigidBody& b) noexcept
+inline auto wake_up(RigidBody& b) noexcept -> bool
 {  // Returns true if we woke the model up
     if (!b.is_static() && b.asleep)
     {
@@ -30,23 +30,24 @@ inline bool wake_up(RigidBody& b) noexcept
     return false;
 }
 
-Quaternion integrate_orientation(const Quaternion& q, const Dir3& omega_world, f32 dt) noexcept
+auto integrate_orientation(const Quaternion& q, const Dir3& omega_world, f32 dt) noexcept
+    -> Quaternion
 {
     const Quaternion wq{0.0f, omega_world.x, omega_world.y, omega_world.z};
     const Quaternion out{q + (0.5f * dt) * (wq * q)};
     return glm::normalize(out);
 }
 
-glm::mat3
-inv_inertia_world_from_body(const Quaternion& q, const glm::mat3& inv_inertia_body) noexcept
+auto inv_inertia_world_from_body(const Quaternion& q, const glm::mat3& inv_inertia_body) noexcept
+    -> glm::mat3
 {
     const glm::mat3 R{glm::mat3_cast(q)};
     return R * inv_inertia_body * glm::transpose(R);
 }
 
-void apply_impulse_contact_friction(
+auto apply_impulse_contact_friction(
     RigidBody& a, RigidBody& b, Contact& contact, Dir3 r_a, Dir3 r_b, Dir3 n
-) noexcept
+) noexcept -> void
 {
     {
         Expects(!a.is_static() || !b.is_static());
@@ -140,9 +141,9 @@ void apply_impulse_contact_friction(
     }
 }
 
-void apply_impulse_contact(
+auto apply_impulse_contact(
     RigidBody& a, RigidBody& b, Contact& contact, f32 restitution, f32 dt_s
-) noexcept
+) noexcept -> void
 {
     {
         Expects(!a.is_static() || !b.is_static());
@@ -250,7 +251,7 @@ void apply_impulse_contact(
 
 }  // namespace
 
-void update_inv_inertia_world(std::span<RigidBody> bodies) noexcept
+auto update_inv_inertia_world(std::span<RigidBody> bodies) noexcept -> void
 {
     for (auto& b : bodies)
     {
@@ -263,7 +264,7 @@ void update_inv_inertia_world(std::span<RigidBody> bodies) noexcept
     }
 }
 
-void integrate_forces(std::span<RigidBody> bodies, f32 dt_s) noexcept
+auto integrate_forces(std::span<RigidBody> bodies, f32 dt_s) noexcept -> void
 {
     for (auto& b : bodies)
     {
@@ -281,7 +282,7 @@ void integrate_forces(std::span<RigidBody> bodies, f32 dt_s) noexcept
     }
 }
 
-void integrate_velocities(std::span<RigidBody> bodies, f32 dt_s) noexcept
+auto integrate_velocities(std::span<RigidBody> bodies, f32 dt_s) noexcept -> void
 {
     for (auto& b : bodies)
     {
@@ -297,7 +298,7 @@ void integrate_velocities(std::span<RigidBody> bodies, f32 dt_s) noexcept
     }
 }
 
-void warm_start_contact(std::span<RigidBody> bodies, Contact& contact) noexcept
+auto warm_start_contact(std::span<RigidBody> bodies, Contact& contact) noexcept -> void
 {
 
     auto& a = bodies[contact.a_idx];
@@ -423,7 +424,8 @@ auto solve_velocity_constraints(
     }
 }
 
-void solve_position_constraints(std::span<RigidBody> bodies, std::span<Contact> contacts) noexcept
+auto solve_position_constraints(std::span<RigidBody> bodies, std::span<Contact> contacts) noexcept
+    -> void
 {
     for (usize i{0zu}; i < k_position_iterations; ++i)
     {
@@ -461,7 +463,7 @@ void solve_position_constraints(std::span<RigidBody> bodies, std::span<Contact> 
     }
 }
 
-void apply_sleep_and_damping(std::span<RigidBody> bodies, f32 dt_s) noexcept
+auto apply_sleep_and_damping(std::span<RigidBody> bodies, f32 dt_s) noexcept -> void
 {
     for (auto& b : bodies)
     {
@@ -504,7 +506,7 @@ void apply_sleep_and_damping(std::span<RigidBody> bodies, f32 dt_s) noexcept
     }
 }
 
-void clear_accumulators(std::span<RigidBody> bodies) noexcept
+auto clear_accumulators(std::span<RigidBody> bodies) noexcept -> void
 {
     for (auto& b : bodies)
     {

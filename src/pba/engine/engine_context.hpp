@@ -10,12 +10,15 @@
 #include "pba/scene/entity.hpp"
 #include "pba/scene/world.hpp"
 
+#include <gsl/assert>
+
 namespace ds_pba
 {
 struct EngineContext
 {
     GfxContext gfx{};
     PhysicsContext physics{};
+    EditorInput editor_input{};
 
     World world{};
 
@@ -53,6 +56,30 @@ struct EngineContext
     auto run() -> void;
 
     auto create_box_body(const Entity& e, f32 inv_mass, Dir3 velo) const -> RigidBody;
+
+    bool is_active() const
+    {
+        return (gfx.window != nullptr) && !glfwWindowShouldClose(gfx.window);
+    }
+
+    void request_close() noexcept
+    {
+        is_active_ = false;
+        if (gfx.window)
+        {
+            glfwSetWindowShouldClose(gfx.window, GLFW_TRUE);
+        }
+    }
+    bool is_active_{true};
+
+    void deactivate() noexcept
+    {
+        is_active_ = false;
+    }
+    void activate() noexcept
+    {
+        is_active_ = true;
+    }
 };
 
 }  // namespace ds_pba

@@ -9,8 +9,8 @@
 
 namespace ds_pba
 {
-std::optional<ShaderProgram>
-create_program(const std::string& vert_src, const std::string& frag_src)
+auto create_program(const std::string& vert_src, const std::string& frag_src)
+    -> std::optional<ShaderProgram>
 {
     Shader vs{Shader::create_and_compile(ShaderType::Vertex, vert_src)};
     if (!vs.valid() || !vs.compiled_ok())
@@ -51,7 +51,7 @@ create_program(const std::string& vert_src, const std::string& frag_src)
     return prog;
 }
 
-std::optional<std::string> read_text_file(const std::string& path)
+auto read_text_file(const std::string& path) -> std::optional<std::string>
 {
     const std::ifstream file(path, std::ios::in);
     if (!file.is_open())
@@ -79,13 +79,13 @@ std::optional<std::string> read_text_file(const std::string& path)
     return contents;
 }
 
-std::optional<std::string> load_shader_sources(const std::string& shader_name)
+auto load_shader_sources(const std::string& shader_name) -> std::optional<std::string>
 {
     const std::string path{"assets/shaders/" + shader_name};
     return read_text_file(path);
 }
 
-std::optional<ShaderProgram> create_program_from_file(std::string shader_name)
+auto create_program_from_file(std::string shader_name) -> std::optional<ShaderProgram>
 {
     auto frag = load_shader_sources(shader_name + ".frag");
     if (!frag)

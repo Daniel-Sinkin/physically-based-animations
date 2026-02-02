@@ -46,7 +46,7 @@ struct Rect
 {
     T x{}, y{}, w{}, h{};
 
-    [[nodiscard]] f32 aspect_ratio() const noexcept
+    [[nodiscard]] auto aspect_ratio() const noexcept -> f32
     {
         if (h == 0)
         {
@@ -66,21 +66,21 @@ struct ColorRGBA
 {
     std::array<T, 4> v{};
 
-    constexpr ColorRGBA() = default;
+    constexpr ColorRGBA() noexcept = default;
     constexpr ColorRGBA(T r, T g, T b, T a) noexcept : v{r, g, b, a} {}
 
-    constexpr T*       data()       noexcept { return v.data(); }
-    constexpr const T* data() const noexcept { return v.data(); }
+    constexpr auto data()       noexcept -> T*       { return v.data(); }
+    constexpr auto data() const noexcept -> const T* { return v.data(); }
 
-    constexpr T&          r()       noexcept { return v[0]; }
-    constexpr T&          g()       noexcept { return v[1]; }
-    constexpr T&          b()       noexcept { return v[2]; }
-    constexpr T&          a()       noexcept { return v[3]; }
+    constexpr auto r()       noexcept -> T&       { return v[0]; }
+    constexpr auto g()       noexcept -> T&       { return v[1]; }
+    constexpr auto b()       noexcept -> T&       { return v[2]; }
+    constexpr auto a()       noexcept -> T&       { return v[3]; }
 
-    constexpr const T&    r() const noexcept { return v[0]; }
-    constexpr const T&    g() const noexcept { return v[1]; }
-    constexpr const T&    b() const noexcept { return v[2]; }
-    constexpr const T&    a() const noexcept { return v[3]; }
+    constexpr auto r() const noexcept -> const T& { return v[0]; }
+    constexpr auto g() const noexcept -> const T& { return v[1]; }
+    constexpr auto b() const noexcept -> const T& { return v[2]; }
+    constexpr auto a() const noexcept -> const T& { return v[3]; }
 };
 // clang-format on
 
@@ -96,16 +96,16 @@ struct Color3
     constexpr Color3() noexcept = default;
     constexpr Color3(f32 r, f32 g, f32 b) noexcept : v{r, g, b} {}
 
-    constexpr f32*       data()       noexcept { return v.data(); }
-    constexpr const f32* data() const noexcept { return v.data(); }
+    constexpr auto data()       noexcept -> f32*       { return v.data(); }
+    constexpr auto data() const noexcept -> const f32* { return v.data(); }
 
-    constexpr f32&       r()       noexcept { return v[0]; }
-    constexpr f32&       g()       noexcept { return v[1]; }
-    constexpr f32&       b()       noexcept { return v[2]; }
+    constexpr auto r()       noexcept -> f32&       { return v[0]; }
+    constexpr auto g()       noexcept -> f32&       { return v[1]; }
+    constexpr auto b()       noexcept -> f32&       { return v[2]; }
 
-    constexpr const f32& r() const noexcept { return v[0]; }
-    constexpr const f32& g() const noexcept { return v[1]; }
-    constexpr const f32& b() const noexcept { return v[2]; }
+    constexpr auto r() const noexcept -> const f32& { return v[0]; }
+    constexpr auto g() const noexcept -> const f32& { return v[1]; }
+    constexpr auto b() const noexcept -> const f32& { return v[2]; }
 
     static const Color3 Black;
     static const Color3 White;
@@ -119,16 +119,16 @@ struct Color3
     static const Color3 Purple;
     static const Color3 Gray;
 };
-inline constexpr Color3 Color3::Black   {0.0f, 0.0f, 0.0f};
-inline constexpr Color3 Color3::White   {1.0f, 1.0f, 1.0f};
-inline constexpr Color3 Color3::Red     {1.0f, 0.0f, 0.0f};
-inline constexpr Color3 Color3::Green   {0.0f, 1.0f, 0.0f};
-inline constexpr Color3 Color3::Blue    {0.0f, 0.0f, 1.0f};
-inline constexpr Color3 Color3::Yellow  {1.0f, 1.0f, 0.0f};
-inline constexpr Color3 Color3::Cyan    {0.0f, 1.0f, 1.0f};
-inline constexpr Color3 Color3::Magenta {1.0f, 0.0f, 1.0f};
-inline constexpr Color3 Color3::Orange  {1.0f, 0.5f, 0.0f};
-inline constexpr Color3 Color3::Purple  {0.5f, 0.0f, 0.5f};
-inline constexpr Color3 Color3::Gray    {0.5f, 0.5f, 0.5f};
+inline constexpr Color3 Color3::Black  {0.0f, 0.0f, 0.0f};
+inline constexpr Color3 Color3::White  {1.0f, 1.0f, 1.0f};
+inline constexpr Color3 Color3::Red    {1.0f, 0.0f, 0.0f};
+inline constexpr Color3 Color3::Green  {0.0f, 1.0f, 0.0f};
+inline constexpr Color3 Color3::Blue   {0.0f, 0.0f, 1.0f};
+inline constexpr Color3 Color3::Yellow {1.0f, 1.0f, 0.0f};
+inline constexpr Color3 Color3::Cyan   {0.0f, 1.0f, 1.0f};
+inline constexpr Color3 Color3::Magenta{1.0f, 0.0f, 1.0f};
+inline constexpr Color3 Color3::Orange {1.0f, 0.5f, 0.0f};
+inline constexpr Color3 Color3::Purple {0.5f, 0.0f, 0.5f};
+inline constexpr Color3 Color3::Gray   {0.5f, 0.5f, 0.5f};
 // clang-format on
 }  // namespace ds_pba

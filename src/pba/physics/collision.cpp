@@ -20,14 +20,14 @@ namespace ds_pba
 namespace
 {
 
-static i32 quantize_pos(f32 x, f32 cell) noexcept
+static auto quantize_pos(f32 x, f32 cell) noexcept -> i32
 {
     return static_cast<i32>(std::lround(static_cast<f64>(x / cell)));
 }
 
-static void reduce_contact_points_to_4(
+static auto reduce_contact_points_to_4(
     std::array<Pos3, k_contact_points>& pts, usize& new_pt_count, const Dir3& n
-) noexcept
+) noexcept -> void
 {
     if (new_pt_count <= 4)
     {
@@ -106,7 +106,7 @@ static void reduce_contact_points_to_4(
     new_pt_count = reduced_count;
 }
 
-std::array<Dir3, 3> obb_axes_world(const RigidBody& b) noexcept
+auto obb_axes_world(const RigidBody& b) noexcept -> std::array<Dir3, 3>
 {
     // In an AABB the faces are already aligned with the standard basis so
     // rotating an AABB and rotating the local axis is the same thing.
@@ -119,7 +119,7 @@ std::array<Dir3, 3> obb_axes_world(const RigidBody& b) noexcept
     };
 }
 
-std::array<Pos3, 8> box_world_corners(const RigidBody& b) noexcept
+auto box_world_corners(const RigidBody& b) noexcept -> std::array<Pos3, 8>
 {
     const auto [ax, ay, az] = obb_axes_world(b);
     // From center of mass move towards one of the faces == move along rotated
@@ -139,7 +139,7 @@ std::array<Pos3, 8> box_world_corners(const RigidBody& b) noexcept
     };
 }
 
-bool point_in_obb(const Pos3& p, const RigidBody& b) noexcept
+auto point_in_obb(const Pos3& p, const RigidBody& b) noexcept -> bool
 {
     const std::array<Dir3, 3> axes = obb_axes_world(b);
     const Dir3 d{p - b.position};
@@ -157,7 +157,8 @@ bool point_in_obb(const Pos3& p, const RigidBody& b) noexcept
     return inside_x && inside_y && inside_z;
 }
 
-void project_obb_on_axis(const RigidBody& b, const Dir3& axis, f32& out_min, f32& out_max) noexcept
+auto project_obb_on_axis(const RigidBody& b, const Dir3& axis, f32& out_min, f32& out_max) noexcept
+    -> void
 {
     const auto axes = obb_axes_world(b);
 
@@ -173,9 +174,9 @@ void project_obb_on_axis(const RigidBody& b, const Dir3& axis, f32& out_min, f32
     out_max = center_proj + radius_proj;
 }
 
-bool obb_obb_overlap(
+auto obb_obb_overlap(
     const RigidBody& a, const RigidBody& b, Dir3& out_n, f32& out_penetration, int& out_axis_index
-) noexcept
+) noexcept -> bool
 {  // Uses Seperating Axis Theorem (SAT)
     const auto ax = obb_axes_world(a);
     const auto bx = obb_axes_world(b);
@@ -249,7 +250,7 @@ bool obb_obb_overlap(
 
 }  // namespace
 
-ContactKey make_contact_key(const RigidBody& a, const RigidBody& b, const Pos3& p) noexcept
+auto make_contact_key(const RigidBody& a, const RigidBody& b, const Pos3& p) noexcept -> ContactKey
 {
     const EntityId id0 = std::min(a.id, b.id);
     const EntityId id1 = std::max(a.id, b.id);
@@ -265,7 +266,8 @@ ContactKey make_contact_key(const RigidBody& a, const RigidBody& b, const Pos3& 
     };
 }
 
-void generate_obb_contacts(std::span<const RigidBody> bodies, std::pmr::vector<Contact>& out)
+auto generate_obb_contacts(std::span<const RigidBody> bodies, std::pmr::vector<Contact>& out)
+    -> void
 {
     Expects(out.empty() && "arena allocator should be wiped at start of iteration");
     out.reserve(bodies.size() * 8zu);  // TODO: Profile what a good default would be

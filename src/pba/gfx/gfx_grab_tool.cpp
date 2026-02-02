@@ -65,17 +65,13 @@ void GfxContext::cancel_grab()
 
     for (const auto& [id, start_pos] : editor.grab.start_positions)
     {
-        if (auto* entity = engine_context->world.find(id))
+        if (auto* entity = engine_context->world.find(id); entity && entity->body)
         {
-            if (entity->body)
+            if (auto* rb = engine_context->physics.try_body(*entity->body))
             {
-                if (auto* rb = engine_context->physics.try_body(*entity->body))
-                {
-                    rb->position = start_pos;
-                    rb->grabbed = false;
-                    rb->velocity = Dir3{};
-                    rb->angular_velocity = Dir3{};
-                }
+                rb->grabbed = false;
+                rb->velocity = Dir3{};
+                rb->angular_velocity = Dir3{};
             }
         }
         set_entity_and_body_position(*engine_context, id, start_pos);
@@ -98,8 +94,6 @@ void GfxContext::confirm_grab()
 
     Expects(engine_context);
 
-    // During dragging we update Entity::transform.position.
-    // Confirm must synchronize physics bodies to the final transform positions.
     for (const auto& [id, _start_pos] : grab.start_positions)
     {
         if (auto* entity = engine_context->world.find(id))
@@ -216,8 +210,7 @@ void GfxContext::update_grab(const EditorInput& input)
     const auto dx = narrow_cast<f32>(input.ui_mouse_x - grab.start_mouse_x);
     const auto dy = narrow_cast<f32>(input.ui_mouse_y - grab.start_mouse_y);
 
-    // Mouse up = look down
-    Dir3 delta{(dx * units_per_px) * cam.right() + (-dy * units_per_px) * cam.up()};
+    auto delta = (dx * units_per_px) * cam.right() + (-dy * units_per_px) * cam.up();
 
     using GC = EditorState::GrabConstraint;
     switch (grab.constraint)

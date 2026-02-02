@@ -25,7 +25,7 @@ GfxContext::~GfxContext()
     shutdown();
 }
 
-void GfxContext::shutdown()
+auto GfxContext::shutdown() -> void
 {
     if (recorder.is_recording())
     {
@@ -68,52 +68,16 @@ void GfxContext::shutdown()
     }
 }
 
-bool GfxContext::is_active() const
-{
-    return (window != nullptr) && !glfwWindowShouldClose(window) && is_active_;
-}
-
-void GfxContext::request_close() noexcept
-{
-    is_active_ = false;
-    if (window)
-    {
-        glfwSetWindowShouldClose(window, GLFW_TRUE);
-    }
-}
-
-void GfxContext::step()
+auto GfxContext::step(EditorInput& input) -> void
 {
     Expects(engine_context && "Scene Context not set for GfxContext");
     using namespace ds_pba;
-
-    if (!is_active())
-    {
-        return;
-    }
-    {  // See shutdown.hpp for details on our signal handling
-        if (g_request_close_sig)
-        {
-            g_request_close.store(true, std::memory_order_relaxed);
-            g_request_close_sig = 0;
-        }
-        if (g_request_close.load(std::memory_order_relaxed))
-        {
-            request_close();
-        }
-    }
-
-    glfwPollEvents();
-    editor_input.update(not_null{window});
 
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    editor_input.sync_imgui_mouse();
-
     const ImGuiIO& io{ImGui::GetIO()};
-    const auto& input = editor_input;
     imgui_uses_keyboard = io.WantCaptureKeyboard;
     imgui_uses_mouse = io.WantCaptureMouse;
 

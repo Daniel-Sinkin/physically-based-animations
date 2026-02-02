@@ -2,6 +2,7 @@
 #pragma once
 
 #include "pba/core/core_types.hpp"
+#include "pba/core/gsl.hpp"
 #include "pba/core/math_types.hpp"
 #include "pba/scene/entity_id.hpp"
 #include "pba/util/hash.hpp"
@@ -67,7 +68,7 @@ enum class ContactValidity : u8
     NonFinitePenetration,
 };
 
-[[nodiscard]] constexpr const char* to_string(ContactValidity v) noexcept
+[[nodiscard]] constexpr auto to_string(ContactValidity v) noexcept -> czstring
 {
     switch (v)
     {
@@ -106,7 +107,7 @@ struct Contact
     bool has_t_hat{false};  // do we have a cached tangent direction?
     bool allow_warm_start{true};
 
-    [[nodiscard]] ContactValidity validate() const
+    [[nodiscard]] auto validate() const -> ContactValidity
     {
         const auto finite_f32 = [](f32 x) noexcept -> bool
         { return std::isfinite(static_cast<f64>(x)); };
@@ -234,7 +235,7 @@ struct ContactKey
 
 struct ContactKeyHash
 {
-    usize operator()(const ContactKey& k) const noexcept
+    auto operator()(const ContactKey& k) const noexcept -> usize
     {
         usize seed{0zu};
         seed = hash_combine_seed(seed, static_cast<usize>(k.a_id));

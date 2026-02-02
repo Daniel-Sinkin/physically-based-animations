@@ -17,7 +17,7 @@ struct Transform
     Dir3 scale{1.0f, 1.0f, 1.0f};
     Quaternion orientation{k_quaternion_identity};
 
-    [[nodiscard]] ModelMatrix model_matrix() const noexcept
+    [[nodiscard]] auto model_matrix() const noexcept -> ModelMatrix
     {
         auto M{glm::identity<glm::mat4>()};
         M = glm::translate(M, position);

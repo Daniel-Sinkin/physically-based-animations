@@ -212,10 +212,6 @@ auto update_scene_dynamic_forces(EngineContext& e, f32 dt_s) noexcept -> void
     }
 }
 
-// -----------------------------------------------------------------------------
-// Scenes
-// -----------------------------------------------------------------------------
-
 auto setup_scene_attractors_and_repulsive_pivot(EngineContext& e) noexcept -> void
 {
     g_dyn = {};
@@ -270,25 +266,31 @@ auto setup_scene_attractors_and_repulsive_pivot(EngineContext& e) noexcept -> vo
     static Pos3 origin{0.0f, 0.0f, 0.0f};
     static Pos3 pos{-20.0f, -10.0f, 10.0f};
 
-    e.physics.simple_forces.push_back(SimpleForce{AttractorForce{
-        .target = origin,
-        .magnitude = 15.0f,
-        .min_radius = 0.5f,
-    }});
+    e.physics.simple_forces.push_back(
+        SimpleForce{AttractorForce{
+            .target = origin,
+            .magnitude = 15.0f,
+            .min_radius = 0.5f,
+        }}
+    );
 
-    e.physics.simple_forces.push_back(SimpleForce{AttractorForce{
-        .target = pos,
-        .magnitude = 15.0f,
-        .min_radius = 0.5f,
-    }});
+    e.physics.simple_forces.push_back(
+        SimpleForce{AttractorForce{
+            .target = pos,
+            .magnitude = 15.0f,
+            .min_radius = 0.5f,
+        }}
+    );
 
     // Repulsion from camera pivot (dynamic target)
-    e.physics.simple_forces.push_back(SimpleForce{RepulsionForce{
-        .target = e.world.editor_state().camera().pivot,
-        .accel_max = 100.0f,
-        .range = 4.0f,
-        .min_radius = 0.5f,
-    }});
+    e.physics.simple_forces.push_back(
+        SimpleForce{RepulsionForce{
+            .target = e.world.editor_state().camera().pivot,
+            .accel_max = 100.0f,
+            .range = 4.0f,
+            .min_radius = 0.5f,
+        }}
+    );
 
     g_dyn.pivot_ptr = &e.world.editor_state().camera().pivot;
     g_dyn.repulsion_force_idx = e.physics.simple_forces.size() - 1zu;
@@ -338,11 +340,13 @@ auto setup_scene_attractor_origin_no_gravity(EngineContext& e) noexcept -> void
 
     static Pos3 origin{0.0f, 0.0f, 0.0f};
 
-    e.physics.simple_forces.push_back(SimpleForce{AttractorForce{
-        .target = origin,
-        .magnitude = 14.0f,
-        .min_radius = 0.9f,
-    }});
+    e.physics.simple_forces.push_back(
+        SimpleForce{AttractorForce{
+            .target = origin,
+            .magnitude = 14.0f,
+            .min_radius = 0.9f,
+        }}
+    );
 
     constexpr auto n = 30;
     const auto r = 16.0f;
@@ -367,11 +371,13 @@ auto setup_scene_attractor_origin_with_gravity(EngineContext& e) noexcept -> voi
     e.physics.simple_forces.push_back(SimpleForce{GravityForce{.accel = k_gravity}});
 
     static Pos3 origin{0.0f, 0.0f, 0.0f};
-    e.physics.simple_forces.push_back(SimpleForce{AttractorForce{
-        .target = origin,
-        .magnitude = 10.0f,
-        .min_radius = 1.0f,
-    }});
+    e.physics.simple_forces.push_back(
+        SimpleForce{AttractorForce{
+            .target = origin,
+            .magnitude = 10.0f,
+            .min_radius = 1.0f,
+        }}
+    );
 
     constexpr auto n = 26;
     const auto r = 14.0f;
@@ -620,11 +626,13 @@ auto setup_scene_moving_attractor_circle(EngineContext& e) noexcept -> void
     }
 
     // Store an attractor; we mutate its target each step.
-    e.physics.simple_forces.push_back(SimpleForce{AttractorForce{
-        .target = Pos3{g_dyn.moving_radius, 0.0f, g_dyn.moving_z},  // initial
-        .magnitude = 18.0f,
-        .min_radius = 1.0f,
-    }});
+    e.physics.simple_forces.push_back(
+        SimpleForce{AttractorForce{
+            .target = Pos3{g_dyn.moving_radius, 0.0f, g_dyn.moving_z},  // initial
+            .magnitude = 18.0f,
+            .min_radius = 1.0f,
+        }}
+    );
 
     g_dyn.moving_time_s = 0.0f;
     g_dyn.moving_omega = 0.7f;

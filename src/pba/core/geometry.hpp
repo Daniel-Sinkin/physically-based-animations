@@ -20,7 +20,7 @@ template <class T>
     return static_cast<R>(a + (b - a) * t);
 }
 
-[[nodiscard]] constexpr Color3 mix(const Color3& a, const Color3& b, f32 t) noexcept
+[[nodiscard]] constexpr auto mix(const Color3& a, const Color3& b, f32 t) noexcept -> Color3
 {
     return Color3{
         a.r() * (1.0f - t) + b.r() * t,
@@ -29,8 +29,8 @@ template <class T>
     };
 }
 
-[[nodiscard]] glm::vec3 safe_normalize(glm::vec3 v) noexcept;
-[[nodiscard]] bool is_normalized(const Dir3& v, f32 eps = 1e-4f) noexcept;
+[[nodiscard]] auto safe_normalize(glm::vec3 v) noexcept -> glm ::vec3;
+[[nodiscard]] auto is_normalized(const Dir3& v, f32 eps = 1e-4f) noexcept -> bool;
 
 // Axis Aligned Bounding Box
 struct AABB
@@ -38,7 +38,7 @@ struct AABB
     Pos3 min;
     Pos3 max;
 
-    [[nodiscard]] static AABB empty() noexcept
+    [[nodiscard]] static auto get_empty() noexcept -> AABB
     {
         return AABB{
             .min = Pos3{+k_inf, +k_inf, +k_inf},
@@ -46,7 +46,7 @@ struct AABB
         };
     }
 
-    [[nodiscard]] static constexpr AABB unit() noexcept
+    [[nodiscard]] static constexpr auto unit() noexcept -> AABB
     {
         auto h = 0.5f;
         return AABB{
@@ -55,7 +55,7 @@ struct AABB
         };
     }
 
-    [[nodiscard]] static constexpr AABB unit_positive() noexcept
+    [[nodiscard]] static constexpr auto unit_positive() noexcept -> AABB
     {
         return AABB{
             .min = Pos3{0.0f, 0.0f, 0.0f},
@@ -63,8 +63,8 @@ struct AABB
         };
     }
 
-    [[nodiscard]] static AABB
-    from_center_half_extents(const Pos3& center, const Dir3& half_extents) noexcept
+    [[nodiscard]] static auto
+    from_center_half_extents(const Pos3& center, const Dir3& half_extents) noexcept -> AABB
     {
         return AABB{
             .min = center - half_extents,
@@ -72,27 +72,27 @@ struct AABB
         };
     }
 
-    [[nodiscard]] bool valid() const noexcept
+    [[nodiscard]] auto valid() const noexcept -> bool
     {
         return min.x <= max.x && min.y <= max.y && min.z <= max.z;
     }
 
-    [[nodiscard]] Pos3 center() const noexcept
+    [[nodiscard]] auto center() const noexcept -> Pos3
     {
         return Pos3{0.5f * (min + max)};
     }
 
-    [[nodiscard]] Dir3 extents() const noexcept
+    [[nodiscard]] auto extents() const noexcept -> Dir3
     {
         return Dir3{max - min};
     }
 
-    [[nodiscard]] Dir3 half_extents() const noexcept
+    [[nodiscard]] auto half_extents() const noexcept -> Dir3
     {
         return Dir3{0.5f * (max - min)};
     }
 
-    [[nodiscard]] f32 surface_area() const noexcept
+    [[nodiscard]] auto surface_area() const noexcept -> f32
     {
         const Dir3 s = extents();
         auto face_xy = s.x * s.y;
@@ -101,14 +101,14 @@ struct AABB
         return 2.0f * (face_xy + face_xz + face_yz);
     }
 
-    [[nodiscard]] f32 volume() const noexcept
+    [[nodiscard]] auto volume() const noexcept -> f32
     {
         const Dir3 s = extents();
         return s.x * s.y * s.z;
     }
 };
 
-inline void expand_to_include(AABB& aabb, const Pos3& p) noexcept
+inline auto expand_to_include(AABB& aabb, const Pos3& p) noexcept -> void
 {
     aabb.min.x = std::min(aabb.min.x, p.x);
     aabb.min.y = std::min(aabb.min.y, p.y);
@@ -119,13 +119,13 @@ inline void expand_to_include(AABB& aabb, const Pos3& p) noexcept
     aabb.max.z = std::max(aabb.max.z, p.z);
 }
 
-inline void expand_to_include(AABB& aabb, const AABB& other) noexcept
+inline auto expand_to_include(AABB& aabb, const AABB& other) noexcept -> void
 {
     expand_to_include(aabb, other.min);
     expand_to_include(aabb, other.max);
 }
 
-[[nodiscard]] inline bool contains(const AABB& aabb, const Pos3& p) noexcept
+[[nodiscard]] inline auto contains(const AABB& aabb, const Pos3& p) noexcept -> bool
 {
     auto x_axis_overlap = p.x >= aabb.min.x && p.x <= aabb.max.x;
     auto y_axis_overlap = p.y >= aabb.min.y && p.y <= aabb.max.y;
@@ -133,12 +133,12 @@ inline void expand_to_include(AABB& aabb, const AABB& other) noexcept
     return x_axis_overlap && y_axis_overlap && z_axis_overlap;
 }
 
-[[nodiscard]] inline bool contains(const AABB& outer, const AABB& inner) noexcept
+[[nodiscard]] inline auto contains(const AABB& outer, const AABB& inner) noexcept -> bool
 {
     return contains(outer, inner.min) && contains(outer, inner.max);
 }
 
-[[nodiscard]] inline bool overlaps(const AABB& a, const AABB& b) noexcept
+[[nodiscard]] inline auto overlaps(const AABB& a, const AABB& b) noexcept -> bool
 {
     auto x_axis_overlap = a.min.x <= b.max.x && a.max.x >= b.min.x;
     auto y_axis_overlap = a.min.y <= b.max.y && a.max.y >= b.min.y;
@@ -174,8 +174,8 @@ struct WorldToModelMatrix
     {
     }
 
-    [[nodiscard]] Pos3 transform_position(const Pos3& p) const noexcept;
-    [[nodiscard]] Dir3 transform_direction(const Dir3& v) const noexcept;
+    [[nodiscard]] auto transform_position(const Pos3& p) const noexcept -> Pos3;
+    [[nodiscard]] auto transform_direction(const Dir3& v) const noexcept -> Dir3;
 };
 
 struct ViewMatrix
@@ -207,10 +207,11 @@ struct ClipToWorldMatrix
     {
     }
 
-    [[nodiscard]] Pos3 unproject_ndc(f32 x_ndc, f32 y_ndc, f32 z_ndc) const noexcept;
+    [[nodiscard]] auto unproject_ndc(f32 x_ndc, f32 y_ndc, f32 z_ndc) const noexcept -> Pos3;
 };
 
-[[nodiscard]] ClipToWorldMatrix clip_to_world(const ProjMatrix& P, const ViewMatrix& V) noexcept;
+[[nodiscard]] auto clip_to_world(const ProjMatrix& P, const ViewMatrix& V) noexcept
+    -> ClipToWorldMatrix;
 
 struct NormalMatrix
 {
@@ -221,7 +222,7 @@ struct NormalMatrix
     {
     }
 
-    [[nodiscard]] Dir3 transform_normal(const Dir3& n) const noexcept;
-    [[nodiscard]] Dir3 transform_normal_unit(const Dir3& n) const noexcept;
+    [[nodiscard]] auto transform_normal(const Dir3& n) const noexcept -> Dir3;
+    [[nodiscard]] auto transform_normal_unit(const Dir3& n) const noexcept -> Dir3;
 };
 }  // namespace ds_pba

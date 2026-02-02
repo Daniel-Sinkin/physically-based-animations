@@ -13,7 +13,7 @@
 
 namespace ds_pba
 {
-std::optional<Raycast> raycast(const World& world, const Ray& ray) noexcept
+auto raycast(const World& world, const Ray& ray) noexcept -> std::optional<Raycast>
 {
     Expects(ray.valid());
     auto best_t = k_f32_max;
@@ -55,13 +55,13 @@ std::optional<Raycast> raycast(const World& world, const Ray& ray) noexcept
     };
 }
 
-Ray ray_from_imgui_rect(
+auto ray_from_imgui_rect(
     const glm::vec2& mouse_pos,
     const glm::vec2& rect_pos,
     const glm::vec2& rect_size,
     const ViewMatrix& camera_view_matrix,
     const ProjMatrix& camera_proj_matrix
-) noexcept
+) noexcept -> Ray
 {
     const auto lx = mouse_pos.x - rect_pos.x;
     const auto ly = mouse_pos.y - rect_pos.y;
@@ -83,7 +83,8 @@ Ray ray_from_imgui_rect(
 }
 
 /// https://pbr-book.org/4ed/Shapes/Spheres
-std::optional<f32> intersect_ray_sphere(const Ray& ray, const ModelMatrix& model_matrix) noexcept
+auto intersect_ray_sphere(const Ray& ray, const ModelMatrix& model_matrix) noexcept
+    -> std::optional<f32>
 {
     Expects(ray.valid());
 
@@ -124,7 +125,7 @@ std::optional<f32> intersect_ray_sphere(const Ray& ray, const ModelMatrix& model
 }
 
 /// Solve ray.origin.z + t * ray.dir.z = 0 for t
-std::optional<f32> intersect_ray_ground(const Ray& ray) noexcept
+auto intersect_ray_ground(const Ray& ray) noexcept -> std::optional<f32>
 {
     Expects(ray.valid());
     if (std::abs(ray.origin.z) < 1e-5f)
@@ -141,7 +142,8 @@ std::optional<f32> intersect_ray_ground(const Ray& ray) noexcept
 
 // Using the Slab method, see for example
 // https://www.pbr-book.org/4ed/Shapes/Basic_Shape_Interface
-std::optional<f32> intersect_ray_cube(const Ray& ray, const ModelMatrix& model_matrix) noexcept
+auto intersect_ray_cube(const Ray& ray, const ModelMatrix& model_matrix) noexcept
+    -> std::optional<f32>
 {
     Expects(ray.valid());
 

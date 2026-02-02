@@ -7,8 +7,8 @@
 namespace ds_pba
 {
 
-std::expected<GLTexture2D, GLTextureError>
-upload_texture_2d_rgba8(const ImageRGBA8& img, GLTextureUploadOptions opt)
+auto upload_texture_2d_rgba8(const ImageRGBA8& img, GLTextureUploadOptions opt)
+    -> std::expected<GLTexture2D, GLTextureError>
 {
     if (!img.valid())
     {
