@@ -4,9 +4,32 @@
 ### Interactivity
 Multi selection, grabbing with free and axis located moving.
 
+![Interactivity](screenshots/Interactivity.png)
 
 ### Physics Debug
+![Physics Debug](screenshots/PhysicsDebug1.png)
+![Physics Debug](screenshots/PhysicsDebug2.png)
 
+### UI
+![Theme Selection](screenshots/Theme_Selection.png)
+Supports dynamically switching editor theme and loading in themes from a config file (`assets/ui/themes.json`)
+```json
+{
+  "default": "Blender Dark",
+  "themes": [
+    {
+      "name": "Blender Dark",
+      "base": "dark",
+      "colors": {
+        "Text": "0xE6E6E6FF",
+        "TextDisabled": "0xA6A6A6FF",
+        "WindowBg": "0x353535FF",
+        "ChildBg": "0x333333FF",
+        "PopupBg": "0x252525FF",
+        "Border": "0x232323FF",
+        "BorderShadow": "0x00000000",
+    ...
+```
 
 ## Videos
 * https://www.youtube.com/watch?v=1fZnTQ-wU24
