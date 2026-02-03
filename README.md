@@ -1,5 +1,17 @@
 # Physically Based Animations
 
+## Functionality
+### Interactivity
+Multi selection, grabbing with free and axis located moving.
+
+
+### Physics Debug
+
+
+## Videos
+* https://www.youtube.com/watch?v=1fZnTQ-wU24
+* https://www.youtube.com/watch?v=uKSDHguqzIE
+* https://www.youtube.com/watch?v=C_mCMDn9qz0
 
 ## Coding Standard
 * The coding style is heavily inspired by Herb Sutters AAA (almost always auto) style (see [SutterAAA])
