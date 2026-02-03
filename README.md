@@ -11,7 +11,7 @@ Multi selection, grabbing with free and axis located moving.
 ![Physics Debug](screenshots/PhysicsDebug2.png)
 
 ### UI
-![Theme Selection](screenshots/Theme_Selection.png)
+![ThemeSelection](screenshots/ThemeSelection.png)
 Supports dynamically switching editor theme and loading in themes from a config file (`assets/ui/themes.json`)
 ```json
 {
