@@ -105,13 +105,13 @@ if(ImGui::BeginTable(/*args*/)){
 * [Baraff97] Physically Based Modeling: Principles and Practice — Andrew Witkin, David Baraff, 1997 (SIGGRAPH Course Notes) — https://www.cs.cmu.edu/~baraff/sigcourse/
   * Rigid Body Dynamics II: Motion with Constraints — https://www.cs.cmu.edu/~baraff/sigcourse/notesd2.pdf
 * [Box2D] Box2D Physics Engine — Erin Catto - https://github.com/erincatto/box2d  
-* [SoftwareDesign] C++ Software Design - Klaus Iglberger, 2023
 
 ## References
 * [SutterAAA] https://herbsutter.com/2013/08/12/gotw-94-solution-aaa-style-almost-always-auto/
 * https://www.scs.stanford.edu/~dm/blog/param-pack.html
 * https://en.cppreference.com/w/cpp/language/value_category.html#Forwarding_references
 * [GSL] https://github.com/microsoft/GSL
+* [SoftwareDesign] C++ Software Design - Klaus Iglberger, 2023
 
 ### Assets
 * PolyHaven
