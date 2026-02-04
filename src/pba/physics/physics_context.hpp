@@ -1,6 +1,7 @@
 // pba/physics/physics_context.hpp
 #pragma once
 
+#include "pba/core/arena_allocator.hpp"
 #include "pba/core/constants.hpp"
 #include "pba/core/core_types.hpp"
 #include "pba/physics/forces.hpp"
@@ -41,10 +42,8 @@ struct PhysicsContext
 
     std::unordered_map<ContactKey, ContactCacheEntry, ContactKeyHash> contact_cache{};
 
-    std::array<std::byte, k_physics_step_arena_bytes> step_arena_buffer{};
-    std::pmr::monotonic_buffer_resource step_arena{
-        step_arena_buffer.data(), step_arena_buffer.size()
-    };
+    // Per-Physics Step scratch buffer, cheap to clear
+    ArenaAllocator contact_arena{1024 * 1024 * 1024};
 
     struct DebugContact
     {

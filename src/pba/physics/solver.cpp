@@ -1,4 +1,5 @@
 // pba/physics/solver.cpp
+#include "pba/core/arena_allocator.hpp"
 #include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/physics/solver.hpp"
@@ -367,11 +368,12 @@ get_velocity_at_world_point(const RigidBody& b, const Pos3& world_p) noexcept ->
 }
 
 auto solve_velocity_constraints(
-    std::span<RigidBody> bodies, std::span<Contact> contacts, f32 dt_s
+    std::span<RigidBody> bodies, ArenaAllocator& contacts, f32 dt_s
 ) noexcept -> void
 {
-    for (auto& contact : contacts)
-    {  // Should any wake up?
+    for (usize i{0zu}; i < contacts.used() / sizeof(Contact); ++i)
+    {
+        auto& contact = *reinterpret_cast<Contact*>(contacts.data() + i * sizeof(Contact));
         auto& a = bodies[contact.a_idx];
         auto& b = bodies[contact.b_idx];
 
@@ -400,8 +402,9 @@ auto solve_velocity_constraints(
 
     for (usize i{0zu}; i < k_solver_iterations; ++i)
     {
-        for (auto& contact : contacts)
+        for (usize k{0zu}; k < contacts.used() / sizeof(Contact); ++k)
         {
+            auto& contact = *reinterpret_cast<Contact*>(contacts.data() + k * sizeof(Contact));
             auto& a{bodies[contact.a_idx]};
             auto& b{bodies[contact.b_idx]};
             if (a.is_static() && b.is_static())
@@ -424,13 +427,14 @@ auto solve_velocity_constraints(
     }
 }
 
-auto solve_position_constraints(std::span<RigidBody> bodies, std::span<Contact> contacts) noexcept
+auto solve_position_constraints(std::span<RigidBody> bodies, ArenaAllocator& contacts) noexcept
     -> void
 {
     for (usize i{0zu}; i < k_position_iterations; ++i)
     {
-        for (const auto& contact : contacts)
+        for (usize k{0zu}; k < contacts.used() / sizeof(Contact); ++k)
         {
+            auto& contact = *reinterpret_cast<Contact*>(contacts.data() + k * sizeof(Contact));
             auto& a = bodies[contact.a_idx];
             auto& b = bodies[contact.b_idx];
 

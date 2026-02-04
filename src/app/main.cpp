@@ -35,6 +35,16 @@ struct Data
 static_assert(sizeof(Data) == 24);  // [xa xb 00 00] [ya yb yc yd] [za zb wa 00]
 static_assert(alignof(Data) == sizeof(f64));
 
+struct alignas(128) Data2
+{
+    f32 x;
+    f64 y;
+    int z;
+    u8 w;
+};
+static_assert(sizeof(Data2) == std::max(24, 128));
+static_assert(alignof(Data2) == 128);
+
 auto to_string(const Data& data) -> std::string
 {
     return std::format("(.x={},.y={},.z={},.w={})", data.x, data.y, data.z, data.w);
@@ -44,12 +54,13 @@ auto arena_alloc_test() -> void
 {
     ArenaAllocator arena{1024};
 
-    Data data{.x = 5.0f, .y = 2.3, .z = -1, .w = 254};
-    auto ptr = arena.push_back(data);
+    auto ptr = arena.push_back(Data{.x = 5.0f, .y = 2.3, .z = -1, .w = 254});
     std::println("{}", to_string(*ptr));
 
     ptr->x = 4.0f;
     std::println("{}", to_string(*ptr));
+
+    std::println("{}", arena.remaining());
 }
 }  // namespace ds_pba
 
@@ -58,12 +69,12 @@ int main()
     using namespace ds_pba;
     const ScopeTimer timer{"Total Runtime"};
 
-    arena_alloc_test();
+    // arena_alloc_test();
 
     std::signal(SIGTERM, handle_term);
     std::signal(SIGINT, handle_term);
 
-    if constexpr (false)
+    if constexpr (true)
     {
         EngineContext engine{};
         if (!engine.setup())

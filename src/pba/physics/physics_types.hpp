@@ -212,8 +212,6 @@ struct Contact
     }
 };
 
-using ContactList = std::pmr::vector<Contact>;
-
 struct ContactCacheEntry
 {
     f32 lambda_n{};

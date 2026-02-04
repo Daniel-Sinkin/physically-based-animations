@@ -1,6 +1,7 @@
 // pba/physics/solver.hpp
 #pragma once
 
+#include "pba/core/arena_allocator.hpp"
 #include "pba/physics/physics_types.hpp"
 
 #include <span>
@@ -16,10 +17,10 @@ auto integrate_velocities(std::span<RigidBody> bodies, f32 dt_s) noexcept -> voi
 auto warm_start_contact(std::span<RigidBody> bodies, Contact& contact) noexcept -> void;
 
 auto solve_velocity_constraints(
-    std::span<RigidBody> bodies, std::span<Contact> contacts, f32 dt_s
+    std::span<RigidBody> bodies, ArenaAllocator& contacts, f32 dt_s
 ) noexcept -> void;
 
-auto solve_position_constraints(std::span<RigidBody> bodies, std::span<Contact> contacts) noexcept
+auto solve_position_constraints(std::span<RigidBody> bodies, ArenaAllocator& contacts) noexcept
     -> void;
 
 auto apply_sleep_and_damping(std::span<RigidBody> bodies, f32 dt_s) noexcept -> void;

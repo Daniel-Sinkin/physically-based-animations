@@ -1,4 +1,5 @@
 // pba/physics/collision.cpp
+#include "pba/core/arena_allocator.hpp"
 #include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/physics/collision.hpp"
@@ -10,6 +11,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <gsl/assert>
 #include <limits>
 //
 #include <glm/geometric.hpp>
@@ -266,12 +268,11 @@ auto make_contact_key(const RigidBody& a, const RigidBody& b, const Pos3& p) noe
     };
 }
 
-auto generate_obb_contacts(std::span<const RigidBody> bodies, std::pmr::vector<Contact>& out)
-    -> void
+auto generate_obb_contacts(std::span<const RigidBody> bodies, ArenaAllocator& out) -> void
 {
-    Expects(out.empty() && "arena allocator should be wiped at start of iteration");
-    out.reserve(bodies.size() * 8zu);  // TODO: Profile what a good default would be
-
+    {
+        Expects(out.used() == 0zu);
+    }
     for (usize i{0zu}; i < bodies.size(); ++i)
     {
         for (usize j{i + 1zu}; j < bodies.size(); ++j)
@@ -336,7 +337,7 @@ auto generate_obb_contacts(std::span<const RigidBody> bodies, std::pmr::vector<C
                 // far away.
                 const Pos3 mid{0.5f * (a.position + b.position)};
                 const Pos3 p{mid - 0.5f * penetration * n};
-                out.push_back(
+                (void) out.push_back(
                     Contact{
                         .a_idx = i,
                         .b_idx = j,
@@ -354,7 +355,7 @@ auto generate_obb_contacts(std::span<const RigidBody> bodies, std::pmr::vector<C
             {
                 // TODO: This is not entirey stable after reducing, replace
                 // once stable manifold ids are implemented
-                out.push_back(
+                (void) out.push_back(
                     Contact{
                         .a_idx = i,
                         .b_idx = j,

@@ -49,10 +49,7 @@ compute_total_kinetic_energy(std::span<const RigidBody> bodies, bool include_ang
 
 auto PhysicsContext::step() -> void
 {
-    // Per step arena allocator is very cheap to reset
-    step_arena.release();
-    auto contacts = ContactList{&step_arena};
-
+    contact_arena.clear();
     // How long the frame lasted, we do physics processing
     // until physics time reaches that time.
     const Duration dt{time_step};
@@ -74,13 +71,14 @@ auto PhysicsContext::step() -> void
 
     integrate_forces(bodies, dt_s);
     integrate_velocities(bodies, dt_s);
-    generate_obb_contacts(bodies, contacts);
+    generate_obb_contacts(bodies, contact_arena);
 
     {  // Setup debug info for this step
         debug_contacts.clear();
-        debug_contacts.reserve(contacts.size());
-        for (const auto& contact : contacts)
+        debug_contacts.reserve(contact_arena.used() / sizeof(Contact));
+        for (usize i{0zu}; i < contact_arena.used() / sizeof(Contact); ++i)
         {
+            auto& contact = *reinterpret_cast<Contact*>(contact_arena.data() + i * sizeof(Contact));
             const RigidBody& a = bodies[contact.a_idx];
             const RigidBody& b = bodies[contact.b_idx];
             debug_contacts.push_back(
@@ -97,8 +95,9 @@ auto PhysicsContext::step() -> void
     }
 
     // Pull warm-start state from cache into contacts before warm start + solve.
-    for (auto& contact : contacts)
+    for (usize i{0zu}; i < contact_arena.used() / sizeof(Contact); ++i)
     {
+        auto& contact = *reinterpret_cast<Contact*>(contact_arena.data() + i * sizeof(Contact));
         if (!contact.allow_warm_start)
         {
             continue;
@@ -116,8 +115,9 @@ auto PhysicsContext::step() -> void
         }
     }
 
-    for (auto& contact : contacts)
+    for (usize i{0zu}; i < contact_arena.used() / sizeof(Contact); ++i)
     {
+        auto& contact = *reinterpret_cast<Contact*>(contact_arena.data() + i * sizeof(Contact));
         if (!contact.allow_warm_start)
         {
             continue;
@@ -128,14 +128,16 @@ auto PhysicsContext::step() -> void
         }
     }
 
-    solve_velocity_constraints(bodies, contacts, dt_s);
-    solve_position_constraints(bodies, contacts);
+    solve_velocity_constraints(bodies, contact_arena, dt_s);
+    solve_position_constraints(bodies, contact_arena);
 
     contact_cache.clear();
-    contact_cache.reserve(contacts.size() * 2zu);
+    contact_cache.reserve((contact_arena.used() / sizeof(Contact)) * 2zu);
 
-    for (const auto& contact : contacts)
+    for (usize i{0zu}; i < contact_arena.used(); ++i)
     {
+        const auto& contact =
+            *reinterpret_cast<Contact*>(contact_arena.data() + i * sizeof(Contact));
         if (!contact.allow_warm_start)
         {
             continue;
