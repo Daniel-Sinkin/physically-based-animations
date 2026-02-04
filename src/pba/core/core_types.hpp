@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+#include <gsl/assert>
 #include <limits>
 
 namespace ds_pba
@@ -35,9 +36,48 @@ using f64 = double;
 static_assert(sizeof(f32) == 4);
 static_assert(sizeof(f64) == 8);
 
+// C++ Core Guidelines recommend using std::byte rather than
+// u8 here so I'll just stick to that.
+using Byte = std::byte;
+
 using Clock = std::chrono::steady_clock;
 using TimePoint = Clock::time_point;
 using Duration = std::chrono::duration<f64>;
+
+[[nodiscard]] inline constexpr auto round_up_aligned(usize x, usize align) noexcept -> usize
+{
+    {
+        Expects(align > 0 && "Align must be > 0");
+    }
+    if (align == 0)
+    {
+        return x;
+    }
+    auto retval = [&]() -> usize
+    {
+        const auto rem = x % align;
+        if (rem == 0)
+        {
+            return x;
+        }
+        else
+        {
+            return x + (align - rem);
+        }
+    }();
+
+    {
+        Ensures(retval % align == 0);
+    }
+    return retval;
+}
+
+template <typename T>
+    requires(std::unsigned_integral<T>)
+[[nodiscard]] constexpr bool is_power_of_two(T x) noexcept
+{
+    return x != T{0} && (x & (x - T{1})) == T{0};
+}
 
 inline constexpr usize k_invalid_idx{std::numeric_limits<usize>::max()};
 
