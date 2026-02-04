@@ -2,6 +2,7 @@
 #include "pba/core/arena_allocator.hpp"
 #include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
+#include "app/headless_main.cpp"
 #include "pba/core/core_types.hpp"
 #include "pba/engine/engine_context.hpp"
 #include "pba/util/scope_timer.hpp"
@@ -69,12 +70,12 @@ int main()
     using namespace ds_pba;
     const ScopeTimer timer{"Total Runtime"};
 
-    // arena_alloc_test();
-
     std::signal(SIGTERM, handle_term);
     std::signal(SIGINT, handle_term);
 
-    if constexpr (true)
+    run_headless_simulation();
+
+    if constexpr (false)
     {
         EngineContext engine{};
         if (!engine.setup())

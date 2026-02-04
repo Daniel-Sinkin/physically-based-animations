@@ -30,13 +30,13 @@ auto GfxContext::hover_interaction(EditorInput& input) const -> void
     }
     const auto& imgui_io = ImGui::GetIO();
 
-    auto& cam{engine_context->world.editor_state().camera()};
+    auto& cam{engine_context->simulation.world.editor_state().camera()};
     const f32 wheel{imgui_io.MouseWheel};
     if (wheel != 0.0f)
     {  // Zooming
         cam.distance *= std::exp(-wheel * k_zoom_speed);
         cam.distance =
-            std::clamp(engine_context->world.editor_state().camera().distance, 0.75f, 200.0f);
+            std::clamp(engine_context->simulation.world.editor_state().camera().distance, 0.75f, 200.0f);
     }
 
     if (input.mouse_middle.down)
@@ -48,9 +48,9 @@ auto GfxContext::hover_interaction(EditorInput& input) const -> void
     if (selecting)
     {  // Selecting objects
         const auto aspect = viewport_fbo.aspect_ratio();
-        const auto camera_view_matrix = engine_context->world.editor_state().camera().view_matrix();
+        const auto camera_view_matrix = engine_context->simulation.world.editor_state().camera().view_matrix();
         const auto camera_proj_matrix =
-            engine_context->world.editor_state().camera().proj_matrix(aspect);
+            engine_context->simulation.world.editor_state().camera().proj_matrix(aspect);
 
         const glm::vec2 mouse_pos{input.ui_mouse_x, input.ui_mouse_y};
 
@@ -58,7 +58,7 @@ auto GfxContext::hover_interaction(EditorInput& input) const -> void
             mouse_pos, viewport_img_pos, viewport_img_size, camera_view_matrix, camera_proj_matrix
         )};
 
-        auto rc_res = raycast(engine_context->world, mouse_ray);
+        auto rc_res = raycast(engine_context->simulation.world, mouse_ray);
         if (rc_res)
         {
             const Raycast rc{*rc_res};
@@ -67,13 +67,13 @@ auto GfxContext::hover_interaction(EditorInput& input) const -> void
                 hover_interaction_selection(input, rc);
             }
         }
-        else if (!engine_context->world.editor_state().selected_ids.empty()
+        else if (!engine_context->simulation.world.editor_state().selected_ids.empty()
                  && !input.key_down(EditorKey::Shift))
         {
             // Deselect on clicking on background
-            if (!engine_context->world.editor_state().selected_ids.empty())
+            if (!engine_context->simulation.world.editor_state().selected_ids.empty())
             {
-                engine_context->world.editor_state().clear_selection();
+                engine_context->simulation.world.editor_state().clear_selection();
                 ui_log("Deselected all");
             }
         }
@@ -112,7 +112,7 @@ auto GfxContext::hover_interaction_selection(EditorInput& input, const Raycast& 
     }
     auto log_action = [&](std::string_view action, EntityId id, const char* kind) -> void
     {
-        if (auto entity = engine_context->world.find(id); entity)
+        if (auto entity = engine_context->simulation.world.find(id); entity)
         {
             ui_log(std::format("{} {} [id={}] [{}]", action, entity->name, id, kind));
         }
@@ -122,12 +122,12 @@ auto GfxContext::hover_interaction_selection(EditorInput& input, const Raycast& 
         }
     };
 
-    const bool was_selected = engine_context->world.editor_state().is_selected(rc.object_id);
+    const bool was_selected = engine_context->simulation.world.editor_state().is_selected(rc.object_id);
 
     if (input.key_down(EditorKey::Shift))
     {
-        engine_context->world.editor_state().toggle_selection(rc.object_id);
-        const bool now_selected = engine_context->world.editor_state().is_selected(rc.object_id);
+        engine_context->simulation.world.editor_state().toggle_selection(rc.object_id);
+        const bool now_selected = engine_context->simulation.world.editor_state().is_selected(rc.object_id);
         if (now_selected)
         {
             log_action("Selected", rc.object_id, "Cube");
@@ -141,12 +141,12 @@ auto GfxContext::hover_interaction_selection(EditorInput& input, const Raycast& 
 
     if (was_selected)
     {
-        engine_context->world.editor_state().toggle_selection(rc.object_id);
+        engine_context->simulation.world.editor_state().toggle_selection(rc.object_id);
         log_action("Deselected", rc.object_id, "Cube");
         return;
     }
 
-    engine_context->world.editor_state().select_single(rc.object_id);
+    engine_context->simulation.world.editor_state().select_single(rc.object_id);
     log_action("Selected", rc.object_id, "Cube");
 }
 

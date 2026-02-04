@@ -65,9 +65,9 @@ void GfxContext::cancel_grab()
 
     for (const auto& [id, start_pos] : editor.grab.start_positions)
     {
-        if (auto* entity = engine_context->world.find(id); entity && entity->body)
+        if (auto* entity = engine_context->simulation.world.find(id); entity && entity->body)
         {
-            if (auto* rb = engine_context->physics.try_body(*entity->body))
+            if (auto* rb = engine_context->simulation.world.try_body(*entity->body))
             {
                 rb->grabbed = false;
                 rb->velocity = Dir3{};
@@ -96,11 +96,11 @@ void GfxContext::confirm_grab()
 
     for (const auto& [id, _start_pos] : grab.start_positions)
     {
-        if (auto* entity = engine_context->world.find(id))
+        if (auto* entity = engine_context->simulation.world.find(id))
         {
             if (entity->body)
             {
-                if (auto* rb = engine_context->physics.try_body(*entity->body))
+                if (auto* rb = engine_context->simulation.world.try_body(*entity->body))
                 {
                     rb->position = entity->transform.position;
                     rb->grabbed = false;
@@ -143,7 +143,7 @@ void GfxContext::begin_grab(const EditorInput& input)
 {
     Expects(engine_context);
 
-    const auto& selected_ids = engine_context->world.editor_state().selected_ids;
+    const auto& selected_ids = engine_context->simulation.world.editor_state().selected_ids;
     if (selected_ids.empty())
     {
         ui_log("Grab (G): nothing selected");
@@ -162,13 +162,13 @@ void GfxContext::begin_grab(const EditorInput& input)
 
     for (const EntityId id : selected_ids)
     {
-        if (auto* entity = engine_context->world.find(id))
+        if (auto* entity = engine_context->simulation.world.find(id))
         {
             Pos3 start_pos = entity->transform.position;
 
             if (entity->body)
             {
-                if (auto* rb = engine_context->physics.try_body(*entity->body))
+                if (auto* rb = engine_context->simulation.world.try_body(*entity->body))
                 {
                     rb->grabbed = true;
                     rb->asleep = false;
@@ -202,7 +202,7 @@ void GfxContext::update_grab(const EditorInput& input)
         set_grab_constraint(c);
     }
 
-    const auto& cam = engine_context->world.editor_state().camera();
+    const auto& cam = engine_context->simulation.world.editor_state().camera();
 
     const auto vp_h = std::max(1.0f, viewport_img_size.y);
     const auto units_per_px = (2.0f * cam.distance * std::tan(0.5f * cam.fov_y)) / vp_h;

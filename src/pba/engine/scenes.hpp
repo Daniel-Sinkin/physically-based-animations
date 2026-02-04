@@ -3,6 +3,7 @@
 
 #include "pba/core/core_types.hpp"
 #include "pba/engine/scene_id.hpp"
+#include "pba/simulation/simulation_context.hpp"
 
 namespace ds_pba
 {
@@ -18,6 +19,6 @@ struct EngineContext;
 
 auto load_scene(EngineContext& e, SceneId id, bool pause = true) -> void;
 
-auto setup_active_scene(EngineContext& e) -> void;
+auto setup_active_scene(SimulationContext& e) -> void;
 
 }  // namespace ds_pba

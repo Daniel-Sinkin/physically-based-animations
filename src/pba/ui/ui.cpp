@@ -21,11 +21,11 @@ namespace
 {
 auto render_physics_debug_window(EngineContext& engine_context) -> void
 {
-    auto& physics_context = engine_context.physics;
+    auto& physics_context = engine_context.simulation.physics;
     auto& gfx_context = engine_context.gfx;
     auto& dbg = gfx_context.phys_debug;
 
-    auto& editor_state = engine_context.world.editor_state();
+    auto& editor_state = engine_context.simulation.world.editor_state();
 
     ImGui::Begin("Physics Debug");
 
@@ -327,10 +327,10 @@ auto apply_blender_style() -> void
 
 auto render_imgui_windows(EngineContext& engine_context) -> void
 {
-    PhysicsContext& physics_context = engine_context.physics;
+    PhysicsContext& physics_context = engine_context.simulation.physics;
     GfxContext& gfx_context = engine_context.gfx;
 
-    auto& world = engine_context.world;
+    auto& world = engine_context.simulation.world;
     auto& editor_state = world.editor_state();
     auto& cam = editor_state.camera();
 
@@ -499,7 +499,7 @@ auto render_imgui_windows(EngineContext& engine_context) -> void
                 auto p = rb.position;
                 if (ImGui::DragFloat3("Position", &p.x, 0.01f))
                 {
-                    engine_context.world.find(o.id)->transform.position = p;
+                    engine_context.simulation.world.find(o.id)->transform.position = p;
                 }
 
                 Quaternion& ori = rb.orientation;

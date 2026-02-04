@@ -27,7 +27,6 @@ struct GLFWwindow;
 
 namespace ds_pba
 {
-struct SceneContext;
 struct PhysicsContext;
 struct EngineContext;
 struct Raycast;

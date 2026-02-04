@@ -4,30 +4,31 @@
 #include "pba/engine/scenes.hpp"
 //
 #include "pba/engine/scene_id.hpp"
+#include "pba/simulation/simulation_context.hpp"
 
 #include <array>
 #include <gsl/string_span>
 
 namespace ds_pba
 {
-void setup_scene_attractors_and_repulsive_pivot(EngineContext& e) noexcept;
-void setup_scene_small_pyramid_projectiles_gravity(EngineContext& e) noexcept;
-void setup_scene_attractor_origin_no_gravity(EngineContext& e) noexcept;
-void setup_scene_attractor_origin_with_gravity(EngineContext& e) noexcept;
-void setup_scene_large_pyramid15_ground_gravity(EngineContext& e) noexcept;
-void setup_scene_pyramid3d_heavy_cube_drop(EngineContext& e) noexcept;
-void setup_scene_motors_elongated_no_gravity(EngineContext& e) noexcept;
-void setup_scene_nbody_sun_3_planets(EngineContext& e) noexcept;
-void setup_scene_nbody_three_body_equal(EngineContext& e) noexcept;
-void setup_scene_moving_attractor_circle(EngineContext& e) noexcept;
-void setup_scene_oscillating_uniform_force(EngineContext& e) noexcept;
-void setup_scene_inclined_plane(EngineContext& e) noexcept;
-void setup_scene_box_drop_container(EngineContext& e) noexcept;
-void setup_scene_projectile_wall(EngineContext& e) noexcept;
+void setup_scene_attractors_and_repulsive_pivot(SimulationContext& e) noexcept;
+void setup_scene_small_pyramid_projectiles_gravity(SimulationContext& e) noexcept;
+void setup_scene_attractor_origin_no_gravity(SimulationContext& e) noexcept;
+void setup_scene_attractor_origin_with_gravity(SimulationContext& e) noexcept;
+void setup_scene_large_pyramid15_ground_gravity(SimulationContext& e) noexcept;
+void setup_scene_pyramid3d_heavy_cube_drop(SimulationContext& e) noexcept;
+void setup_scene_motors_elongated_no_gravity(SimulationContext& e) noexcept;
+void setup_scene_nbody_sun_3_planets(SimulationContext& e) noexcept;
+void setup_scene_nbody_three_body_equal(SimulationContext& e) noexcept;
+void setup_scene_moving_attractor_circle(SimulationContext& e) noexcept;
+void setup_scene_oscillating_uniform_force(SimulationContext& e) noexcept;
+void setup_scene_inclined_plane(SimulationContext& e) noexcept;
+void setup_scene_box_drop_container(SimulationContext& e) noexcept;
+void setup_scene_projectile_wall(SimulationContext& e) noexcept;
 
 namespace
 {
-using SetupSceneFn = void (*)(EngineContext&) noexcept;
+using SetupSceneFn = void (*)(SimulationContext&) noexcept;
 
 struct Scene
 {
@@ -171,7 +172,7 @@ auto scene_description(SceneId id) noexcept -> std::string
     return s ? s->desc : "(invalid scene)";
 }
 
-void setup_scene_by_id(EngineContext& e, SceneId id) noexcept
+void setup_scene_by_id(SimulationContext& e, SceneId id) noexcept
 {
     const Scene* s = scene_ptr(id);
     if (s && s->setup)

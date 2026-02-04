@@ -198,7 +198,7 @@ auto GfxContext::render_to_viewport_objects(
 {
     Expects(engine_context);
 
-    const auto ents = engine_context->world.entities();
+    const auto ents = engine_context->simulation.world.entities();
     if (ents.empty())
     {
         return;
@@ -259,7 +259,7 @@ auto GfxContext::render_to_viewport() -> void
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     {
         const auto aspect = viewport_fbo.aspect_ratio();
-        const auto& cam = engine_context->world.editor_state().camera();
+        const auto& cam = engine_context->simulation.world.editor_state().camera();
         const auto V{cam.view_matrix()};
         const auto P{cam.proj_matrix(aspect)};
 
@@ -286,7 +286,7 @@ auto GfxContext::render_to_viewport_outline(
 {
     Expects(engine_context);
 
-    const auto& selected = engine_context->world.editor_state().selected_ids;
+    const auto& selected = engine_context->simulation.world.editor_state().selected_ids;
     if (selected.empty())
     {
         return;
@@ -294,7 +294,7 @@ auto GfxContext::render_to_viewport_outline(
 
     for (const EntityId id : selected)
     {
-        const Entity* sel = engine_context->world.find(id);
+        const Entity* sel = engine_context->simulation.world.find(id);
         if (!sel)
         {
             continue;
@@ -502,7 +502,7 @@ void GfxContext::append_contact_debug_lines_()
 {
     Expects(engine_context);
 
-    const auto& phys = engine_context->physics;
+    const auto& phys = engine_context->simulation.world;
 
     const f32 s = std::max(0.0f, phys_debug.contact_marker_size);
     const f32 nscale = std::max(0.0f, phys_debug.contact_normal_scale);
@@ -526,17 +526,17 @@ void GfxContext::append_selected_entity_debug_lines_()
 {
     Expects(engine_context);
 
-    const auto& selected = engine_context->world.editor_state().selected_ids;
+    const auto& selected = engine_context->simulation.world.editor_state().selected_ids;
     for (const EntityId id : selected)
     {
-        const Entity* entity = engine_context->world.find(id);
+        const Entity* entity = engine_context->simulation.world.find(id);
         if (!entity)
         {
             continue;
         }
 
         const auto* rigid_body =
-            entity->body ? engine_context->physics.try_body(*entity->body) : nullptr;
+            entity->body ? engine_context->simulation.world.try_body(*entity->body) : nullptr;
 
         const auto [com, ori, extent] = selected_entity_frame_(*entity, rigid_body);
 
