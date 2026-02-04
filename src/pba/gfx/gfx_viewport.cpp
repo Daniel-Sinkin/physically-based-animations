@@ -9,6 +9,7 @@
 #include "pba/core/format.hpp"  // IWYU pragma: keep
 #include "pba/engine/engine_context.hpp"
 #include "pba/gfx/gl_types.hpp"
+#include "pba/simulation/simulation_context.hpp"
 //
 #include <algorithm>
 #include <cmath>
@@ -68,13 +69,13 @@ namespace
     return r;
 }
 
-[[nodiscard]] auto try_entity_body(EngineContext& e, const Entity& ent) noexcept -> const RigidBody*
+[[nodiscard]] auto try_entity_body(SimulationContext& sim, const Entity& ent) noexcept -> const RigidBody*
 {
     if (!ent.body)
     {
         return nullptr;
     }
-    return e.physics.try_body(*ent.body);
+    return sim.physics.try_body(*ent.body);
 }
 
 [[nodiscard]] auto compute_entity_color(GfxContext& gfx, const Entity& ent) noexcept -> Color3
@@ -93,7 +94,7 @@ namespace
         return color;
     }
 
-    const RigidBody* rb = try_entity_body(*e, ent);
+    const RigidBody* rb = try_entity_body(e->simulation, ent);
     if (!rb || rb->is_static())
     {
         return color;
@@ -502,7 +503,7 @@ void GfxContext::append_contact_debug_lines_()
 {
     Expects(engine_context);
 
-    const auto& phys = engine_context->simulation.world;
+    const auto& phys = engine_context->simulation.physics;
 
     const f32 s = std::max(0.0f, phys_debug.contact_marker_size);
     const f32 nscale = std::max(0.0f, phys_debug.contact_normal_scale);
@@ -536,7 +537,7 @@ void GfxContext::append_selected_entity_debug_lines_()
         }
 
         const auto* rigid_body =
-            entity->body ? engine_context->simulation.world.try_body(*entity->body) : nullptr;
+            entity->body ? engine_context->simulation.physics.try_body(*entity->body) : nullptr;
 
         const auto [com, ori, extent] = selected_entity_frame_(*entity, rigid_body);
 

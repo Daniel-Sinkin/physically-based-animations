@@ -7,6 +7,7 @@
 #include "pba/core/format.hpp"  // IWYU pragma: keep
 #include "pba/core/math_types.hpp"
 #include "pba/engine/engine_context.hpp"
+#include "pba/simulation/simulation_context.hpp"
 #include "pba/ui/ui.hpp"
 
 namespace ds_pba
@@ -36,15 +37,15 @@ grab_constraint_from_key(const EditorInput& in) noexcept
     return GC::None;
 }
 
-void set_entity_and_body_position(EngineContext& e, EntityId id, const Pos3& pos) noexcept
+void set_entity_and_body_position(SimulationContext& sim, EntityId id, const Pos3& pos) noexcept
 {
-    if (auto* entity = e.world.find(id))
+    if (auto* entity = sim.world.find(id))
     {
         entity->transform.position = pos;
 
         if (entity->body)
         {
-            if (auto* rb = e.physics.try_body(*entity->body))
+            if (auto* rb = sim.physics.try_body(*entity->body))
             {
                 rb->position = pos;
             }
@@ -67,14 +68,14 @@ void GfxContext::cancel_grab()
     {
         if (auto* entity = engine_context->simulation.world.find(id); entity && entity->body)
         {
-            if (auto* rb = engine_context->simulation.world.try_body(*entity->body))
+            if (auto* rb = engine_context->simulation.physics.try_body(*entity->body))
             {
                 rb->grabbed = false;
                 rb->velocity = Dir3{};
                 rb->angular_velocity = Dir3{};
             }
         }
-        set_entity_and_body_position(*engine_context, id, start_pos);
+        set_entity_and_body_position(engine_context->simulation, id, start_pos);
     }
 
     editor.grab.active = false;
@@ -100,7 +101,7 @@ void GfxContext::confirm_grab()
         {
             if (entity->body)
             {
-                if (auto* rb = engine_context->simulation.world.try_body(*entity->body))
+                if (auto* rb = engine_context->simulation.physics.try_body(*entity->body))
                 {
                     rb->position = entity->transform.position;
                     rb->grabbed = false;
@@ -168,7 +169,7 @@ void GfxContext::begin_grab(const EditorInput& input)
 
             if (entity->body)
             {
-                if (auto* rb = engine_context->simulation.world.try_body(*entity->body))
+                if (auto* rb = engine_context->simulation.physics.try_body(*entity->body))
                 {
                     rb->grabbed = true;
                     rb->asleep = false;
@@ -230,7 +231,7 @@ void GfxContext::update_grab(const EditorInput& input)
 
     for (const auto& [id, start_pos] : grab.start_positions)
     {
-        set_entity_and_body_position(*engine_context, id, start_pos + delta);
+        set_entity_and_body_position(engine_context->simulation, id, start_pos + delta);
     }
 }
 

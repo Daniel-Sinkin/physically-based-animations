@@ -9,7 +9,7 @@
 #include "pba/core/format.hpp"  // IWYU pragma: keep
 #include "pba/core/math_types.hpp"
 #include "pba/engine/scenes.hpp"
-#include "pba/simulation.physics/physics_types.hpp"
+#include "pba/physics/physics_types.hpp"
 #include "pba/ui/ui.hpp"
 #include "pba/util/shutdown.hpp"
 //
@@ -19,58 +19,9 @@
 
 namespace ds_pba
 {
-namespace
-{
-
-[[nodiscard]] auto inv_inertia_body_box(f32 inv_mass, const Dir3& half_extents) noexcept
-    -> glm::mat3
-{
-    if (inv_mass == k_static_mass)
-    {
-        return glm::mat3(0.0f);
-    }
-
-    Expects(inv_mass > 0.0f);
-    if (inv_mass <= 0.0f)
-    {
-        return glm::mat3(0.0f);
-    }
-    const auto m = 1.0f / inv_mass;
-
-    const auto x = 2.0f * half_extents.x;
-    const auto y = 2.0f * half_extents.y;
-    const auto z = 2.0f * half_extents.z;
-
-    const auto Ixx = (m / 12.0f) * (y * y + z * z);
-    const auto Iyy = (m / 12.0f) * (x * x + z * z);
-    const auto Izz = (m / 12.0f) * (x * x + y * y);
-
-    glm::mat3 invI{0.0f};
-    invI[0][0] = (Ixx > 0.0f) ? (1.0f / Ixx) : 0.0f;
-    invI[1][1] = (Iyy > 0.0f) ? (1.0f / Iyy) : 0.0f;
-    invI[2][2] = (Izz > 0.0f) ? (1.0f / Izz) : 0.0f;
-    return invI;
-}
-
-[[nodiscard]] auto
-inv_inertia_world_from_body(const Quaternion& q, const glm::mat3& inv_inertia_body) noexcept
-    -> glm::mat3
-{
-    const glm::mat3 R{glm::mat3_cast(q)};
-    return R * inv_inertia_body * glm::transpose(R);
-}
-
-auto init_box_inertia(RigidBody& b) noexcept -> void
-{
-    b.inv_inertia_body = inv_inertia_body_box(b.inv_mass, b.half_extents);
-    b.inv_inertia_world = inv_inertia_world_from_body(b.orientation, b.inv_inertia_body);
-}
-
-}  // namespace
-
 auto EngineContext::setup() -> bool
 {
-    setup_active_scene();
+    setup_active_scene(simulation);
     accumulator = Duration{0.0};
     frame_time = Clock::now();
     simulation.physics.time = frame_time;
