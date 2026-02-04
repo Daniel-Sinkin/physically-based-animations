@@ -18,15 +18,15 @@ struct AccessorView
     usize count{};
 };
 
-[[nodiscard]] std::optional<MeshDataPN>
-load_gltf_mesh(const std::string& path, const Transform& preprocess);
+[[nodiscard]] auto load_gltf_mesh(const std::string& path, const Transform& preprocess)
+    -> std::optional<MeshDataPN>;
 
-[[nodiscard]] std::optional<MeshDataPN> load_model_mesh(std::string_view model_name);
+[[nodiscard]] auto load_model_mesh(std::string_view model_name) -> std::optional<MeshDataPN>;
 
 // Textured mesh variant (POSITION/NORMAL/TEXCOORD_0)
-[[nodiscard]] std::optional<MeshDataPNT>
-load_gltf_mesh_pnt(const std::string& path, const Transform& preprocess);
+[[nodiscard]] auto load_gltf_mesh_pnt(const std::string& path, const Transform& preprocess)
+    -> std::optional<MeshDataPNT>;
 
-[[nodiscard]] std::optional<MeshDataPNT> load_model_mesh_pnt(std::string_view model_name);
+[[nodiscard]] auto load_model_mesh_pnt(std::string_view model_name) -> std::optional<MeshDataPNT>;
 
 }  // namespace ds_pba

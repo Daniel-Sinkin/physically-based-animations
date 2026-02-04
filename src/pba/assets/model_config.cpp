@@ -10,14 +10,14 @@
 
 namespace ds_pba
 {
-void to_json(nlohmann::json& j, const ModelConfig& c)
+auto to_json(nlohmann::json& j, const ModelConfig& c) -> void
 {
     j = nlohmann::json::object();
     j["name"] = c.name;
     j["transform"] = c.transform;
 }
 
-void from_json(const nlohmann::json& j, ModelConfig& c)
+auto from_json(const nlohmann::json& j, ModelConfig& c) -> void
 {
     c.name = j.at("name").get<std::string>();
     c.transform = j.at("transform").get<Transform>();
@@ -49,7 +49,7 @@ std::optional<nlohmann::json> read_json_file(const std::filesystem::path& p)
     return j;
 }
 
-bool write_json_file(const std::filesystem::path& p, const nlohmann::json& j)
+auto write_json_file(const std::filesystem::path& p, const nlohmann::json& j) -> bool
 {
     std::ofstream f(p);
     if (!f.is_open())
@@ -83,14 +83,15 @@ bool write_json_file(const std::filesystem::path& p, const nlohmann::json& j)
     return true;
 }
 
-std::string model_name_from_dir(const std::filesystem::path& model_dir)
+auto model_name_from_dir(const std::filesystem::path& model_dir) -> std::string
 {
     return model_dir.filename().string();
 }
 
 }  // namespace
 
-std::optional<ModelConfig> load_or_create_model_config(const std::filesystem::path& model_dir)
+auto load_or_create_model_config(const std::filesystem::path& model_dir)
+    -> std::optional<ModelConfig>
 {
     namespace fs = std::filesystem;
 

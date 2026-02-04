@@ -6,6 +6,7 @@
 #include "pba/engine/scene_id.hpp"
 
 #include <array>
+#include <gsl/string_span>
 
 namespace ds_pba
 {
@@ -130,7 +131,7 @@ static_assert(
     "k_scenes must have one Scene per SceneId (excluding Count)."
 );
 
-constexpr bool scenes_are_consistent() noexcept
+constexpr auto scenes_are_consistent() noexcept -> bool
 {
     for (usize i{0zu}; i < k_scenes.size(); ++i)
     {
@@ -147,7 +148,7 @@ constexpr bool scenes_are_consistent() noexcept
 }
 static_assert(scenes_are_consistent(), "Scene table order or ids are inconsistent.");
 
-constexpr const Scene* scene_ptr(SceneId id) noexcept
+constexpr auto scene_ptr(SceneId id) noexcept -> const Scene*
 {
     const usize idx = scene_index(id);
     if (idx >= k_scenes.size())
@@ -158,13 +159,13 @@ constexpr const Scene* scene_ptr(SceneId id) noexcept
 }
 }  // namespace
 
-const char* scene_name(SceneId id) noexcept
+auto scene_name(SceneId id) noexcept -> std::string
 {
     const Scene* s = scene_ptr(id);
     return s ? s->name : "(invalid scene)";
 }
 
-const char* scene_description(SceneId id) noexcept
+auto scene_description(SceneId id) noexcept -> std::string
 {
     const Scene* s = scene_ptr(id);
     return s ? s->desc : "(invalid scene)";

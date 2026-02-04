@@ -43,7 +43,7 @@ struct PhysicsContext
     std::unordered_map<ContactKey, ContactCacheEntry, ContactKeyHash> contact_cache{};
 
     // Per-Physics Step scratch buffer, cheap to clear
-    ArenaAllocator contact_arena{1024 * 1024 * 1024};
+    ArenaAllocator contact_arena{16 * 1024 * sizeof(Contact)};
 
     struct DebugContact
     {
@@ -62,7 +62,9 @@ struct PhysicsContext
     Duration debug_energy_sample_accum{};
     std::vector<f32> debug_total_kinetic_energy_history{};
 
-    void step();
+    auto step() -> void;
+
+    auto clear() -> void;
 };
 
 }  // namespace ds_pba

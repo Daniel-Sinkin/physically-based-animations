@@ -13,7 +13,7 @@ namespace
 {
 
 template <usize N>
-MeshDataPN mesh_pn_from_array(const std::array<MeshV_PN, N>& a)
+auto mesh_pn_from_array(const std::array<MeshV_PN, N>& a) -> MeshDataPN
 {
     MeshDataPN out{};
     out.vertices.reserve(N);
@@ -23,7 +23,7 @@ MeshDataPN mesh_pn_from_array(const std::array<MeshV_PN, N>& a)
 
 }  // namespace
 
-MeshDataPN create_cube_mesh()
+auto create_cube_mesh() -> MeshDataPN
 {
     constexpr auto h = 0.5f;
     // clang-format off
@@ -75,7 +75,7 @@ MeshDataPN create_cube_mesh()
     return mesh_pn_from_array(verts);
 }
 
-MeshDataPN create_quad_mesh()
+auto create_quad_mesh() -> MeshDataPN
 {
     constexpr auto h = 0.5f;
     // clang-format off
@@ -92,7 +92,7 @@ MeshDataPN create_quad_mesh()
     return mesh_pn_from_array(verts);
 }
 
-MeshDataPN create_pyramid_mesh()
+auto create_pyramid_mesh() -> MeshDataPN
 {
     static constexpr auto n_xy{0.8944271909999159f};  // 2 / sqrt(5)
     static constexpr auto n_z{0.4472135954999579f};   // 1 / sqrt(5)
@@ -134,7 +134,7 @@ MeshDataPN create_pyramid_mesh()
     return mesh_pn_from_array(verts);
 }
 
-MeshDataPN create_cylinder_mesh(int n_segments, f32 radius, f32 height)
+auto create_cylinder_mesh(int n_segments, f32 radius, f32 height) -> MeshDataPN
 {
     {
         Expects(n_segments >= 3);
@@ -224,7 +224,7 @@ MeshDataPN create_cylinder_mesh(int n_segments, f32 radius, f32 height)
     return out;
 }
 
-MeshDataPN create_sphere_mesh(int lat, int lon, f32 radius)
+auto create_sphere_mesh(int lat, int lon, f32 radius) -> MeshDataPN
 {
     Expects(lat >= 2 && lon >= 3);
     Expects(radius > 0.0f);
@@ -335,7 +335,7 @@ MeshDataPN create_sphere_mesh(int lat, int lon, f32 radius)
     return out;
 }
 
-MeshDataPColor create_grid_mesh(GridSettings grid)
+auto create_grid_mesh(GridSettings grid) -> MeshDataPColor
 {
     {
         Expects(grid.n_lines_per_side >= 1 && "GridSettings.n_lines_per_side must be >= 1");

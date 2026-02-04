@@ -168,8 +168,6 @@ struct ColEntry
     ImGuiCol col;
 };
 
-// Keep this list explicit and extend as needed.
-// Names match ImGuiCol enum tokens without the "ImGuiCol_" prefix.
 static constexpr ColEntry kColMap[] = {
     {"Text", ImGuiCol_Text},
     {"TextDisabled", ImGuiCol_TextDisabled},
@@ -304,39 +302,62 @@ auto apply_theme(const UiTheme& theme) -> void
         c[a.slot] = ImGui::ColorConvertU32ToFloat4(imgui_u32);
     }
 
-    if (theme.has_window_rounding)
-        style.WindowRounding = theme.window_rounding;
-    if (theme.has_child_rounding)
-        style.ChildRounding = theme.child_rounding;
-    if (theme.has_popup_rounding)
-        style.PopupRounding = theme.popup_rounding;
-    if (theme.has_frame_rounding)
-        style.FrameRounding = theme.frame_rounding;
-    if (theme.has_tab_rounding)
-        style.TabRounding = theme.tab_rounding;
-    if (theme.has_grab_rounding)
-        style.GrabRounding = theme.grab_rounding;
-    if (theme.has_scrollbar_rounding)
-        style.ScrollbarRounding = theme.scrollbar_rounding;
+    struct ScalarStyleEntry
+    {
+        bool UiTheme::* has{};
+        f32 UiTheme::* src{};
+        f32 ImGuiStyle::* dst{};
+    };
 
-    if (theme.has_window_border_size)
-        style.WindowBorderSize = theme.window_border_size;
-    if (theme.has_child_border_size)
-        style.ChildBorderSize = theme.child_border_size;
-    if (theme.has_popup_border_size)
-        style.PopupBorderSize = theme.popup_border_size;
-    if (theme.has_frame_border_size)
-        style.FrameBorderSize = theme.frame_border_size;
+    struct Vec2StyleEntry
+    {
+        bool UiTheme::* has{};
+        ImVec2 UiTheme::* src{};
+        ImVec2 ImGuiStyle::* dst{};
+    };
 
-    if (theme.has_frame_padding)
-        style.FramePadding = theme.frame_padding;
-    if (theme.has_item_spacing)
-        style.ItemSpacing = theme.item_spacing;
-    if (theme.has_item_inner_spacing)
-        style.ItemInnerSpacing = theme.item_inner_spacing;
+    // clang-format off
+    static constexpr ScalarStyleEntry kScalarStyle[] = {
+        // rounding
+          // Has                              // src                          // dst
+        { &UiTheme::has_window_rounding,      &UiTheme::window_rounding,      &ImGuiStyle::WindowRounding      },
+        { &UiTheme::has_child_rounding,       &UiTheme::child_rounding,       &ImGuiStyle::ChildRounding       },
+        { &UiTheme::has_popup_rounding,       &UiTheme::popup_rounding,       &ImGuiStyle::PopupRounding       },
+        { &UiTheme::has_frame_rounding,       &UiTheme::frame_rounding,       &ImGuiStyle::FrameRounding       },
+        { &UiTheme::has_tab_rounding,         &UiTheme::tab_rounding,         &ImGuiStyle::TabRounding         },
+        { &UiTheme::has_grab_rounding,        &UiTheme::grab_rounding,        &ImGuiStyle::GrabRounding        },
+        { &UiTheme::has_scrollbar_rounding,   &UiTheme::scrollbar_rounding,   &ImGuiStyle::ScrollbarRounding   },
+        // borders
+        { &UiTheme::has_window_border_size,   &UiTheme::window_border_size,   &ImGuiStyle::WindowBorderSize    },
+        { &UiTheme::has_child_border_size,    &UiTheme::child_border_size,    &ImGuiStyle::ChildBorderSize     },
+        { &UiTheme::has_popup_border_size,    &UiTheme::popup_border_size,    &ImGuiStyle::PopupBorderSize     },
+        { &UiTheme::has_frame_border_size,    &UiTheme::frame_border_size,    &ImGuiStyle::FrameBorderSize     },
+    };
+    static constexpr Vec2StyleEntry kVec2Style[] = {
+        { &UiTheme::has_frame_padding,        &UiTheme::frame_padding,        &ImGuiStyle::FramePadding        },
+        { &UiTheme::has_item_spacing,         &UiTheme::item_spacing,         &ImGuiStyle::ItemSpacing         },
+        { &UiTheme::has_item_inner_spacing,   &UiTheme::item_inner_spacing,   &ImGuiStyle::ItemInnerSpacing    },
+    };
+    // clang-format on
 
-    const ImGuiIO& io{ImGui::GetIO()};
-    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+    for (const auto& e : kScalarStyle)
+    {
+        if (theme.*(e.has))
+        {
+            style.*(e.dst) = theme.*(e.src);
+        }
+    }
+
+    for (const auto& e : kVec2Style)
+    {
+        if (theme.*(e.has))
+        {
+            style.*(e.dst) = theme.*(e.src);
+        }
+    }
+
+    const auto& imgui_io = ImGui::GetIO();
+    if (imgui_io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
     {
         style.WindowRounding = 0.0f;
         c[ImGuiCol_WindowBg].w = 1.0f;
@@ -374,38 +395,37 @@ auto to_json(nlohmann::json& j, const UiTheme& theme) -> void
 
     nlohmann::json style = nlohmann::json::object();
 
-    if (theme.has_window_rounding)
-        style["WindowRounding"] = theme.window_rounding;
-    if (theme.has_child_rounding)
-        style["ChildRounding"] = theme.child_rounding;
-    if (theme.has_popup_rounding)
-        style["PopupRounding"] = theme.popup_rounding;
-    if (theme.has_frame_rounding)
-        style["FrameRounding"] = theme.frame_rounding;
-    if (theme.has_tab_rounding)
-        style["TabRounding"] = theme.tab_rounding;
-    if (theme.has_grab_rounding)
-        style["GrabRounding"] = theme.grab_rounding;
-    if (theme.has_scrollbar_rounding)
-        style["ScrollbarRounding"] = theme.scrollbar_rounding;
+    // clang-format off
+    if (theme.has_window_rounding)    style["WindowRounding"]    = theme.window_rounding;
+    if (theme.has_child_rounding)     style["ChildRounding"]     = theme.child_rounding;
+    if (theme.has_popup_rounding)     style["PopupRounding"]     = theme.popup_rounding;
+    if (theme.has_frame_rounding)     style["FrameRounding"]     = theme.frame_rounding;
+    if (theme.has_tab_rounding)       style["TabRounding"]       = theme.tab_rounding;
+    if (theme.has_grab_rounding)      style["GrabRounding"]      = theme.grab_rounding;
+    if (theme.has_scrollbar_rounding) style["ScrollbarRounding"] = theme.scrollbar_rounding;
 
-    if (theme.has_window_border_size)
-        style["WindowBorderSize"] = theme.window_border_size;
-    if (theme.has_child_border_size)
-        style["ChildBorderSize"] = theme.child_border_size;
-    if (theme.has_popup_border_size)
-        style["PopupBorderSize"] = theme.popup_border_size;
-    if (theme.has_frame_border_size)
-        style["FrameBorderSize"] = theme.frame_border_size;
+    if (theme.has_window_border_size) style["WindowBorderSize"]  = theme.window_border_size;
+    if (theme.has_child_border_size)  style["ChildBorderSize"]   = theme.child_border_size;
+    if (theme.has_popup_border_size)  style["PopupBorderSize"]   = theme.popup_border_size;
+    if (theme.has_frame_border_size)  style["FrameBorderSize"]   = theme.frame_border_size;
+    // clang-format on
 
     if (theme.has_frame_padding)
+    {
         style["FramePadding"] =
             nlohmann::json::array({theme.frame_padding.x, theme.frame_padding.y});
+    }
+
     if (theme.has_item_spacing)
+    {
         style["ItemSpacing"] = nlohmann::json::array({theme.item_spacing.x, theme.item_spacing.y});
+    }
+
     if (theme.has_item_inner_spacing)
+    {
         style["ItemInnerSpacing"] =
             nlohmann::json::array({theme.item_inner_spacing.x, theme.item_inner_spacing.y});
+    }
 
     if (!style.empty())
     {

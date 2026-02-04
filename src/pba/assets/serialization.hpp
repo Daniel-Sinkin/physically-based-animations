@@ -13,12 +13,12 @@ namespace nlohmann
 template <>
 struct adl_serializer<glm::vec2>
 {
-    static void to_json(json& j, const glm::vec2& v)
+    static auto to_json(json& j, const glm::vec2& v) -> void
     {
         j = json::array({v.x, v.y});
     }
 
-    static void from_json(const json& j, glm::vec2& v)
+    static auto from_json(const json& j, glm::vec2& v) -> void
     {
         if (!j.is_array() || j.size() != 2)
         {
@@ -32,12 +32,12 @@ struct adl_serializer<glm::vec2>
 template <>
 struct adl_serializer<glm::vec3>
 {
-    static void to_json(json& j, const glm::vec3& v)
+    static auto to_json(json& j, const glm::vec3& v) -> void
     {
         j = json::array({v.x, v.y, v.z});
     }
 
-    static void from_json(const json& j, glm::vec3& v)
+    static auto from_json(const json& j, glm::vec3& v) -> void
     {
         if (!j.is_array() || j.size() != 3)
         {
@@ -52,12 +52,12 @@ struct adl_serializer<glm::vec3>
 template <>
 struct adl_serializer<glm::quat>
 {
-    static void to_json(json& j, const glm::quat& q)
+    static auto to_json(json& j, const glm::quat& q) -> void
     {
         j = json::array({q.w, q.x, q.y, q.z});
     }
 
-    static void from_json(const json& j, glm::quat& q)
+    static auto from_json(const json& j, glm::quat& q) -> void
     {
         if (!j.is_array() || j.size() != 4)
         {
@@ -75,7 +75,7 @@ struct adl_serializer<glm::quat>
 namespace ds_pba
 {
 
-inline void to_json(nlohmann::json& j, const Transform& t)
+inline auto to_json(nlohmann::json& j, const Transform& t) -> void
 {
     j = nlohmann::json::object();
     j["position"] = t.position;
@@ -83,7 +83,7 @@ inline void to_json(nlohmann::json& j, const Transform& t)
     j["orientation"] = t.orientation;
 }
 
-inline void from_json(const nlohmann::json& j, Transform& t)
+inline auto from_json(const nlohmann::json& j, Transform& t) -> void
 {
     if (!j.is_object())
     {

@@ -12,6 +12,7 @@
 #include "pba/physics/solver.hpp"
 //
 #include <chrono>
+#include <print>
 #include <vector>
 
 namespace ds_pba
@@ -76,9 +77,8 @@ auto PhysicsContext::step() -> void
     {  // Setup debug info for this step
         debug_contacts.clear();
         debug_contacts.reserve(contact_arena.used() / sizeof(Contact));
-        for (usize i{0zu}; i < contact_arena.used() / sizeof(Contact); ++i)
+        for (const auto& contact : contact_arena.as_span<Contact>())
         {
-            auto& contact = *reinterpret_cast<Contact*>(contact_arena.data() + i * sizeof(Contact));
             const RigidBody& a = bodies[contact.a_idx];
             const RigidBody& b = bodies[contact.b_idx];
             debug_contacts.push_back(
@@ -95,9 +95,9 @@ auto PhysicsContext::step() -> void
     }
 
     // Pull warm-start state from cache into contacts before warm start + solve.
-    for (usize i{0zu}; i < contact_arena.used() / sizeof(Contact); ++i)
+    // for (usize i{0zu}; i < contact_arena.used() / sizeof(Contact); ++i)
+    for (auto& contact : contact_arena.as_span<Contact>())
     {
-        auto& contact = *reinterpret_cast<Contact*>(contact_arena.data() + i * sizeof(Contact));
         if (!contact.allow_warm_start)
         {
             continue;
@@ -115,9 +115,8 @@ auto PhysicsContext::step() -> void
         }
     }
 
-    for (usize i{0zu}; i < contact_arena.used() / sizeof(Contact); ++i)
+    for (auto& contact : contact_arena.as_span<Contact>())
     {
-        auto& contact = *reinterpret_cast<Contact*>(contact_arena.data() + i * sizeof(Contact));
         if (!contact.allow_warm_start)
         {
             continue;
@@ -134,10 +133,8 @@ auto PhysicsContext::step() -> void
     contact_cache.clear();
     contact_cache.reserve((contact_arena.used() / sizeof(Contact)) * 2zu);
 
-    for (usize i{0zu}; i < contact_arena.used(); ++i)
+    for (const auto& contact : contact_arena.as_span<Contact>())
     {
-        const auto& contact =
-            *reinterpret_cast<Contact*>(contact_arena.data() + i * sizeof(Contact));
         if (!contact.allow_warm_start)
         {
             continue;
@@ -180,6 +177,18 @@ auto PhysicsContext::step() -> void
         }
     }
     time = time + std::chrono::duration_cast<Clock::duration>(dt);
+}
+
+auto PhysicsContext::clear() -> void
+{
+    bodies.clear();
+    simple_forces.clear();
+    complex_forces.clear();
+    contact_cache.clear();
+    debug_contacts.clear();
+    debug_total_kinetic_energy = 0.0f;
+    debug_energy_sample_accum = Duration{0.0};
+    debug_total_kinetic_energy_history.clear();
 }
 
 }  // namespace ds_pba

@@ -35,8 +35,7 @@ auto integrate_orientation(const Quaternion& q, const Dir3& omega_world, f32 dt)
     -> Quaternion
 {
     const Quaternion wq{0.0f, omega_world.x, omega_world.y, omega_world.z};
-    const Quaternion out{q + (0.5f * dt) * (wq * q)};
-    return glm::normalize(out);
+    return glm::normalize(q + (0.5f * dt) * (wq * q));
 }
 
 auto inv_inertia_world_from_body(const Quaternion& q, const glm::mat3& inv_inertia_body) noexcept
@@ -274,11 +273,11 @@ auto integrate_forces(std::span<RigidBody> bodies, f32 dt_s) noexcept -> void
             continue;
         }
         // (linear) velocity' = F / m
-        const Dir3 a{b.force_accum * b.inv_mass};
+        const auto a = b.force_accum * b.inv_mass;
         b.velocity += a * dt_s;
 
         // omega' = angular velocity' = I^-1 * torque
-        const Dir3 alpha{b.inv_inertia_world * b.torque_accum};
+        const auto alpha = b.inv_inertia_world * b.torque_accum;
         b.angular_velocity += alpha * dt_s;
     }
 }
@@ -314,16 +313,16 @@ auto warm_start_contact(std::span<RigidBody> bodies, Contact& contact) noexcept 
         return;
     }
 
-    const Dir3 n{contact.n};
-    const Dir3 r_a{contact.p - a.position};
-    const Dir3 r_b{contact.p - b.position};
+    const auto normal = contact.n;
+    const auto r_a = contact.p - a.position;
+    const auto r_b = contact.p - b.position;
 
     constexpr auto warmstart_scale = 1.0f;
     contact.lambda_n = std::clamp(contact.lambda_n, 0.0f, 50.0f);
     contact.lambda_t = std::clamp(contact.lambda_t, -50.0f, 50.0f);
     if (contact.lambda_n > 0.0f)
     {
-        const Dir3 Jn{warmstart_scale * contact.lambda_n * n};
+        const Dir3 Jn{warmstart_scale * contact.lambda_n * normal};
 
         if (!a.is_static())
         {
@@ -368,12 +367,11 @@ get_velocity_at_world_point(const RigidBody& b, const Pos3& world_p) noexcept ->
 }
 
 auto solve_velocity_constraints(
-    std::span<RigidBody> bodies, ArenaAllocator& contacts, f32 dt_s
+    std::span<RigidBody> bodies, ArenaAllocator& contact_arena, f32 dt_s
 ) noexcept -> void
 {
-    for (usize i{0zu}; i < contacts.used() / sizeof(Contact); ++i)
+    for (auto& contact : contact_arena.as_span<Contact>())
     {
-        auto& contact = *reinterpret_cast<Contact*>(contacts.data() + i * sizeof(Contact));
         auto& a = bodies[contact.a_idx];
         auto& b = bodies[contact.b_idx];
 
@@ -402,9 +400,8 @@ auto solve_velocity_constraints(
 
     for (usize i{0zu}; i < k_solver_iterations; ++i)
     {
-        for (usize k{0zu}; k < contacts.used() / sizeof(Contact); ++k)
+        for (auto& contact : contact_arena.as_span<Contact>())
         {
-            auto& contact = *reinterpret_cast<Contact*>(contacts.data() + k * sizeof(Contact));
             auto& a{bodies[contact.a_idx]};
             auto& b{bodies[contact.b_idx]};
             if (a.is_static() && b.is_static())
@@ -427,14 +424,13 @@ auto solve_velocity_constraints(
     }
 }
 
-auto solve_position_constraints(std::span<RigidBody> bodies, ArenaAllocator& contacts) noexcept
+auto solve_position_constraints(std::span<RigidBody> bodies, ArenaAllocator& contact_arena) noexcept
     -> void
 {
     for (usize i{0zu}; i < k_position_iterations; ++i)
     {
-        for (usize k{0zu}; k < contacts.used() / sizeof(Contact); ++k)
+        for (auto& contact : contact_arena.as_span<Contact>())
         {
-            auto& contact = *reinterpret_cast<Contact*>(contacts.data() + k * sizeof(Contact));
             auto& a = bodies[contact.a_idx];
             auto& b = bodies[contact.b_idx];
 
@@ -482,14 +478,15 @@ auto apply_sleep_and_damping(std::span<RigidBody> bodies, f32 dt_s) noexcept -> 
             continue;
         }
 
-        const f32 v2{glm::dot(b.velocity, b.velocity)};
-        const f32 w2{glm::dot(b.angular_velocity, b.angular_velocity)};
+        const auto v2 = glm::dot(b.velocity, b.velocity);
+        const auto w2 = glm::dot(b.angular_velocity, b.angular_velocity);
 
-        const bool is_slow =
-            (v2 < k_linear_sleep_speed_threshold * k_linear_sleep_speed_threshold)
-            && (w2 < k_angular_sleep_speed_threshold * k_angular_sleep_speed_threshold);
+        auto v_lim = k_linear_sleep_speed_threshold;
+        auto w_lim = k_angular_sleep_speed_threshold;
+        const auto velo_slow = v2 < v_lim * v_lim;
+        const auto angular_velo_slow = w2 < w_lim * w_lim;
 
-        if (is_slow)
+        if (velo_slow && angular_velo_slow)
         {
             ++b.sleep_frames;
             if (b.sleep_frames > 60)

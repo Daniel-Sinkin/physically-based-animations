@@ -74,7 +74,7 @@ using Duration = std::chrono::duration<f64>;
 
 template <typename T>
     requires(std::unsigned_integral<T>)
-[[nodiscard]] constexpr bool is_power_of_two(T x) noexcept
+[[nodiscard]] constexpr auto is_power_of_two(T x) noexcept -> bool
 {
     return x != T{0} && (x & (x - T{1})) == T{0};
 }

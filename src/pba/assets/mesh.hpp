@@ -7,11 +7,10 @@
 
 namespace ds_pba
 {
-[[nodiscard]] MeshDataPN create_cube_mesh();
-[[nodiscard]] MeshDataPN create_quad_mesh();
-[[nodiscard]] MeshDataPN create_pyramid_mesh();
-
-[[nodiscard]] MeshDataPN create_cylinder_mesh(int n_segments, f32 radius, f32 height);
-[[nodiscard]] MeshDataPN create_sphere_mesh(int n_lat, int n_lon, f32 radius);
-[[nodiscard]] MeshDataPColor create_grid_mesh(GridSettings grid);
+[[nodiscard]] auto create_cube_mesh() -> MeshDataPN;
+[[nodiscard]] auto create_quad_mesh() -> MeshDataPN;
+[[nodiscard]] auto create_pyramid_mesh() -> MeshDataPN;
+[[nodiscard]] auto create_cylinder_mesh(int n_segments, f32 radius, f32 height) -> MeshDataPN;
+[[nodiscard]] auto create_sphere_mesh(int n_lat, int n_lon, f32 radius) -> MeshDataPN;
+[[nodiscard]] auto create_grid_mesh(GridSettings grid) -> MeshDataPColor;
 }  // namespace ds_pba

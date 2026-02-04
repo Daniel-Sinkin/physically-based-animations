@@ -4,6 +4,7 @@
 #include "pba/scene/world_types.hpp"
 
 #include <filesystem>
+#include <gsl/string_span>
 #include <json.hpp>
 #include <optional>
 #include <string>
@@ -19,7 +20,7 @@ enum class ModelConfigError
     ConfigWriteError,
 };
 
-[[nodiscard]] constexpr const char* to_string(ModelConfigError e) noexcept
+[[nodiscard]] constexpr auto to_string(ModelConfigError e) noexcept -> czstring
 {
     switch (e)
     {
@@ -43,11 +44,11 @@ struct ModelConfig
     Transform transform{};
 };
 
-void to_json(nlohmann::json& j, const ModelConfig& c);
-void from_json(const nlohmann::json& j, ModelConfig& c);
+auto to_json(nlohmann::json& j, const ModelConfig& c) -> void;
+auto from_json(const nlohmann::json& j, ModelConfig& c) -> void;
 
 // Returns nullopt on any error (logs internally)
-[[nodiscard]] std::optional<ModelConfig>
-load_or_create_model_config(const std::filesystem::path& model_dir);
+[[nodiscard]] auto load_or_create_model_config(const std::filesystem::path& model_dir)
+    -> std::optional<ModelConfig>;
 
 }  // namespace ds_pba

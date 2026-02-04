@@ -41,7 +41,7 @@ struct TextureLoadOptions
     bool force_rgba{true};
 };
 
-[[nodiscard]] std::optional<ImageRGBA8>
-load_image_rgba8(const std::filesystem::path& path, TextureLoadOptions opt = {});
+[[nodiscard]] auto load_image_rgba8(const std::filesystem::path& path, TextureLoadOptions opt = {})
+    -> std::optional<ImageRGBA8>;
 
 }  // namespace ds_pba

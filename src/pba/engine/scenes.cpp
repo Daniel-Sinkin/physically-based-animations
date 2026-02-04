@@ -10,23 +10,14 @@
 namespace ds_pba
 {
 // Defined in scenes_table.cpp (not public API)
-void setup_scene_by_id(EngineContext& e, SceneId id) noexcept;
+auto setup_scene_by_id(EngineContext& e, SceneId id) noexcept -> void;
 
 namespace
 {
 auto reset_engine_world(EngineContext& e) noexcept -> void
 {
     e.world.clear();
-
-    e.physics.bodies.clear();
-    e.physics.simple_forces.clear();
-    e.physics.complex_forces.clear();
-    e.physics.contact_cache.clear();
-
-    e.physics.debug_contacts.clear();
-    e.physics.debug_total_kinetic_energy = 0.0f;
-    e.physics.debug_energy_sample_accum = Duration{0.0};
-    e.physics.debug_total_kinetic_energy_history.clear();
+    e.physics.clear();
 }
 }  // namespace
 

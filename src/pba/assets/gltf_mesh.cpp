@@ -23,8 +23,8 @@ namespace ds_pba
 namespace
 {
 
-static std::optional<std::filesystem::path>
-find_model_gltf_file(const std::filesystem::path& model_dir)
+static auto find_model_gltf_file(const std::filesystem::path& model_dir)
+    -> std::optional<std::filesystem::path>
 {
     namespace fs = std::filesystem;
     if (!fs::exists(model_dir) || !fs::is_directory(model_dir))
@@ -71,8 +71,9 @@ find_model_gltf_file(const std::filesystem::path& model_dir)
     return pick(gltf);
 }
 
-static glm::vec3
+static auto
 read_vec3_f32_strided(not_null<const std::byte*> base, usize stride, usize stride_offset) noexcept
+    -> glm::vec3
 {
     {
         Expects(stride >= 12zu);
@@ -85,21 +86,22 @@ read_vec3_f32_strided(not_null<const std::byte*> base, usize stride, usize strid
     return glm::vec3{x, y, z};
 }
 
-static glm::vec3 face_normal(const glm::vec3& p0, const glm::vec3& p1, const glm::vec3& p2) noexcept
+static auto face_normal(const glm::vec3& p0, const glm::vec3& p1, const glm::vec3& p2) noexcept
+    -> glm::vec3
 {
     return safe_normalize(glm::cross(p1 - p0, p2 - p0));
 }
 
 template <class T>
-static T read_unaligned(not_null<const std::byte*> p) noexcept
+static auto read_unaligned(not_null<const std::byte*> p) noexcept -> T
 {
     T v{};
     std::memcpy(&v, p.get(), sizeof(T));
     return v;
 }
 
-static std::optional<std::vector<u32>>
-read_indices_u32(const tinygltf::Model& model, int accessor_index)
+static auto read_indices_u32(const tinygltf::Model& model, int accessor_index)
+    -> std::optional<std::vector<u32>>
 {
     if (accessor_index < 0)
     {
@@ -204,7 +206,8 @@ read_indices_u32(const tinygltf::Model& model, int accessor_index)
     return out;
 }
 
-static std::optional<AccessorView> get_vec3_f32_view(const tinygltf::Model& m, int accessor_index)
+static auto get_vec3_f32_view(const tinygltf::Model& m, int accessor_index)
+    -> std::optional<AccessorView>
 {
     if (accessor_index < 0 || accessor_index >= static_cast<int>(m.accessors.size()))
     {
@@ -279,7 +282,8 @@ struct Vec2AccessorView
     bool normalized{};
 };
 
-static std::optional<Vec2AccessorView> get_vec2_view(const tinygltf::Model& m, int accessor_index)
+static auto get_vec2_view(const tinygltf::Model& m, int accessor_index)
+    -> std::optional<Vec2AccessorView>
 {
     if (accessor_index < 0 || accessor_index >= static_cast<int>(m.accessors.size()))
     {
@@ -356,7 +360,7 @@ static std::optional<Vec2AccessorView> get_vec2_view(const tinygltf::Model& m, i
     };
 }
 
-static glm::vec2 read_vec2_as_f32(const Vec2AccessorView& v, usize i)
+static auto read_vec2_as_f32(const Vec2AccessorView& v, usize i) -> glm::vec2
 {
     const std::byte* loc = v.base + i * v.stride;
 
@@ -404,7 +408,7 @@ static glm::vec2 read_vec2_as_f32(const Vec2AccessorView& v, usize i)
     }
 }
 
-static std::optional<tinygltf::Model> load_tinygltf_model(const std::string& path)
+static auto load_tinygltf_model(const std::string& path) -> std::optional<tinygltf::Model>
 {
     tinygltf::Model model{};
     std::string err{};
@@ -448,7 +452,8 @@ static std::optional<tinygltf::Model> load_tinygltf_model(const std::string& pat
 
 }  // namespace
 
-std::optional<MeshDataPN> load_gltf_mesh(const std::string& path, const Transform& preprocess)
+auto load_gltf_mesh(const std::string& path, const Transform& preprocess)
+    -> std::optional<MeshDataPN>
 {
     const ScopeTimer timer{path};
 
@@ -646,7 +651,7 @@ std::optional<MeshDataPN> load_gltf_mesh(const std::string& path, const Transfor
     return MeshDataPN{.vertices = verts};
 }
 
-std::optional<MeshDataPN> load_model_mesh(std::string_view model_name)
+auto load_model_mesh(std::string_view model_name) -> std::optional<MeshDataPN>
 {
     namespace fs = std::filesystem;
     const fs::path model_dir = fs::path{k_fp_assets} / k_fp_assets_models / model_name;
@@ -669,7 +674,8 @@ std::optional<MeshDataPN> load_model_mesh(std::string_view model_name)
     return load_gltf_mesh(path, cfg_opt->transform);
 }
 
-std::optional<MeshDataPNT> load_gltf_mesh_pnt(const std::string& path, const Transform& preprocess)
+auto load_gltf_mesh_pnt(const std::string& path, const Transform& preprocess)
+    -> std::optional<MeshDataPNT>
 {
     const ScopeTimer timer{path};
 
@@ -910,7 +916,7 @@ std::optional<MeshDataPNT> load_gltf_mesh_pnt(const std::string& path, const Tra
     return MeshDataPNT{.vertices = verts};
 }
 
-std::optional<MeshDataPNT> load_model_mesh_pnt(std::string_view model_name)
+auto load_model_mesh_pnt(std::string_view model_name) -> std::optional<MeshDataPNT>
 {
     namespace fs = std::filesystem;
     const auto model_dir = fs::path{k_fp_assets} / k_fp_assets_models / model_name;

@@ -6,6 +6,7 @@
 #include <cassert>
 #include <cstddef>
 #include <memory>
+#include <span>
 #include <type_traits>
 
 namespace ds_pba
@@ -49,6 +50,12 @@ class ArenaAllocator
     }
 
     [[nodiscard]] auto is_valid() const noexcept -> bool;
+
+    template <typename T>
+    [[nodiscard]] auto as_span() noexcept -> std::span<T>
+    {
+        return std::span<T>{reinterpret_cast<T*>(memory_.get()), offset_ / sizeof(T)};
+    }
 
   private:
     std::unique_ptr<Byte[]> memory_{};

@@ -57,7 +57,7 @@ struct EngineContext
 
     auto create_box_body(const Entity& e, f32 inv_mass, Dir3 velo) const -> RigidBody;
 
-    bool is_active() const
+    auto is_active() const -> bool
     {
         return (gfx.window != nullptr) && !glfwWindowShouldClose(gfx.window);
     }
@@ -72,11 +72,11 @@ struct EngineContext
     }
     bool is_active_{true};
 
-    void deactivate() noexcept
+    auto deactivate() noexcept -> void
     {
         is_active_ = false;
     }
-    void activate() noexcept
+    auto activate() noexcept -> void
     {
         is_active_ = true;
     }

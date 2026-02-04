@@ -67,6 +67,7 @@ auto render_physics_debug_window(EngineContext& engine_context) -> void
 
     ImGui::Separator();
     ImGui::TextUnformatted("Collisions");
+    // $HOOK physics_context.contact_arena.used()
     ImGui::Checkbox("Show contact markers", &dbg.show_contacts);
     ImGui::Checkbox("Show contact normals", &dbg.show_contact_normals);
     ImGui::DragFloat("Contact marker size", &dbg.contact_marker_size, 0.001f, 0.0f, 10.0f);

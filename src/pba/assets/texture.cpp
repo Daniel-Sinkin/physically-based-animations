@@ -10,7 +10,7 @@ namespace ds_pba
 {
 namespace
 {
-bool file_exists_regular(const std::filesystem::path& p) noexcept
+auto file_exists_regular(const std::filesystem::path& p) noexcept -> bool
 {
     namespace fs = std::filesystem;
     std::error_code error_code{};
@@ -26,8 +26,8 @@ bool file_exists_regular(const std::filesystem::path& p) noexcept
 }
 }  // namespace
 
-std::optional<ImageRGBA8>
-load_image_rgba8(const std::filesystem::path& path, TextureLoadOptions opt)
+auto load_image_rgba8(const std::filesystem::path& path, TextureLoadOptions opt)
+    -> std::optional<ImageRGBA8>
 {
     namespace fs = std::filesystem;
 

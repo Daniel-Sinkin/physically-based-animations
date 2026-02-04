@@ -13,8 +13,8 @@ struct EngineContext;
     return static_cast<usize>(SceneId::Count);
 }
 
-[[nodiscard]] auto scene_name(SceneId id) noexcept -> const char*;
-[[nodiscard]] auto scene_description(SceneId id) noexcept -> const char*;
+[[nodiscard]] auto scene_name(SceneId id) noexcept -> std::string;
+[[nodiscard]] auto scene_description(SceneId id) noexcept -> std::string;
 
 auto load_scene(EngineContext& e, SceneId id, bool pause = true) -> void;
 
