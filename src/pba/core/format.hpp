@@ -2,6 +2,8 @@
 #pragma once
 
 #include "pba/gfx/raycast.hpp"
+#include "pba/physics/physics_types.hpp"
+#include "pba/scene/entity.hpp"
 #include "pba/scene/world_types.hpp"
 //
 #include <format>
@@ -227,6 +229,64 @@ struct formatter<ds_pba::Raycast>
             rc.t,
             rc.object_id
         );
+    }
+};
+
+template <>
+struct formatter<ds_pba::BodyHandle, char>
+{
+    constexpr auto parse(format_parse_context& ctx)
+    {
+        auto it = ctx.begin();
+        if (it != ctx.end() && *it != '}')
+        {
+            throw format_error("Invalid format specifier for ds_pba::BodyHandle");
+        }
+        return it;
+    }
+
+    template <class FormatContext>
+    auto format(const ds_pba::BodyHandle& h, FormatContext& ctx) const
+    {
+        return std::format_to(ctx.out(), "BodyHandle{{index={}}}", h.index);
+    }
+};
+
+template <>
+struct formatter<ds_pba::Entity, char>
+{
+    constexpr auto parse(format_parse_context& ctx)
+    {
+        auto it = ctx.begin();
+        if (it != ctx.end() && *it != '}')
+        {
+            throw format_error("Invalid format specifier for ds_pba::Entity");
+        }
+        return it;
+    }
+
+    template <class FormatContext>
+    auto format(const ds_pba::Entity& e, FormatContext& ctx) const
+    {
+        auto out = std::format_to(
+            ctx.out(),
+            "Entity{{id={}, type={}, name=\"{}\", body=",
+            e.id,
+            ds_pba::to_string(e.type),
+            e.name
+        );
+
+        if (e.body)
+        {
+            out = std::format_to(out, "{}", *e.body);
+        }
+        else
+        {
+            out = std::format_to(out, "none");
+        }
+
+        out = std::format_to(out, "}}");
+        return out;
     }
 };
 }  // namespace std
