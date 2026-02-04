@@ -1,9 +1,10 @@
 // pba/simulation/simulation_context.hpp
 #pragma once
 
-#include "pba/engine/scene_id.hpp"
 #include "pba/physics/physics_context.hpp"
 #include "pba/scene/world.hpp"
+#include "pba/simulation/scene_id.hpp"
+#include "pba/simulation/scenes.hpp"
 
 namespace ds_pba
 {

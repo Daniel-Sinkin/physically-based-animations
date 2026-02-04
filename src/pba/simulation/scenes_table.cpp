@@ -1,9 +1,9 @@
 // pba/scene/scenes_table.cpp
 #include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
-#include "pba/engine/scenes.hpp"
+#include "pba/simulation/scenes.hpp"
 //
-#include "pba/engine/scene_id.hpp"
+#include "pba/simulation/scene_id.hpp"
 #include "pba/simulation/simulation_context.hpp"
 
 #include <array>

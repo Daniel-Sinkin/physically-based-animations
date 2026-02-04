@@ -3,12 +3,12 @@
 
 #include "pba/core/core_types.hpp"
 #include "pba/core/math_types.hpp"
-#include "pba/engine/scene_id.hpp"
 #include "pba/gfx/gfx_context.hpp"
 #include "pba/physics/physics_context.hpp"
 #include "pba/physics/physics_types.hpp"
 #include "pba/scene/entity.hpp"
 #include "pba/scene/world.hpp"
+#include "pba/simulation/scene_id.hpp"
 #include "pba/simulation/simulation_context.hpp"
 
 #include <gsl/assert>

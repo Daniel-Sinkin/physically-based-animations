@@ -1,13 +1,12 @@
-// pba/engine/scenes.hpp
+// pba/simulation/scenes.hpp
 #pragma once
 
 #include "pba/core/core_types.hpp"
-#include "pba/engine/scene_id.hpp"
-#include "pba/simulation/simulation_context.hpp"
+#include "pba/simulation/scene_id.hpp"
 
 namespace ds_pba
 {
-struct EngineContext;
+struct SimulationContext;
 
 [[nodiscard]] constexpr auto scene_count() noexcept -> usize
 {
@@ -17,7 +16,9 @@ struct EngineContext;
 [[nodiscard]] auto scene_name(SceneId id) noexcept -> std::string;
 [[nodiscard]] auto scene_description(SceneId id) noexcept -> std::string;
 
-auto load_scene(EngineContext& e, SceneId id, bool pause = true) -> void;
+auto setup_scene_by_id(SimulationContext& e, SceneId id) noexcept -> void;
+
+auto load_scene(SimulationContext& e, SceneId id, bool pause = true) -> void;
 
 auto setup_active_scene(SimulationContext& e) -> void;
 

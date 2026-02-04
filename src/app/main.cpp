@@ -1,19 +1,20 @@
 // pba/main.cpp
-#include "pba/core/arena_allocator.hpp"
 #include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
-#include "app/headless_main.cpp"
+#include "app/headless_main.hpp"
+#include "pba/core/arena_allocator.hpp"
 #include "pba/core/core_types.hpp"
 #include "pba/engine/engine_context.hpp"
 #include "pba/util/scope_timer.hpp"
 #include "pba/util/shutdown.hpp"
-
+//
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
 #include <format>
-#include <gsl/assert>
 #include <print>
+//
+#include <gsl/assert>
 
 namespace
 {
@@ -75,7 +76,7 @@ int main()
 
     run_headless_simulation();
 
-    if constexpr (false)
+    if constexpr (true)
     {
         EngineContext engine{};
         if (!engine.setup())
