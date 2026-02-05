@@ -1,9 +1,8 @@
 // pba/simulation/simulation_context.cpp
-#include "pba/core/pch.hpp"
+#include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/simulation/simulation_context.hpp"
 //
-#include "pba/scene/entity_id.hpp"
 
 namespace ds_pba
 {

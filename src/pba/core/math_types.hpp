@@ -23,6 +23,9 @@ inline constexpr f32 k_pi{std::numbers::pi_v<f32>};
 inline constexpr f32 k_two_pi{2.0f * std::numbers::pi_v<f32>};
 
 constexpr f32 k_inf = std::numeric_limits<f32>::infinity();
+// It's preferable for physics simulations to have 1 / "inf" to be a small
+// number instead of 0.0 or NaN, so we use these instead of k_inf to
+// represent infinity for physics simulations.
 constexpr f32 k_f32_max = 1e30f;
 constexpr f32 k_f32_min = -1e30f;
 

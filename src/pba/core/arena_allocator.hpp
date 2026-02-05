@@ -5,6 +5,7 @@
 
 #include <cassert>
 #include <cstddef>
+#include <gsl/assert>
 #include <memory>
 #include <span>
 #include <type_traits>
@@ -35,6 +36,17 @@ class ArenaAllocator
 
     [[nodiscard]] auto allocate(usize n_bytes, usize align) noexcept -> void*;
 
+    template <typename T>
+    [[nodiscard]] auto allocate_array(usize count) noexcept -> void*
+    {
+        {
+            Expects(count > 0);
+        }
+        void* ptr = allocate(sizeof(T) * count, alignof(T));
+        assert(ptr);
+        return static_cast<T*>(ptr);
+    }
+
     template <class T>
         requires(std::is_trivially_copyable_v<T> && std::is_trivially_destructible_v<T>)
     [[nodiscard]] auto push_back(const T& value) noexcept -> T*
@@ -44,7 +56,6 @@ class ArenaAllocator
         {
             return nullptr;
         }
-
         *static_cast<T*>(mem) = value;
         return static_cast<T*>(mem);
     }

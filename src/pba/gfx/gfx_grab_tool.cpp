@@ -14,8 +14,8 @@ namespace ds_pba
 {
 namespace
 {
-[[nodiscard]] GfxContext::EditorState::GrabConstraint
-grab_constraint_from_key(const EditorInput& in) noexcept
+[[nodiscard]] auto grab_constraint_from_key(const EditorInput& in) noexcept
+    -> GfxContext::EditorState::GrabConstraint
 {
     using GC = GfxContext::EditorState::GrabConstraint;
 
@@ -37,7 +37,8 @@ grab_constraint_from_key(const EditorInput& in) noexcept
     return GC::None;
 }
 
-void set_entity_and_body_position(SimulationContext& sim, EntityId id, const Pos3& pos) noexcept
+auto set_entity_and_body_position(SimulationContext& sim, EntityId id, const Pos3& pos) noexcept
+    -> void
 {
     if (auto* entity = sim.world.find(id))
     {
@@ -55,7 +56,7 @@ void set_entity_and_body_position(SimulationContext& sim, EntityId id, const Pos
 
 }  // namespace
 
-void GfxContext::cancel_grab()
+auto GfxContext::cancel_grab() -> void
 {
     Expects(engine_context);
     Expects(editor.grab.active);
@@ -85,7 +86,7 @@ void GfxContext::cancel_grab()
     ui_log("Grab cancelled");
 }
 
-void GfxContext::confirm_grab()
+auto GfxContext::confirm_grab() -> void
 {
     auto& grab = editor.grab;
     if (!grab.active)
@@ -117,7 +118,7 @@ void GfxContext::confirm_grab()
     ui_log("Grab confirmed");
 }
 
-void GfxContext::set_grab_constraint(EditorState::GrabConstraint c)
+auto GfxContext::set_grab_constraint(EditorState::GrabConstraint c) -> void
 {
     auto& grab = editor.grab;
     grab.constraint = c;
@@ -140,7 +141,7 @@ void GfxContext::set_grab_constraint(EditorState::GrabConstraint c)
     }
 }
 
-void GfxContext::begin_grab(const EditorInput& input)
+auto GfxContext::begin_grab(const EditorInput& input) -> void
 {
     Expects(engine_context);
 
@@ -188,7 +189,7 @@ void GfxContext::begin_grab(const EditorInput& input)
     ui_log("Grab: move mouse. X/Y/Z constrain. LMB/Enter confirm. RMB/Esc cancel.");
 }
 
-void GfxContext::update_grab(const EditorInput& input)
+auto GfxContext::update_grab(const EditorInput& input) -> void
 {
     auto& grab = editor.grab;
     if (!grab.active)

@@ -16,6 +16,7 @@
 //
 #include <glm/geometric.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include <optional>
 
 namespace ds_pba
 {
@@ -176,9 +177,15 @@ auto project_obb_on_axis(const RigidBody& b, const Dir3& axis, f32& out_min, f32
     out_max = center_proj + radius_proj;
 }
 
-auto obb_obb_overlap(
-    const RigidBody& a, const RigidBody& b, Dir3& out_n, f32& out_penetration, int& out_axis_index
-) noexcept -> bool
+struct OverlapInfo_OBB_OBB
+{
+    Dir3 normal;
+    f32 penetration;
+    int axis_index;
+};
+
+auto obb_obb_overlap(const RigidBody& a, const RigidBody& b) noexcept
+    -> std::optional<OverlapInfo_OBB_OBB>
 {  // Uses Seperating Axis Theorem (SAT)
     const auto ax = obb_axes_world(a);
     const auto bx = obb_axes_world(b);
@@ -205,63 +212,57 @@ auto obb_obb_overlap(
 
     const Dir3 d{a.position - b.position};
 
-    f32 best_overlap{std::numeric_limits<f32>::infinity()};
+    auto best_overlap_t = std::numeric_limits<f32>::infinity();
     Dir3 best_axis{0.0f, 0.0f, 1.0f};
-    int best_i{-1};
+    auto best_i = -1;
 
     for (usize i{0}; i < axes.size(); ++i)
     {
-        const Dir3 raw_axis{axes[i]};
-        const f32 len2 = glm::dot(raw_axis, raw_axis);
+        const auto raw_axis = axes[i];
+        const auto len2 = glm::dot(raw_axis, raw_axis);
         if (len2 <= 1e-10f)
         {
             continue;
         }
 
-        const Dir3 axis = raw_axis / std::sqrt(len2);
+        const auto axis = raw_axis / std::sqrt(len2);
 
         f32 a_min{}, a_max{};
         project_obb_on_axis(a, axis, a_min, a_max);
         f32 b_min{}, b_max{};
         project_obb_on_axis(b, axis, b_min, b_max);
 
-        const f32 overlap{std::min(a_max, b_max) - std::max(a_min, b_min)};
+        const auto overlap = std::min(a_max, b_max) - std::max(a_min, b_min);
         if (overlap <= 0.0f)
         {
-            return false;
+            return std::nullopt;
         }
 
-        if (overlap < best_overlap)
+        if (overlap < best_overlap_t)
         {
-            best_overlap = overlap;
-            const f32 s{glm::dot(d, axis)};
-            best_axis = (s >= 0.0f) ? axis : -axis;
+            best_overlap_t = overlap;
+            const auto is_positive_axis_dir = glm::dot(d, axis) >= 0.0f;
+            best_axis = (is_positive_axis_dir) ? axis : -axis;
             best_i = static_cast<int>(i);
         }
     }
     if (best_i < 0)
     {
-        return false;
+        return std::nullopt;
     }
-
-    out_n = best_axis;
-    out_penetration = best_overlap;
-    out_axis_index = best_i;
-    return true;
+    return OverlapInfo_OBB_OBB{
+        .normal = best_axis, .penetration = best_overlap_t, .axis_index = best_i
+    };
 }
 
 }  // namespace
 
 auto make_contact_key(const RigidBody& a, const RigidBody& b, const Pos3& p) noexcept -> ContactKey
 {
-    const EntityId id0 = std::min(a.id, b.id);
-    const EntityId id1 = std::max(a.id, b.id);
-
     constexpr auto k_cell = 0.02f;
-
     return ContactKey{
-        .a_id = id0,
-        .b_id = id1,
+        .a_id = std::min(a.id, b.id),
+        .b_id = std::max(a.id, b.id),
         .px = quantize_pos(p.x, k_cell),
         .py = quantize_pos(p.y, k_cell),
         .pz = quantize_pos(p.z, k_cell),
@@ -280,21 +281,20 @@ auto generate_obb_contacts(std::span<const RigidBody> bodies, ArenaAllocator& ou
             const RigidBody& a{bodies[i]};
             const RigidBody& b{bodies[j]};
             // Static & Static might intersect but there is no force being generated
+            // so we can safely skip
             if (a.is_static() && b.is_static())
             {
                 continue;
             }
 
-            Dir3 n{k_axis_z};
-            f32 penetration{0.0f};
-            int axis_index{-1};
-            if (!obb_obb_overlap(a, b, n, penetration, axis_index))
+            auto overlap_res = obb_obb_overlap(a, b);
+            if (!overlap_res)
             {
                 continue;
             }
+            const auto& [normal, penetration, axis_index] = *overlap_res;
             const bool cross_axis{axis_index >= 6};
 
-            // More contact points are more expensive
             std::array<Pos3, k_contact_points> pts{};
             usize pt_count{0};
 
@@ -328,7 +328,6 @@ auto generate_obb_contacts(std::span<const RigidBody> bodies, ArenaAllocator& ou
             if (pt_count == 0)
             {
                 // TODO: Replace this by a more sophisticated heuristic
-
                 // If we don't find any contact points we create a
                 // virtual contact point in the middle of the two
                 // center of masses. This is a pretty bad heuristic
@@ -336,20 +335,20 @@ auto generate_obb_contacts(std::span<const RigidBody> bodies, ArenaAllocator& ou
                 // is scaled very large as the mid point can be quite
                 // far away.
                 const Pos3 mid{0.5f * (a.position + b.position)};
-                const Pos3 p{mid - 0.5f * penetration * n};
+                const Pos3 p{mid - 0.5f * penetration * normal};
                 (void) out.push_back(
                     Contact{
                         .a_idx = i,
                         .b_idx = j,
                         .p = p,
-                        .n = n,
+                        .n = normal,
                         .penetration = penetration,
                         .allow_warm_start = false,
                     }
                 );
                 continue;
             }
-            reduce_contact_points_to_4(pts, pt_count, n);
+            reduce_contact_points_to_4(pts, pt_count, normal);
 
             for (usize k{0zu}; k < pt_count; ++k)
             {
@@ -360,7 +359,7 @@ auto generate_obb_contacts(std::span<const RigidBody> bodies, ArenaAllocator& ou
                         .a_idx = i,
                         .b_idx = j,
                         .p = pts[k],
-                        .n = n,
+                        .n = normal,
                         .penetration = penetration,
                         .allow_warm_start = !cross_axis,
                     }

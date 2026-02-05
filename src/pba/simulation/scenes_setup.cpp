@@ -5,7 +5,6 @@
 #include "pba/core/core_types.hpp"
 #include "pba/core/format.hpp"  // IWYU pragma: keep
 #include "pba/core/math_types.hpp"
-#include "pba/engine/engine_context.hpp"
 #include "pba/physics/forces.hpp"
 #include "pba/scene/entity.hpp"
 #include "pba/scene/entity_id.hpp"
@@ -284,12 +283,11 @@ auto setup_scene_attractors_and_repulsive_pivot(SimulationContext& e) noexcept -
         }}
     );
 
-    // Repulsion from camera pivot (dynamic target)
     e.physics.simple_forces.push_back(
         SimpleForce{RepulsionForce{
-            .target = e.world.editor_state().camera().pivot,
+            .target = 0.5f * (origin + pos),
             .accel_max = 100.0f,
-            .range = 4.0f,
+            .range = 6.0f,
             .min_radius = 0.5f,
         }}
     );

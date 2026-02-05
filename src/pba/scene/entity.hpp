@@ -1,8 +1,10 @@
 // pba/scene/entity.hpp
 #pragma once
 
+#include "pba/core/arena_allocator.hpp"
 #include "pba/core/constants.hpp"
 #include "pba/core/core_types.hpp"
+#include "pba/core/math_types.hpp"
 #include "pba/physics/physics_types.hpp"
 #include "pba/scene/entity_id.hpp"
 #include "pba/scene/world_types.hpp"
@@ -35,6 +37,24 @@ struct Entity
     Transform transform{};
     Color3 color{k_scene_object_default_color};
 
+    std::optional<BodyHandle> body{};
+    std::string name{};
+};
+
+struct EntityTransformsSOA
+{
+    EntityTransformsSOA(usize capacity) : memory_(capacity)
+    {
+    }
+
+  private:
+    ArenaAllocator memory_;
+};
+
+struct Entity2
+{
+    EntityId id{k_invalid_id};
+    EntityType type{EntityType::Cube};
     std::optional<BodyHandle> body{};
     std::string name{};
 };

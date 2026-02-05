@@ -39,7 +39,7 @@ namespace ds_pba
         }
         window_created = true;
     }
-    {  // Place on 2nd monitor with correct sizing for mixed-DPI
+    {  // Place on second monitor if possible
         int monitor_count{0};
         GLFWmonitor* const* monitors = glfwGetMonitors(&monitor_count);
 

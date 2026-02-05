@@ -35,11 +35,12 @@ auto GfxContext::hover_interaction(EditorInput& input) const -> void
     if (wheel != 0.0f)
     {  // Zooming
         cam.distance *= std::exp(-wheel * k_zoom_speed);
-        cam.distance =
-            std::clamp(engine_context->simulation.world.editor_state().camera().distance, 0.75f, 200.0f);
+        cam.distance = std::clamp(
+            engine_context->simulation.world.editor_state().camera().distance, 0.75f, 200.0f
+        );
     }
 
-    if (input.mouse_middle.down)
+    if (input.mouse_middle.down || input.key_down(EditorKey::R))
     {
         hover_interaction_holding_middle(input, cam);
     }
@@ -48,7 +49,8 @@ auto GfxContext::hover_interaction(EditorInput& input) const -> void
     if (selecting)
     {  // Selecting objects
         const auto aspect = viewport_fbo.aspect_ratio();
-        const auto camera_view_matrix = engine_context->simulation.world.editor_state().camera().view_matrix();
+        const auto camera_view_matrix =
+            engine_context->simulation.world.editor_state().camera().view_matrix();
         const auto camera_proj_matrix =
             engine_context->simulation.world.editor_state().camera().proj_matrix(aspect);
 
@@ -122,12 +124,14 @@ auto GfxContext::hover_interaction_selection(EditorInput& input, const Raycast& 
         }
     };
 
-    const bool was_selected = engine_context->simulation.world.editor_state().is_selected(rc.object_id);
+    const bool was_selected =
+        engine_context->simulation.world.editor_state().is_selected(rc.object_id);
 
     if (input.key_down(EditorKey::Shift))
     {
         engine_context->simulation.world.editor_state().toggle_selection(rc.object_id);
-        const bool now_selected = engine_context->simulation.world.editor_state().is_selected(rc.object_id);
+        const bool now_selected =
+            engine_context->simulation.world.editor_state().is_selected(rc.object_id);
         if (now_selected)
         {
             log_action("Selected", rc.object_id, "Cube");

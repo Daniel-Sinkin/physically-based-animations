@@ -86,7 +86,7 @@ inline constexpr f32 k_camera_pitch_lim_deg{89.0f};
 // Render
 //
 inline constexpr Color3 k_scene_object_default_color{0.8f, 0.8f, 0.8f};
-inline constexpr Color3 k_outline_color{Color3::Magenta};
+inline constexpr Color3 k_outline_color{Color3::Orange};
 inline constexpr int k_num_lines_per_side{40};
 inline constexpr f32 k_spacing{1.0f};
 inline constexpr f32 k_fog_start{25.0f};

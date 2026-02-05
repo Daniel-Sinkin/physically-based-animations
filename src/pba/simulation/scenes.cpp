@@ -10,7 +10,7 @@
 namespace ds_pba
 {
 
-auto load_scene(SimulationContext& e, SceneId id, bool /*pause*/) -> void
+auto load_scene(SimulationContext& e, SceneId id) -> void
 {
     e.clear();
     e.active_scene = id;
@@ -19,6 +19,6 @@ auto load_scene(SimulationContext& e, SceneId id, bool /*pause*/) -> void
 
 auto setup_active_scene(SimulationContext& e) -> void
 {
-    load_scene(e, e.active_scene, true);
+    load_scene(e, e.active_scene);
 }
 }  // namespace ds_pba

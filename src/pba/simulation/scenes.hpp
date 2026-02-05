@@ -18,7 +18,7 @@ struct SimulationContext;
 
 auto setup_scene_by_id(SimulationContext& e, SceneId id) noexcept -> void;
 
-auto load_scene(SimulationContext& e, SceneId id, bool pause = true) -> void;
+auto load_scene(SimulationContext& e, SceneId id) -> void;
 
 auto setup_active_scene(SimulationContext& e) -> void;
 

@@ -49,13 +49,13 @@ struct NBodyForce
     f32 softening{1e-3f};
 };
 
-// Only see a single body at a time / areparallelizable
+// Only see a single body at a time / are parallelizable
 using SimpleForce = std::variant<GravityForce, AttractorForce, RepulsionForce, MotorForce>;
 // Must see all forces / not parallelizable
 using ComplexForce = std::variant<NBodyForce>;
 
 // Standard trick to make std::visit pattern more ergonomic
-// See > https://en.cppreference.com/w/cpp/utility/variant/visit
+// See for example https://en.cppreference.com/w/cpp/utility/variant/visit
 template <class... Ts>
 struct overloaded : Ts...
 {

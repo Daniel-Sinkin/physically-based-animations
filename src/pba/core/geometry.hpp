@@ -5,21 +5,12 @@
 #include "pba/core/math_types.hpp"
 //
 #include <algorithm>
-#include <type_traits>
 //
 #include <glm/ext/matrix_float3x3.hpp>
 #include <glm/ext/matrix_float4x4.hpp>
 
 namespace ds_pba
 {
-template <class T>
-    requires(!std::is_same_v<std::remove_cvref_t<T>, Color3>)
-[[nodiscard]] constexpr auto lerp(const T& a, const T& b, f32 t) noexcept -> std::remove_cvref_t<T>
-{
-    using R = std::remove_cvref_t<T>;
-    return static_cast<R>(a + (b - a) * t);
-}
-
 [[nodiscard]] constexpr auto mix(const Color3& a, const Color3& b, f32 t) noexcept -> Color3
 {
     return Color3{
@@ -158,11 +149,10 @@ struct ModelMatrix
     {
     }
 
-    [[nodiscard]] Pos3 transform_position(const Pos3& p) const noexcept;
-    [[nodiscard]] Dir3 transform_direction(const Dir3& v) const noexcept;
-
-    [[nodiscard]] NormalMatrix normal_matrix() const noexcept;
-    [[nodiscard]] WorldToModelMatrix world_to_model() const noexcept;
+    [[nodiscard]] auto transform_position(const Pos3& p) const noexcept -> Pos3;
+    [[nodiscard]] auto transform_direction(const Dir3& v) const noexcept -> Dir3;
+    [[nodiscard]] auto normal_matrix() const noexcept -> NormalMatrix;
+    [[nodiscard]] auto world_to_model() const noexcept -> WorldToModelMatrix;
 };
 
 struct WorldToModelMatrix
