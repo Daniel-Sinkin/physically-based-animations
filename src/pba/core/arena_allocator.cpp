@@ -70,6 +70,15 @@ auto ArenaAllocator::allocate(usize n_bytes, usize align) noexcept -> void*
     }
 }
 
+auto ArenaAllocator::allocate_array(usize elem_size, usize n_elems, usize align) noexcept -> void*
+{
+    {
+        Expects(elem_size > 0);
+        Expects(n_elems > 0);
+    }
+    return allocate(elem_size * n_elems, align);
+}
+
 auto ArenaAllocator::is_valid() const noexcept -> bool
 {
     return offset_ <= capacity_;

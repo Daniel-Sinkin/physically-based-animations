@@ -35,17 +35,8 @@ class ArenaAllocator
     auto clear() noexcept -> void;
 
     [[nodiscard]] auto allocate(usize n_bytes, usize align) noexcept -> void*;
-
-    template <typename T>
-    [[nodiscard]] auto allocate_array(usize count) noexcept -> void*
-    {
-        {
-            Expects(count > 0);
-        }
-        void* ptr = allocate(sizeof(T) * count, alignof(T));
-        assert(ptr);
-        return static_cast<T*>(ptr);
-    }
+    [[nodiscard]] auto allocate_array(usize elem_size, usize n_elems, usize align) noexcept
+        -> void*;
 
     template <class T>
         requires(std::is_trivially_copyable_v<T> && std::is_trivially_destructible_v<T>)

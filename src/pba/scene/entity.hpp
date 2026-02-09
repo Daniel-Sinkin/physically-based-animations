@@ -4,7 +4,6 @@
 #include "pba/core/arena_allocator.hpp"
 #include "pba/core/constants.hpp"
 #include "pba/core/core_types.hpp"
-#include "pba/core/math_types.hpp"
 #include "pba/physics/physics_types.hpp"
 #include "pba/scene/entity_id.hpp"
 #include "pba/scene/world_types.hpp"
@@ -41,17 +40,7 @@ struct Entity
     std::string name{};
 };
 
-struct EntityTransformsSOA
-{
-    EntityTransformsSOA(usize capacity) : memory_(capacity)
-    {
-    }
-
-  private:
-    ArenaAllocator memory_;
-};
-
-struct Entity2
+struct EntityAOS
 {
     EntityId id{k_invalid_id};
     EntityType type{EntityType::Cube};
