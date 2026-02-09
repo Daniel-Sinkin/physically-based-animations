@@ -4,6 +4,7 @@
 #include <array>
 #include <assert.h>
 #include <chrono>
+#include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
@@ -43,6 +44,15 @@ using Byte = std::byte;
 using Clock = std::chrono::steady_clock;
 using TimePoint = Clock::time_point;
 using Duration = std::chrono::duration<f64>;
+
+template <std::totally_ordered T>
+[[nodiscard]] constexpr auto in_interval(T val, T lower, T upper) noexcept -> bool
+{
+    {
+        Expects(lower < upper);
+    }
+    return val == std::clamp(val, lower, upper);
+}
 
 [[nodiscard]] inline constexpr auto round_up_aligned(usize x, usize align) noexcept -> usize
 {

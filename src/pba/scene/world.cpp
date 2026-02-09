@@ -1,7 +1,11 @@
 #include "pba/scene/world.hpp"
 
+#include "pba/scene/entity_id.hpp"
+
 #include <algorithm>
+#include <optional>
 #include <print>
+#include <sys/_types/_id_t.h>
 
 namespace ds_pba
 {
@@ -97,6 +101,7 @@ auto World::clear(bool reset_ids) noexcept -> void
     editor_state_.clear();
 
     entities_.clear();
+    transforms_.reset();
     id_to_index_.clear();
 
     if (reset_ids)
@@ -115,6 +120,7 @@ auto World::spawn(EntityType type, const Transform& t, Color3 c) -> Entity&
         std::terminate();
     }
 
+    // transforms_.push_back(t);
     entities_.push_back(
         Entity{
             .id = id,
@@ -161,6 +167,15 @@ auto World::find(EntityId id) const noexcept -> const Entity*
 {
     auto it = id_to_index_.find(id);
     return (it == id_to_index_.end()) ? nullptr : &entities_[it->second];
+}
+
+auto World::find_idx(EntityId id) const noexcept -> std::optional<usize>
+{
+    if (auto it = id_to_index_.find(id); it != id_to_index_.end())
+    {
+        return it->second;
+    }
+    return std::nullopt;
 }
 
 auto World::contains(EntityId id) const noexcept -> bool

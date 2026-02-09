@@ -70,6 +70,8 @@ inline constexpr usize k_physics_step_arena_bytes{1zu * k_mib};
 inline constexpr f64 k_energy_sample_dt{0.1};
 inline constexpr usize k_energy_history_len{600zu};
 
+inline constexpr usize k_max_number_objects{1024zu};
+
 //
 // Camera
 //
@@ -87,6 +89,7 @@ inline constexpr f32 k_camera_pitch_lim_deg{89.0f};
 //
 inline constexpr Color3 k_scene_object_default_color{0.8f, 0.8f, 0.8f};
 inline constexpr Color3 k_outline_color{Color3::Orange};
+inline constexpr Color3 k_pivot_color{196.0f / 255.0f, 209.0f / 255.0f, 102.0f / 255.0f};
 inline constexpr int k_num_lines_per_side{40};
 inline constexpr f32 k_spacing{1.0f};
 inline constexpr f32 k_fog_start{25.0f};

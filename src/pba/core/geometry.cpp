@@ -8,6 +8,7 @@
 #include <glm/mat3x3.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
+#include <optional>
 
 namespace ds_pba
 {
@@ -18,6 +19,16 @@ auto safe_normalize(glm::vec3 v) noexcept -> glm::vec3
     if (len <= 1e-12f)
     {
         return glm::vec3{0.0f, 0.0f, 1.0f};
+    }
+    return v / len;
+}
+
+auto normalize(glm::vec3 v) -> std::optional<glm::vec3>
+{
+    const auto len = glm::length(v);
+    if (len <= 1e-12f)
+    {
+        return std::nullopt;
     }
     return v / len;
 }

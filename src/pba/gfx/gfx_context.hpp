@@ -208,12 +208,10 @@ struct GfxContext
 
     struct DebugLineV_PColor
     {
-        f32 px, py, pz;
-        f32 r, g, b, a;
+        Pos3 pos;
+        Color3 color;
+        f32 alpha;
     };
-    static_assert(sizeof(DebugLineV_PColor) == 7 * sizeof(f32));
-    static_assert(offsetof(DebugLineV_PColor, r) == 3 * sizeof(f32));
-
     bool debug_line_created{false};
     std::vector<DebugLineV_PColor> debug_line_vertices{};
 
@@ -246,12 +244,14 @@ struct GfxContext
     auto confirm_grab() -> void;
     auto set_grab_constraint(EditorState::GrabConstraint c) -> void;
 
+    // clang-format off
     auto render_to_viewport() -> void;
-    auto render_to_viewport_grid(const ViewMatrix&, const ProjMatrix&) const -> void;
-    auto render_to_viewport_objects(const ViewMatrix&, const ProjMatrix&) const -> void;
-    auto render_to_viewport_pivot(const Pos3&, const ViewMatrix&, const ProjMatrix&) const -> void;
-    auto render_to_viewport_outline(const ViewMatrix&, const ProjMatrix&) const -> void;
-    auto render_to_viewport_physics_debug(const ViewMatrix&, const ProjMatrix&) -> void;
+    auto render_to_viewport_grid         (const ViewMatrix&, const ProjMatrix&)              const -> void;
+    auto render_to_viewport_objects      (const ViewMatrix&, const ProjMatrix&)              const -> void;
+    auto render_to_viewport_outline      (const ViewMatrix&, const ProjMatrix&)              const -> void;
+    auto render_to_viewport_physics_debug(const ViewMatrix&, const ProjMatrix&)                    -> void;
+    auto render_to_viewport_pivot        (const ViewMatrix&, const ProjMatrix&, const Pos3&) const -> void;
+    // clang-format on
 
     auto viewport_window() -> void;
 
@@ -262,35 +262,27 @@ struct GfxContext
     [[nodiscard]] auto create_meshes() -> bool;
     [[nodiscard]] auto create_textures() -> bool;
 
-    auto hover_interaction(EditorInput& input) const -> void;
-    auto hover_interaction_holding_middle(EditorInput& input, Camera& cam) const -> void;
-    auto hover_interaction_selection(EditorInput& input, const Raycast& rc) const -> void;
+    // clang-format off
+    auto hover_interaction               (EditorInput&)                 const -> void;
+    auto hover_interaction_holding_middle(EditorInput&, Camera&)        const -> void;
+    auto hover_interaction_selection     (EditorInput&, const Raycast&) const -> void;
+    // clang-format on
 
   private:
-    // Physics debug rendering helpers (split from render_to_viewport_physics_debug)
     [[nodiscard]] bool should_render_physics_debug_() const noexcept;
 
-    auto push_debug_line_(const Pos3& a, const Pos3& b, f32 r, f32 g, f32 bl, f32 al) noexcept
-        -> void;
+    auto push_debug_line_(const Line3& line, const Color3&, f32 alpha) noexcept -> void;
     auto append_contact_debug_lines_() -> void;
     auto append_selected_entity_debug_lines_() -> void;
 
-    [[nodiscard]] auto
-    selected_entity_frame_(const Entity& entity, const RigidBody* rigid_body) const noexcept
+    [[nodiscard]] auto selected_entity_frame_(const Entity&, const RigidBody*) const noexcept
         -> std::tuple<Pos3, Quaternion, f32>;
-
-    auto append_selected_velocity_debug_lines_(const RigidBody& rigid_body, const Pos3& com)
-        -> void;
-    auto append_selected_angular_velocity_debug_lines_(const RigidBody& rigid_body, const Pos3& com)
-        -> void;
 
     auto ensure_debug_line_mesh_created_() -> void;
     auto upload_debug_lines_to_gpu_() -> void;
 
     auto configure_physics_debug_gl_state_() const noexcept -> void;
 
-    auto draw_debug_lines_(
-        const ViewMatrix& camera_view_matrix, const ProjMatrix& camera_proj_matrix
-    ) const -> void;
+    auto draw_debug_lines_(const ViewMatrix&, const ProjMatrix&) const -> void;
 };
 }  // namespace ds_pba

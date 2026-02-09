@@ -1,4 +1,5 @@
 // pba/assets/mesh.cpp
+#include "pba/core/core_types.hpp"
 #include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/assets/mesh.hpp"
@@ -226,8 +227,10 @@ auto create_cylinder_mesh(int n_segments, f32 radius, f32 height) -> MeshDataPN
 
 auto create_sphere_mesh(int lat, int lon, f32 radius) -> MeshDataPN
 {
-    Expects(lat >= 2 && lon >= 3);
-    Expects(radius > 0.0f);
+    {
+        Expects(lat >= 2 && lon >= 3);
+        Expects(radius > 0.0f);
+    }
 
     const auto lat_f = static_cast<f32>(lat);
     const auto lon_f = static_cast<f32>(lon);
@@ -239,10 +242,10 @@ auto create_sphere_mesh(int lat, int lon, f32 radius) -> MeshDataPN
     auto push = [&](const Pos3& p, const Dir3& n) -> void
     { out.vertices.push_back(MeshV_PN{p.x, p.y, p.z, n.x, n.y, n.z}); };
 
-    const Dir3 n_top{k_axis_z};
-    const Dir3 n_bot{-k_axis_z};
-    const Pos3 p_top{radius * n_top};
-    const Pos3 p_bot{radius * n_bot};
+    const auto n_top = k_axis_z;
+    const auto n_bot = -k_axis_z;
+    const auto p_top = radius * n_top;
+    const auto p_bot = radius * n_bot;
 
     auto unit = [&](f32 theta, f32 phi) -> Dir3
     {
@@ -262,11 +265,11 @@ auto create_sphere_mesh(int lat, int lon, f32 radius) -> MeshDataPN
             const auto phi0 = (j_f / lon_f) * k_two_pi;
             const auto phi1 = ((j_f + 1.0f) / lon_f) * k_two_pi;
 
-            const Dir3 n10{unit(theta1, phi0)};
-            const Dir3 n11{unit(theta1, phi1)};
+            const auto n10 = unit(theta1, phi0);
+            const auto n11 = unit(theta1, phi1);
 
-            const Pos3 p10{radius * n10};
-            const Pos3 p11{radius * n11};
+            const auto p10 = radius * n10;
+            const auto p11 = radius * n11;
 
             push(p_top, n_top);
             push(p10, n10);
@@ -287,15 +290,15 @@ auto create_sphere_mesh(int lat, int lon, f32 radius) -> MeshDataPN
             const auto phi0 = (j_f / lon_f) * k_two_pi;
             const auto phi1 = ((j_f + 1.0f) / lon_f) * k_two_pi;
 
-            const Dir3 n00{unit(theta0, phi0)};
-            const Dir3 n10{unit(theta0, phi1)};
-            const Dir3 n01{unit(theta1, phi0)};
-            const Dir3 n11{unit(theta1, phi1)};
+            const auto n00 = unit(theta0, phi0);
+            const auto n10 = unit(theta0, phi1);
+            const auto n01 = unit(theta1, phi0);
+            const auto n11 = unit(theta1, phi1);
 
-            const Pos3 p00{radius * n00};
-            const Pos3 p10{radius * n10};
-            const Pos3 p01{radius * n01};
-            const Pos3 p11{radius * n11};
+            const auto p00 = radius * n00;
+            const auto p10 = radius * n10;
+            const auto p01 = radius * n01;
+            const auto p11 = radius * n11;
 
             push(p00, n00);
             push(p01, n01);
@@ -308,7 +311,7 @@ auto create_sphere_mesh(int lat, int lon, f32 radius) -> MeshDataPN
     }
 
     {  // Bottom
-        const f32 theta0{(static_cast<f32>(lat - 1) / static_cast<f32>(lat)) * k_pi};
+        const auto theta0 = (static_cast<f32>(lat - 1) / static_cast<f32>(lat)) * k_pi;
         for (int j{0}; j < lon; ++j)
         {
             const auto j_f = static_cast<f32>(j);
@@ -316,11 +319,10 @@ auto create_sphere_mesh(int lat, int lon, f32 radius) -> MeshDataPN
             const auto phi0 = (j_f / lon_f) * k_two_pi;
             const auto phi1 = ((j_f + 1.0f) / lon_f) * k_two_pi;
 
-            const Dir3 n00{unit(theta0, phi0)};
-            const Dir3 n01{unit(theta0, phi1)};
-
-            const Pos3 p00{radius * n00};
-            const Pos3 p01{radius * n01};
+            const auto n00 = unit(theta0, phi0);
+            const auto n01 = unit(theta0, phi1);
+            const auto p00 = radius * n00;
+            const auto p01 = radius * n01;
 
             push(p00, n00);
             push(p_bot, n_bot);
@@ -340,10 +342,8 @@ auto create_grid_mesh(GridSettings grid) -> MeshDataPColor
     {
         Expects(grid.n_lines_per_side >= 1 && "GridSettings.n_lines_per_side must be >= 1");
         Expects(grid.spacing > 0.0f && "GridSettings.spacing must be > 0");
-
-        const auto alpha_in_01 = [](f32 a) noexcept -> bool { return a >= 0.0f && a <= 1.0f; };
-        Expects(alpha_in_01(grid.minor_alpha) && "GridSettings.minor_alpha must be in [0,1]");
-        Expects(alpha_in_01(grid.axis_alpha) && "GridSettings.axis_alpha must be in [0,1]");
+        Expects(in_interval(grid.minor_alpha, 0.0f, 1.0f));
+        Expects(in_interval(grid.axis_alpha, 0.0f, 1.0f));
     }
 
     const auto n_lines_per_side = grid.n_lines_per_side;
@@ -359,7 +359,7 @@ auto create_grid_mesh(GridSettings grid) -> MeshDataPColor
     };
 
     // x = const -> y axis parallels
-    for (int i{-n_lines_per_side}; i <= n_lines_per_side; ++i)
+    for (auto i = -n_lines_per_side; i <= n_lines_per_side; ++i)
     {
         const auto x = static_cast<f32>(i) * grid.spacing;
         if (i == 0)
@@ -373,7 +373,7 @@ auto create_grid_mesh(GridSettings grid) -> MeshDataPColor
     }
 
     // y = const -> x axis parallels
-    for (int i{-n_lines_per_side}; i <= n_lines_per_side; ++i)
+    for (auto i = -n_lines_per_side; i <= n_lines_per_side; ++i)
     {
         const auto y = static_cast<f32>(i) * grid.spacing;
         if (i == 0)

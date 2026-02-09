@@ -3,6 +3,8 @@
 #include "pba/core/constants.hpp"
 #include "pba/scene/camera.hpp"
 #include "pba/scene/entity.hpp"
+#include "pba/scene/entity_id.hpp"
+#include "pba/scene/world_types.hpp"
 
 #include <optional>
 #include <span>
@@ -51,6 +53,7 @@ class World
 
     [[nodiscard]] auto find(EntityId id) noexcept -> Entity*;
     [[nodiscard]] auto find(EntityId id) const noexcept -> const Entity*;
+    [[nodiscard]] auto find_idx(EntityId id) const noexcept -> std::optional<usize>;
     [[nodiscard]] auto contains(EntityId id) const noexcept -> bool;
     [[nodiscard]] auto entities() noexcept -> std::span<Entity>;
     [[nodiscard]] auto entities() const noexcept -> std::span<const Entity>;
@@ -69,7 +72,10 @@ class World
     EditorState editor_state_{};
 
     std::vector<Entity> entities_{};
+    TransformSOA transforms_{k_max_number_objects};
+
     std::unordered_map<EntityId, usize> id_to_index_{};
+    std::unordered_map<EntityId, usize> id_to_transform_index_{};
 };
 
 }  // namespace ds_pba

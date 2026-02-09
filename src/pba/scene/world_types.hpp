@@ -8,6 +8,7 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <gsl/assert>
 #include <optional>
 
 namespace ds_pba
@@ -31,24 +32,42 @@ struct Transform
 
 struct TransformSOA
 {
-    explicit TransformSOA(usize n_elems) : memory_(n_elems), n_elems_(n_elems)
+    explicit TransformSOA(usize capacity) : memory_(bytes_needed(capacity)), capacity_(capacity)
     {
-        auto align = alignof(Transform);
-        // clang-format off
-        pos_x_       = static_cast<f32*>       (memory_.allocate_array(sizeof(f32)       , n_elems_, align));
-        pos_y_       = static_cast<f32*>       (memory_.allocate_array(sizeof(f32)       , n_elems_, align));
-        pos_z_       = static_cast<f32*>       (memory_.allocate_array(sizeof(f32)       , n_elems_, align));
-        scale_x_     = static_cast<f32*>       (memory_.allocate_array(sizeof(f32)       , n_elems_, align));
-        scale_y_     = static_cast<f32*>       (memory_.allocate_array(sizeof(f32)       , n_elems_, align));
-        scale_z_     = static_cast<f32*>       (memory_.allocate_array(sizeof(f32)       , n_elems_, align));
-        orientation_ = static_cast<Quaternion*>(memory_.allocate_array(sizeof(Quaternion), n_elems_, align));
-        // clang-format on
+        allocate_arrays();
     }
     ~TransformSOA() = default;
 
-    auto build_transform_from_idx(usize idx) const noexcept -> std::optional<Transform>
+    auto reset() -> void
     {
-        if (idx >= n_elems_)
+        size_ = 0zu;
+    }
+
+    [[nodiscard]] auto set(usize idx, const Transform& t) noexcept -> bool
+    {
+        if (idx >= capacity_)
+        {
+            assert(false);
+            return false;
+        }
+        if (idx >= size_)
+        {
+            return false;
+        }
+        pos_x_[idx] = t.position.x;
+        pos_y_[idx] = t.position.y;
+        pos_z_[idx] = t.position.z;
+        scale_x_[idx] = t.scale.x;
+        scale_y_[idx] = t.scale.y;
+        scale_z_[idx] = t.scale.z;
+        orientation_[idx] = t.orientation;
+
+        return true;
+    }
+
+    auto get(usize idx) -> std::optional<Transform>
+    {
+        if (idx >= size_)
         {
             assert(false && "build_transform_from_idx OOB");
             return std::nullopt;
@@ -61,18 +80,76 @@ struct TransformSOA
         };
     }
 
+    auto push_back(const Transform& t) -> std::optional<usize>
+    {
+        if (size_ >= capacity_)
+        {
+            return std::nullopt;
+        }
+        const auto back = size_;
+        ++size_;
+        if (!set(back, t))
+        {
+            return std::nullopt;
+        }
+        else
+        {
+            return back;
+        }
+    }
+    // clang-format off
+    [[nodiscard]] auto pos_x()       noexcept -> std::span<f32      > { return {pos_x_, size_}; }
+    [[nodiscard]] auto pos_x() const noexcept -> std::span<const f32> { return {pos_x_, size_}; }
+    [[nodiscard]] auto pos_y()       noexcept -> std::span<f32      > { return {pos_y_, size_}; }
+    [[nodiscard]] auto pos_y() const noexcept -> std::span<const f32> { return {pos_y_, size_}; }
+    [[nodiscard]] auto pos_z()       noexcept -> std::span<f32      > { return {pos_z_, size_}; }
+    [[nodiscard]] auto pos_z() const noexcept -> std::span<const f32> { return {pos_z_, size_}; }
+
+    [[nodiscard]] auto scale_x()       noexcept -> std::span<f32      > { return {scale_x_, size_}; }
+    [[nodiscard]] auto scale_x() const noexcept -> std::span<const f32> { return {scale_x_, size_}; }
+    [[nodiscard]] auto scale_y()       noexcept -> std::span<f32      > { return {scale_y_, size_}; }
+    [[nodiscard]] auto scale_y() const noexcept -> std::span<const f32> { return {scale_y_, size_}; }
+    [[nodiscard]] auto scale_z()       noexcept -> std::span<f32      > { return {scale_z_, size_}; }
+    [[nodiscard]] auto scale_z() const noexcept -> std::span<const f32> { return {scale_z_, size_}; }
+
+    [[nodiscard]] auto orientation()       noexcept -> std::span<Quaternion      > { return {orientation_, size_}; }
+    [[nodiscard]] auto orientation() const noexcept -> std::span<const Quaternion> { return {orientation_, size_}; }
+    // clang-format on
+
   private:
     ArenaAllocator memory_;
+    usize capacity_{};
+    usize size_{};
 
-    f32* pos_x_;
-    f32* pos_y_;
-    f32* pos_z_;
-    f32* scale_x_;
-    f32* scale_y_;
-    f32* scale_z_;
-    Quaternion* orientation_;
+    f32* pos_x_{};
+    f32* pos_y_{};
+    f32* pos_z_{};
+    f32* scale_x_{};
+    f32* scale_y_{};
+    f32* scale_z_{};
+    Quaternion* orientation_{};
 
-    usize n_elems_;
+    static constexpr auto bytes_needed(usize n) -> usize
+    {  // Computes how much memory the allocator will use (with some slack for safety)
+        constexpr usize k_slack{64zu};
+        return n * (6 * sizeof(f32) + sizeof(Quaternion)) + k_slack;
+    };
+
+    auto allocate_arrays() -> void
+    {
+        {
+            Expects(capacity_ > 0);
+        }
+        // clang-format off
+        pos_x_       = static_cast<f32*>       (memory_.allocate_array(sizeof(f32)       , capacity_, alignof(f32)));
+        pos_y_       = static_cast<f32*>       (memory_.allocate_array(sizeof(f32)       , capacity_, alignof(f32)));
+        pos_z_       = static_cast<f32*>       (memory_.allocate_array(sizeof(f32)       , capacity_, alignof(f32)));
+        scale_x_     = static_cast<f32*>       (memory_.allocate_array(sizeof(f32)       , capacity_, alignof(f32)));
+        scale_y_     = static_cast<f32*>       (memory_.allocate_array(sizeof(f32)       , capacity_, alignof(f32)));
+        scale_z_     = static_cast<f32*>       (memory_.allocate_array(sizeof(f32)       , capacity_, alignof(f32)));
+        orientation_ = static_cast<Quaternion*>(memory_.allocate_array(sizeof(Quaternion), capacity_, alignof(Quaternion)));
+        // clang-format on
+    }
 };
 
 }  // namespace ds_pba

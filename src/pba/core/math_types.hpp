@@ -15,6 +15,12 @@ using Dir3 = glm::vec3;
 using EulerDeg3 = glm::vec3;
 using Quaternion = glm::quat;
 
+struct Line3
+{
+    Pos3 a{};
+    Pos3 b{};
+};
+
 // Common math constants
 inline constexpr Dir3 k_zero_dir{0.0f, 0.0f, 0.0f};
 inline constexpr Quaternion k_quaternion_identity{1.0f, 0.0f, 0.0f, 0.0f};

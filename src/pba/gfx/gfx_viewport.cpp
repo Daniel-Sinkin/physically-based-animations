@@ -1,4 +1,6 @@
 // pba/gfx/gfx_viewport.cpp
+#include "glm/geometric.hpp"
+#include "pba/core/geometry.hpp"
 #include "pba/core/math_types.hpp"
 #include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
@@ -69,7 +71,8 @@ namespace
     return r;
 }
 
-[[nodiscard]] auto try_entity_body(SimulationContext& sim, const Entity& ent) noexcept -> const RigidBody*
+[[nodiscard]] auto try_entity_body(SimulationContext& sim, const Entity& ent) noexcept
+    -> const RigidBody*
 {
     if (!ent.body)
     {
@@ -261,14 +264,16 @@ auto GfxContext::render_to_viewport() -> void
     {
         const auto aspect = viewport_fbo.aspect_ratio();
         const auto& cam = engine_context->simulation.world.editor_state().camera();
-        const auto V{cam.view_matrix()};
-        const auto P{cam.proj_matrix(aspect)};
+        const auto view_matrix = cam.view_matrix();
+        const auto proj_matrix = cam.proj_matrix(aspect);
 
-        render_to_viewport_grid(V, P);
-        render_to_viewport_objects(V, P);
-        render_to_viewport_pivot(cam.pivot, V, P);
-        render_to_viewport_outline(V, P);
-        render_to_viewport_physics_debug(V, P);
+        // clang-format off
+        render_to_viewport_grid         (view_matrix, proj_matrix);
+        render_to_viewport_objects      (view_matrix, proj_matrix);
+        render_to_viewport_outline      (view_matrix, proj_matrix);
+        render_to_viewport_physics_debug(view_matrix, proj_matrix);
+        render_to_viewport_pivot        (view_matrix, proj_matrix, cam.pivot);
+        // clang-format on
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -356,9 +361,7 @@ auto GfxContext::render_to_viewport_outline(
 }
 
 void GfxContext::render_to_viewport_pivot(
-    const Pos3& pivot_pos,
-    const ViewMatrix& camera_view_matrix,
-    const ProjMatrix& camera_proj_matrix
+    const ViewMatrix& view_matrix, const ProjMatrix& proj_matrix, const Pos3& pivot
 ) const
 {
     if (!pivot_active)
@@ -369,14 +372,14 @@ void GfxContext::render_to_viewport_pivot(
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
 
-    const Transform t{.position = pivot_pos, .scale = {0.1f, 0.1f, 0.1f}};
+    const Transform t{.position = pivot, .scale = {0.1f, 0.1f, 0.1f}};
 
     const auto& prog = shader_programs.pivot;
     prog.bind();
-    prog.set_uView(camera_view_matrix);
-    prog.set_uProj(camera_proj_matrix);
+    prog.set_uView(view_matrix);
+    prog.set_uProj(proj_matrix);
     prog.set_uModel(t.model_matrix());
-    prog.set_uColor(Color3{196.0f / 255.0f, 209.0f / 255.0f, 102.0f / 255.0f});
+    prog.set_uColor(k_pivot_color);
 
     meshes.sphere.vao.bind();
     glDrawArrays(GL_TRIANGLES, 0, meshes.sphere.vertex_count);
@@ -385,10 +388,10 @@ void GfxContext::render_to_viewport_pivot(
 
 void GfxContext::viewport_window()
 {
-    const ImGuiWindowFlags flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse
-                                   | ImGuiWindowFlags_NoCollapse;
+    const auto window_flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse
+                              | ImGuiWindowFlags_NoCollapse;
 
-    ImGui::Begin("Viewport", nullptr, flags);
+    ImGui::Begin("Viewport", nullptr, window_flags);
 
     const ImVec2 pos = ImGui::GetCursorScreenPos();
     const ImVec2 size = ImGui::GetContentRegionAvail();
@@ -491,12 +494,10 @@ void GfxContext::render_to_viewport_physics_debug(
     return phys_debug.enabled && loaded_glad && shader_programs.grid.valid();
 }
 
-void GfxContext::push_debug_line_(
-    const Pos3& a, const Pos3& b, f32 r, f32 g, f32 bl, f32 al
-) noexcept
+void GfxContext::push_debug_line_(const Line3& line, const Color3& color, f32 alpha) noexcept
 {
-    debug_line_vertices.push_back(DebugLineV_PColor{a.x, a.y, a.z, r, g, bl, al});
-    debug_line_vertices.push_back(DebugLineV_PColor{b.x, b.y, b.z, r, g, bl, al});
+    debug_line_vertices.push_back(DebugLineV_PColor{line.a, color, alpha});
+    debug_line_vertices.push_back(DebugLineV_PColor{line.b, color, alpha});
 }
 
 void GfxContext::append_contact_debug_lines_()
@@ -505,20 +506,27 @@ void GfxContext::append_contact_debug_lines_()
 
     const auto& phys = engine_context->simulation.physics;
 
-    const f32 s = std::max(0.0f, phys_debug.contact_marker_size);
-    const f32 nscale = std::max(0.0f, phys_debug.contact_normal_scale);
+    const auto s = std::max(0.0f, phys_debug.contact_marker_size);
+    const auto nscale = std::max(0.0f, phys_debug.contact_normal_scale);
 
     for (const auto& c : phys.debug_contacts)
     {
-        const Pos3 p{c.p};
-
-        push_debug_line_(p + Dir3{s, 0.0f, 0.0f}, p - Dir3{s, 0.0f, 0.0f}, 1, 1, 1, 1);
-        push_debug_line_(p + Dir3{0.0f, s, 0.0f}, p - Dir3{0.0f, s, 0.0f}, 1, 1, 1, 1);
-        push_debug_line_(p + Dir3{0.0f, 0.0f, s}, p - Dir3{0.0f, 0.0f, s}, 1, 1, 1, 1);
+        const auto alpha = 1.0;
+        constexpr auto k_contact_debug_line_color = Color3::White;
+        push_debug_line_(
+            {c.p + s * k_axis_x, c.p - s * k_axis_x}, k_contact_debug_line_color, alpha
+        );
+        push_debug_line_(
+            {c.p + s * k_axis_y, c.p - s * k_axis_y}, k_contact_debug_line_color, alpha
+        );
+        push_debug_line_(
+            {c.p + s * k_axis_z, c.p - s * k_axis_z}, k_contact_debug_line_color, alpha
+        );
 
         if (phys_debug.show_contact_normals)
         {
-            push_debug_line_(p, p + c.n * nscale, 1.0f, 0.75f, 0.10f, 1.0f);
+            constexpr Color3 k_contact_debug_normal_color{1.0f, 0.75f, 0.1f};
+            push_debug_line_({c.p, c.p + c.n * nscale}, k_contact_debug_normal_color, 1.0f);
         }
     }
 }
@@ -526,39 +534,59 @@ void GfxContext::append_contact_debug_lines_()
 void GfxContext::append_selected_entity_debug_lines_()
 {
     Expects(engine_context);
+    const auto& world = engine_context->simulation.world;
+    const auto& physics = engine_context->simulation.physics;
 
-    const auto& selected = engine_context->simulation.world.editor_state().selected_ids;
+    const auto& selected = world.editor_state().selected_ids;
     for (const EntityId id : selected)
     {
-        const Entity* entity = engine_context->simulation.world.find(id);
+        const Entity* entity = world.find(id);
         if (!entity)
         {
             continue;
         }
 
-        const auto* rigid_body =
-            entity->body ? engine_context->simulation.physics.try_body(*entity->body) : nullptr;
+        const auto* rigid_body = entity->body ? physics.try_body(*entity->body) : nullptr;
 
-        const auto [com, ori, extent] = selected_entity_frame_(*entity, rigid_body);
+        const auto [center_of_mass, ori, extent] = selected_entity_frame_(*entity, rigid_body);
 
-        const f32 axis_len = std::max(0.0f, extent) * std::max(0.0f, phys_debug.axis_scale);
-
-        const glm::mat3 R = glm::mat3_cast(ori);
-        const Dir3 ax = glm::normalize(R * k_axis_x);
-        const Dir3 ay = glm::normalize(R * k_axis_y);
-        const Dir3 az = glm::normalize(R * k_axis_z);
-
+        const auto alpha = 1.0f;
         if (phys_debug.show_selected_axes)
         {
-            push_debug_line_(com, com + axis_len * ax, 1, 0, 0, 1);
-            push_debug_line_(com, com + axis_len * ay, 0, 1, 0, 1);
-            push_debug_line_(com, com + axis_len * az, 0, 0, 1, 1);
+            const auto axis_len = std::max(0.0f, extent) * std::max(0.0f, phys_debug.axis_scale);
+
+            const auto R = glm::mat3_cast(ori);
+
+            const auto ax = axis_len * glm::normalize(R * k_axis_x);
+            const auto ay = axis_len * glm::normalize(R * k_axis_y);
+            const auto az = axis_len * glm::normalize(R * k_axis_z);
+
+            push_debug_line_({center_of_mass, center_of_mass + ax}, Color3::Red, alpha);
+            push_debug_line_({center_of_mass, center_of_mass + ay}, Color3::Green, alpha);
+            push_debug_line_({center_of_mass, center_of_mass + az}, Color3::Blue, alpha);
         }
 
         if (rigid_body)
         {
-            append_selected_velocity_debug_lines_(*rigid_body, com);
-            append_selected_angular_velocity_debug_lines_(*rigid_body, com);
+            {  // Linear Velocity
+                const auto velo = rigid_body->velocity;
+                const auto v2 = glm::dot(velo, velo);
+                if (v2 > 1e-8f)
+                {
+                    const auto dv = phys_debug.vel_scale * (velo / v2);
+                    push_debug_line_({center_of_mass, center_of_mass + dv}, Color3::Orange, alpha);
+                }
+            }
+
+            {  // Angular Velocity
+                const auto ang_velo = rigid_body->angular_velocity;
+                const auto av2 = glm::dot(ang_velo, ang_velo);
+                if (av2 > 1e-8f)
+                {
+                    const auto dv = phys_debug.ang_vel_scale * (ang_velo / av2);
+                    push_debug_line_({center_of_mass, center_of_mass + dv}, Color3::Cyan, alpha);
+                }
+            }
         }
     }
 }
@@ -581,40 +609,6 @@ auto GfxContext::selected_entity_frame_(
         entity.transform.orientation,
         max_extent(entity.transform.scale),
     };
-}
-
-void GfxContext::append_selected_velocity_debug_lines_(const RigidBody& rigid_body, const Pos3& com)
-{
-    if (!phys_debug.show_selected_velocity)
-    {
-        return;
-    }
-
-    const f32 v2 = glm::dot(rigid_body.velocity, rigid_body.velocity);
-    if (v2 <= 1e-8f)
-    {
-        return;
-    }
-
-    push_debug_line_(com, com + rigid_body.velocity * phys_debug.vel_scale, 1, 1, 0, 1);
-}
-
-void GfxContext::append_selected_angular_velocity_debug_lines_(
-    const RigidBody& rigid_body, const Pos3& com
-)
-{
-    if (!phys_debug.show_selected_angular_velocity)
-    {
-        return;
-    }
-
-    const f32 w2 = glm::dot(rigid_body.angular_velocity, rigid_body.angular_velocity);
-    if (w2 <= 1e-8f)
-    {
-        return;
-    }
-
-    push_debug_line_(com, com + rigid_body.angular_velocity * phys_debug.ang_vel_scale, 0, 1, 1, 1);
 }
 
 void GfxContext::ensure_debug_line_mesh_created_()
