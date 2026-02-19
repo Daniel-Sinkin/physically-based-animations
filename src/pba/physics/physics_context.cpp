@@ -31,7 +31,7 @@ namespace
 compute_total_kinetic_energy(std::span<const RigidBody> bodies, bool include_angular) noexcept
     -> f32
 {
-    f32 E{0.0f};
+    auto E = 0.0f;
     for (const auto& b : bodies)
     {
         if (b.inv_mass <= 0.0f)
@@ -74,7 +74,7 @@ auto PhysicsContext::step() -> void
 
     integrate_forces(bodies, dt_s);
     integrate_velocities(bodies, dt_s);
-    generate_obb_contacts(bodies, contact_arena);
+    debug_collision_stats = generate_obb_contacts(bodies, contact_arena, collision_scratch);
 
     {  // Setup debug info for this step
         debug_contacts.clear();
@@ -97,7 +97,6 @@ auto PhysicsContext::step() -> void
     }
 
     // Pull warm-start state from cache into contacts before warm start + solve.
-    // for (usize i{0zu}; i < contact_arena.used() / sizeof(Contact); ++i)
     for (auto& contact : contact_arena.as_span<Contact>())
     {
         if (!contact.allow_warm_start)
@@ -166,17 +165,7 @@ auto PhysicsContext::step() -> void
     while (debug_energy_sample_accum >= Duration{k_energy_sample_dt})
     {
         debug_energy_sample_accum -= Duration{k_energy_sample_dt};
-        debug_total_kinetic_energy_history.push_back(debug_total_kinetic_energy);
-
-        if (debug_total_kinetic_energy_history.size() > k_energy_history_len)
-        {
-            const usize overflow{debug_total_kinetic_energy_history.size() - k_energy_history_len};
-            using Diff = std::vector<f32>::difference_type;
-            debug_total_kinetic_energy_history.erase(
-                debug_total_kinetic_energy_history.begin(),
-                debug_total_kinetic_energy_history.begin() + static_cast<Diff>(overflow)
-            );
-        }
+        debug_total_kinetic_energy_history.push(debug_total_kinetic_energy);
     }
     time = time + std::chrono::duration_cast<Clock::duration>(dt);
 }
@@ -188,6 +177,7 @@ auto PhysicsContext::clear() -> void
     complex_forces.clear();
     contact_cache.clear();
     debug_contacts.clear();
+    debug_collision_stats = {};
     debug_total_kinetic_energy = 0.0f;
     debug_energy_sample_accum = Duration{0.0};
     debug_total_kinetic_energy_history.clear();
