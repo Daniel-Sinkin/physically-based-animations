@@ -9,6 +9,7 @@
 #include "pba/engine/engine_context.hpp"
 #include "pba/gfx/gfx_context.hpp"
 #include "pba/physics/physics_context.hpp"
+#include "pba/simulation/scenes.hpp"
 
 //
 #include <glm/gtc/quaternion.hpp>
@@ -19,6 +20,15 @@ namespace ds_pba
 {
 namespace
 {
+auto reload_scene_for_engine(EngineContext& engine_context, SceneId id) -> void
+{
+    auto& simulation = engine_context.simulation;
+    load_scene(simulation, id);
+    engine_context.spit_cube.pending.clear();
+    engine_context.spit_cube.has_last_emit = false;
+    engine_context.reset_simulation_clock();
+}
+
 auto render_physics_debug_window(EngineContext& engine_context) -> void
 {
     auto& physics_context = engine_context.simulation.physics;
@@ -27,9 +37,65 @@ auto render_physics_debug_window(EngineContext& engine_context) -> void
 
     auto& editor_state = engine_context.simulation.world.editor_state();
 
-    ImGui::Begin("Physics Debug");
+    if (gfx_context.request_reveal_physics_debug_window)
+    {
+        if (const auto* vp = ImGui::GetMainViewport(); vp != nullptr)
+        {
+            const auto width = std::max(320.0f, std::min(430.0f, vp->WorkSize.x - 32.0f));
+            const auto height = std::max(320.0f, std::min(680.0f, vp->WorkSize.y - 48.0f));
 
+            ImGui::SetNextWindowViewport(vp->ID);
+            ImGui::SetNextWindowPos(ImVec2{vp->WorkPos.x + 16.0f, vp->WorkPos.y + 32.0f});
+            ImGui::SetNextWindowSize(ImVec2{width, height});
+        }
+        ImGui::SetNextWindowCollapsed(false, ImGuiCond_Always);
+    }
+
+    ImGui::Begin("Physics Debug");
+    if (gfx_context.request_reveal_physics_debug_window)
+    {
+        ImGui::SetWindowFocus();
+        gfx_context.request_reveal_physics_debug_window = false;
+    }
+
+    ImGui::TextUnformatted("Simulation");
+    auto paused = engine_context.paused;
+    if (ImGui::Checkbox("Paused", &paused))
+    {
+        engine_context.set_paused(paused);
+    }
+
+    ImGui::BeginDisabled(!engine_context.paused);
+    if (ImGui::Button("Step one frame"))
+    {
+        engine_context.simulation.physics.step();
+        engine_context.simulation.sync_physics_to_world();
+    }
+    ImGui::EndDisabled();
+
+    auto debug_tracking_enabled = physics_context.debug_tracking_enabled;
+    if (ImGui::Checkbox("Track physics debug data", &debug_tracking_enabled))
+    {
+        physics_context.set_debug_tracking_enabled(debug_tracking_enabled);
+        if (!debug_tracking_enabled)
+        {
+            dbg.enabled = false;
+        }
+    }
+    if (!physics_context.debug_tracking_enabled)
+    {
+        ImGui::TextUnformatted("Debug tracking disabled for performance.");
+    }
+    ImGui::TextUnformatted("Emitter: hold F over viewport to spit cubes");
+
+    ImGui::Separator();
+    if (!physics_context.debug_tracking_enabled)
+    {
+        dbg.enabled = false;
+    }
+    ImGui::BeginDisabled(!physics_context.debug_tracking_enabled);
     ImGui::Checkbox("Enabled", &dbg.enabled);
+    ImGui::EndDisabled();
 
     ImGui::Separator();
     ImGui::TextUnformatted("Coloring");
@@ -75,10 +141,12 @@ auto render_physics_debug_window(EngineContext& engine_context) -> void
 
     ImGui::Separator();
 
+    const auto body_count = physics_context.body_count();
     auto dynamic_count = 0zu;
     auto asleep_count = 0zu;
-    for (const auto& b : physics_context.bodies)
+    for (auto i = 0zu; i < body_count; ++i)
     {
+        const auto b = physics_context.body(i);
         if (!b.is_static())
         {
             ++dynamic_count;
@@ -91,65 +159,80 @@ auto render_physics_debug_window(EngineContext& engine_context) -> void
 
     ImGui::Text(
         "Bodies: %zu (dynamic %zu, asleep %zu)",
-        physics_context.bodies.size(),
+        body_count,
         dynamic_count,
         asleep_count
     );
-    ImGui::Text(
-        "Broadphase candidates: %zu",
-        physics_context.debug_collision_stats.broadphase_candidates
-    );
-    ImGui::Text(
-        "Narrowphase tests: %zu",
-        physics_context.debug_collision_stats.narrowphase_pairs
-    );
-    const auto n = physics_context.debug_collision_stats.body_count;
-    const auto total_pairs = (n > 1zu) ? ((n * (n - 1zu)) / 2zu) : 0zu;
-    if (total_pairs > 0zu)
+    if (physics_context.debug_tracking_enabled)
     {
-        const auto kept = physics_context.debug_collision_stats.broadphase_candidates;
-        const auto pruned = total_pairs > kept ? total_pairs - kept : 0zu;
-        const auto pruned_pct =
-            (100.0 * static_cast<f64>(pruned)) / static_cast<f64>(total_pairs);
-        ImGui::Text("Broadphase pruned: %.1f%%", pruned_pct);
-    }
-    ImGui::Text("Contacts (last step): %zu", physics_context.debug_contacts.size());
-    ImGui::Text("Selected: %zu", editor_state.selected_ids.size());
-
-    ImGui::Separator();
-    ImGui::Text(
-        "Total kinetic energy: %.3f", static_cast<f64>(physics_context.debug_total_kinetic_energy)
-    );
-
-    if (!physics_context.debug_total_kinetic_energy_history.empty())
-    {
-        const auto hz = static_cast<int>(std::lround(1.0 / k_energy_sample_dt));
-        const auto seconds = static_cast<int>(k_energy_history_len * k_energy_sample_dt);
-
-        const auto label =
-            std::format("Total kinetic energy history (last {}s, {} Hz)", seconds, hz);
-
-        const auto sample_getter = [](void* user_data, int idx) -> float
-        {
-            const auto* ring = static_cast<const EnergyHistoryRing*>(user_data);
-            return ring->at(static_cast<usize>(idx));
-        };
-
-        ImGui::PlotLines(
-            label.c_str(),
-            sample_getter,
-            &physics_context.debug_total_kinetic_energy_history,
-            static_cast<int>(physics_context.debug_total_kinetic_energy_history.size()),
-            0,
-            nullptr,
-            std::numeric_limits<float>::max(),
-            std::numeric_limits<float>::max(),
-            ImVec2(0.0f, 90.0f)
+        ImGui::Text(
+            "Broadphase candidates: %zu",
+            physics_context.debug_collision_stats.broadphase_candidates
         );
+        ImGui::Text(
+            "Narrowphase tests: %zu",
+            physics_context.debug_collision_stats.narrowphase_pairs
+        );
+        const auto n = physics_context.debug_collision_stats.body_count;
+        const auto total_pairs = (n > 1zu) ? ((n * (n - 1zu)) / 2zu) : 0zu;
+        if (total_pairs > 0zu)
+        {
+            const auto kept = physics_context.debug_collision_stats.broadphase_candidates;
+            const auto pruned = total_pairs > kept ? total_pairs - kept : 0zu;
+            const auto pruned_pct =
+                (100.0 * static_cast<f64>(pruned)) / static_cast<f64>(total_pairs);
+            ImGui::Text("Broadphase pruned: %.1f%%", pruned_pct);
+        }
+        ImGui::Text("Contacts (last step): %zu", physics_context.debug_contacts.size());
     }
     else
     {
-        ImGui::TextUnformatted("Energy history: (collecting...)");
+        ImGui::TextUnformatted("Collision stats: tracking disabled");
+    }
+    ImGui::Text("Selected: %zu", editor_state.selected_ids.size());
+
+    ImGui::Separator();
+    if (physics_context.debug_tracking_enabled)
+    {
+        ImGui::Text(
+            "Total kinetic energy: %.3f",
+            static_cast<f64>(physics_context.debug_total_kinetic_energy)
+        );
+
+        if (!physics_context.debug_total_kinetic_energy_history.empty())
+        {
+            const auto hz = static_cast<int>(std::lround(1.0 / k_energy_sample_dt));
+            const auto seconds = static_cast<int>(k_energy_history_len * k_energy_sample_dt);
+
+            const auto label =
+                std::format("Total kinetic energy history (last {}s, {} Hz)", seconds, hz);
+
+            const auto sample_getter = [](void* user_data, int idx) -> float
+            {
+                const auto* ring = static_cast<const EnergyHistoryRing*>(user_data);
+                return ring->at(static_cast<usize>(idx));
+            };
+
+            ImGui::PlotLines(
+                label.c_str(),
+                sample_getter,
+                &physics_context.debug_total_kinetic_energy_history,
+                static_cast<int>(physics_context.debug_total_kinetic_energy_history.size()),
+                0,
+                nullptr,
+                std::numeric_limits<float>::max(),
+                std::numeric_limits<float>::max(),
+                ImVec2(0.0f, 90.0f)
+            );
+        }
+        else
+        {
+            ImGui::TextUnformatted("Energy history: (collecting...)");
+        }
+    }
+    else
+    {
+        ImGui::TextUnformatted("Energy history: tracking disabled");
     }
 
     ImGui::End();
@@ -360,6 +443,61 @@ auto render_imgui_windows(EngineContext& engine_context) -> void
     auto& cam = editor_state.camera();
 
     {
+        auto& simulation = engine_context.simulation;
+
+        ImGui::Begin("Scenes");
+        const auto catalog = scene_catalog();
+        if (catalog.empty())
+        {
+            ImGui::TextUnformatted("No scenes are registered.");
+            ImGui::End();
+        }
+        else
+        {
+            const auto current_index = scene_index(simulation.active_scene).value_or(0zu);
+            const auto current_name = scene_name(simulation.active_scene);
+            const auto combo_label = std::format("{}##active_scene_combo", current_name);
+
+            if (ImGui::BeginCombo("Active Scene", combo_label.c_str()))
+            {
+                for (usize i{0zu}; i < catalog.size(); ++i)
+                {
+                    const auto selected = catalog[i].id == simulation.active_scene;
+                    if (ImGui::Selectable(catalog[i].name.data(), selected))
+                    {
+                        reload_scene_for_engine(engine_context, catalog[i].id);
+                    }
+                    if (selected)
+                    {
+                        ImGui::SetItemDefaultFocus();
+                    }
+                }
+                ImGui::EndCombo();
+            }
+
+            if (ImGui::Button("Reload Active"))
+            {
+                reload_scene_for_engine(engine_context, simulation.active_scene);
+            }
+
+            ImGui::SameLine();
+            if (ImGui::Button("Load Default"))
+            {
+                reload_scene_for_engine(engine_context, k_default_scene);
+            }
+
+            ImGui::Separator();
+            ImGui::Text("Scene %zu / %zu", current_index + 1zu, catalog.size());
+            ImGui::PushTextWrapPos(0.0f);
+            const auto desc = scene_description(simulation.active_scene);
+            ImGui::TextUnformatted(desc.data(), desc.data() + desc.size());
+            ImGui::PopTextWrapPos();
+
+            ImGui::End();
+        }
+    }
+
+    {
         ImGui::Begin("Info");
         const auto gl_string = [](GLenum name) -> const char*
         { return reinterpret_cast<const char*>(glGetString(name)); };
@@ -412,7 +550,7 @@ auto render_imgui_windows(EngineContext& engine_context) -> void
                 else
                 {
                     std::println(
-                        "[UI Theme] Font fallback: theme '{}' requested '{}', not found. Using "
+                        "[UI Theme] Font fallback: theme '{}' uses missing font '{}'. Using "
                         "default.",
                         t.name,
                         *t.font_id
@@ -500,15 +638,7 @@ auto render_imgui_windows(EngineContext& engine_context) -> void
             }
             Entity& o = *active_res;
 
-            std::optional<usize> physics_index{};
-            for (usize i{0zu}; i < physics_context.bodies.size(); ++i)
-            {
-                if (o.id == physics_context.bodies[i].id)
-                {
-                    physics_index = i;
-                    break;
-                }
-            }
+            const auto physics_index = physics_context.find_body_index(o.id);
 
             std::string type_str{to_string(o.type)};
 
@@ -520,7 +650,7 @@ auto render_imgui_windows(EngineContext& engine_context) -> void
 
             if (physics_index)
             {
-                auto& rb = physics_context.bodies[*physics_index];
+                auto rb = physics_context.body(*physics_index);
                 auto p = rb.position;
                 if (ImGui::DragFloat3("Position", &p.x, 0.01f))
                 {
@@ -528,7 +658,7 @@ auto render_imgui_windows(EngineContext& engine_context) -> void
                     (void) world.set_position(o.id, p);
                 }
 
-                Quaternion& ori = rb.orientation;
+                Quaternion& ori{rb.orientation};
                 const EulerDeg3& rot{glm::degrees(glm::eulerAngles(ori))};
                 ImGui::Text(
                     "Orientation (Quaternion) (%.2f,%.2f,%.2f,%.2f)",
@@ -585,6 +715,8 @@ auto render_imgui_windows(EngineContext& engine_context) -> void
             ImGui::Text("No object selected.");
             ImGui::Text("Left-click objects to select.");
             ImGui::Text("Shift + left-click to multi-select.");
+            ImGui::Text("Left-drag in viewport to box-select cubes.");
+            ImGui::Text("Hold Ctrl/Cmd while dragging for through-depth selection.");
             ImGui::Text("Press G to grab.");
             ImGui::Text("Middle-mouse drag to orbit.");
         }
@@ -646,8 +778,10 @@ auto render_imgui_windows(EngineContext& engine_context) -> void
     render_terminal_window(engine_context);
 }
 
-auto render_menu_bar(GfxContext& gfx_context) -> void
+auto render_menu_bar(EngineContext& engine_context) -> void
 {
+    auto& gfx_context = engine_context.gfx;
+
     if (ImGui::BeginMenu("File"))
     {
         if (!gfx_context.recorder.is_recording())
@@ -688,6 +822,61 @@ auto render_menu_bar(GfxContext& gfx_context) -> void
         {
             ui_log("Redo (not implemented)");
         }
+        ImGui::EndMenu();
+    }
+
+    if (ImGui::BeginMenu("View"))
+    {
+        if (ImGui::MenuItem("Reveal Physics Debug (F3)"))
+        {
+            gfx_context.request_reveal_physics_debug_window = true;
+        }
+        if (ImGui::MenuItem("Reset UI Layout"))
+        {
+            ImGui::LoadIniSettingsFromMemory("");
+            const auto* ini_path = ImGui::GetIO().IniFilename;
+            if (ini_path != nullptr && ini_path[0] != '\0')
+            {
+                ImGui::SaveIniSettingsToDisk(ini_path);
+            }
+            gfx_context.request_reveal_physics_debug_window = true;
+            ui_log("UI layout reset");
+        }
+        ImGui::EndMenu();
+    }
+
+    if (ImGui::BeginMenu("Scene"))
+    {
+        const auto catalog = scene_catalog();
+        auto& simulation = engine_context.simulation;
+
+        if (catalog.empty())
+        {
+            ImGui::TextUnformatted("No scenes are registered.");
+        }
+        else
+        {
+            for (usize i{0zu}; i < catalog.size(); ++i)
+            {
+                const auto selected = catalog[i].id == simulation.active_scene;
+                const auto label = std::format("{}##menu_scene_{}", catalog[i].name, i);
+                if (ImGui::MenuItem(label.c_str(), nullptr, selected))
+                {
+                    reload_scene_for_engine(engine_context, catalog[i].id);
+                }
+            }
+
+            ImGui::Separator();
+            if (ImGui::MenuItem("Reload Active"))
+            {
+                reload_scene_for_engine(engine_context, simulation.active_scene);
+            }
+            if (ImGui::MenuItem("Load Default"))
+            {
+                reload_scene_for_engine(engine_context, k_default_scene);
+            }
+        }
+
         ImGui::EndMenu();
     }
 }

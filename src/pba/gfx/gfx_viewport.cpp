@@ -71,12 +71,12 @@ namespace
     return r;
 }
 
-[[nodiscard]] auto try_entity_body(SimulationContext& sim, const Entity& ent) noexcept
-    -> const RigidBody*
+[[nodiscard]] auto try_entity_body(const SimulationContext& sim, const Entity& ent) noexcept
+    -> std::optional<PhysicsContext::BodyConstRef>
 {
     if (!ent.body)
     {
-        return nullptr;
+        return std::nullopt;
     }
     return sim.physics.try_body(*ent.body);
 }
@@ -97,7 +97,7 @@ namespace
         return color;
     }
 
-    const RigidBody* rb = try_entity_body(e->simulation, ent);
+    const auto rb = try_entity_body(e->simulation, ent);
     if (!rb || rb->is_static())
     {
         return color;
@@ -196,8 +196,45 @@ auto restore_gl_state(const GLStateSnapshot& s) noexcept -> void
 
 }  // namespace
 
+auto GfxContext::render_to_viewport_environment(
+    const ViewMatrix& camera_view_matrix,
+    const ProjMatrix& camera_proj_matrix,
+    const Pos3& camera_pos,
+    f32 camera_far
+) const -> void
+{
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_CULL_FACE);
+    glDisable(GL_STENCIL_TEST);
+    glDepthMask(GL_FALSE);
+
+    const auto sky_radius = std::max(1.0f, 0.45f * camera_far);
+    const ModelMatrix sky_model{
+        glm::translate(glm::mat4(1.0f), camera_pos) * glm::scale(glm::mat4(1.0f), glm::vec3(sky_radius))
+    };
+
+    const auto& prog = shader_programs.environment;
+    prog.bind();
+    prog.set_uView(camera_view_matrix);
+    prog.set_uProj(camera_proj_matrix);
+    prog.set_uModel(sky_model);
+    prog.set_uCameraPos(camera_pos);
+    prog.set_uEnvironmentTex(0);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, textures.environment_lighting.id);
+
+    meshes.sphere.vao.bind();
+    glDrawArrays(GL_TRIANGLES, 0, meshes.sphere.vertex_count);
+    VAO::unbind();
+
+    glDepthMask(GL_TRUE);
+}
+
 auto GfxContext::render_to_viewport_objects(
-    const ViewMatrix& camera_view_matrix, const ProjMatrix& camera_proj_matrix
+    const ViewMatrix& camera_view_matrix,
+    const ProjMatrix& camera_proj_matrix,
+    const Pos3& camera_pos
 ) const -> void
 {
     Expects(engine_context);
@@ -218,6 +255,12 @@ auto GfxContext::render_to_viewport_objects(
     prog.bind();
     prog.set_uView(camera_view_matrix);
     prog.set_uProj(camera_proj_matrix);
+    prog.set_uCameraPos(camera_pos);
+    prog.set_uEnvLightStrength(k_env_light_strength);
+    prog.set_uEnvironmentTex(0);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, textures.environment_lighting.id);
 
     meshes.cube.vao.bind();
     for (auto i = 0zu; i < ents.size(); ++i)
@@ -274,10 +317,13 @@ auto GfxContext::render_to_viewport() -> void
         const auto& cam = engine_context->simulation.world.editor_state().camera();
         const auto view_matrix = cam.view_matrix();
         const auto proj_matrix = cam.proj_matrix(aspect);
+        const auto camera_pos = cam.position();
+        const auto camera_far = cam.z_far;
 
         // clang-format off
+        render_to_viewport_environment  (view_matrix, proj_matrix, camera_pos, camera_far);
         render_to_viewport_grid         (view_matrix, proj_matrix);
-        render_to_viewport_objects      (view_matrix, proj_matrix);
+        render_to_viewport_objects      (view_matrix, proj_matrix, camera_pos);
         render_to_viewport_outline      (view_matrix, proj_matrix);
         render_to_viewport_physics_debug(view_matrix, proj_matrix);
         render_to_viewport_pivot        (view_matrix, proj_matrix, cam.pivot);
@@ -299,6 +345,9 @@ auto GfxContext::render_to_viewport_outline(
 ) const -> void
 {
     Expects(engine_context);
+    glEnable(GL_STENCIL_TEST);
+
+    const auto camera_pos = engine_context->simulation.world.editor_state().camera().position();
 
     const auto& selected = engine_context->simulation.world.editor_state().selected_ids;
     if (selected.empty())
@@ -342,6 +391,12 @@ auto GfxContext::render_to_viewport_outline(
             prog.set_uView(camera_view_matrix);
             prog.set_uProj(camera_proj_matrix);
             prog.set_uModel(M);
+            prog.set_uCameraPos(camera_pos);
+            prog.set_uEnvLightStrength(k_env_light_strength);
+            prog.set_uEnvironmentTex(0);
+
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, textures.environment_lighting.id);
 
             meshes.cube.instantiate_once();
 
@@ -466,6 +521,34 @@ auto GfxContext::viewport_window() -> void
     render_to_viewport();
     viewport_image_hovered = ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem);
 
+    if (editor.box_select.active)
+    {
+        const auto start_x = narrow_cast<f32>(editor.box_select.start_mouse_x);
+        const auto start_y = narrow_cast<f32>(editor.box_select.start_mouse_y);
+        const auto current_x = narrow_cast<f32>(editor.box_select.current_mouse_x);
+        const auto current_y = narrow_cast<f32>(editor.box_select.current_mouse_y);
+
+        const auto vp_min_x = viewport_img_pos.x;
+        const auto vp_min_y = viewport_img_pos.y;
+        const auto vp_max_x = viewport_img_pos.x + std::max(1.0f, viewport_img_size.x);
+        const auto vp_max_y = viewport_img_pos.y + std::max(1.0f, viewport_img_size.y);
+
+        const auto min_x = std::clamp(std::min(start_x, current_x), vp_min_x, vp_max_x);
+        const auto min_y = std::clamp(std::min(start_y, current_y), vp_min_y, vp_max_y);
+        const auto max_x = std::clamp(std::max(start_x, current_x), vp_min_x, vp_max_x);
+        const auto max_y = std::clamp(std::max(start_y, current_y), vp_min_y, vp_max_y);
+
+        if (max_x > min_x && max_y > min_y)
+        {
+            auto* draw_list = ImGui::GetWindowDrawList();
+            const auto p0 = ImVec2{min_x, min_y};
+            const auto p1 = ImVec2{max_x, max_y};
+
+            draw_list->AddRectFilled(p0, p1, IM_COL32(95, 180, 255, 50));
+            draw_list->AddRect(p0, p1, IM_COL32(95, 180, 255, 230), 0.0f, 0, 1.5f);
+        }
+    }
+
     ImGui::End();
 }
 
@@ -566,9 +649,26 @@ auto GfxContext::append_selected_entity_debug_lines_() -> void
             continue;
         }
 
-        const auto* rigid_body = entity->body ? physics.try_body(*entity->body) : nullptr;
+        const auto rigid_body = entity->body ? physics.try_body(*entity->body)
+                                             : std::optional<PhysicsContext::BodyConstRef>{};
 
-        const auto [center_of_mass, ori, extent] = selected_entity_frame_(*entity, rigid_body);
+        const auto [center_of_mass, ori, extent] = [&]() -> std::tuple<Pos3, Quaternion, f32>
+        {
+            if (rigid_body)
+            {
+                return {
+                    rigid_body->position,
+                    rigid_body->orientation,
+                    2.0f * max_extent(rigid_body->half_extents),
+                };
+            }
+
+            return {
+                entity->transform.position,
+                entity->transform.orientation,
+                max_extent(entity->transform.scale),
+            };
+        }();
 
         const auto alpha = 1.0f;
         if (phys_debug.show_selected_axes)
@@ -609,26 +709,6 @@ auto GfxContext::append_selected_entity_debug_lines_() -> void
             }
         }
     }
-}
-
-auto GfxContext::selected_entity_frame_(
-    const Entity& entity, const RigidBody* rigid_body
-) const noexcept -> std::tuple<Pos3, Quaternion, f32>
-{
-    if (rigid_body)
-    {
-        return {
-            rigid_body->position,
-            rigid_body->orientation,
-            2.0f * max_extent(rigid_body->half_extents),
-        };
-    }
-
-    return {
-        entity.transform.position,
-        entity.transform.orientation,
-        max_extent(entity.transform.scale),
-    };
 }
 
 auto GfxContext::ensure_debug_line_mesh_created_() -> void

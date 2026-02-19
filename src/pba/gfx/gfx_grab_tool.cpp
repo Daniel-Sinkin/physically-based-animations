@@ -46,7 +46,7 @@ auto set_entity_and_body_position(SimulationContext& sim, EntityId id, const Pos
 
         if (entity->body)
         {
-            if (auto* rb = sim.physics.try_body(*entity->body))
+            if (auto rb = sim.physics.try_body(*entity->body))
             {
                 rb->position = pos;
             }
@@ -69,7 +69,7 @@ auto GfxContext::cancel_grab() -> void
     {
         if (auto* entity = engine_context->simulation.world.find(id); entity && entity->body)
         {
-            if (auto* rb = engine_context->simulation.physics.try_body(*entity->body))
+            if (auto rb = engine_context->simulation.physics.try_body(*entity->body))
             {
                 rb->grabbed = false;
                 rb->velocity = Dir3{};
@@ -102,7 +102,7 @@ auto GfxContext::confirm_grab() -> void
         {
             if (entity->body)
             {
-                if (auto* rb = engine_context->simulation.physics.try_body(*entity->body))
+                if (auto rb = engine_context->simulation.physics.try_body(*entity->body))
                 {
                     rb->position = entity->transform.position;
                     rb->grabbed = false;
@@ -170,7 +170,7 @@ auto GfxContext::begin_grab(const EditorInput& input) -> void
 
             if (entity->body)
             {
-                if (auto* rb = engine_context->simulation.physics.try_body(*entity->body))
+                if (auto rb = engine_context->simulation.physics.try_body(*entity->body))
                 {
                     rb->grabbed = true;
                     rb->asleep = false;
