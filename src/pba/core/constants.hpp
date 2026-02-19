@@ -65,12 +65,12 @@ inline constexpr f32 k_pen_correction_frag{0.1f};
 
 inline constexpr f32 k_friction{0.5f};
 
-inline constexpr usize k_physics_step_arena_bytes{1zu * k_mib};
+inline constexpr usize k_physics_step_arena_bytes{4zu * k_mib};
 
 inline constexpr f64 k_energy_sample_dt{0.1};
 inline constexpr usize k_energy_history_len{600zu};
 
-inline constexpr usize k_max_number_objects{1024zu};
+inline constexpr usize k_max_number_objects{8192zu};
 
 //
 // Camera

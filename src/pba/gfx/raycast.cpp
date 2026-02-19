@@ -18,24 +18,26 @@ auto raycast(const World& world, const Ray& ray) noexcept -> std::optional<Rayca
     Expects(ray.valid());
     auto best_t = k_f32_max;
 
-    u32 best_object_id{};
+    auto best_object_id = 0u;
 
-    // Forwarding reference to intersection function, see
-    // https://www.scs.stanford.edu/~dm/blog/param-pack.html
-    auto check_hit = [&](const auto& entity, auto&& intersect_fn) -> void
+    const auto entities = world.entities();
+    for (auto i = 0zu; i < entities.size(); ++i)
     {
-        if (auto res = intersect_fn(ray, entity.transform.model_matrix()); res && *res < best_t)
+        const auto& entity = entities[i];
+        const auto model_matrix = world.model_matrix_at(i);
+        if (!model_matrix)
         {
-            best_t = *res;
-            best_object_id = entity.id;
+            continue;
         }
-    };
-    for (const auto& entity : world.entities())
-    {
+
         switch (entity.type)
         {
             case EntityType::Cube:
-                check_hit(entity, intersect_ray_cube);
+                if (auto res = intersect_ray_cube(ray, *model_matrix); res && *res < best_t)
+                {
+                    best_t = *res;
+                    best_object_id = entity.id;
+                }
                 break;
         }
     }
@@ -73,8 +75,8 @@ auto ray_from_imgui_rect(
     const auto y_ndc = 1.0f - 2.0f * (ly / h);
 
     const auto c2w = clip_to_world(camera_proj_matrix, camera_view_matrix);
-    const Pos3 near_w = c2w.unproject_ndc(x_ndc, y_ndc, -1.0f);
-    const Pos3 far_w = c2w.unproject_ndc(x_ndc, y_ndc, +1.0f);
+    const auto near_w = c2w.unproject_ndc(x_ndc, y_ndc, -1.0f);
+    const auto far_w = c2w.unproject_ndc(x_ndc, y_ndc, +1.0f);
 
     return Ray{
         .origin = near_w,

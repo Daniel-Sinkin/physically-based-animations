@@ -34,14 +34,14 @@ inline auto wake_up(RigidBody& b) noexcept -> bool
 auto integrate_orientation(const Quaternion& q, const Dir3& omega_world, f32 dt) noexcept
     -> Quaternion
 {
-    const Quaternion wq{0.0f, omega_world.x, omega_world.y, omega_world.z};
+    const auto wq = Quaternion{0.0f, omega_world.x, omega_world.y, omega_world.z};
     return glm::normalize(q + (0.5f * dt) * (wq * q));
 }
 
 auto inv_inertia_world_from_body(const Quaternion& q, const glm::mat3& inv_inertia_body) noexcept
     -> glm::mat3
 {
-    const glm::mat3 R{glm::mat3_cast(q)};
+    const auto R = glm::mat3_cast(q);
     return R * inv_inertia_body * glm::transpose(R);
 }
 
@@ -62,21 +62,21 @@ auto apply_impulse_contact_friction(
     //
     // which is an orthonormal projection onto the orthogonal space of the
     // normal direction (i.e. exactly the tangent space).
-    const Dir3 p_a_dot{a.velocity + glm::cross(a.angular_velocity, r_a)};
-    const Dir3 p_b_dot{b.velocity + glm::cross(b.angular_velocity, r_b)};
-    const Dir3 v_rel_w{p_a_dot - p_b_dot};
+    const auto p_a_dot = a.velocity + glm::cross(a.angular_velocity, r_a);
+    const auto p_b_dot = b.velocity + glm::cross(b.angular_velocity, r_b);
+    const auto v_rel_w = p_a_dot - p_b_dot;
 
     // Projection onto the tangent
     // v_rel.n
     const auto vrel_dot_n = glm::dot(v_rel_w, n);
     // v_rel - (v_rel.n) * n
-    const Dir3 v_t{v_rel_w - vrel_dot_n * n};
+    const auto v_t = v_rel_w - vrel_dot_n * n;
     // Equation (21) would be C_{u1}' = v_rel_w . u1
     // Equation (22) would be C_{u2}' = v_rel_w . u2
 
     // Model friction as a force acting in the opposite direction of "slip"
-    const f32 vt2{glm::dot(v_t, v_t)};
-    Dir3 t_hat{};
+    const auto vt2 = glm::dot(v_t, v_t);
+    auto t_hat = Dir3{};
     if (vt2 > 1e-12f)
     {
         t_hat = v_t / std::sqrt(vt2);
@@ -94,15 +94,15 @@ auto apply_impulse_contact_friction(
     }
 
     // These are the angular Jacobian terms (r x u) from Equation (23)
-    const Dir3 r_a_cross_t{glm::cross(r_a, t_hat)};
-    const Dir3 r_b_cross_t{glm::cross(r_b, t_hat)};
+    const auto r_a_cross_t = glm::cross(r_a, t_hat);
+    const auto r_b_cross_t = glm::cross(r_b, t_hat);
 
     // Change in angular velocity is given by
     //
     // Delta omega = I^-1(r x J)
     //
-    const Dir3 invI_r_axt{a.inv_inertia_world * r_a_cross_t};
-    const Dir3 invI_r_bxt{b.inv_inertia_world * r_b_cross_t};
+    const auto invI_r_axt = a.inv_inertia_world * r_a_cross_t;
+    const auto invI_r_bxt = b.inv_inertia_world * r_b_cross_t;
 
     // Computes effective mass along t_hat, often denoted by just k
     const auto k2a = a.inv_mass + glm::dot(t_hat, glm::cross(invI_r_axt, r_a));
@@ -127,7 +127,7 @@ auto apply_impulse_contact_friction(
     delta_lambda_t = new_lambda_t - old_lambda_t;
     contact.lambda_t = new_lambda_t;
 
-    const Dir3 friction_impulse{delta_lambda_t * t_hat};
+    const auto friction_impulse = delta_lambda_t * t_hat;
 
     if (!a.is_static())
     {
@@ -155,38 +155,38 @@ auto apply_impulse_contact(
 
     // "The quantity eps is called the coefficient of restitution (...)"
     constexpr f32 k_restitution_threshold{2.0f};
-    f32 eps{restitution};
+    auto eps = restitution;
     // (...) and must satisfy 0 <= eps <= 1. If eps = 1 then v_rel^+ = -v_rel^-,
     // and the collision is perfectly 'bouncy'; in particular, no kinetic energy is lost.
     // At the other end of the spectrum, eps = 0 results in v_rel^+ = 0, and a maxium
     // of kinetic energy is lost.
 
     // n^(t_0) the unit surface normal. Points from b to a
-    const Dir3 n{contact.n};
+    const auto n = contact.n;
 
     // Contact Point
-    const Pos3 p{contact.p};
+    const auto p = contact.p;
 
     // Center of mass
-    const Pos3 x_a{a.position};
-    const Pos3 x_b{b.position};
+    const auto x_a = a.position;
+    const auto x_b = b.position;
 
     // (Linear) Velocity
-    const Dir3 v_a{a.velocity};
-    const Dir3 v_b{b.velocity};
+    const auto v_a = a.velocity;
+    const auto v_b = b.velocity;
 
     // Displacement from center of mass
-    const Dir3 r_a{p - x_a};
-    const Dir3 r_b{p - x_b};
+    const auto r_a = p - x_a;
+    const auto r_b = p - x_b;
 
     // Angular velocities are denoted by omega_a and omega_b respectively
     // (8-1) p_a'(t_0) = v_a(t_0) + omega_a(t_0) x (p_a(t_0) - x_a(t_0))
-    const Dir3 p_a_dot{v_a + glm::cross(a.angular_velocity, r_a)};
+    const auto p_a_dot = v_a + glm::cross(a.angular_velocity, r_a);
     // (8-2) p_b'(t_0) = v_b(t_0) + omega_b(t_0) x (p_b(t_0) - x_b(t_0))
-    const Dir3 p_b_dot{v_b + glm::cross(b.angular_velocity, r_b)};
+    const auto p_b_dot = v_b + glm::cross(b.angular_velocity, r_b);
 
     // (8-3) v_rel = n^ . (p_a'(t_0) - p_b'(t_0)) // Normal Relative Velocity
-    const f32 v_rel = glm::dot(n, p_a_dot - p_b_dot);
+    const auto v_rel = glm::dot(n, p_a_dot - p_b_dot);
 
     // Impulse is given by J = j * n^ where we can derive j based on constraints.
     // Will omit the derivation, can express the v_a^+ and v_a^- as well as omega_a^+ and
@@ -194,16 +194,16 @@ auto apply_impulse_contact(
     // and solve for the magnitude j
 
     // Angular impulse direction
-    const Dir3 r_a_cross_n{glm::cross(r_a, n)};
-    const Dir3 r_b_cross_n{glm::cross(r_b, n)};
-    const Dir3 invI_r_axn{a.inv_inertia_world * r_a_cross_n};
-    const Dir3 invI_r_bxn{b.inv_inertia_world * r_b_cross_n};
+    const auto r_a_cross_n = glm::cross(r_a, n);
+    const auto r_b_cross_n = glm::cross(r_b, n);
+    const auto invI_r_axn = a.inv_inertia_world * r_a_cross_n;
+    const auto invI_r_bxn = b.inv_inertia_world * r_b_cross_n;
 
     // (8-18) Denominator
     // "Effective Mass" denominator; in the literature often denoted by k
-    const f32 k_a{a.inv_mass + glm::dot(n, glm::cross(invI_r_axn, r_a))};
-    const f32 k_b{b.inv_mass + glm::dot(n, glm::cross(invI_r_bxn, r_b))};
-    const f32 effective_mass{k_a + k_b};
+    const auto k_a = a.inv_mass + glm::dot(n, glm::cross(invI_r_axn, r_a));
+    const auto k_b = b.inv_mass + glm::dot(n, glm::cross(invI_r_bxn, r_b));
+    const auto effective_mass = k_a + k_b;
     if (effective_mass <= 1e-12f)
     {
         return;
@@ -214,20 +214,20 @@ auto apply_impulse_contact(
     }
 
     // delta_lambda_n is accumulation of what is j (impulse magnitude) in the paper
-    const f32 old_lambda_n{contact.lambda_n};
+    const auto old_lambda_n = contact.lambda_n;
 
     constexpr f32 k_max_bias_speed{2.0f};
-    const f32 effective_pen{std::max(0.0f, contact.penetration - k_pen_tolerance)};
-    const f32 bias_raw{-(k_pen_correction_frag / dt_s) * effective_pen};
-    const f32 bias{std::clamp(bias_raw, -k_max_bias_speed, 0.0f)};
-    f32 delta_lambda_n{-(((1.0f + eps) * v_rel) + bias) / effective_mass};
+    const auto effective_pen = std::max(0.0f, contact.penetration - k_pen_tolerance);
+    const auto bias_raw = -(k_pen_correction_frag / dt_s) * effective_pen;
+    const auto bias = std::clamp(bias_raw, -k_max_bias_speed, 0.0f);
+    auto delta_lambda_n = -(((1.0f + eps) * v_rel) + bias) / effective_mass;
 
-    const f32 new_lambda_n{std::max(old_lambda_n + delta_lambda_n, 0.0f)};
+    const auto new_lambda_n = std::max(old_lambda_n + delta_lambda_n, 0.0f);
     delta_lambda_n = new_lambda_n - old_lambda_n;
     contact.lambda_n = new_lambda_n;
     if (delta_lambda_n != 0.0f)
     {
-        const Dir3 impulse{delta_lambda_n * n};
+        const auto impulse = delta_lambda_n * n;
 
         // Equation (8-5) Delta v = J / M
         // Equation (8-6) tau_impulse = (p - x(t)) x J
@@ -235,14 +235,14 @@ auto apply_impulse_contact(
         if (!a.is_static())
         {
             a.velocity += impulse * a.inv_mass;
-            const Dir3 tau_a_impulse{glm::cross(r_a, impulse)};
+            const auto tau_a_impulse = glm::cross(r_a, impulse);
             a.angular_velocity += a.inv_inertia_world * tau_a_impulse;
         }
         if (!b.is_static())
         {
             // Recall n^(t_0) points from b to a so we have to reverse impulse direction
             b.velocity -= impulse * b.inv_mass;
-            const Dir3 tau_b_impulse{glm::cross(r_b, impulse)};
+            const auto tau_b_impulse = glm::cross(r_b, impulse);
             b.angular_velocity -= b.inv_inertia_world * tau_b_impulse;
         }
     }
@@ -322,7 +322,7 @@ auto warm_start_contact(std::span<RigidBody> bodies, Contact& contact) noexcept 
     contact.lambda_t = std::clamp(contact.lambda_t, -50.0f, 50.0f);
     if (contact.lambda_n > 0.0f)
     {
-        const Dir3 Jn{warmstart_scale * contact.lambda_n * normal};
+        const auto Jn = warmstart_scale * contact.lambda_n * normal;
 
         if (!a.is_static())
         {
@@ -338,7 +338,7 @@ auto warm_start_contact(std::span<RigidBody> bodies, Contact& contact) noexcept 
 
     if (contact.lambda_t != 0.0f && contact.has_t_hat)
     {
-        const Dir3 Jt{warmstart_scale * contact.lambda_t * contact.t_hat};
+        const auto Jt = warmstart_scale * contact.lambda_t * contact.t_hat;
 
         if (!a.is_static())
         {
@@ -381,7 +381,7 @@ auto solve_velocity_constraints(
             continue;
         }
 
-        const bool should_wake = [&]() -> bool
+        const auto should_wake = [&]() -> bool
         {
             if (contact.penetration > k_pen_tolerance)
             {
@@ -398,7 +398,7 @@ auto solve_velocity_constraints(
         }
     }
 
-    for (usize i{0zu}; i < k_solver_iterations; ++i)
+    for (auto i = 0; i < k_solver_iterations; ++i)
     {
         for (auto& contact : contact_arena.as_span<Contact>())
         {
@@ -427,7 +427,7 @@ auto solve_velocity_constraints(
 auto solve_position_constraints(std::span<RigidBody> bodies, ArenaAllocator& contact_arena) noexcept
     -> void
 {
-    for (usize i{0zu}; i < k_position_iterations; ++i)
+    for (auto i = 0; i < k_position_iterations; ++i)
     {
         for (auto& contact : contact_arena.as_span<Contact>())
         {
@@ -445,7 +445,7 @@ auto solve_position_constraints(std::span<RigidBody> bodies, ArenaAllocator& con
                 continue;
             }
 
-            const Dir3 correction = [&]()
+            const auto correction = [&]()
             {
                 const auto pen_excess = contact.penetration - k_pen_tolerance;
                 const auto mag = std::clamp(k_pen_percent * pen_excess, 0.0f, k_pen_max_correction);

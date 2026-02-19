@@ -5,7 +5,6 @@
 #include <algorithm>
 #include <optional>
 #include <print>
-#include <sys/_types/_id_t.h>
 
 namespace ds_pba
 {
@@ -120,7 +119,29 @@ auto World::spawn(EntityType type, const Transform& t, Color3 c) -> Entity&
         std::terminate();
     }
 
-    // transforms_.push_back(t);
+    const auto transform_idx = transforms_.push_back(t);
+    if (!transform_idx)
+    {
+        std::println(
+            stderr,
+            "TransformSOA capacity exceeded (capacity={}, id={})",
+            transforms_.capacity(),
+            id
+        );
+        std::terminate();
+    }
+
+    if (*transform_idx != entities_.size())
+    {
+        std::println(
+            stderr,
+            "Transform index mismatch (transform_idx={}, entity_idx={})",
+            *transform_idx,
+            entities_.size()
+        );
+        std::terminate();
+    }
+
     entities_.push_back(
         Entity{
             .id = id,
@@ -142,11 +163,18 @@ auto World::remove_entity(EntityId id) noexcept -> void
         return;
     }
 
-    const usize idx = it->second;
-    const usize last = entities_.empty() ? 0zu : (entities_.size() - 1zu);
+    const auto idx = it->second;
+    const auto last = entities_.empty() ? 0zu : (entities_.size() - 1zu);
 
     editor_state_.erase_from_selection(id);
     id_to_index_.erase(it);
+
+    const auto transform_ok = transforms_.swap_erase(idx);
+    if (!transform_ok)
+    {
+        std::println(stderr, "TransformSOA erase failed for entity {}", id);
+        std::terminate();
+    }
 
     if (idx != last)
     {
@@ -211,6 +239,89 @@ auto World::entity_at(usize i) -> Entity&
 auto World::entity_at(usize i) const -> const Entity&
 {
     return entities_.at(i);
+}
+
+auto World::transform_at(usize i) const noexcept -> std::optional<Transform>
+{
+    return transforms_.get(i);
+}
+
+auto World::model_matrix_at(usize i) const noexcept -> std::optional<ModelMatrix>
+{
+    if (const auto t = transforms_.get(i))
+    {
+        return t->model_matrix();
+    }
+    return std::nullopt;
+}
+
+auto World::set_transform(EntityId id, const Transform& t) noexcept -> bool
+{
+    const auto idx = find_idx(id);
+    if (!idx)
+    {
+        return false;
+    }
+    return set_transform_at(*idx, t);
+}
+
+auto World::set_transform_at(usize i, const Transform& t) noexcept -> bool
+{
+    if (i >= entities_.size())
+    {
+        return false;
+    }
+    if (!transforms_.set(i, t))
+    {
+        return false;
+    }
+    entities_[i].transform = t;
+    return true;
+}
+
+auto World::set_position(EntityId id, const Pos3& p) noexcept -> bool
+{
+    const auto idx = find_idx(id);
+    if (!idx)
+    {
+        return false;
+    }
+    if (!transforms_.set_position(*idx, p))
+    {
+        return false;
+    }
+    entities_[*idx].transform.position = p;
+    return true;
+}
+
+auto World::set_orientation(EntityId id, const Quaternion& q) noexcept -> bool
+{
+    const auto idx = find_idx(id);
+    if (!idx)
+    {
+        return false;
+    }
+    if (!transforms_.set_orientation(*idx, q))
+    {
+        return false;
+    }
+    entities_[*idx].transform.orientation = q;
+    return true;
+}
+
+auto World::set_scale(EntityId id, const Dir3& s) noexcept -> bool
+{
+    const auto idx = find_idx(id);
+    if (!idx)
+    {
+        return false;
+    }
+    if (!transforms_.set_scale(*idx, s))
+    {
+        return false;
+    }
+    entities_[*idx].transform.scale = s;
+    return true;
 }
 
 auto World::editor_state() noexcept -> EditorState&

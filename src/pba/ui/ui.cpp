@@ -75,8 +75,8 @@ auto render_physics_debug_window(EngineContext& engine_context) -> void
 
     ImGui::Separator();
 
-    usize dynamic_count{0zu};
-    usize asleep_count{0zu};
+    auto dynamic_count = 0zu;
+    auto asleep_count = 0zu;
     for (const auto& b : physics_context.bodies)
     {
         if (!b.is_static())
@@ -95,6 +95,24 @@ auto render_physics_debug_window(EngineContext& engine_context) -> void
         dynamic_count,
         asleep_count
     );
+    ImGui::Text(
+        "Broadphase candidates: %zu",
+        physics_context.debug_collision_stats.broadphase_candidates
+    );
+    ImGui::Text(
+        "Narrowphase tests: %zu",
+        physics_context.debug_collision_stats.narrowphase_pairs
+    );
+    const auto n = physics_context.debug_collision_stats.body_count;
+    const auto total_pairs = (n > 1zu) ? ((n * (n - 1zu)) / 2zu) : 0zu;
+    if (total_pairs > 0zu)
+    {
+        const auto kept = physics_context.debug_collision_stats.broadphase_candidates;
+        const auto pruned = total_pairs > kept ? total_pairs - kept : 0zu;
+        const auto pruned_pct =
+            (100.0 * static_cast<f64>(pruned)) / static_cast<f64>(total_pairs);
+        ImGui::Text("Broadphase pruned: %.1f%%", pruned_pct);
+    }
     ImGui::Text("Contacts (last step): %zu", physics_context.debug_contacts.size());
     ImGui::Text("Selected: %zu", editor_state.selected_ids.size());
 
@@ -105,15 +123,22 @@ auto render_physics_debug_window(EngineContext& engine_context) -> void
 
     if (!physics_context.debug_total_kinetic_energy_history.empty())
     {
-        const int hz = static_cast<int>(std::lround(1.0 / k_energy_sample_dt));
-        const int seconds = static_cast<int>(k_energy_history_len * k_energy_sample_dt);
+        const auto hz = static_cast<int>(std::lround(1.0 / k_energy_sample_dt));
+        const auto seconds = static_cast<int>(k_energy_history_len * k_energy_sample_dt);
 
         const auto label =
             std::format("Total kinetic energy history (last {}s, {} Hz)", seconds, hz);
 
+        const auto sample_getter = [](void* user_data, int idx) -> float
+        {
+            const auto* ring = static_cast<const EnergyHistoryRing*>(user_data);
+            return ring->at(static_cast<usize>(idx));
+        };
+
         ImGui::PlotLines(
             label.c_str(),
-            physics_context.debug_total_kinetic_energy_history.data(),
+            sample_getter,
+            &physics_context.debug_total_kinetic_energy_history,
             static_cast<int>(physics_context.debug_total_kinetic_energy_history.size()),
             0,
             nullptr,
@@ -150,7 +175,7 @@ struct TerminalState
     }
 };
 
-TerminalState& terminal()
+auto terminal() -> TerminalState&
 {
     static TerminalState t{};
     return t;
@@ -356,7 +381,7 @@ auto render_imgui_windows(EngineContext& engine_context) -> void
 
         ImGui::Text("Frame Counter: %d", gfx_context.frame_count);
 
-        const auto dur{Clock::now() - gfx_context.run_start};
+        const auto dur = Clock::now() - gfx_context.run_start;
 
         const auto seconds = std::chrono::duration<f64>(dur).count();
 
@@ -499,7 +524,8 @@ auto render_imgui_windows(EngineContext& engine_context) -> void
                 auto p = rb.position;
                 if (ImGui::DragFloat3("Position", &p.x, 0.01f))
                 {
-                    engine_context.simulation.world.find(o.id)->transform.position = p;
+                    rb.position = p;
+                    (void) world.set_position(o.id, p);
                 }
 
                 Quaternion& ori = rb.orientation;
@@ -532,13 +558,27 @@ auto render_imgui_windows(EngineContext& engine_context) -> void
             }
             else
             {
-                ImGui::DragFloat3("Position", &o.transform.position.x, 0.01f);
-                ImGui::DragFloat3("Scale", &o.transform.scale.x, 0.01f, 0.001f, 1000.0f);
+                auto p = o.transform.position;
+                if (ImGui::DragFloat3("Position", &p.x, 0.01f))
+                {
+                    (void) world.set_position(o.id, p);
+                }
+
+                auto s = o.transform.scale;
+                if (ImGui::DragFloat3("Scale", &s.x, 0.01f, 0.001f, 1000.0f))
+                {
+                    s.x = std::max(s.x, 0.001f);
+                    s.y = std::max(s.y, 0.001f);
+                    s.z = std::max(s.z, 0.001f);
+                    (void) world.set_scale(o.id, s);
+                }
             }
 
-            o.transform.scale.x = std::max(o.transform.scale.x, 0.001f);
-            o.transform.scale.y = std::max(o.transform.scale.y, 0.001f);
-            o.transform.scale.z = std::max(o.transform.scale.z, 0.001f);
+            auto s = o.transform.scale;
+            s.x = std::max(s.x, 0.001f);
+            s.y = std::max(s.y, 0.001f);
+            s.z = std::max(s.z, 0.001f);
+            (void) world.set_scale(o.id, s);
         }
         else
         {

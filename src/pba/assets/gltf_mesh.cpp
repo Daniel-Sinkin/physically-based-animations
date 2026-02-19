@@ -540,7 +540,7 @@ auto load_gltf_mesh(const std::string& path, const Transform& preprocess)
     }
     const std::vector<u32>& idx{*idx_opt};
 
-    const auto model_matrix{preprocess.model_matrix()};
+    const auto model_matrix = preprocess.model_matrix();
     const auto normal_matrix = model_matrix.normal_matrix();
 
     auto normalized = [&](const glm::vec3& n) -> glm::vec3
@@ -799,8 +799,8 @@ auto load_gltf_mesh_pnt(const std::string& path, const Transform& preprocess)
     }
     const std::vector<u32>& idx{*idx_opt};
 
-    const auto model_matrix{preprocess.model_matrix()};
-    const auto normal_matrix{model_matrix.normal_matrix()};
+    const auto model_matrix = preprocess.model_matrix();
+    const auto normal_matrix = model_matrix.normal_matrix();
 
     auto read_pos = [&](u32 i) -> glm::vec3
     {

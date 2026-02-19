@@ -61,6 +61,13 @@ class World
     [[nodiscard]] auto entity(usize i) const noexcept -> const Entity&;
     [[nodiscard]] auto entity_at(usize i) -> Entity&;
     [[nodiscard]] auto entity_at(usize i) const -> const Entity&;
+    [[nodiscard]] auto transform_at(usize i) const noexcept -> std::optional<Transform>;
+    [[nodiscard]] auto model_matrix_at(usize i) const noexcept -> std::optional<ModelMatrix>;
+    auto set_transform(EntityId id, const Transform& t) noexcept -> bool;
+    auto set_transform_at(usize i, const Transform& t) noexcept -> bool;
+    auto set_position(EntityId id, const Pos3& p) noexcept -> bool;
+    auto set_orientation(EntityId id, const Quaternion& q) noexcept -> bool;
+    auto set_scale(EntityId id, const Dir3& s) noexcept -> bool;
     [[nodiscard]] auto editor_state() noexcept -> EditorState&;
     [[nodiscard]] auto editor_state() const noexcept -> const EditorState&;
 
@@ -75,7 +82,6 @@ class World
     TransformSOA transforms_{k_max_number_objects};
 
     std::unordered_map<EntityId, usize> id_to_index_{};
-    std::unordered_map<EntityId, usize> id_to_transform_index_{};
 };
 
 }  // namespace ds_pba

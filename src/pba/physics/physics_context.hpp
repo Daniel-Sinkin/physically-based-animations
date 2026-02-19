@@ -4,14 +4,53 @@
 #include "pba/core/arena_allocator.hpp"
 #include "pba/core/constants.hpp"
 #include "pba/core/core_types.hpp"
+#include "pba/physics/collision.hpp"
 #include "pba/physics/forces.hpp"
 #include "pba/physics/physics_types.hpp"
 
+#include <algorithm>
 #include <array>
-#include <memory_resource>
 
 namespace ds_pba
 {
+
+struct EnergyHistoryRing
+{
+    std::array<f32, k_energy_history_len> values{};
+    usize write_head{0zu};
+    usize size_{0zu};
+
+    auto clear() noexcept -> void
+    {
+        write_head = 0zu;
+        size_ = 0zu;
+    }
+
+    auto push(f32 value) noexcept -> void
+    {
+        values[write_head] = value;
+        write_head = (write_head + 1zu) % values.size();
+        size_ = std::min(size_ + 1zu, values.size());
+    }
+
+    [[nodiscard]] auto size() const noexcept -> usize
+    {
+        return size_;
+    }
+
+    [[nodiscard]] auto empty() const noexcept -> bool
+    {
+        return size_ == 0zu;
+    }
+
+    [[nodiscard]] auto at(usize i) const noexcept -> f32
+    {
+        Expects(i < size_);
+        const auto oldest = (write_head + values.size() - size_) % values.size();
+        const auto idx = (oldest + i) % values.size();
+        return values[idx];
+    }
+};
 
 struct PhysicsContext
 {
@@ -43,7 +82,8 @@ struct PhysicsContext
     std::unordered_map<ContactKey, ContactCacheEntry, ContactKeyHash> contact_cache{};
 
     // Per-Physics Step scratch buffer, cheap to clear
-    ArenaAllocator contact_arena{16 * 1024 * sizeof(Contact)};
+    ArenaAllocator contact_arena{k_physics_step_arena_bytes};
+    CollisionScratch collision_scratch{};
 
     struct DebugContact
     {
@@ -56,11 +96,12 @@ struct PhysicsContext
     };
 
     std::vector<DebugContact> debug_contacts{};
+    CollisionStats debug_collision_stats{};
 
     f32 debug_total_kinetic_energy{0.0f};
 
     Duration debug_energy_sample_accum{};
-    std::vector<f32> debug_total_kinetic_energy_history{};
+    EnergyHistoryRing debug_total_kinetic_energy_history{};
 
     auto step() -> void;
 
