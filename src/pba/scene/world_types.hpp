@@ -1,4 +1,4 @@
-// pba/scene/scene_types.hpp
+// pba/scene/world_types.hpp
 #pragma once
 
 #include "pba/core/arena_allocator.hpp"
@@ -22,7 +22,7 @@ struct Transform
 
     [[nodiscard]] auto model_matrix() const noexcept -> ModelMatrix
     {
-        auto M{glm::identity<glm::mat4>()};
+        auto M = glm::identity<glm::mat4>();
         M = glm::translate(M, position);
         M *= glm::mat4_cast(orientation);
         M = glm::scale(M, scale);
@@ -41,6 +41,16 @@ struct TransformSOA
     auto reset() -> void
     {
         size_ = 0zu;
+    }
+
+    [[nodiscard]] auto size() const noexcept -> usize
+    {
+        return size_;
+    }
+
+    [[nodiscard]] auto capacity() const noexcept -> usize
+    {
+        return capacity_;
     }
 
     [[nodiscard]] auto set(usize idx, const Transform& t) noexcept -> bool
@@ -65,7 +75,44 @@ struct TransformSOA
         return true;
     }
 
-    auto get(usize idx) -> std::optional<Transform>
+    [[nodiscard]] auto set_position(usize idx, const Pos3& p) noexcept -> bool
+    {
+        if (idx >= size_)
+        {
+            assert(false && "set_position OOB");
+            return false;
+        }
+        pos_x_[idx] = p.x;
+        pos_y_[idx] = p.y;
+        pos_z_[idx] = p.z;
+        return true;
+    }
+
+    [[nodiscard]] auto set_scale(usize idx, const Dir3& s) noexcept -> bool
+    {
+        if (idx >= size_)
+        {
+            assert(false && "set_scale OOB");
+            return false;
+        }
+        scale_x_[idx] = s.x;
+        scale_y_[idx] = s.y;
+        scale_z_[idx] = s.z;
+        return true;
+    }
+
+    [[nodiscard]] auto set_orientation(usize idx, const Quaternion& q) noexcept -> bool
+    {
+        if (idx >= size_)
+        {
+            assert(false && "set_orientation OOB");
+            return false;
+        }
+        orientation_[idx] = q;
+        return true;
+    }
+
+    [[nodiscard]] auto get(usize idx) const -> std::optional<Transform>
     {
         if (idx >= size_)
         {
@@ -80,7 +127,7 @@ struct TransformSOA
         };
     }
 
-    auto push_back(const Transform& t) -> std::optional<usize>
+    [[nodiscard]] auto push_back(const Transform& t) -> std::optional<usize>
     {
         if (size_ >= capacity_)
         {
@@ -96,6 +143,30 @@ struct TransformSOA
         {
             return back;
         }
+    }
+
+    [[nodiscard]] auto swap_erase(usize idx) noexcept -> bool
+    {
+        if (idx >= size_)
+        {
+            assert(false && "swap_erase OOB");
+            return false;
+        }
+        const usize last = size_ - 1zu;
+        if (idx != last)
+        {
+            pos_x_[idx] = pos_x_[last];
+            pos_y_[idx] = pos_y_[last];
+            pos_z_[idx] = pos_z_[last];
+
+            scale_x_[idx] = scale_x_[last];
+            scale_y_[idx] = scale_y_[last];
+            scale_z_[idx] = scale_z_[last];
+
+            orientation_[idx] = orientation_[last];
+        }
+        --size_;
+        return true;
     }
     // clang-format off
     [[nodiscard]] auto pos_x()       noexcept -> std::span<f32      > { return {pos_x_, size_}; }
