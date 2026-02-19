@@ -47,10 +47,15 @@ Supports dynamically switching editor theme and loading in themes from a config 
 * Due to the nature of this program most errors will result in the program terminating. If a subsystem will later be built with error recoverability in mind then errors as values (via `std::expected`) will be preferred to exceptions.
 
 ## Building
+### Debug Build
 ```
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
 ```
-
+### Release Build
+```
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+```
+### Compiling
 ```
 cmake --build build -j
 ```
