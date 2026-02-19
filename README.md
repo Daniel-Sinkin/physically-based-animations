@@ -1,125 +1,116 @@
 # Physically Based Animations
 
-## Functionality
-### Interactivity
-Multi selection, grabbing with free and axis located moving.
+Resume/portfolio project focused on real-time rigid-body simulation, interactive tooling, and engine architecture in modern C++.
+
+## What It Does
+- Simulates oriented rigid boxes with linear and angular motion, collisions, friction, restitution, damping, and sleeping.
+- Ships with 12 built-in demo/stress scenes (including dense-contact cases like `Cube Cloud (1200)`).
+- Provides interactive editor workflows:
+  - click and shift-click selection,
+  - drag-box selection (including optional through-depth selection with `Ctrl/Cmd`),
+  - multi-object grab/move with axis constraints (`G`, then `X/Y/Z`).
+- Includes a dedicated physics debug panel:
+  - broadphase and narrowphase counters,
+  - contact marker/normal overlays,
+  - selected-body velocity and angular-velocity vectors,
+  - kinetic-energy tracking and history plotting.
+- Records viewport output directly to MP4 (`ffmpeg`) from the app.
+- Supports headless simulation runs for repeatable scene/step benchmarking.
 
 ![Interactivity](screenshots/Interactivity.png)
-
-### Physics Debug
 ![Physics Debug](screenshots/PhysicsDebug1.png)
 ![Physics Debug](screenshots/PhysicsDebug2.png)
-
-### UI
 ![ThemeSelection](screenshots/ThemeSelection.png)
-Supports dynamically switching editor theme and loading in themes from a config file (`assets/ui/themes.json`)
-```json
-{
-  "default": "Blender Dark",
-  "themes": [
-    {
-      "name": "Blender Dark",
-      "base": "dark",
-      "colors": {
-        "Text": "0xE6E6E6FF",
-        "TextDisabled": "0xA6A6A6FF",
-        "WindowBg": "0x353535FF",
-        "ChildBg": "0x333333FF",
-        "PopupBg": "0x252525FF",
-        "Border": "0x232323FF",
-        "BorderShadow": "0x00000000",
-    ...
-```
 
-## Videos
-* https://www.youtube.com/watch?v=1fZnTQ-wU24
-* https://www.youtube.com/watch?v=uKSDHguqzIE
-* https://www.youtube.com/watch?v=C_mCMDn9qz0
+## Technical Summary
+### Physics
+- Fixed-step simulation (`45 Hz`) with accumulator-based stepping.
+- Broadphase: sweep-and-prune style candidate generation on AABBs.
+- Narrowphase: OBB-vs-OBB SAT testing across face and edge cross axes.
+- Contact handling:
+  - multi-point contact generation (reduced to up to 4 points),
+  - iterative sequential impulse solve,
+  - Coulomb friction + restitution,
+  - warm starting with frame-to-frame contact cache,
+  - positional correction iterations.
+- Data layout is SoA for body state; parallel loops can use OpenMP when enabled.
 
-## Coding Standard
-* The coding style is heavily inspired by Herb Sutters AAA (almost always auto) style (see [SutterAAA])
-* Compile with warnings as errors and compiler flags active
-* Every variable should be brace initialised unless it has an auto type then it must be assignment initialised
-  * This also applies to loop variables, e.g. use for(usize x{0zu}; ...) instead of for(usize x = 0; ...)
-* Implicit conversions are to be avoided as much as possible (for example use correct string literals `usize x{0zu}` instead of `usize x{zu}`)
-* To be more aligned with fstring formatting use `zu` instead of `uz` string literal
-* The gsl (see [GSL]) is used for `narrow_cast` and `Expects`, `Ensures`, which are used to prepare for integration of contracts once C++26 is released.
-* Due to the nature of this program most errors will result in the program terminating. If a subsystem will later be built with error recoverability in mind then errors as values (via `std::expected`) will be preferred to exceptions.
+### Rendering and Tools
+- OpenGL 4.1 core rendering path with offscreen viewport FBO.
+- ImGui-based docked editor (scene browser, inspector, render settings, terminal, physics debug).
+- JSON-driven theme loading (`assets/ui/themes.json`) with live theme switching.
+- Built-in video capture pipeline (`RGBA` framebuffer readback -> `ffmpeg` -> H.264 MP4).
 
-## Building
-### Debug Build
-```
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
-```
-### Release Build
-```
+## Controls
+- `LMB`: select object
+- `Shift + LMB`: add/remove from selection
+- `LMB drag`: box select
+- `Ctrl/Cmd + LMB drag`: through-depth box select
+- `G`: begin grab/move
+- `X` / `Y` / `Z`: constrain grab axis
+- `Enter` or `LMB`: confirm grab
+- `Esc` or `RMB`: cancel grab
+- `MMB drag` or `R + drag`: orbit camera
+- `Shift + MMB drag`: pan camera pivot
+- Mouse wheel: zoom
+- `Space`: pause/resume simulation
+- `F2`: start/stop recording
+- `F3`: reveal physics debug window
+
+## Build and Run
+### Requirements
+- CMake `>= 3.20`
+- C++23 compiler
+- `ffmpeg` available in `PATH` (required by CMake configure)
+
+### Configure + Build
+```bash
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-```
-### Compiling
-```
 cmake --build build -j
 ```
 
-## Notes
-### NLohnman ADL serializer
-When I want to serialise a type that I didn't define (e.g. glm::vec3) then the lookup on `to_json(glm::vec3)` is going to look at the glm namespace and never see mine. For that reason NLohmann uses a trick to make the ADL (Argument Dependent Lookup) work. See 
-
-It does the following:
-```
-namespace nlohmann
-{
-template <>
-struct adl_serializer<glm::vec3>
-{
-    static void to_json(json& j, const glm::vec3& v) {}
-    static void from_json(const json& j, glm::vec3& v) {}
-};
+### Run GUI
+```bash
+./build/main
 ```
 
-See 
-* https://github.com/nlohmann/json?tab=readme-ov-file#how-do-i-convert-third-party-types
-* https://en.cppreference.com/w/cpp/language/adl.html
-
-### DearImGui Begin() API
-DearImGUI has a bit unfortunate API design for "Begin*" type functions.
-
-For things like `ImGui::Begin()`, `ImGui::BeginChild()` they ALWAYS pop onto the stack and ALWAYS have to have the corresponding `ImGui::End*()` call, so they must be unconditionally closed while containers like `ImGui::BeginTable()`, `ImGui::BeginMenu()` only get created if and only if that call returns true so they should be conditionally closed:
-```cpp
-if(ImGui::BeginChild(/*args*/)){
-    /*content*/
-}
-ImGui::EndChild();
-```
-vs.
-```cpp
-if(ImGui::BeginTable(/*args*/)){
-    /*content*/
-    ImGui::EndTable();
-}
+### Run Headless
+```bash
+./build/headless --help
+./build/headless --scene 2 --steps 5000 --progress
 ```
 
-## References (Papers) 
-* [PBRT4] Physically Based Rendering, 4th Edition — Matt Pharr, Wenzel Jakob, Greg Humphreys — https://pbr-book.org/4ed/
-  * Rendering basics, camera transforms, ray–shape intersection, shading
-* [Catto05] Iterative Dynamics with Temporal Coherence — Erin Catto, 2005 — https://box2d.org/files/ErinCatto_IterativeDynamics_GDC2005.pdf
-  * Sequential impulse solver, constraint iteration, real-time rigid body contacts
-* [Ericson04] Real-Time Collision Detection — Christer Ericson, 2004 — https://realtimecollisiondetection.net/
-  * Broadphase, narrowphase, SAT, geometric robustness
-* [Müller07] Position Based Dynamics — Matthias Müller, Bruno Heidelberger, Marcus Hennix, John Ratcliff, 2007 — https://matthias-research.github.io/pages/publications/posBasedDyn.pdf
-  * Position-level constraint solving, alternative to impulse-based rigid body dynamics
-* [Baraff97] Physically Based Modeling: Principles and Practice — Andrew Witkin, David Baraff, 1997 (SIGGRAPH Course Notes) — https://www.cs.cmu.edu/~baraff/sigcourse/
-  * Rigid Body Dynamics II: Motion with Constraints — https://www.cs.cmu.edu/~baraff/sigcourse/notesd2.pdf
-* [Box2D] Box2D Physics Engine — Erin Catto - https://github.com/erincatto/box2d  
+You can also run headless mode through the GUI binary:
+```bash
+./build/main --headless --scene 2 --steps 5000 --progress
+```
+
+## Scope Notes
+- Current simulation primitive is rigid cubes/boxes.
+- Scene save/load and undo/redo menu entries are placeholders.
+
+## Videos
+- https://www.youtube.com/watch?v=1fZnTQ-wU24
+- https://www.youtube.com/watch?v=uKSDHguqzIE
+- https://www.youtube.com/watch?v=C_mCMDn9qz0
 
 ## References
-* [SutterAAA] https://herbsutter.com/2013/08/12/gotw-94-solution-aaa-style-almost-always-auto/
-* https://www.scs.stanford.edu/~dm/blog/param-pack.html
-* https://en.cppreference.com/w/cpp/language/value_category.html#Forwarding_references
-* [GSL] https://github.com/microsoft/GSL
-* [SoftwareDesign] C++ Software Design - Klaus Iglberger, 2023
+- [PBRT4] Physically Based Rendering, 4th Edition: https://pbr-book.org/4ed/
+- [Catto05] Iterative Dynamics with Temporal Coherence: https://box2d.org/files/ErinCatto_IterativeDynamics_GDC2005.pdf
+- [Baraff97] Physically Based Modeling (SIGGRAPH Notes): https://www.cs.cmu.edu/~baraff/sigcourse/
+- [Ericson04] Real-Time Collision Detection: https://realtimecollisiondetection.net/
+- [Box2D] Box2D Physics Engine: https://github.com/erincatto/box2d
+- [Fiedler04] Fix Your Timestep!: https://gafferongames.com/post/fix_your_timestep/
+- [OpenGLRef] Khronos OpenGL Reference Pages: https://registry.khronos.org/OpenGL-Refpages/
+- [GSL] Microsoft Guidelines Support Library: https://github.com/microsoft/GSL
 
-### Assets
-* PolyHaven
-    * https://polyhaven.com/a/marble_bust_01
-    * https://polyhaven.com/a/clean_asphalt
-* https://monaspace.githubnext.com
+## Asset Credits
+- PolyHaven:
+  - https://polyhaven.com/a/marble_bust_01
+  - https://polyhaven.com/a/clean_asphalt
+  - Environment map (`assets/textures/environment/studio_env_latlong.png`):
+    - Studio Small 09 HDRI by Sergej Majboroda: https://polyhaven.com/a/studio_small_09
+    - License: CC0 1.0 (Poly Haven asset license): https://polyhaven.com/license
+    - Source download used: https://dl.polyhaven.org/file/ph-assets/HDRIs/extra/Tonemapped%20JPG/studio_small_09.jpg
+- Monaspace:
+  - https://monaspace.githubnext.com
