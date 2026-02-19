@@ -168,16 +168,19 @@ auto SimulationContext::create_pyramid_3d(int base_n, f32 step_size, f32 base_z)
 
 auto SimulationContext::sync_physics_to_world() -> void
 {
-    for (Entity& e : world.entities())
+    for (auto i = 0zu; i < world.entities().size(); ++i)
     {
+        auto& e = world.entity(i);
         if (!e.body)
         {
             continue;
         }
-        if (const RigidBody* rb = physics.try_body(*e.body))
+        if (const auto* rb = physics.try_body(*e.body))
         {
-            e.transform.position = rb->position;
-            e.transform.orientation = rb->orientation;
+            auto t = e.transform;
+            t.position = rb->position;
+            t.orientation = rb->orientation;
+            (void) world.set_transform_at(i, t);
         }
     }
 }
