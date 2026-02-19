@@ -1,42 +1,32 @@
-// app/headless_main.cpp
-//
-#include "pba/core/format.hpp"  // IWYU pragma: keep
-#include "pba/simulation/scenes.hpp"
-#include "pba/simulation/simulation_context.hpp"
-#include "pba/util/scope_timer.hpp"
+// app/headless_main.hpp
+#pragma once
 
-#include <chrono>
-#include <print>
+#include "pba/core/core_types.hpp"
+#include "pba/simulation/scene_id.hpp"
 
-// TOOD: Make this into a .cpp and compile seperately
+#include <span>
+#include <string>
+#include <string_view>
 
-auto run_headless_simulation() -> void
+namespace ds_pba
 {
-    using namespace ds_pba;
-    using std::chrono::duration_cast;
 
-    ScopeTimer timer{"Headless Simulation"};
+struct HeadlessRunOptions
+{
+    usize steps{2000zu};
+    SceneId scene{k_default_scene};
+    bool show_help{false};
+    bool print_progress{false};
+    bool debug_tracking{false};
+};
 
-    SimulationContext simulation{};
-    setup_active_scene(simulation);
+auto print_headless_usage(std::string_view program_name) -> void;
 
-    Duration sim_time{0.0};
-    simulation.physics.time = TimePoint{};
+[[nodiscard]] auto parse_headless_options(
+    std::span<const char* const> args, HeadlessRunOptions& options, std::string& error
+) -> bool;
 
-    const Duration fixed_dt{simulation.physics.time_step};
+auto run_headless_simulation(const HeadlessRunOptions& options) -> int;
 
-    while (true)
-    {
-        std::println(
-            "Running Physics Simulation, t = {:.6f} s", static_cast<f64>(sim_time.count())
-        );
+}  // namespace ds_pba
 
-        {
-            ScopeTimer timer_inner{"Single Step Duration"};
-            simulation.physics.step();
-        }
-
-        sim_time += fixed_dt;
-        simulation.physics.time += duration_cast<Clock::duration>(fixed_dt);
-    }
-}
