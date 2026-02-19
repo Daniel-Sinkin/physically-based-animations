@@ -220,11 +220,19 @@ auto GfxContext::render_to_viewport_objects(
     prog.set_uProj(camera_proj_matrix);
 
     meshes.cube.vao.bind();
-    for (const Entity& ent : ents)
+    for (auto i = 0zu; i < ents.size(); ++i)
     {
+        const auto& ent = ents[i];
         Expects(ent.id != k_invalid_id);
 
-        prog.set_uModel(ent.transform.model_matrix());
+        if (const auto model = engine_context->simulation.world.model_matrix_at(i))
+        {
+            prog.set_uModel(*model);
+        }
+        else
+        {
+            continue;
+        }
         prog.set_uColor(compute_entity_color(*const_cast<GfxContext*>(this), ent));
 
         glDrawArrays(GL_TRIANGLES, 0, meshes.cube.vertex_count);
@@ -306,7 +314,18 @@ auto GfxContext::render_to_viewport_outline(
             continue;
         }
 
-        const ModelMatrix M{sel->transform.model_matrix()};
+        const auto sel_idx = engine_context->simulation.world.find_idx(id);
+        if (!sel_idx)
+        {
+            continue;
+        }
+        const auto model = engine_context->simulation.world.model_matrix_at(*sel_idx);
+        if (!model)
+        {
+            continue;
+        }
+
+        const auto M = ModelMatrix{*model};
         glClear(GL_STENCIL_BUFFER_BIT);
 
         {  // Pass 1: write stencil (invisible)
@@ -360,9 +379,9 @@ auto GfxContext::render_to_viewport_outline(
     }
 }
 
-void GfxContext::render_to_viewport_pivot(
+auto GfxContext::render_to_viewport_pivot(
     const ViewMatrix& view_matrix, const ProjMatrix& proj_matrix, const Pos3& pivot
-) const
+) const -> void
 {
     if (!pivot_active)
     {
@@ -386,7 +405,7 @@ void GfxContext::render_to_viewport_pivot(
     VAO::unbind();
 }
 
-void GfxContext::viewport_window()
+auto GfxContext::viewport_window() -> void
 {
     const auto window_flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse
                               | ImGuiWindowFlags_NoCollapse;
@@ -450,14 +469,14 @@ void GfxContext::viewport_window()
     ImGui::End();
 }
 
-[[nodiscard]] inline f32 max_extent(const Dir3& half_extents) noexcept
+[[nodiscard]] inline auto max_extent(const Dir3& half_extents) noexcept -> f32
 {
     return std::max({half_extents.x, half_extents.y, half_extents.z});
 }
 
-void GfxContext::render_to_viewport_physics_debug(
+auto GfxContext::render_to_viewport_physics_debug(
     const ViewMatrix& camera_view_matrix, const ProjMatrix& camera_proj_matrix
-)
+) -> void
 {
     Expects(engine_context);
 
@@ -489,18 +508,19 @@ void GfxContext::render_to_viewport_physics_debug(
     restore_gl_state(prev);
 }
 
-[[nodiscard]] bool GfxContext::should_render_physics_debug_() const noexcept
+[[nodiscard]] auto GfxContext::should_render_physics_debug_() const noexcept -> bool
 {
     return phys_debug.enabled && loaded_glad && shader_programs.grid.valid();
 }
 
-void GfxContext::push_debug_line_(const Line3& line, const Color3& color, f32 alpha) noexcept
+auto GfxContext::push_debug_line_(const Line3& line, const Color3& color, f32 alpha) noexcept
+    -> void
 {
     debug_line_vertices.push_back(DebugLineV_PColor{line.a, color, alpha});
     debug_line_vertices.push_back(DebugLineV_PColor{line.b, color, alpha});
 }
 
-void GfxContext::append_contact_debug_lines_()
+auto GfxContext::append_contact_debug_lines_() -> void
 {
     Expects(engine_context);
 
@@ -531,7 +551,7 @@ void GfxContext::append_contact_debug_lines_()
     }
 }
 
-void GfxContext::append_selected_entity_debug_lines_()
+auto GfxContext::append_selected_entity_debug_lines_() -> void
 {
     Expects(engine_context);
     const auto& world = engine_context->simulation.world;
@@ -611,7 +631,7 @@ auto GfxContext::selected_entity_frame_(
     };
 }
 
-void GfxContext::ensure_debug_line_mesh_created_()
+auto GfxContext::ensure_debug_line_mesh_created_() -> void
 {
     if (debug_line_created)
     {
@@ -640,7 +660,7 @@ void GfxContext::ensure_debug_line_mesh_created_()
     debug_line_created = true;
 }
 
-void GfxContext::upload_debug_lines_to_gpu_()
+auto GfxContext::upload_debug_lines_to_gpu_() -> void
 {
     meshes.debug_line.vertex_count = static_cast<GLsizei>(debug_line_vertices.size());
 
@@ -653,7 +673,7 @@ void GfxContext::upload_debug_lines_to_gpu_()
     );
 }
 
-void GfxContext::configure_physics_debug_gl_state_() const noexcept
+auto GfxContext::configure_physics_debug_gl_state_() const noexcept -> void
 {
     if (phys_debug.depth_test)
     {
@@ -670,9 +690,9 @@ void GfxContext::configure_physics_debug_gl_state_() const noexcept
     glDisable(GL_STENCIL_TEST);
 }
 
-void GfxContext::draw_debug_lines_(
+auto GfxContext::draw_debug_lines_(
     const ViewMatrix& camera_view_matrix, const ProjMatrix& camera_proj_matrix
-) const
+) const -> void
 {
     constexpr f32 k_no_fog_start = 1.0e6f;
     constexpr f32 k_no_fog_end = 2.0e6f;

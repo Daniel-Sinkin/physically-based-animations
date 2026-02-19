@@ -95,8 +95,8 @@ auto create_quad_mesh() -> MeshDataPN
 
 auto create_pyramid_mesh() -> MeshDataPN
 {
-    static constexpr auto n_xy{0.8944271909999159f};  // 2 / sqrt(5)
-    static constexpr auto n_z{0.4472135954999579f};   // 1 / sqrt(5)
+    static constexpr auto n_xy = 0.8944271909999159f;  // 2 / sqrt(5)
+    static constexpr auto n_z = 0.4472135954999579f;   // 1 / sqrt(5)
 
     // clang-format off
     static constexpr std::array<MeshV_PN, 18> verts = {

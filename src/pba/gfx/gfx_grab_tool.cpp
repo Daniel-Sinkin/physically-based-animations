@@ -42,7 +42,7 @@ auto set_entity_and_body_position(SimulationContext& sim, EntityId id, const Pos
 {
     if (auto* entity = sim.world.find(id))
     {
-        entity->transform.position = pos;
+        (void) sim.world.set_position(id, pos);
 
         if (entity->body)
         {
@@ -178,7 +178,7 @@ auto GfxContext::begin_grab(const EditorInput& input) -> void
                     rb->velocity = Dir3{};
                     rb->angular_velocity = Dir3{};
                     start_pos = rb->position;
-                    entity->transform.position = start_pos;
+                    (void) engine_context->simulation.world.set_position(id, start_pos);
                 }
             }
 
