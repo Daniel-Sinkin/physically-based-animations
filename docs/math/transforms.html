@@ -5,26 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Linear Algebra and Transforms - Math Background</title>
     <link rel="stylesheet" href="../assets/styles.css" />
-    <script>
-      window.MathJax = {
-        tex: {
-          inlineMath: [['\\(', '\\)']],
-          displayMath: [['\\[', '\\]']]
-        }
-      };
-    </script>
-    <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css" />
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
     <script>
       document.addEventListener("DOMContentLoaded", function () {
+        if (window.renderMathInElement) {
+          window.renderMathInElement(document.body, {
+            delimiters: [
+              { left: "\\(", right: "\\)", display: false },
+              { left: "\\[", right: "\\]", display: true }
+            ],
+            throwOnError: false
+          });
+        }
         if (window.hljs) {
           window.hljs.highlightAll();
         }
+        document.body.classList.remove("math-pending");
       });
     </script>
   </head>
-  <body>
+  <body class="math-pending">
     <main class="page">
       <div class="topnav">
         <a href="../index.html">Docs Home</a> / Math Background /

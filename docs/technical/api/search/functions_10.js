@@ -1,0 +1,28 @@
+var searchData=
+[
+  ['r_0',['r',['../structds__pba_1_1_color_r_g_b_a.html#a35bb911adbbe43f1dd48443a1747d5b0',1,'ds_pba::ColorRGBA::r() noexcept -&gt; T &amp;'],['../structds__pba_1_1_color_r_g_b_a.html#aae7829ee62e64fa8e5259fe5df806837',1,'ds_pba::ColorRGBA::r() const noexcept -&gt; const T &amp;'],['../structds__pba_1_1_color3.html#ae6d89b503116adc538734968557ce84f',1,'ds_pba::Color3::r() noexcept -&gt; f32 &amp;'],['../structds__pba_1_1_color3.html#a2eeb914d8d3b88bb91439cb1dbbc3427',1,'ds_pba::Color3::r() const noexcept -&gt; const f32 &amp;']]],
+  ['ray_5ffrom_5fimgui_5frect_1',['ray_from_imgui_rect',['../namespaceds__pba.html#afd3aa40be045f563995642ef884ea518',1,'ds_pba']]],
+  ['raycast_2',['raycast',['../namespaceds__pba.html#a138857f365f3cb088852459b941403d9',1,'ds_pba']]],
+  ['read_5ftext_5ffile_3',['read_text_file',['../namespaceds__pba.html#aba5b5d2636eb81eea1a6b0aa2bbfa5ef',1,'ds_pba']]],
+  ['released_4',['released',['../structds__pba_1_1_button_state.html#a5fae657df2b715b16e8c17c0e9ca511b',1,'ds_pba::ButtonState']]],
+  ['remaining_5',['remaining',['../classds__pba_1_1_arena_allocator.html#af78589a6dc6a213a8cc70f4cb9c50a81',1,'ds_pba::ArenaAllocator']]],
+  ['remove_5fentity_6',['remove_entity',['../classds__pba_1_1_world.html#a6cf14357fb46f72524f9b8be5604af41',1,'ds_pba::World']]],
+  ['render_5fimgui_5fwindows_7',['render_imgui_windows',['../namespaceds__pba.html#a5be38a8203a529b2546f4931554df300',1,'ds_pba']]],
+  ['render_5fmenu_5fbar_8',['render_menu_bar',['../namespaceds__pba.html#a206d1496a7fcfe99cf2b274e8bfe7cdb',1,'ds_pba']]],
+  ['render_5fto_5fviewport_9',['render_to_viewport',['../structds__pba_1_1_gfx_context.html#afb395074a08576e5b5c0d4d67a7c6f53',1,'ds_pba::GfxContext']]],
+  ['render_5fto_5fviewport_5fenvironment_10',['render_to_viewport_environment',['../structds__pba_1_1_gfx_context.html#a3857cb7a8047aa27ef0cd56a26c95009',1,'ds_pba::GfxContext']]],
+  ['render_5fto_5fviewport_5fgrid_11',['render_to_viewport_grid',['../structds__pba_1_1_gfx_context.html#a31c12b3d6a1f490dea2dceea3377639e',1,'ds_pba::GfxContext']]],
+  ['render_5fto_5fviewport_5fobjects_12',['render_to_viewport_objects',['../structds__pba_1_1_gfx_context.html#a203e8da5e27c0a07f8ffdba1fe5f8b06',1,'ds_pba::GfxContext']]],
+  ['render_5fto_5fviewport_5foutline_13',['render_to_viewport_outline',['../structds__pba_1_1_gfx_context.html#a99ff497ea96140891d68816d61b576e5',1,'ds_pba::GfxContext']]],
+  ['render_5fto_5fviewport_5fphysics_5fdebug_14',['render_to_viewport_physics_debug',['../structds__pba_1_1_gfx_context.html#a676feb7c2aa08c248513088810a7072b',1,'ds_pba::GfxContext']]],
+  ['render_5fto_5fviewport_5fpivot_15',['render_to_viewport_pivot',['../structds__pba_1_1_gfx_context.html#ae032dba7f015f41359a80d768b5f465a',1,'ds_pba::GfxContext']]],
+  ['request_5fclose_16',['request_close',['../structds__pba_1_1_engine_context.html#a327cee2c293d5321767d8a497c48cfee',1,'ds_pba::EngineContext']]],
+  ['reserve_17',['reserve',['../structds__pba_1_1_rigid_body_s_o_a.html#a294e9972178920be94fa6e7bf9e2c93f',1,'ds_pba::RigidBodySOA']]],
+  ['reset_18',['reset',['../structds__pba_1_1_shader_program_1_1_uniforms.html#a7ccab8caed5899f2b14914752265af4f',1,'ds_pba::ShaderProgram::Uniforms::reset()'],['../structds__pba_1_1_transform_s_o_a.html#aa4b16e0e9dca7ea72846557a3375f647',1,'ds_pba::TransformSOA::reset()']]],
+  ['reset_5fsimulation_5fclock_19',['reset_simulation_clock',['../structds__pba_1_1_engine_context.html#a44f77111f944db62bcb78f603a3b2fe4',1,'ds_pba::EngineContext']]],
+  ['resize_20',['resize',['../structds__pba_1_1_rigid_body_s_o_a.html#a3f17433c31b384005974bae66e98674b',1,'ds_pba::RigidBodySOA']]],
+  ['right_21',['right',['../structds__pba_1_1_camera.html#a3618ec2cd363173d46fc5daa63288bfd',1,'ds_pba::Camera']]],
+  ['rigidbodysoa_22',['RigidBodySOA',['../structds__pba_1_1_rigid_body_s_o_a.html#a68462ca94146cdf99842906d12a4010c',1,'ds_pba::RigidBodySOA']]],
+  ['round_5fup_5faligned_23',['round_up_aligned',['../namespaceds__pba.html#a6ff2be39fe65fbba573454045cbd115a',1,'ds_pba']]],
+  ['run_24',['run',['../structds__pba_1_1_engine_context.html#ab9c5d5282be66dc9c25e2ae832fce703',1,'ds_pba::EngineContext']]]
+];

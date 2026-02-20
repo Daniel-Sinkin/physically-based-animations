@@ -5,6 +5,14 @@ Resume/portfolio project focused on real-time rigid-body simulation, interactive
 ## Documentation
 - GitHub Pages: https://daniel-sinkin.github.io/physically-based-animations/
 - In-repo docs entry: [docs/index.html](docs/index.html)
+- C++ technical/API docs are generated with Doxygen into `docs/technical/api`.
+
+### Generate Technical API Docs
+```bash
+./scripts/generate_technical_docs.sh
+# or, if build files are configured:
+cmake --build build --target docs_technical
+```
 
 ## What It Does
 - Simulates oriented rigid boxes with linear and angular motion, collisions, friction, restitution, damping, and sleeping.
