@@ -5,17 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Physics Background - Docs</title>
     <link rel="stylesheet" href="../assets/styles.css" />
-      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css" />
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
     <script>
       document.addEventListener("DOMContentLoaded", function () {
+        if (window.renderMathInElement) {
+          window.renderMathInElement(document.body, {
+            delimiters: [
+              { left: "\\(", right: "\\)", display: false },
+              { left: "\\[", right: "\\]", display: true }
+            ],
+            throwOnError: false
+          });
+        }
         if (window.hljs) {
           window.hljs.highlightAll();
         }
+        document.body.classList.remove("math-pending");
       });
     </script>
   </head>
-  <body>
+  <body class="math-pending">
     <main class="page">
       <div class="topnav">
         <a href="../index.html">Docs Home</a> / Physics Background
@@ -28,18 +41,103 @@
         <p>
           Core theory behind the rigid-body solver, collision pipeline, and contact constraints.
         </p>
+        <p class="link-line">
+          <a href="#rigid-body-dynamics">Rigid Body Dynamics</a>
+          <span class="sep">|</span>
+          <a href="#collision-detection">Collision Detection</a>
+          <span class="sep">|</span>
+          <a href="#contact-resolution">Contact Resolution</a>
+        </p>
       </section>
 
-      <section class="section">
-        <h2>Pages</h2>
-        <ul class="list">
-          <li>Rigid Body Dynamics</li>
-          <li>Collision Detection</li>
-          <li>Contact Resolution</li>
-        </ul>
+      <section id="rigid-body-dynamics" class="section">
+        <h2>Rigid Body Dynamics</h2>
+        <p>Per-body state tracks \(\mathbf{x},\mathbf{v},m^{-1},q,\boldsymbol{\omega},\mathbf{I}_{\text{body}}^{-1}\) and force/torque accumulators.</p>
+        <div class="equation">
+          \[
+          \mathbf{a} = \mathbf{F}\,m^{-1},\qquad
+          \mathbf{v}_{t+\Delta t}=\mathbf{v}_t+\mathbf{a}\,\Delta t,\qquad
+          \mathbf{x}_{t+\Delta t}=\mathbf{x}_t+\mathbf{v}_{t+\Delta t}\,\Delta t
+          \]
+        </div>
+        <div class="equation">
+          \[
+          \boldsymbol{\alpha}=\mathbf{I}_{\text{world}}^{-1}\boldsymbol{\tau},\qquad
+          \boldsymbol{\omega}_{t+\Delta t}=\boldsymbol{\omega}_t+\boldsymbol{\alpha}\,\Delta t
+          \]
+        </div>
+        <div class="equation">
+          \[
+          q_{t+\Delta t}
+          =
+          \operatorname{normalize}\left(q_t + \frac{\Delta t}{2}\,\Omega(\boldsymbol{\omega})\,q_t\right)
+          \]
+        </div>
+        <div class="equation">
+          \[
+          \mathbf{I}_{\text{world}}^{-1}
+          =
+          \mathbf{R}(q)\,\mathbf{I}_{\text{body}}^{-1}\,\mathbf{R}(q)^T
+          \]
+        </div>
+      </section>
+
+      <section id="collision-detection" class="section">
+        <h2>Collision Detection</h2>
         <p>
-          Physics focuses on simulation behavior: body evolution, collision generation, and contact
-          solving.
+          Broadphase generates candidate pairs with world AABBs, then narrowphase runs OBB-vs-OBB
+          SAT for valid candidates.
+        </p>
+        <div class="equation">
+          \[
+          h = |R|e,\qquad
+          a_{\text{min}}=c-h,\qquad
+          a_{\text{max}}=c+h
+          \]
+        </div>
+        <p>
+          Sweep-and-prune sorts by \(a_{\text{min},x}\), maintains an active set, and rejects pairs
+          that fail \(y/z\) overlap before SAT.
+        </p>
+        <p>
+          SAT tests 15 axes: 3 face normals from body A, 3 from body B, and 9 cross-product axes.
+          Any axis with non-positive overlap separates the pair.
+        </p>
+        <div class="equation">
+          \[
+          \text{overlap}
+          =
+          \min(a_{\text{max}}, b_{\text{max}}) - \max(a_{\text{min}}, b_{\text{min}})
+          \]
+        </div>
+      </section>
+
+      <section id="contact-resolution" class="section">
+        <h2>Contact Resolution</h2>
+        <p>
+          Contact constraints are solved with sequential impulses, friction, warm starting, and
+          positional correction passes.
+        </p>
+        <div class="equation">
+          \[
+          \Delta\lambda_n = -\frac{(1+\epsilon)\,v_{\text{rel}} + b}{k}
+          \]
+        </div>
+        <div class="equation">
+          \[
+          |\lambda_t| \le \mu\,\lambda_n
+          \]
+        </div>
+        <div class="equation">
+          \[
+          \mathbf{c}
+          =
+          \frac{\beta\,\max(0,p-p_{\text{tol}})}{m_a^{-1}+m_b^{-1}}\,\mathbf{n}
+          \]
+        </div>
+        <p>
+          Persistent contacts reuse cached \((\lambda_n,\lambda_t,\hat{\mathbf{t}})\) to improve
+          convergence across frames.
         </p>
       </section>
     </main>

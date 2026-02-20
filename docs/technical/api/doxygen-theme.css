@@ -305,6 +305,27 @@ hr {
   border-right: 1px solid var(--border-soft);
 }
 
+/* Disable the default Doxygen sidebar sync/collapse handle and seam. */
+#nav-sync,
+#splitbar,
+#side-nav .ui-resizable-handle,
+#side-nav .ui-resizable-e {
+  display: none !important;
+}
+
+#side-nav {
+  padding-right: 0 !important;
+}
+
+#nav-tree {
+  border-right: 0 !important;
+}
+
+#titlearea,
+#projectrow td {
+  border-right: 0 !important;
+}
+
 #nav-tree .selected {
   background: var(--accent-2);
 }

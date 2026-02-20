@@ -5,17 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Math Background - Docs</title>
     <link rel="stylesheet" href="../assets/styles.css" />
-      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css" />
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
     <script>
       document.addEventListener("DOMContentLoaded", function () {
+        if (window.renderMathInElement) {
+          window.renderMathInElement(document.body, {
+            delimiters: [
+              { left: "\\(", right: "\\)", display: false },
+              { left: "\\[", right: "\\]", display: true }
+            ],
+            throwOnError: false
+          });
+        }
         if (window.hljs) {
           window.hljs.highlightAll();
         }
+        document.body.classList.remove("math-pending");
       });
     </script>
   </head>
-  <body>
+  <body class="math-pending">
     <main class="page">
       <div class="topnav">
         <a href="../index.html">Docs Home</a> / Math Background
@@ -26,16 +39,128 @@
       <section class="hero">
         <h1>Math Background</h1>
         <p>Linear algebra and quaternion algebra used by simulation and rendering.</p>
+        <p class="link-line">
+          <a href="#linear-algebra-and-transforms">Linear Algebra and Transforms</a>
+          <span class="sep">|</span>
+          <a href="#quaternions-and-rotation-algebra">Quaternions and Rotation Algebra</a>
+        </p>
       </section>
 
-      <section class="section">
-        <h2>Pages</h2>
-        <ul class="list">
-          <li>Linear Algebra and Transforms</li>
-          <li>Quaternions and Rotation Algebra</li>
-        </ul>
+      <section id="linear-algebra-and-transforms" class="section">
+        <h2>Linear Algebra and Transforms</h2>
+        <p>A point in \(\mathbb{R}^3\) is embedded in homogeneous coordinates as:</p>
+        <div class="equation">
+          \[
+          \mathbf{p} = \begin{pmatrix} x \\ y \\ z \end{pmatrix}
+          \hookrightarrow
+          \tilde{\mathbf{p}} = \begin{pmatrix} x \\ y \\ z \\ 1 \end{pmatrix}
+          \]
+        </div>
+        <p>Scale, translation, and Euler-angle rotation are composed as:</p>
+        <div class="equation">
+          \[
+          \mathbf{R} = \mathbf{R}_z(\gamma)\,\mathbf{R}_y(\beta)\,\mathbf{R}_x(\alpha),\qquad
+          \mathbf{M} = \mathbf{T}\,\mathbf{R}\,\mathbf{S}
+          \]
+        </div>
+        <p>Rigid-body case (\(\mathbf{S}=\mathbf{I}\)):</p>
+        <div class="equation">
+          \[
+          \mathbf{p}_{\text{world}} = \mathbf{R}\,\mathbf{p}_{\text{local}} + \mathbf{t},\qquad
+          \mathbf{R}^{T}=\mathbf{R}^{-1},\ \det(\mathbf{R})=+1
+          \]
+        </div>
         <p>
-          This section contains the abstract math layer used by simulation and rendering systems.
+          Velocity of a point on a rigid body:
+        </p>
+        <div class="equation">
+          \[
+          \mathbf{v}_a = \mathbf{v}_{\text{cm}} + \boldsymbol{\omega}\times\mathbf{r}_a,\qquad
+          \mathbf{r}_a=\mathbf{a}_{\text{world}}-\mathbf{t}
+          \]
+        </div>
+      </section>
+
+      <section id="quaternions-and-rotation-algebra" class="section">
+        <h2>Quaternions and Rotation Algebra</h2>
+        <p>
+          Quaternions extend complex numbers for 3D orientation:
+          \[
+          q = w + x\mathbf{i} + y\mathbf{j} + z\mathbf{k}
+          \]
+        </p>
+        <p>
+          Division algebra chain:
+          \[
+          \mathbb{R} \subset \mathbb{C} \subset \mathbb{H} \subset \mathbb{O}
+          \]
+        </p>
+        <ul class="list">
+          <li>\(\mathbb{C}\): loses ordered-field compatibility with multiplication.</li>
+          <li>\(\mathbb{H}\): multiplication is non-commutative.</li>
+          <li>\(\mathbb{O}\): non-associative (alternative algebra).</li>
+        </ul>
+        <p>Quaternion basis rules:</p>
+        <div class="equation">
+          \[
+          \mathbf{i}^2 = \mathbf{j}^2 = \mathbf{k}^2 = \mathbf{i}\mathbf{j}\mathbf{k} = -1
+          \]
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>*</th>
+                <th>1</th>
+                <th>i</th>
+                <th>j</th>
+                <th>k</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th>1</th>
+                <td>1</td>
+                <td>i</td>
+                <td>j</td>
+                <td>k</td>
+              </tr>
+              <tr>
+                <th>i</th>
+                <td>i</td>
+                <td>-1</td>
+                <td>k</td>
+                <td>-j</td>
+              </tr>
+              <tr>
+                <th>j</th>
+                <td>j</td>
+                <td>-k</td>
+                <td>-1</td>
+                <td>i</td>
+              </tr>
+              <tr>
+                <th>k</th>
+                <td>k</td>
+                <td>j</td>
+                <td>-i</td>
+                <td>-1</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Unit quaternion rotation about axis \(\hat{\mathbf{n}}\) by angle \(\theta\):</p>
+        <div class="equation">
+          \[
+          q=\left(\cos\!\left(\theta/2\right),\ \hat{\mathbf{n}}\sin\!\left(\theta/2\right)\right),\qquad
+          \mathbf{v}'=q\,\mathbf{v}\,q^{-1}
+          \]
+        </div>
+        <p>
+          Quaternion composition is order-dependent:
+          \[
+          q_{\text{total}} = q_2 q_1 \neq q_1 q_2
+          \]
         </p>
       </section>
     </main>

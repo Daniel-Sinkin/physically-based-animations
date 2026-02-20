@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Technical Reference - Docs</title>
+    <link rel="stylesheet" href="../assets/styles.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css"
+    />
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        if (window.hljs) {
+          window.hljs.highlightAll();
+        }
+      });
+    </script>
+  </head>
+  <body>
+    <main class="page">
+      <div class="topnav">
+        <a href="../index.html">Docs Home</a> / Technical Reference
+      </div>
+
+      <p class="footer">
+        Code can be found here:
+        <a href="https://github.com/Daniel-Sinkin/physically-based-animations">GitHub repository</a>.
+      </p>
+
+      <section class="hero">
+        <h1>Technical Reference</h1>
+        <p>
+          Implementation notes focused on data layout, memory lifetime, and CPU-friendly iteration
+          patterns used by the engine.
+        </p>
+      </section>
+
+      <section id="data-layout" class="section">
+        <h2>AOS vs SOA</h2>
+        <p>
+          The codebase uses both layouts with explicit roles. Entity metadata is kept in AOS form
+          (<code>std::vector&lt;Entity&gt;</code>), while frequently updated transform and physics state are
+          organized in SOA form for tighter field-wise scans.
+        </p>
+        <p>
+          This split keeps ownership and editor-facing data simple, while letting physics and
+          transform-heavy code iterate through contiguous columns such as position, velocity, and
+          inverse mass.
+        </p>
+        <pre><code class="language-cpp">// src/pba/scene/world.hpp
+std::vector<Entity> entities_{};
+TransformSOA transforms_{k_max_number_objects};
+
+// src/pba/physics/physics_types.hpp
+std::vector<Pos3> positions{};
+std::vector<Dir3> velocities{};
+std::vector<f32> inv_masses{};
+std::vector<Quaternion> orientations{};
+std::vector<glm::mat3> inv_inertia_worlds{};</code></pre>
+        <p>
+          Relevant files: <code>src/pba/scene/world_types.hpp</code>,
+          <code>src/pba/physics/physics_types.hpp</code>,
+          <code>src/pba/scene/world.cpp</code>.
+        </p>
+      </section>
+
+      <section id="memory-lifetime" class="section">
+        <h2>Transient Arena Allocation</h2>
+        <p>
+          Per-step collision contacts are written into a linear arena
+          (<code>ArenaAllocator</code>) and reset at the beginning of each physics step. This
+          avoids frequent heap allocations in the hot simulation loop and keeps contact data in one
+          contiguous region for solver passes.
+        </p>
+        <pre><code class="language-cpp">// src/pba/physics/physics_context.hpp
+ArenaAllocator contact_arena{k_physics_step_arena_bytes};
+
+// src/pba/physics/physics_context.cpp
+contact_arena.clear();
+debug_collision_stats = generate_obb_contacts(bodies_soa, contact_arena, collision_scratch, true);
+for (auto& contact : contact_arena.as_span&lt;Contact&gt;()) {
+    // warm start + solve passes
+}</code></pre>
+        <p>
+          Arena capacity is configured with
+          <code>k_physics_step_arena_bytes = 256 MiB</code> in
+          <code>src/pba/core/constants.hpp</code>.
+        </p>
+      </section>
+
+      <section id="broadphase-layout" class="section">
+        <h2>Broadphase and Cache Behavior</h2>
+        <p>
+          Broadphase uses separate scalar arrays for AABB bounds in
+          <code>CollisionScratch</code>, then performs sweep-and-prune over sorted min-x values.
+          Candidate rejection on y/z overlap is done before narrowphase SAT work.
+        </p>
+        <p>
+          The layout is intentionally columnar (<code>aabb_min_x</code>, <code>aabb_max_x</code>,
+          etc.) to make the pruning phase a compact streaming pass with low branch and memory
+          overhead per candidate.
+        </p>
+        <pre><code class="language-cpp">// src/pba/physics/collision.hpp
+std::vector<f32> aabb_min_x{}, aabb_min_y{}, aabb_min_z{};
+std::vector<f32> aabb_max_x{}, aabb_max_y{}, aabb_max_z{};
+std::vector<usize> sort_order{};
+std::vector<usize> active{};
+std::vector<CollisionPair> candidate_pairs{};
+
+// src/pba/physics/collision.cpp
+std::sort(sort_order.begin(), sort_order.end(), by_min_x);
+for (usize idx : sort_order) {
+    prune_active_on_x(idx);
+    test_yz_overlap_and_emit_candidates(idx);
+}</code></pre>
+      </section>
+
+      <section id="parallel-execution" class="section">
+        <h2>Parallel Index Traversal</h2>
+        <p>
+          A thin <code>parallel_for_index</code> wrapper is used for index-based loops in physics
+          build/update stages. It keeps call sites uniform and falls back to a serial loop when
+          OpenMP is not enabled.
+        </p>
+        <pre><code class="language-cpp">// src/pba/core/parallel_for.hpp
+template &lt;class Fn&gt;
+inline auto parallel_for_index(usize count, Fn&& fn) -&gt; void {
+#if defined(DS_PBA_USE_OPENMP)
+  #pragma omp parallel for schedule(static)
+  for (i64 i = 0; i &lt; static_cast&lt;i64&gt;(count); ++i) fn(static_cast&lt;usize&gt;(i));
+#else
+  for (auto i = 0zu; i &lt; count; ++i) fn(i);
+#endif
+}</code></pre>
+        <p>
+          Used in <code>src/pba/physics/collision.cpp</code>,
+          <code>src/pba/physics/solver.cpp</code>, and
+          <code>src/pba/physics/physics_context.cpp</code>.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>

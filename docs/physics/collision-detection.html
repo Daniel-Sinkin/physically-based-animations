@@ -31,8 +31,7 @@
   <body class="math-pending">
     <main class="page">
       <div class="topnav">
-        <a href="../index.html">Docs Home</a> / <a href="index.html">Physics Background</a> /
-        Collision Detection
+        <a href="../index.html">Docs Home</a> / Physics Background / Collision Detection
       </div>
 
       <p class="footer">Code can be found here: <a href="https://github.com/Daniel-Sinkin/physically-based-animations">GitHub repository</a>.</p>
@@ -40,6 +39,56 @@
       <section class="hero">
         <h1>Collision Detection</h1>
         <p>Broadphase pruning and OBB narrowphase contact generation.</p>
+      </section>
+
+      <section class="section">
+        <h2>Bounding Volumes</h2>
+        <p>
+          Reference visuals for the basic bounding representations used during broadphase and
+          narrowphase setup.
+        </p>
+        <div class="visual-grid visual-grid--two">
+          <figure class="figure-card">
+            <div class="figure-card__frame">
+              <img
+                src="../assets/images/physics/bounding/AABB.png"
+                alt="Axis-aligned bounding box representation"
+                loading="lazy"
+              />
+            </div>
+            <figcaption>AABB</figcaption>
+          </figure>
+          <figure class="figure-card">
+            <div class="figure-card__frame">
+              <img
+                src="../assets/images/physics/bounding/OBB.png"
+                alt="Oriented bounding box representation"
+                loading="lazy"
+              />
+            </div>
+            <figcaption>OBB</figcaption>
+          </figure>
+          <figure class="figure-card">
+            <div class="figure-card__frame">
+              <img
+                src="../assets/images/physics/bounding/SphereBounding.png"
+                alt="Bounding sphere representation"
+                loading="lazy"
+              />
+            </div>
+            <figcaption>Bounding Sphere</figcaption>
+          </figure>
+          <figure class="figure-card">
+            <div class="figure-card__frame">
+              <img
+                src="../assets/images/physics/bounding/kOBB.png"
+                alt="kOBB representation"
+                loading="lazy"
+              />
+            </div>
+            <figcaption>kOBB</figcaption>
+          </figure>
+        </div>
       </section>
 
       <section class="section">
@@ -51,7 +100,7 @@
 
         <div class="visual-grid visual-grid--one">
           <figure class="figure-card">
-            <div class="figure-card__frame">
+            <div class="figure-card__frame figure-card__frame--transparent">
               <img
                 src="../assets/images/physics/AxisAlignedStandardBox.svg"
                 alt="Axis-aligned standard box with center and half-extents"
@@ -131,7 +180,7 @@
           </figure>
         </div>
 
-        <div class="visual-grid visual-grid--three">
+        <div class="visual-grid visual-grid--two">
           <figure class="figure-card">
             <div class="figure-card__frame">
               <img
@@ -151,16 +200,6 @@
               />
             </div>
             <figcaption>9. Side view to verify overlap depth.</figcaption>
-          </figure>
-          <figure class="figure-card">
-            <div class="figure-card__frame">
-              <img
-                src="../assets/images/intersection-checks/2CubeAABBIntersectionCloseupTopdown.png"
-                alt="AABB intersection top-down view"
-                loading="lazy"
-              />
-            </div>
-            <figcaption>10. Top-down view of the same AABB overlap volume.</figcaption>
           </figure>
         </div>
 
@@ -241,7 +280,7 @@ Blue (c = [1.500, 2.400, 2.500])
         </div>
         <pre>i_min   = [-0.138, 0.293, 0.268]
 i_max   = [ 2.030, 2.212, 2.149]
-Delta   = [ 2.168, 1.919, 1.881]   // all > 0</pre>
+Delta   = [ 2.168, 1.919, 1.881]</pre>
         <p>
           Since all components of \(\Delta\) are positive, the AABBs overlap and this pair proceeds
           to SAT narrowphase.

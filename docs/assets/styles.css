@@ -149,6 +149,27 @@ a:hover {
   color: var(--muted);
 }
 
+.link-line {
+  margin: 0;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.25rem 0.45rem;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  -webkit-overflow-scrolling: touch;
+  color: var(--muted);
+}
+
+.link-line a {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.link-line .sep {
+  flex: 0 0 auto;
+  color: var(--muted);
+}
+
 .list {
   margin: 0;
   padding-left: 18px;
@@ -180,7 +201,16 @@ a:hover {
   margin-top: 0;
 }
 
+.section h3 {
+  margin-top: 20px;
+  margin-bottom: 6px;
+}
+
 .section p {
+  color: var(--muted);
+}
+
+.ref-note {
   color: var(--muted);
 }
 
@@ -261,6 +291,13 @@ body.math-pending .page {
   grid-template-columns: minmax(0, 1fr);
 }
 
+.video-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 14px;
+  margin-top: 12px;
+}
+
 .figure-card {
   margin: 0;
   background: rgba(22, 22, 30, 0.92);
@@ -282,12 +319,25 @@ body.math-pending .page {
     );
 }
 
+.figure-card__frame--transparent {
+  background: transparent;
+}
+
 .figure-card img {
   display: block;
   width: 100%;
   height: auto;
   aspect-ratio: 4 / 3;
   object-fit: contain;
+}
+
+.media-video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 0;
+  border-radius: 8px;
+  background: #000;
 }
 
 .figure-card figcaption {
