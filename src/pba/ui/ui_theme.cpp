@@ -249,7 +249,7 @@ auto load_theme_pack_json(const std::filesystem::path& path) -> std::optional<Ui
         return std::nullopt;
     }
 
-    nlohmann::json root = nlohmann::json::parse(f, nullptr, false);
+    const nlohmann::json root = nlohmann::json::parse(f, nullptr, false);
     if (root.is_discarded())
     {
         std::println(stderr, "[UiTheme] JSON parse error in '{}'", path.string());

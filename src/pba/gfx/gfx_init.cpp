@@ -21,7 +21,7 @@ namespace
     using namespace ds_pba;
 
     {
-        ScopeTimer st_glfw{"init glfw"};
+        const ScopeTimer st_glfw{"init glfw"};
         auto glfw_error_callback = [](int error, const char* description)
         { std::println(stderr, "GLFW Error {}: {}", error, description); };
 
@@ -42,7 +42,7 @@ namespace
     glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
 
     {
-        ScopeTimer st_glfw{"create window glfw"};
+        const ScopeTimer st_glfw{"create window glfw"};
         window = glfwCreateWindow(1600, 900, "Physically Based Animations", nullptr, nullptr);
         if (!window)
         {

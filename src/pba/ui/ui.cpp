@@ -765,7 +765,7 @@ auto render_imgui_windows(EngineContext& engine_context) -> void
 
             const auto physics_index = physics_context.find_body_index(o.id);
 
-            std::string type_str{to_string(o.type)};
+            const std::string type_str{to_string(o.type)};
 
             ImGui::Text("Active : %s [id=%d] [%s]", o.name.c_str(), o.id, type_str.c_str());
 
@@ -783,7 +783,7 @@ auto render_imgui_windows(EngineContext& engine_context) -> void
                     (void) world.set_position(o.id, p);
                 }
 
-                Quaternion& ori{rb.orientation};
+                const Quaternion& ori{rb.orientation};
                 const EulerDeg3& rot{glm::degrees(glm::eulerAngles(ori))};
                 ImGui::Text(
                     "Orientation (Quaternion) (%.2f,%.2f,%.2f,%.2f)",

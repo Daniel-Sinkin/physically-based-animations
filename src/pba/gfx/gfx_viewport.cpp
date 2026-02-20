@@ -91,7 +91,7 @@ namespace
         return color;
     }
 
-    EngineContext* e = gfx.engine_context;
+    const EngineContext* e = gfx.engine_context;
     if (!e)
     {
         return color;

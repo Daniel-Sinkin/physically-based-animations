@@ -234,7 +234,7 @@ auto upload_mesh_pn(const MeshDataPN& mesh_data) -> std::optional<GLMesh>
 
 auto GfxContext::create_textures() -> bool
 {
-    ScopeTimer timer{"create_textures"};
+    const ScopeTimer timer{"create_textures"};
     namespace fs = std::filesystem;
 
     {  // Environment Lighting
@@ -364,7 +364,7 @@ auto GfxContext::create_textures() -> bool
 
 auto GfxContext::create_meshes() -> bool
 {
-    ScopeTimer t{"create_meshes"};
+    const ScopeTimer t{"create_meshes"};
     const auto upload_pn_or_fail =
         [&](const MeshDataPN& mesh_data, std::string_view label, GLMesh& dst) -> bool
     {
@@ -455,7 +455,7 @@ auto GfxContext::create_meshes() -> bool
 
 auto GfxContext::create_programs() -> bool
 {
-    ScopeTimer timer{"create_programs"};
+    const ScopeTimer timer{"create_programs"};
     const auto load_prog = [&](std::string_view name, ShaderProgram& out) -> bool
     {
         auto res = create_program_from_file(std::string{name});
