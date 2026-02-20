@@ -53,8 +53,8 @@ inline constexpr f32 k_angular_damping{1.5f};
 inline constexpr f32 k_linear_sleep_speed_threshold{0.25f};
 inline constexpr f32 k_angular_sleep_speed_threshold{1.0f};
 
-inline constexpr int k_solver_iterations{20};
-inline constexpr int k_position_iterations{4};
+inline constexpr int k_solver_iterations{12};
+inline constexpr int k_position_iterations{3};
 inline constexpr f32 k_restitution{0.1f};
 
 inline constexpr f32 k_pen_percent{0.05f};
@@ -64,13 +64,18 @@ inline constexpr f32 k_pen_tolerance{0.005f};
 inline constexpr f32 k_pen_correction_frag{0.1f};
 
 inline constexpr f32 k_friction{0.5f};
+inline constexpr f64 k_physics_tick_rate_hz{45.0};
 
-inline constexpr usize k_physics_step_arena_bytes{4zu * k_mib};
+inline constexpr usize k_physics_step_arena_bytes{256zu * k_mib};
 
 inline constexpr f64 k_energy_sample_dt{0.1};
 inline constexpr usize k_energy_history_len{600zu};
 
-inline constexpr usize k_max_number_objects{8192zu};
+inline constexpr usize k_max_number_objects{131072zu};
+inline constexpr f64 k_emitter_spawn_interval_s{0.02};
+inline constexpr f64 k_emitter_disable_physics_s{0.12};
+inline constexpr f32 k_emitter_spawn_offset{3.0f};
+inline constexpr f32 k_emitter_launch_speed{35.0f};
 
 //
 // Camera
@@ -96,6 +101,7 @@ inline constexpr f32 k_fog_start{25.0f};
 inline constexpr f32 k_fog_end{40.0f};
 inline constexpr f32 k_minor_alpha{0.35f};
 inline constexpr f32 k_axis_alpha{0.95f};
+inline constexpr f32 k_env_light_strength{0.85f};
 
 //
 // Paths
@@ -114,6 +120,8 @@ inline constexpr std::string_view k_texture_marble_bust_2k{"marble_bust_2k"};
 inline constexpr std::string_view k_texture_marble_bust_diffuse{"marble_bust_01_diff_2k.jpg"};
 inline constexpr std::string_view k_texture_marble_bust_normal{"marble_bust_01_nor_gl_2k.jpg"};
 inline constexpr std::string_view k_texture_marble_bust_roughness{"marble_bust_01_rough_2k.jpg"};
+inline constexpr std::string_view k_texture_environment{"environment"};
+inline constexpr std::string_view k_texture_environment_latlong{"studio_env_latlong.png"};
 
 struct FontMetadata
 {
@@ -159,6 +167,11 @@ static_assert((k_physics_step_arena_bytes % k_kib) == 0zu);
 
 static_assert(k_energy_sample_dt > 0.0);
 static_assert(k_energy_history_len > 0zu);
+static_assert(k_max_number_objects > 0zu);
+static_assert(k_emitter_spawn_interval_s > 0.0);
+static_assert(k_emitter_disable_physics_s > 0.0);
+static_assert(k_emitter_spawn_offset > 0.0f);
+static_assert(k_emitter_launch_speed > 0.0f);
 
 static_assert(k_linear_damping >= 0.0f);
 static_assert(k_angular_damping >= 0.0f);
@@ -176,6 +189,7 @@ static_assert(k_pen_tolerance >= 0.0f);
 static_assert(k_pen_correction_frag >= 0.0f && k_pen_correction_frag <= 1.0f);
 
 static_assert(k_friction >= 0.0f);
+static_assert(k_physics_tick_rate_hz > 0.0);
 
 static_assert(k_camera_distance > 0.0f);
 static_assert(k_camera_fov_y > 0.0f && k_camera_fov_y < 180.0f);
@@ -185,6 +199,7 @@ static_assert(k_camera_z_far > k_camera_z_near);
 static_assert(k_fog_end > k_fog_start);
 static_assert(k_minor_alpha >= 0.0f && k_minor_alpha <= 1.0f);
 static_assert(k_axis_alpha >= 0.0f && k_axis_alpha <= 1.0f);
+static_assert(k_env_light_strength >= 0.0f);
 
 static_assert(k_num_lines_per_side > 0);
 static_assert(k_spacing > 0.0f);
@@ -201,6 +216,8 @@ static_assert(!k_texture_marble_bust_2k.empty());
 static_assert(!k_texture_marble_bust_diffuse.empty());
 static_assert(!k_texture_marble_bust_normal.empty());
 static_assert(!k_texture_marble_bust_roughness.empty());
+static_assert(!k_texture_environment.empty());
+static_assert(!k_texture_environment_latlong.empty());
 
 // Fonts
 static_assert(!k_font_monaspace_krypton_regular.filename.empty());

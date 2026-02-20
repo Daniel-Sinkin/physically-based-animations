@@ -42,10 +42,14 @@ struct CollisionStats
     usize contacts_generated{};
 };
 
-[[nodiscard]] auto make_contact_key(const RigidBody& a, const RigidBody& b, const Pos3& p) noexcept
+[[nodiscard]] auto make_contact_key(EntityId a_id, EntityId b_id, const Pos3& p) noexcept
     -> ContactKey;
 
 [[nodiscard]] auto
-generate_obb_contacts(std::span<const RigidBody> bodies, ArenaAllocator& out, CollisionScratch& scratch)
-    -> CollisionStats;
+generate_obb_contacts(
+    const RigidBodySOA& bodies,
+    ArenaAllocator& out,
+    CollisionScratch& scratch,
+    bool collect_stats = true
+) -> CollisionStats;
 }  // namespace ds_pba

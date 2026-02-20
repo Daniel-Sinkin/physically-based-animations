@@ -17,14 +17,106 @@
 //
 #include <imgui.h>
 #include <optional>
-#include <print>
 //
 #include <GLFW/glfw3.h>
 #include <glm/ext/matrix_float4x4.hpp>
+#include <glm/geometric.hpp>
 #include <json.hpp>
 
 namespace ds_pba
 {
+namespace
+{
+[[nodiscard]] auto lerp_color(const Color3& a, const Color3& b, f32 t) noexcept -> Color3
+{
+    return Color3{
+        a.r() + (b.r() - a.r()) * t,
+        a.g() + (b.g() - a.g()) * t,
+        a.b() + (b.b() - a.b()) * t,
+    };
+}
+
+[[nodiscard]] auto to_u8_channel(f32 linear_value) noexcept -> u8
+{
+    const auto clamped = std::clamp(linear_value, 0.0f, 1.0f);
+    const auto scaled = static_cast<int>(std::lround(clamped * 255.0f));
+    return static_cast<u8>(std::clamp(scaled, 0, 255));
+}
+
+[[nodiscard]] auto make_default_environment_map_rgba8(int width, int height) -> ImageRGBA8
+{
+    {
+        Expects(width > 0);
+        Expects(height > 0);
+    }
+    const auto width_f = static_cast<f32>(width);
+    const auto height_f = static_cast<f32>(height);
+
+    ImageRGBA8 img{};
+    img.width = width;
+    img.height = height;
+    img.channels = 4;
+
+    const auto pixel_count = static_cast<usize>(width) * static_cast<usize>(height);
+    img.pixels.resize(pixel_count * 4zu);
+
+    constexpr Color3 sky_zenith{0.08f, 0.22f, 0.45f};
+    constexpr Color3 sky_horizon{0.62f, 0.74f, 0.86f};
+    constexpr Color3 ground{0.18f, 0.17f, 0.16f};
+    const auto sun_dir = glm::normalize(Dir3{0.25f, -0.35f, 0.90f});
+
+    for (int y{0}; y < height; ++y)
+    {
+        const f32 y_f = static_cast<f32>(y);
+        const auto v = (y_f + 0.5f) / height_f;
+        const auto theta = v * k_pi;
+        const auto sin_theta = std::sin(theta);
+        const auto cos_theta = std::cos(theta);
+
+        for (int x{0}; x < width; ++x)
+        {
+            const f32 x_f = static_cast<f32>(x);
+            const auto u = (x_f + 0.5f) / width_f;
+            const auto phi = (u - 0.5f) * k_two_pi;
+
+            const auto dir = Dir3{
+                std::cos(phi) * sin_theta,
+                std::sin(phi) * sin_theta,
+                cos_theta,
+            };
+
+            const auto sky_t = std::clamp(0.5f * (dir.z + 1.0f), 0.0f, 1.0f);
+            const auto sky_curve = std::pow(sky_t, 0.65f);
+            const auto sky = lerp_color(sky_horizon, sky_zenith, sky_curve);
+
+            const auto horizon_blend = std::clamp((dir.z + 0.08f) / 0.18f, 0.0f, 1.0f);
+            auto base = lerp_color(ground, sky, horizon_blend);
+
+            const auto sun_cos = std::max(glm::dot(dir, sun_dir), 0.0f);
+            const auto sun_glow = std::pow(sun_cos, 48.0f);
+            const auto sun_core = std::pow(sun_cos, 1024.0f);
+
+            base.r() += 0.40f * sun_glow + 1.20f * sun_core;
+            base.g() += 0.33f * sun_glow + 0.95f * sun_core;
+            base.b() += 0.22f * sun_glow + 0.55f * sun_core;
+
+            const auto idx =
+                (static_cast<usize>(y) * static_cast<usize>(width) + static_cast<usize>(x)) * 4zu;
+            img.pixels[idx + 0zu] = to_u8_channel(base.r());
+            img.pixels[idx + 1zu] = to_u8_channel(base.g());
+            img.pixels[idx + 2zu] = to_u8_channel(base.b());
+            img.pixels[idx + 3zu] = 255u;
+        }
+    }
+
+    {
+        Ensures(img.valid());
+    }
+    return img;
+}
+
+}  // namespace
+
 auto upload_mesh_pcolor_lines(const MeshDataPColor& mesh_data) -> std::optional<GLMesh>
 {
     const auto& verts = mesh_data.vertices;
@@ -142,8 +234,37 @@ auto upload_mesh_pn(const MeshDataPN& mesh_data) -> std::optional<GLMesh>
 
 auto GfxContext::create_textures() -> bool
 {
-    ScopeTimer timer{"create_textures"};
+    const ScopeTimer timer{"create_textures"};
     namespace fs = std::filesystem;
+
+    {  // Environment Lighting
+        const fs::path env_path = fs::path{k_fp_assets} / k_fp_assets_textures / k_texture_environment
+                                  / k_texture_environment_latlong;
+        std::error_code ec{};
+        const bool has_env_asset = fs::is_regular_file(env_path, ec) && !ec;
+
+        auto env_img = has_env_asset
+                           ? load_image_rgba8(
+                                 env_path, TextureLoadOptions{.flip_y = false, .force_rgba = true}
+                             )
+                           : std::optional<ImageRGBA8>{
+                                 make_default_environment_map_rgba8(1024, 512)
+                             };
+        if (!env_img)
+        {
+            std::println(stderr, "Failed to prepare environment texture '{}'", env_path.string());
+            return false;
+        }
+
+        auto tex = upload_texture_2d_rgba8(*env_img, {.generate_mips = true, .srgb = false});
+        if (!tex)
+        {
+            std::println(stderr, "Failed to upload environment texture '{}'", env_path.string());
+            return false;
+        }
+
+        textures.environment_lighting = *tex;
+    }
 
     if constexpr (false)
     {  // Asphalt
@@ -243,7 +364,7 @@ auto GfxContext::create_textures() -> bool
 
 auto GfxContext::create_meshes() -> bool
 {
-    ScopeTimer t{"create_meshes"};
+    const ScopeTimer t{"create_meshes"};
     const auto upload_pn_or_fail =
         [&](const MeshDataPN& mesh_data, std::string_view label, GLMesh& dst) -> bool
     {
@@ -334,7 +455,7 @@ auto GfxContext::create_meshes() -> bool
 
 auto GfxContext::create_programs() -> bool
 {
-    ScopeTimer timer{"create_programs"};
+    const ScopeTimer timer{"create_programs"};
     const auto load_prog = [&](std::string_view name, ShaderProgram& out) -> bool
     {
         auto res = create_program_from_file(std::string{name});
@@ -348,11 +469,12 @@ auto GfxContext::create_programs() -> bool
     };
 
     // clang-format off
-    if (!load_prog("grid",       shader_programs.grid))    return false;
-    if (!load_prog("object",     shader_programs.obj))     return false;
-    if (!load_prog("object_tex", shader_programs.obj_tex)) return false;
-    if (!load_prog("outline",    shader_programs.outline)) return false;
-    if (!load_prog("pivot",      shader_programs.pivot))   return false;
+    if (!load_prog("grid",        shader_programs.grid))        return false;
+    if (!load_prog("environment", shader_programs.environment)) return false;
+    if (!load_prog("object",      shader_programs.obj))         return false;
+    if (!load_prog("object_tex",  shader_programs.obj_tex))     return false;
+    if (!load_prog("outline",     shader_programs.outline))     return false;
+    if (!load_prog("pivot",       shader_programs.pivot))       return false;
     // clang-format on
 
     if (!shader_programs.all_valid())

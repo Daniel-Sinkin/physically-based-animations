@@ -7,6 +7,7 @@
 #include "pba/core/core_types.hpp"
 #include "pba/core/format.hpp"  // IWYU pragma: keep
 #include "pba/core/math_types.hpp"
+#include "pba/core/parallel_for.hpp"
 #include "pba/physics/collision.hpp"
 #include "pba/physics/forces.hpp"
 #include "pba/physics/solver.hpp"
@@ -28,27 +29,126 @@ namespace
 }
 
 [[nodiscard]] auto
-compute_total_kinetic_energy(std::span<const RigidBody> bodies, bool include_angular) noexcept
+compute_total_kinetic_energy(const RigidBodySOA& bodies, bool include_angular) noexcept
     -> f32
 {
     auto E = 0.0f;
-    for (const auto& b : bodies)
+    for (auto i = 0zu; i < bodies.size(); ++i)
     {
-        if (b.inv_mass <= 0.0f)
+        if (bodies.inv_masses[i] <= 0.0f)
         {
             continue;
         }
-        E += 0.5f * glm::dot(b.velocity, b.velocity) / b.inv_mass;
+        E += 0.5f * glm::dot(bodies.velocities[i], bodies.velocities[i]) / bodies.inv_masses[i];
         if (include_angular)
         {
             // TODO: Cache this directly instead of re-inverting every time
-            const glm::mat3 I_world = glm::inverse(b.inv_inertia_world);
-            E += 0.5f * glm::dot(b.angular_velocity, I_world * b.angular_velocity);
+            const glm::mat3 I_world = glm::inverse(bodies.inv_inertia_worlds[i]);
+            E += 0.5f * glm::dot(
+                bodies.angular_velocities[i], I_world * bodies.angular_velocities[i]
+            );
         }
     }
     return E;
 }
+
+auto clear_debug_tracking(PhysicsContext& ctx) noexcept -> void
+{
+    ctx.debug_contacts.clear();
+    ctx.debug_collision_stats = {};
+    ctx.debug_total_kinetic_energy = 0.0f;
+    ctx.debug_energy_sample_accum = Duration{0.0};
+    ctx.debug_total_kinetic_energy_history.clear();
+}
 }  // namespace
+
+auto PhysicsContext::try_body(BodyHandle h) noexcept -> std::optional<BodyRef>
+{
+    const auto i = static_cast<usize>(h.index);
+    if (i >= bodies_soa.size())
+    {
+        return std::nullopt;
+    }
+    return body(i);
+}
+
+auto PhysicsContext::try_body(BodyHandle h) const noexcept -> std::optional<BodyConstRef>
+{
+    const auto i = static_cast<usize>(h.index);
+    if (i >= bodies_soa.size())
+    {
+        return std::nullopt;
+    }
+    return body(i);
+}
+
+auto PhysicsContext::body(usize i) noexcept -> BodyRef
+{
+    Expects(i < bodies_soa.size());
+    return BodyRef{
+        .id = bodies_soa.ids[i],
+        .half_extents = bodies_soa.half_extents[i],
+        .position = bodies_soa.positions[i],
+        .velocity = bodies_soa.velocities[i],
+        .force_accum = bodies_soa.force_accums[i],
+        .inv_mass = bodies_soa.inv_masses[i],
+        .orientation = bodies_soa.orientations[i],
+        .angular_velocity = bodies_soa.angular_velocities[i],
+        .torque_accum = bodies_soa.torque_accums[i],
+        .inv_inertia_body = bodies_soa.inv_inertia_bodies[i],
+        .inv_inertia_world = bodies_soa.inv_inertia_worlds[i],
+        .asleep = BoolRef{bodies_soa.asleep_flags[i]},
+        .sleep_frames = bodies_soa.sleep_frame_counts[i],
+        .grabbed = BoolRef{bodies_soa.grabbed_flags[i]},
+    };
+}
+
+auto PhysicsContext::body(usize i) const noexcept -> BodyConstRef
+{
+    Expects(i < bodies_soa.size());
+    return BodyConstRef{
+        .id = bodies_soa.ids[i],
+        .half_extents = bodies_soa.half_extents[i],
+        .position = bodies_soa.positions[i],
+        .velocity = bodies_soa.velocities[i],
+        .force_accum = bodies_soa.force_accums[i],
+        .inv_mass = bodies_soa.inv_masses[i],
+        .orientation = bodies_soa.orientations[i],
+        .angular_velocity = bodies_soa.angular_velocities[i],
+        .torque_accum = bodies_soa.torque_accums[i],
+        .inv_inertia_body = bodies_soa.inv_inertia_bodies[i],
+        .inv_inertia_world = bodies_soa.inv_inertia_worlds[i],
+        .asleep = bodies_soa.asleep_flags[i] != 0u,
+        .sleep_frames = bodies_soa.sleep_frame_counts[i],
+        .grabbed = bodies_soa.grabbed_flags[i] != 0u,
+    };
+}
+
+auto PhysicsContext::find_body_index(EntityId id) const noexcept -> std::optional<usize>
+{
+    for (auto i = 0zu; i < bodies_soa.size(); ++i)
+    {
+        if (bodies_soa.ids[i] == id)
+        {
+            return i;
+        }
+    }
+    return std::nullopt;
+}
+
+auto PhysicsContext::body_count() const noexcept -> usize
+{
+    return bodies_soa.size();
+}
+
+auto PhysicsContext::set_debug_tracking_enabled(bool enabled) noexcept -> void
+{
+    debug_tracking_enabled = enabled;
+    if (!debug_tracking_enabled)
+    {
+        clear_debug_tracking(*this);
+    }
+}
 
 auto PhysicsContext::step() -> void
 {
@@ -58,35 +158,38 @@ auto PhysicsContext::step() -> void
     const Duration dt{time_step};
     const f32 dt_s{dt_f32(dt)};
 
-    update_inv_inertia_world(bodies);
+    update_inv_inertia_world(bodies_soa);
 
-    for (auto& b : bodies)
-    {
-        for (auto& force : simple_forces)
+    parallel_for_index(
+        bodies_soa.size(),
+        [&](usize i) -> void
         {
-            apply_force(b, force);
+            for (const auto& force : simple_forces)
+            {
+                apply_force(bodies_soa, i, force);
+            }
         }
-    }
+    );
     for (auto& force : complex_forces)
     {
-        apply_force(bodies, force);
+        apply_force(bodies_soa, force);
     }
 
-    integrate_forces(bodies, dt_s);
-    integrate_velocities(bodies, dt_s);
-    debug_collision_stats = generate_obb_contacts(bodies, contact_arena, collision_scratch);
+    integrate_forces(bodies_soa, dt_s);
+    integrate_velocities(bodies_soa, dt_s);
+    debug_collision_stats =
+        generate_obb_contacts(bodies_soa, contact_arena, collision_scratch, debug_tracking_enabled);
 
+    if (debug_tracking_enabled)
     {  // Setup debug info for this step
         debug_contacts.clear();
         debug_contacts.reserve(contact_arena.used() / sizeof(Contact));
         for (const auto& contact : contact_arena.as_span<Contact>())
         {
-            const RigidBody& a = bodies[contact.a_idx];
-            const RigidBody& b = bodies[contact.b_idx];
             debug_contacts.push_back(
                 DebugContact{
-                    .a_id = a.id,
-                    .b_id = b.id,
+                    .a_id = bodies_soa.ids[contact.a_idx],
+                    .b_id = bodies_soa.ids[contact.b_idx],
                     .p = contact.p,
                     .n = contact.n,
                     .penetration = contact.penetration,
@@ -94,6 +197,11 @@ auto PhysicsContext::step() -> void
                 }
             );
         }
+    }
+    else
+    {
+        debug_contacts.clear();
+        debug_collision_stats = {};
     }
 
     // Pull warm-start state from cache into contacts before warm start + solve.
@@ -103,10 +211,8 @@ auto PhysicsContext::step() -> void
         {
             continue;
         }
-        const RigidBody& a = bodies[contact.a_idx];
-        const RigidBody& b = bodies[contact.b_idx];
-
-        const ContactKey key = make_contact_key(a, b, contact.p);
+        const ContactKey key =
+            make_contact_key(bodies_soa.ids[contact.a_idx], bodies_soa.ids[contact.b_idx], contact.p);
         if (auto it = contact_cache.find(key); it != contact_cache.end())
         {
             contact.lambda_n = it->second.lambda_n;
@@ -124,12 +230,12 @@ auto PhysicsContext::step() -> void
         }
         if (contact.penetration < 0.05f)
         {
-            warm_start_contact(bodies, contact);
+            warm_start_contact(bodies_soa, contact);
         }
     }
 
-    solve_velocity_constraints(bodies, contact_arena, dt_s);
-    solve_position_constraints(bodies, contact_arena);
+    solve_velocity_constraints(bodies_soa, contact_arena, dt_s);
+    solve_position_constraints(bodies_soa, contact_arena);
 
     contact_cache.clear();
     contact_cache.reserve((contact_arena.used() / sizeof(Contact)) * 2zu);
@@ -140,10 +246,8 @@ auto PhysicsContext::step() -> void
         {
             continue;
         }
-        const RigidBody& a = bodies[contact.a_idx];
-        const RigidBody& b = bodies[contact.b_idx];
-
-        const ContactKey key = make_contact_key(a, b, contact.p);
+        const ContactKey key =
+            make_contact_key(bodies_soa.ids[contact.a_idx], bodies_soa.ids[contact.b_idx], contact.p);
 
         contact_cache.insert_or_assign(
             key,
@@ -156,23 +260,32 @@ auto PhysicsContext::step() -> void
         );
     }
 
-    apply_sleep_and_damping(bodies, dt_s);
-    clear_accumulators(bodies);
+    apply_sleep_and_damping(bodies_soa, dt_s);
+    clear_accumulators(bodies_soa);
 
-    debug_total_kinetic_energy = compute_total_kinetic_energy(bodies, true);
-
-    debug_energy_sample_accum += dt;
-    while (debug_energy_sample_accum >= Duration{k_energy_sample_dt})
+    if (debug_tracking_enabled)
     {
-        debug_energy_sample_accum -= Duration{k_energy_sample_dt};
-        debug_total_kinetic_energy_history.push(debug_total_kinetic_energy);
+        debug_total_kinetic_energy = compute_total_kinetic_energy(bodies_soa, true);
+
+        debug_energy_sample_accum += dt;
+        while (debug_energy_sample_accum >= Duration{k_energy_sample_dt})
+        {
+            debug_energy_sample_accum -= Duration{k_energy_sample_dt};
+            debug_total_kinetic_energy_history.push(debug_total_kinetic_energy);
+        }
+    }
+    else
+    {
+        debug_total_kinetic_energy = 0.0f;
+        debug_energy_sample_accum = Duration{0.0};
+        debug_total_kinetic_energy_history.clear();
     }
     time = time + std::chrono::duration_cast<Clock::duration>(dt);
 }
 
 auto PhysicsContext::clear() -> void
 {
-    bodies.clear();
+    bodies_soa.clear();
     simple_forces.clear();
     complex_forces.clear();
     contact_cache.clear();

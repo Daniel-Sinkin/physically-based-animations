@@ -9,6 +9,7 @@
 //
 #include <cmath>
 #include <print>
+#include <span>
 //
 #include <glm/geometric.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -51,6 +52,186 @@ struct RigidBody
     {
         return inv_mass == k_static_mass;
     }
+};
+
+struct RigidBodySOA
+{
+    explicit RigidBodySOA(usize reserve_count = 0zu)
+    {
+        reserve(reserve_count);
+    }
+
+    auto reserve(usize count) -> void
+    {
+        ids.reserve(count);
+        half_extents.reserve(count);
+        positions.reserve(count);
+        velocities.reserve(count);
+        force_accums.reserve(count);
+        inv_masses.reserve(count);
+        orientations.reserve(count);
+        angular_velocities.reserve(count);
+        torque_accums.reserve(count);
+        inv_inertia_bodies.reserve(count);
+        inv_inertia_worlds.reserve(count);
+        asleep_flags.reserve(count);
+        sleep_frame_counts.reserve(count);
+        grabbed_flags.reserve(count);
+    }
+
+    auto clear() -> void
+    {
+        ids.clear();
+        half_extents.clear();
+        positions.clear();
+        velocities.clear();
+        force_accums.clear();
+        inv_masses.clear();
+        orientations.clear();
+        angular_velocities.clear();
+        torque_accums.clear();
+        inv_inertia_bodies.clear();
+        inv_inertia_worlds.clear();
+        asleep_flags.clear();
+        sleep_frame_counts.clear();
+        grabbed_flags.clear();
+    }
+
+    auto resize(usize count) -> void
+    {
+        ids.resize(count);
+        half_extents.resize(count);
+        positions.resize(count);
+        velocities.resize(count);
+        force_accums.resize(count);
+        inv_masses.resize(count);
+        orientations.resize(count);
+        angular_velocities.resize(count);
+        torque_accums.resize(count);
+        inv_inertia_bodies.resize(count);
+        inv_inertia_worlds.resize(count);
+        asleep_flags.resize(count);
+        sleep_frame_counts.resize(count);
+        grabbed_flags.resize(count);
+    }
+
+    [[nodiscard]] auto size() const noexcept -> usize
+    {
+        return ids.size();
+    }
+
+    [[nodiscard]] auto empty() const noexcept -> bool
+    {
+        return ids.empty();
+    }
+
+    [[nodiscard]] auto is_static(usize i) const noexcept -> bool
+    {
+        return inv_masses[i] == k_static_mass;
+    }
+
+    [[nodiscard]] auto is_asleep(usize i) const noexcept -> bool
+    {
+        return asleep_flags[i] != 0u;
+    }
+
+    [[nodiscard]] auto is_grabbed(usize i) const noexcept -> bool
+    {
+        return grabbed_flags[i] != 0u;
+    }
+
+    auto set_asleep(usize i, bool value) noexcept -> void
+    {
+        asleep_flags[i] = value ? 1u : 0u;
+    }
+
+    auto set_grabbed(usize i, bool value) noexcept -> void
+    {
+        grabbed_flags[i] = value ? 1u : 0u;
+    }
+
+    auto push_back(const RigidBody& b) -> void
+    {
+        ids.push_back(b.id);
+        half_extents.push_back(b.half_extents);
+        positions.push_back(b.position);
+        velocities.push_back(b.velocity);
+        force_accums.push_back(b.force_accum);
+        inv_masses.push_back(b.inv_mass);
+        orientations.push_back(b.orientation);
+        angular_velocities.push_back(b.angular_velocity);
+        torque_accums.push_back(b.torque_accum);
+        inv_inertia_bodies.push_back(b.inv_inertia_body);
+        inv_inertia_worlds.push_back(b.inv_inertia_world);
+        asleep_flags.push_back(b.asleep ? 1u : 0u);
+        sleep_frame_counts.push_back(b.sleep_frames);
+        grabbed_flags.push_back(b.grabbed ? 1u : 0u);
+    }
+
+    auto sync_from_aos(std::span<const RigidBody> src) -> void
+    {
+        resize(src.size());
+        for (auto i = 0zu; i < src.size(); ++i)
+        {
+            const auto& b = src[i];
+            ids[i] = b.id;
+            half_extents[i] = b.half_extents;
+            positions[i] = b.position;
+            velocities[i] = b.velocity;
+            force_accums[i] = b.force_accum;
+            inv_masses[i] = b.inv_mass;
+            orientations[i] = b.orientation;
+            angular_velocities[i] = b.angular_velocity;
+            torque_accums[i] = b.torque_accum;
+            inv_inertia_bodies[i] = b.inv_inertia_body;
+            inv_inertia_worlds[i] = b.inv_inertia_world;
+            asleep_flags[i] = b.asleep ? 1u : 0u;
+            sleep_frame_counts[i] = b.sleep_frames;
+            grabbed_flags[i] = b.grabbed ? 1u : 0u;
+        }
+    }
+
+    auto sync_to_aos(std::span<RigidBody> dst) const -> void
+    {
+        Expects(dst.size() == size());
+        for (auto i = 0zu; i < size(); ++i)
+        {
+            dst[i].id = ids[i];
+            dst[i].half_extents = half_extents[i];
+            dst[i].position = positions[i];
+            dst[i].velocity = velocities[i];
+            dst[i].force_accum = force_accums[i];
+            dst[i].inv_mass = inv_masses[i];
+            dst[i].orientation = orientations[i];
+            dst[i].angular_velocity = angular_velocities[i];
+            dst[i].torque_accum = torque_accums[i];
+            dst[i].inv_inertia_body = inv_inertia_bodies[i];
+            dst[i].inv_inertia_world = inv_inertia_worlds[i];
+            dst[i].asleep = asleep_flags[i] != 0u;
+            dst[i].sleep_frames = sleep_frame_counts[i];
+            dst[i].grabbed = grabbed_flags[i] != 0u;
+        }
+    }
+
+    std::vector<EntityId> ids{};
+
+    std::vector<Dir3> half_extents{};
+
+    std::vector<Pos3> positions{};
+    std::vector<Dir3> velocities{};
+    std::vector<Dir3> force_accums{};
+    std::vector<f32> inv_masses{};
+
+    std::vector<Quaternion> orientations{};
+    std::vector<Dir3> angular_velocities{};
+    std::vector<Dir3> torque_accums{};
+
+    std::vector<glm::mat3> inv_inertia_bodies{};
+    std::vector<glm::mat3> inv_inertia_worlds{};
+
+    std::vector<u8> asleep_flags{};
+    std::vector<int> sleep_frame_counts{};
+    std::vector<u8> grabbed_flags{};
 };
 
 enum class ContactValidity : u8

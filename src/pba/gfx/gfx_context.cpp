@@ -83,7 +83,7 @@ auto GfxContext::step(EditorInput& input) -> void
 
     if (ImGui::BeginMainMenuBar())
     {
-        render_menu_bar(*this);
+        render_menu_bar(*engine_context);
         ImGui::EndMainMenuBar();
     }
 
@@ -107,6 +107,11 @@ auto GfxContext::step(EditorInput& input) -> void
     if (input.key_pressed(EditorKey::F2))
     {
         toggle_recording();
+    }
+    if (input.key_pressed(EditorKey::F3))
+    {
+        request_reveal_physics_debug_window = true;
+        ui_log("Revealing Physics Debug window");
     }
 
     if (editor.grab.active)
@@ -152,7 +157,13 @@ auto GfxContext::step(EditorInput& input) -> void
             glfwSetWindowShouldClose(window, GLFW_TRUE);
         }
 
-        if (viewport_image_hovered)
+        if (!viewport_fb_rect_valid && editor.box_select.active)
+        {
+            editor.box_select.active = false;
+            editor.box_select.dragging = false;
+        }
+
+        if (viewport_fb_rect_valid && (viewport_image_hovered || editor.box_select.active))
         {
             hover_interaction(input);
         }

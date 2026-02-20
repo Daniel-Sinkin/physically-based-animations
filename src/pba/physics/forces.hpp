@@ -64,22 +64,29 @@ struct overloaded : Ts...
 template <class... Ts>
 overloaded(Ts...) -> overloaded<Ts...>;
 
-inline auto apply_force(RigidBody& b, const SimpleForce& force) noexcept -> void
+inline auto apply_force(RigidBodySOA& bodies, usize body_idx, const SimpleForce& force) noexcept
+    -> void
 {
-    if (b.is_static() || b.asleep || b.grabbed)
+    if (
+        bodies.is_static(body_idx) || bodies.is_asleep(body_idx) || bodies.is_grabbed(body_idx)
+    )
     {
         return;
     }
 
+    const auto inv_mass = bodies.inv_masses[body_idx];
+    auto& force_accum = bodies.force_accums[body_idx];
+    auto& torque_accum = bodies.torque_accums[body_idx];
+
     std::visit(
         overloaded{
-            [&](const GravityForce& g) noexcept { b.force_accum += g.accel / b.inv_mass; },
+            [&](const GravityForce& g) noexcept { force_accum += g.accel / inv_mass; },
             [&](const AttractorForce& a) noexcept
             {
                 const auto min_r = std::max(a.min_radius, 1e-6f);
                 const auto min_r2 = min_r * min_r;
 
-                const auto d = a.target - b.position;
+                const auto d = a.target - bodies.positions[body_idx];
                 const auto d2 = glm::dot(d, d);
                 if (d2 <= min_r2)
                 {
@@ -90,7 +97,7 @@ inline auto apply_force(RigidBody& b, const SimpleForce& force) noexcept -> void
                 const auto dir = d * inv_len;
 
                 const auto accel = a.magnitude * dir;
-                b.force_accum += accel / b.inv_mass;
+                force_accum += accel / inv_mass;
             },
             [&](const RepulsionForce& r) noexcept
             {
@@ -98,7 +105,7 @@ inline auto apply_force(RigidBody& b, const SimpleForce& force) noexcept -> void
                 const auto min_r2 = min_r * min_r;
                 const auto range = std::max(r.range, min_r);
 
-                const auto d = b.position - r.target;
+                const auto d = bodies.positions[body_idx] - r.target;
                 const auto d2 = glm::dot(d, d);
                 if (d2 <= min_r2)
                 {
@@ -117,13 +124,13 @@ inline auto apply_force(RigidBody& b, const SimpleForce& force) noexcept -> void
                 const auto accel_mag = std::clamp(t, 0.0f, 1.0f) * r.accel_max;
 
                 const auto accel = accel_mag * dir;
-                b.force_accum += accel / b.inv_mass;
+                force_accum += accel / inv_mass;
             },
             [&](const MotorForce& m) noexcept
             {
-                if (m.id != k_invalid_id && b.id == m.id)
+                if (m.id != k_invalid_id && bodies.ids[body_idx] == m.id)
                 {
-                    b.torque_accum += m.torque;
+                    torque_accum += m.torque;
                 }
             },
         },
@@ -131,7 +138,7 @@ inline auto apply_force(RigidBody& b, const SimpleForce& force) noexcept -> void
     );
 }
 
-inline auto apply_force(std::span<RigidBody> bodies, const ComplexForce& force) noexcept -> void
+inline auto apply_force(RigidBodySOA& bodies, const ComplexForce& force) noexcept -> void
 {
     std::visit(
         overloaded{
@@ -147,25 +154,29 @@ inline auto apply_force(std::span<RigidBody> bodies, const ComplexForce& force) 
 
                 for (usize i{0zu}; i < n; ++i)
                 {
-                    auto& a = bodies[i];
-                    if (a.is_static() || a.asleep || a.grabbed || a.inv_mass <= 0.0f)
+                    if (
+                        bodies.is_static(i) || bodies.is_asleep(i) || bodies.is_grabbed(i)
+                        || bodies.inv_masses[i] <= 0.0f
+                    )
                     {
                         continue;
                     }
 
-                    const auto m_a = 1.0f / a.inv_mass;
+                    const auto m_a = 1.0f / bodies.inv_masses[i];
 
                     for (usize j{i + 1zu}; j < n; ++j)
                     {
-                        auto& b = bodies[j];
-                        if (b.is_static() || b.asleep || b.grabbed || b.inv_mass <= 0.0f)
+                        if (
+                            bodies.is_static(j) || bodies.is_asleep(j) || bodies.is_grabbed(j)
+                            || bodies.inv_masses[j] <= 0.0f
+                        )
                         {
                             continue;
                         }
 
-                        const auto m_b = 1.0f / b.inv_mass;
+                        const auto m_b = 1.0f / bodies.inv_masses[j];
 
-                        const auto r = b.position - a.position;
+                        const auto r = bodies.positions[j] - bodies.positions[i];
                         const auto r2 = glm::dot(r, r) + eps2;
 
                         const auto inv_r = 1.0f / std::sqrt(r2);
@@ -173,8 +184,8 @@ inline auto apply_force(std::span<RigidBody> bodies, const ComplexForce& force) 
 
                         const auto F = (p.G * m_a * m_b) * r * inv_r3;
 
-                        a.force_accum += F;
-                        b.force_accum -= F;
+                        bodies.force_accums[i] += F;
+                        bodies.force_accums[j] -= F;
                     }
                 }
             },

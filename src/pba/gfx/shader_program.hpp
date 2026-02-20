@@ -33,6 +33,9 @@ struct ShaderProgram
 
         UniformLocation uDiffuseTex{k_uniform_not_set};
         UniformLocation uNormalTex{k_uniform_not_set};
+        UniformLocation uEnvironmentTex{k_uniform_not_set};
+        UniformLocation uCameraPos{k_uniform_not_set};
+        UniformLocation uEnvLightStrength{k_uniform_not_set};
 
         auto reset() noexcept -> void
         {
@@ -44,6 +47,9 @@ struct ShaderProgram
             uFogEnd = k_uniform_not_set;
             uDiffuseTex = k_uniform_not_set;
             uNormalTex = k_uniform_not_set;
+            uEnvironmentTex = k_uniform_not_set;
+            uCameraPos = k_uniform_not_set;
+            uEnvLightStrength = k_uniform_not_set;
         }
     };
 
@@ -100,6 +106,9 @@ struct ShaderProgram
         u.uFogEnd = glGetUniformLocation(id, "uFogEnd");
         u.uDiffuseTex = glGetUniformLocation(id, "uDiffuseTex");
         u.uNormalTex = glGetUniformLocation(id, "uNormalTex");
+        u.uEnvironmentTex = glGetUniformLocation(id, "uEnvironmentTex");
+        u.uCameraPos = glGetUniformLocation(id, "uCameraPos");
+        u.uEnvLightStrength = glGetUniformLocation(id, "uEnvLightStrength");
     }
 
     auto set_uView(const ViewMatrix& view_matrix) const noexcept -> void
@@ -196,6 +205,42 @@ struct ShaderProgram
             return;
         }
         glUniform1i(u.uNormalTex, unit);
+    }
+
+    auto set_uEnvironmentTex(int unit) const noexcept -> void
+    {
+        {
+            Expects(u.uEnvironmentTex != k_uniform_not_set);
+        }
+        if (u.uEnvironmentTex == k_uniform_not_set)
+        {
+            return;
+        }
+        glUniform1i(u.uEnvironmentTex, unit);
+    }
+
+    auto set_uCameraPos(const Pos3& p) const noexcept -> void
+    {
+        {
+            Expects(u.uCameraPos != k_uniform_not_set);
+        }
+        if (u.uCameraPos == k_uniform_not_set)
+        {
+            return;
+        }
+        glUniform3f(u.uCameraPos, p.x, p.y, p.z);
+    }
+
+    auto set_uEnvLightStrength(f32 v) const noexcept -> void
+    {
+        {
+            Expects(u.uEnvLightStrength != k_uniform_not_set);
+        }
+        if (u.uEnvLightStrength == k_uniform_not_set)
+        {
+            return;
+        }
+        glUniform1f(u.uEnvLightStrength, v);
     }
 };
 

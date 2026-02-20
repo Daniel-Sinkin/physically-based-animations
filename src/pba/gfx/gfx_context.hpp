@@ -32,7 +32,6 @@ struct EngineContext;
 struct Raycast;
 struct Camera;
 struct Entity;
-struct RigidBody;
 
 struct GfxContext
 {
@@ -49,6 +48,7 @@ struct GfxContext
     struct ShaderPrograms
     {
         ShaderProgram grid{};
+        ShaderProgram environment{};
         ShaderProgram obj{};
         ShaderProgram obj_tex{};
         ShaderProgram outline{};
@@ -57,6 +57,7 @@ struct GfxContext
         auto destroy() noexcept -> void
         {
             grid.destroy();
+            environment.destroy();
             obj.destroy();
             obj_tex.destroy();
             outline.destroy();
@@ -65,8 +66,8 @@ struct GfxContext
 
         [[nodiscard]] auto all_valid() const noexcept -> bool
         {
-            return grid.valid() && obj.valid() && obj_tex.valid() && outline.valid()
-                   && pivot.valid();
+            return grid.valid() && environment.valid() && obj.valid() && obj_tex.valid()
+                   && outline.valid() && pivot.valid();
         }
     };
     ShaderPrograms shader_programs{};
@@ -86,6 +87,7 @@ struct GfxContext
 
     bool imgui_uses_keyboard{};
     bool imgui_uses_mouse{};
+    std::string imgui_ini_path{};
 
     std::unordered_map<std::string, ImFont*> fonts_by_id{};
     ImFont* default_font{};
@@ -130,6 +132,7 @@ struct GfxContext
 
         GLTexture2D marble_bust_diffuse{};
         GLTexture2D marble_bust_normal{};
+        GLTexture2D environment_lighting{};
 
         void destroy() noexcept
         {
@@ -138,6 +141,7 @@ struct GfxContext
 
             marble_bust_diffuse.destroy();
             marble_bust_normal.destroy();
+            environment_lighting.destroy();
         }
     };
     Textures textures{};
@@ -205,6 +209,7 @@ struct GfxContext
     };
 
     PhysicsDebugSettings phys_debug{};
+    bool request_reveal_physics_debug_window{false};
 
     struct DebugLineV_PColor
     {
@@ -234,7 +239,18 @@ struct GfxContext
             std::vector<std::pair<EntityId, Pos3>> start_positions{};
         };
 
+        struct BoxSelect
+        {
+            bool active{false};
+            bool dragging{false};
+            f64 start_mouse_x{0.0};
+            f64 start_mouse_y{0.0};
+            f64 current_mouse_x{0.0};
+            f64 current_mouse_y{0.0};
+        };
+
         Grab grab{};
+        BoxSelect box_select{};
     };
     EditorState editor{};
 
@@ -246,8 +262,9 @@ struct GfxContext
 
     // clang-format off
     auto render_to_viewport() -> void;
+    auto render_to_viewport_environment  (const ViewMatrix&, const ProjMatrix&, const Pos3&, f32) const -> void;
     auto render_to_viewport_grid         (const ViewMatrix&, const ProjMatrix&)              const -> void;
-    auto render_to_viewport_objects      (const ViewMatrix&, const ProjMatrix&)              const -> void;
+    auto render_to_viewport_objects      (const ViewMatrix&, const ProjMatrix&, const Pos3&) const -> void;
     auto render_to_viewport_outline      (const ViewMatrix&, const ProjMatrix&)              const -> void;
     auto render_to_viewport_physics_debug(const ViewMatrix&, const ProjMatrix&)                    -> void;
     auto render_to_viewport_pivot        (const ViewMatrix&, const ProjMatrix&, const Pos3&) const -> void;
@@ -263,7 +280,7 @@ struct GfxContext
     [[nodiscard]] auto create_textures() -> bool;
 
     // clang-format off
-    auto hover_interaction               (EditorInput&)                 const -> void;
+    auto hover_interaction               (EditorInput&)                       -> void;
     auto hover_interaction_holding_middle(EditorInput&, Camera&)        const -> void;
     auto hover_interaction_selection     (EditorInput&, const Raycast&) const -> void;
     // clang-format on
@@ -274,9 +291,6 @@ struct GfxContext
     auto push_debug_line_(const Line3& line, const Color3&, f32 alpha) noexcept -> void;
     auto append_contact_debug_lines_() -> void;
     auto append_selected_entity_debug_lines_() -> void;
-
-    [[nodiscard]] auto selected_entity_frame_(const Entity&, const RigidBody*) const noexcept
-        -> std::tuple<Pos3, Quaternion, f32>;
 
     auto ensure_debug_line_mesh_created_() -> void;
     auto upload_debug_lines_to_gpu_() -> void;

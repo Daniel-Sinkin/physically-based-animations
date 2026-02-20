@@ -175,7 +175,7 @@ auto SimulationContext::sync_physics_to_world() -> void
         {
             continue;
         }
-        if (const auto* rb = physics.try_body(*e.body))
+        if (const auto rb = physics.try_body(*e.body))
         {
             auto t = e.transform;
             t.position = rb->position;

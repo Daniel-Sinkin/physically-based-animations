@@ -7,6 +7,7 @@
 #include "pba/core/constants.hpp"
 #include "pba/core/core_types.hpp"
 #include "pba/core/math_types.hpp"
+#include "pba/core/parallel_for.hpp"
 //
 #include <algorithm>
 #include <array>
@@ -51,6 +52,31 @@ auto CollisionScratch::prepare(usize body_count) -> void
 
 namespace
 {
+
+struct BodyCollisionView
+{
+    EntityId id{k_invalid_id};
+    Dir3 half_extents{0.5f, 0.5f, 0.5f};
+    Pos3 position{};
+    Quaternion orientation{k_quaternion_identity};
+    f32 inv_mass{k_static_mass};
+
+    [[nodiscard]] auto is_static() const noexcept -> bool
+    {
+        return inv_mass == k_static_mass;
+    }
+};
+
+[[nodiscard]] auto body_view(const RigidBodySOA& bodies, usize idx) noexcept -> BodyCollisionView
+{
+    return BodyCollisionView{
+        .id = bodies.ids[idx],
+        .half_extents = bodies.half_extents[idx],
+        .position = bodies.positions[idx],
+        .orientation = bodies.orientations[idx],
+        .inv_mass = bodies.inv_masses[idx],
+    };
+}
 
 static auto quantize_pos(f32 x, f32 cell) noexcept -> i32
 {
@@ -138,7 +164,7 @@ static auto reduce_contact_points_to_4(
     new_pt_count = reduced_count;
 }
 
-auto obb_axes_world(const RigidBody& b) noexcept -> std::array<Dir3, 3>
+auto obb_axes_world(const BodyCollisionView& b) noexcept -> std::array<Dir3, 3>
 {
     const auto R = glm::mat3_cast(b.orientation);
     return {
@@ -148,7 +174,7 @@ auto obb_axes_world(const RigidBody& b) noexcept -> std::array<Dir3, 3>
     };
 }
 
-auto box_world_corners(const RigidBody& b, const std::array<Dir3, 3>& axes) noexcept
+auto box_world_corners(const BodyCollisionView& b, const std::array<Dir3, 3>& axes) noexcept
     -> std::array<Pos3, 8>
 {
     const auto ex = axes[0] * b.half_extents.x;
@@ -166,7 +192,8 @@ auto box_world_corners(const RigidBody& b, const std::array<Dir3, 3>& axes) noex
     };
 }
 
-auto world_aabb_half_extents(const RigidBody& b, const std::array<Dir3, 3>& axes) noexcept -> Dir3
+auto world_aabb_half_extents(const BodyCollisionView& b, const std::array<Dir3, 3>& axes) noexcept
+    -> Dir3
 {
     return Dir3{
         std::abs(axes[0].x) * b.half_extents.x + std::abs(axes[1].x) * b.half_extents.y
@@ -178,29 +205,32 @@ auto world_aabb_half_extents(const RigidBody& b, const std::array<Dir3, 3>& axes
     };
 }
 
-auto build_collision_soa(std::span<const RigidBody> bodies, CollisionScratch& scratch) -> void
+auto build_collision_soa(const RigidBodySOA& bodies, CollisionScratch& scratch) -> void
 {
     scratch.prepare(bodies.size());
 
-    for (auto i = 0zu; i < bodies.size(); ++i)
-    {
-        const auto& b = bodies[i];
-        const auto axes = obb_axes_world(b);
-        const auto he = world_aabb_half_extents(b, axes);
+    parallel_for_index(
+        bodies.size(),
+        [&](usize i) -> void
+        {
+            const auto b = body_view(bodies, i);
+            const auto axes = obb_axes_world(b);
+            const auto he = world_aabb_half_extents(b, axes);
 
-        scratch.axes[i] = axes;
-        scratch.corners[i] = box_world_corners(b, axes);
+            scratch.axes[i] = axes;
+            scratch.corners[i] = box_world_corners(b, axes);
 
-        scratch.aabb_min_x[i] = b.position.x - he.x;
-        scratch.aabb_min_y[i] = b.position.y - he.y;
-        scratch.aabb_min_z[i] = b.position.z - he.z;
-        scratch.aabb_max_x[i] = b.position.x + he.x;
-        scratch.aabb_max_y[i] = b.position.y + he.y;
-        scratch.aabb_max_z[i] = b.position.z + he.z;
+            scratch.aabb_min_x[i] = b.position.x - he.x;
+            scratch.aabb_min_y[i] = b.position.y - he.y;
+            scratch.aabb_min_z[i] = b.position.z - he.z;
+            scratch.aabb_max_x[i] = b.position.x + he.x;
+            scratch.aabb_max_y[i] = b.position.y + he.y;
+            scratch.aabb_max_z[i] = b.position.z + he.z;
 
-        scratch.is_static[i] = b.is_static() ? static_cast<u8>(1u) : static_cast<u8>(0u);
-        scratch.sort_order[i] = i;
-    }
+            scratch.is_static[i] = b.is_static() ? static_cast<u8>(1u) : static_cast<u8>(0u);
+            scratch.sort_order[i] = i;
+        }
+    );
 }
 
 auto generate_broadphase_candidates(CollisionScratch& scratch) -> void
@@ -273,7 +303,9 @@ auto generate_broadphase_candidates(CollisionScratch& scratch) -> void
     }
 }
 
-auto point_in_obb(const Pos3& p, const RigidBody& b, const std::array<Dir3, 3>& axes) noexcept
+auto point_in_obb(
+    const Pos3& p, const BodyCollisionView& b, const std::array<Dir3, 3>& axes
+) noexcept
     -> bool
 {
     const auto d = p - b.position;
@@ -292,7 +324,11 @@ auto point_in_obb(const Pos3& p, const RigidBody& b, const std::array<Dir3, 3>& 
 }
 
 auto project_obb_on_axis(
-    const RigidBody& b, const std::array<Dir3, 3>& axes, const Dir3& axis, f32& out_min, f32& out_max
+    const BodyCollisionView& b,
+    const std::array<Dir3, 3>& axes,
+    const Dir3& axis,
+    f32& out_min,
+    f32& out_max
 ) noexcept -> void
 {
     const auto center_proj = glm::dot(b.position, axis);
@@ -315,9 +351,9 @@ struct OverlapInfoObbObb
 };
 
 auto obb_obb_overlap(
-    const RigidBody& a,
+    const BodyCollisionView& a,
     const std::array<Dir3, 3>& a_axes,
-    const RigidBody& b,
+    const BodyCollisionView& b,
     const std::array<Dir3, 3>& b_axes
 ) noexcept -> std::optional<OverlapInfoObbObb>
 {
@@ -389,7 +425,7 @@ auto obb_obb_overlap(
 }
 
 auto emit_contacts_for_pair(
-    std::span<const RigidBody> bodies,
+    const RigidBodySOA& bodies,
     std::span<const std::array<Dir3, 3>> axes_cache,
     std::span<const std::array<Pos3, 8>> corners_cache,
     usize i,
@@ -397,8 +433,8 @@ auto emit_contacts_for_pair(
     ArenaAllocator& out
 ) -> usize
 {
-    const auto& a = bodies[i];
-    const auto& b = bodies[j];
+    const auto a = body_view(bodies, i);
+    const auto b = body_view(bodies, j);
 
     auto overlap_res = obb_obb_overlap(a, axes_cache[i], b, axes_cache[j]);
     if (!overlap_res)
@@ -481,12 +517,12 @@ auto emit_contacts_for_pair(
 
 }  // namespace
 
-auto make_contact_key(const RigidBody& a, const RigidBody& b, const Pos3& p) noexcept -> ContactKey
+auto make_contact_key(EntityId a_id, EntityId b_id, const Pos3& p) noexcept -> ContactKey
 {
     constexpr auto k_cell = 0.02f;
     return ContactKey{
-        .a_id = std::min(a.id, b.id),
-        .b_id = std::max(a.id, b.id),
+        .a_id = std::min(a_id, b_id),
+        .b_id = std::max(a_id, b_id),
         .px = quantize_pos(p.x, k_cell),
         .py = quantize_pos(p.y, k_cell),
         .pz = quantize_pos(p.z, k_cell),
@@ -494,7 +530,10 @@ auto make_contact_key(const RigidBody& a, const RigidBody& b, const Pos3& p) noe
 }
 
 auto generate_obb_contacts(
-    std::span<const RigidBody> bodies, ArenaAllocator& out, CollisionScratch& scratch
+    const RigidBodySOA& bodies,
+    ArenaAllocator& out,
+    CollisionScratch& scratch,
+    bool collect_stats
 ) -> CollisionStats
 {
     {
@@ -511,14 +550,29 @@ auto generate_obb_contacts(
 
     build_collision_soa(bodies, scratch);
     generate_broadphase_candidates(scratch);
-    stats.broadphase_candidates = scratch.candidate_pairs.size();
-
-    for (const auto& pair : scratch.candidate_pairs)
+    if (collect_stats)
     {
-        ++stats.narrowphase_pairs;
-        stats.contacts_generated += emit_contacts_for_pair(
-            bodies, scratch.axes, scratch.corners, pair.a_idx, pair.b_idx, out
-        );
+        stats.broadphase_candidates = scratch.candidate_pairs.size();
+    }
+
+    if (collect_stats)
+    {
+        for (const auto& pair : scratch.candidate_pairs)
+        {
+            ++stats.narrowphase_pairs;
+            stats.contacts_generated += emit_contacts_for_pair(
+                bodies, scratch.axes, scratch.corners, pair.a_idx, pair.b_idx, out
+            );
+        }
+    }
+    else
+    {
+        for (const auto& pair : scratch.candidate_pairs)
+        {
+            (void) emit_contacts_for_pair(
+                bodies, scratch.axes, scratch.corners, pair.a_idx, pair.b_idx, out
+            );
+        }
     }
 
     return stats;

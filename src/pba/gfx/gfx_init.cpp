@@ -4,12 +4,24 @@
 
 namespace ds_pba
 {
+namespace
+{
+[[nodiscard]] auto default_imgui_ini_path() -> std::string
+{
+    if (const auto* home = std::getenv("HOME"); home != nullptr && home[0] != '\0')
+    {
+        return std::format("{}/.pba_imgui.ini", home);
+    }
+    return "imgui.ini";
+}
+}  // namespace
+
 [[nodiscard]] auto GfxContext::setup() -> bool
 {
     using namespace ds_pba;
 
     {
-        ScopeTimer st_glfw{"init glfw"};
+        const ScopeTimer st_glfw{"init glfw"};
         auto glfw_error_callback = [](int error, const char* description)
         { std::println(stderr, "GLFW Error {}: {}", error, description); };
 
@@ -30,7 +42,7 @@ namespace ds_pba
     glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
 
     {
-        ScopeTimer st_glfw{"create window glfw"};
+        const ScopeTimer st_glfw{"create window glfw"};
         window = glfwCreateWindow(1600, 900, "Physically Based Animations", nullptr, nullptr);
         if (!window)
         {
@@ -85,6 +97,8 @@ namespace ds_pba
     initialised_imgui = true;
 
     ImGuiIO& io = ImGui::GetIO();
+    imgui_ini_path = default_imgui_ini_path();
+    io.IniFilename = imgui_ini_path.c_str();
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
     {  // Load Fonts
