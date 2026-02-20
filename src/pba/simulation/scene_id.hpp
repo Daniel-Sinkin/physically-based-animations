@@ -1,4 +1,4 @@
-// pba/engine/scene_id.hpp
+// pba/simulation/scene_id.hpp
 #pragma once
 
 #include "pba/core/core_types.hpp"
@@ -7,25 +7,21 @@ namespace ds_pba
 {
 enum class SceneId : u32
 {
-    AttractorsAndRepulsivePivot = 0,
-
-    SmallPyramid_Projectiles_NoGround_Gravity,
-    AttractorToOrigin_NoGravity,
-    AttractorToOrigin_WithGravity,
-    LargePyramid15_Ground_Gravity,
-    Pyramid3D_HeavyCubeDrop,
-    Motors_Elongated_NoGravity,
-    NBody_SunAnd3Planets,
-    NBody_ThreeBodyEqual,
-    MovingAttractor_TargetMovesInCircle,
-    OscillatingUniformForce_WithInternalTime,
-
-    InclinedPlane_SlidingCubes,
-    BoxDrop_Container,
+    StablePyramid2D3D = 0,
     ProjectileWall,
+    CubeCloud1200,
+    OrbitalRotorVortex,
+    DominoSpiralCascade,
+    TumblerDrum,
+    CupRainCollapse,
+    TowerDemolition,
+    TriplePyramidSiege,
+    CubeCrossfireArena,
+    NBodyCubeGalaxy,
+    InclinedAvalanche,
 
     Count
 };
-inline constexpr SceneId k_default_scene = SceneId::AttractorsAndRepulsivePivot;
+inline constexpr SceneId k_default_scene = SceneId::StablePyramid2D3D;
 
 }  // namespace ds_pba

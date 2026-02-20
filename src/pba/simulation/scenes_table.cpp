@@ -1,4 +1,4 @@
-// pba/scene/scenes_table.cpp
+// pba/simulation/scenes_table.cpp
 #include "pba/core/pch.hpp"  // IWYU pragma: keep
 //
 #include "pba/simulation/scenes.hpp"
@@ -6,178 +6,213 @@
 #include "pba/simulation/scene_id.hpp"
 #include "pba/simulation/simulation_context.hpp"
 
-#include <array>
-#include <gsl/string_span>
-
 namespace ds_pba
 {
-void setup_scene_attractors_and_repulsive_pivot(SimulationContext& e) noexcept;
-void setup_scene_small_pyramid_projectiles_gravity(SimulationContext& e) noexcept;
-void setup_scene_attractor_origin_no_gravity(SimulationContext& e) noexcept;
-void setup_scene_attractor_origin_with_gravity(SimulationContext& e) noexcept;
-void setup_scene_large_pyramid15_ground_gravity(SimulationContext& e) noexcept;
-void setup_scene_pyramid3d_heavy_cube_drop(SimulationContext& e) noexcept;
-void setup_scene_motors_elongated_no_gravity(SimulationContext& e) noexcept;
-void setup_scene_nbody_sun_3_planets(SimulationContext& e) noexcept;
-void setup_scene_nbody_three_body_equal(SimulationContext& e) noexcept;
-void setup_scene_moving_attractor_circle(SimulationContext& e) noexcept;
-void setup_scene_oscillating_uniform_force(SimulationContext& e) noexcept;
-void setup_scene_inclined_plane(SimulationContext& e) noexcept;
-void setup_scene_box_drop_container(SimulationContext& e) noexcept;
-void setup_scene_projectile_wall(SimulationContext& e) noexcept;
+void setup_scene_stable_pyramid_2d_3d(SimulationContext& sim) noexcept;
+void setup_scene_projectile_wall(SimulationContext& sim) noexcept;
+void setup_scene_cube_cloud_1200(SimulationContext& sim) noexcept;
+void setup_scene_orbital_rotor_vortex(SimulationContext& sim) noexcept;
+void setup_scene_domino_spiral_cascade(SimulationContext& sim) noexcept;
+void setup_scene_tumbler_drum(SimulationContext& sim) noexcept;
+void setup_scene_cup_rain_collapse(SimulationContext& sim) noexcept;
+void setup_scene_tower_demolition(SimulationContext& sim) noexcept;
+void setup_scene_triple_pyramid_siege(SimulationContext& sim) noexcept;
+void setup_scene_cube_crossfire_arena(SimulationContext& sim) noexcept;
+void setup_scene_nbody_cube_galaxy(SimulationContext& sim) noexcept;
+void setup_scene_inclined_avalanche(SimulationContext& sim) noexcept;
 
 namespace
 {
 using SetupSceneFn = void (*)(SimulationContext&) noexcept;
 
-struct Scene
-{
-    SceneId id{};
-    const char* name{};
-    const char* desc{};
-    SetupSceneFn setup{};
-};
+constexpr usize k_scene_count{static_cast<usize>(SceneId::Count)};
 
-constexpr usize scene_index(SceneId id) noexcept
-{
-    return static_cast<usize>(id);
-}
-
-static constexpr std::array<Scene, scene_count()> k_scenes = {{
-    {SceneId::AttractorsAndRepulsivePivot,
-     "Current: 2 attractors + repulsive pivot",
-     "Your current testbed: 4 projectiles + flat pyramid + marble bust; forces: attract to "
-     "origin, attract to fixed point, repulsion from camera pivot; no gravity.",
-     &setup_scene_attractors_and_repulsive_pivot},
-
-    {SceneId::SmallPyramid_Projectiles_NoGround_Gravity,
-     "Small pyramid + projectiles (gravity, no ground)",
-     "Small flat pyramid + 4 projectiles, no ground; gravity enabled so everything collides "
-     "mid-air while falling.",
-     &setup_scene_small_pyramid_projectiles_gravity},
-
-    {SceneId::AttractorToOrigin_NoGravity,
-     "Attractor to origin (no gravity)",
-     "Ring/swarm of cubes with tangential velocity; constant-magnitude attractor pulls toward "
-     "origin; no gravity.",
-     &setup_scene_attractor_origin_no_gravity},
-
-    {SceneId::AttractorToOrigin_WithGravity,
-     "Attractor to origin + gravity (no ground)",
-     "Like attractor-to-origin but also gravity enabled; objects fall while being pulled "
-     "inward; no ground.",
-     &setup_scene_attractor_origin_with_gravity},
-
-    {SceneId::LargePyramid15_Ground_Gravity,
-     "Large pyramid (15) + large ground (gravity)",
-     "Large flat pyramid (base 15) resting on large static ground; gravity enabled; "
-     "bulk-contact stress test.",
-     &setup_scene_large_pyramid15_ground_gravity},
-
-    {SceneId::Pyramid3D_HeavyCubeDrop,
-     "3D pyramid + heavy cube drop",
-     "Smaller square (3D) pyramid on ground; gravity enabled; a large high-mass cube drops "
-     "onto it from above.",
-     &setup_scene_pyramid3d_heavy_cube_drop},
-
-    {SceneId::Motors_Elongated_NoGravity,
-     "Motors: elongated boxes (no gravity)",
-     "No gravity; several elongated 'rods' with motor torque applied; tests angular "
-     "integration/inertia + contacts.",
-     &setup_scene_motors_elongated_no_gravity},
-
-    {SceneId::NBody_SunAnd3Planets,
-     "N-body: Sun + 3 planets",
-     "N-body gravity (force-based) with one heavy 'sun' and 3 lighter planets with tangential "
-     "initial velocities.",
-     &setup_scene_nbody_sun_3_planets},
-
-    {SceneId::NBody_ThreeBodyEqual,
-     "N-body: 3 equal-mass bodies (3-body problem)",
-     "Three equal-mass bodies on an equilateral triangle; start near rotating solution, "
-     "perturb one -> chaos.",
-     &setup_scene_nbody_three_body_equal},
-
-    {SceneId::MovingAttractor_TargetMovesInCircle,
-     "Moving attractor (target moves in a circle)",
-     "Time-accumulator: attractor target position moves on a large circle; swarm gets dragged "
-     "around.",
-     &setup_scene_moving_attractor_circle},
-
-    {SceneId::OscillatingUniformForce_WithInternalTime,
-     "Oscillating uniform force (internal time)",
-     "Internal time: gravity + rotating horizontal 'wind' (uniform accel) applied; stack "
-     "reacts to changing force.",
-     &setup_scene_oscillating_uniform_force},
-
-    {SceneId::InclinedPlane_SlidingCubes,
-     "Inclined plane (gravity)",
-     "Static tilted ramp + gravity; cubes slide/bounce; friction + OBB contact stability test.",
-     &setup_scene_inclined_plane},
-
-    {SceneId::BoxDrop_Container,
-     "Container drop (gravity)",
-     "Ground + 4 walls container; many cubes dropped in; dense stacking stress test (still "
-     "O(N^2) contacts).",
-     &setup_scene_box_drop_container},
-
-    {SceneId::ProjectileWall,
-     "Projectile vs wall (gravity)",
-     "Wall of cubes on ground with gravity; one fast projectile impacts the wall.",
-     &setup_scene_projectile_wall},
+constexpr std::array<SceneMetadata, k_scene_count> k_catalog = {{
+    SceneMetadata{
+        .id = SceneId::StablePyramid2D3D,
+        .name = "Stable Pyramid Showcase (2D + 3D)",
+        .description =
+            "Side-by-side 2D and 3D pyramid stacks on one ground plane under gravity.",
+    },
+    SceneMetadata{
+        .id = SceneId::ProjectileWall,
+        .name = "Projectile vs Wall",
+        .description =
+            "Brick wall on ground with high-speed projectile impact.",
+    },
+    SceneMetadata{
+        .id = SceneId::CubeCloud1200,
+        .name = "Cube Cloud (1200)",
+        .description =
+            "Exactly 1200 cubes dropped in a container for dense-contact stress testing.",
+    },
+    SceneMetadata{
+        .id = SceneId::OrbitalRotorVortex,
+        .name = "Orbital Rotor Vortex",
+        .description =
+            "No-gravity chamber with motorized rotors and attract/repel fields.",
+    },
+    SceneMetadata{
+        .id = SceneId::DominoSpiralCascade,
+        .name = "Domino Spiral Cascade",
+        .description =
+            "Cube domino path in shrinking loops with single-impact chain reaction.",
+    },
+    SceneMetadata{
+        .id = SceneId::TumblerDrum,
+        .name = "Tumbler Drum",
+        .description =
+            "Dense cube pile stirred by heavy motor-driven paddles inside a rigid container under "
+            "gravity.",
+    },
+    SceneMetadata{
+        .id = SceneId::CupRainCollapse,
+        .name = "Cup Rain Collapse",
+        .description =
+            "Cubes rain into a tall cup and collapse under gravity.",
+    },
+    SceneMetadata{
+        .id = SceneId::TowerDemolition,
+        .name = "Tower Demolition",
+        .description =
+            "Tall hollow cube tower hit by high-energy projectiles.",
+    },
+    SceneMetadata{
+        .id = SceneId::TriplePyramidSiege,
+        .name = "Triple Pyramid Siege",
+        .description =
+            "Three pyramid targets with lateral projectiles plus one heavy top drop.",
+    },
+    SceneMetadata{
+        .id = SceneId::CubeCrossfireArena,
+        .name = "Cube Crossfire Arena",
+        .description =
+            "No-gravity projectile crossfire through a central static obstacle lattice.",
+    },
+    SceneMetadata{
+        .id = SceneId::NBodyCubeGalaxy,
+        .name = "N-Body Cube Galaxy",
+        .description =
+            "Force-based orbital setup with a heavy core and multiple rings of orbiters.",
+    },
+    SceneMetadata{
+        .id = SceneId::InclinedAvalanche,
+        .name = "Inclined Avalanche",
+        .description =
+            "Inclined-slope cube release with downstream runout basin.",
+    },
 }};
 
-static_assert(
-    k_scenes.size() == static_cast<usize>(SceneId::Count),
-    "k_scenes must have one Scene per SceneId (excluding Count)."
-);
+constexpr std::array<SetupSceneFn, k_scene_count> k_setup_fns = {{
+    &setup_scene_stable_pyramid_2d_3d,
+    &setup_scene_projectile_wall,
+    &setup_scene_cube_cloud_1200,
+    &setup_scene_orbital_rotor_vortex,
+    &setup_scene_domino_spiral_cascade,
+    &setup_scene_tumbler_drum,
+    &setup_scene_cup_rain_collapse,
+    &setup_scene_tower_demolition,
+    &setup_scene_triple_pyramid_siege,
+    &setup_scene_cube_crossfire_arena,
+    &setup_scene_nbody_cube_galaxy,
+    &setup_scene_inclined_avalanche,
+}};
 
-constexpr auto scenes_are_consistent() noexcept -> bool
+static_assert(k_catalog.size() == k_setup_fns.size());
+static_assert(k_catalog.size() == k_scene_count);
+
+constexpr auto index_of_scene_id(SceneId id) noexcept -> std::optional<usize>
 {
-    for (usize i{0zu}; i < k_scenes.size(); ++i)
+    for (usize i{0zu}; i < k_catalog.size(); ++i)
     {
-        if (scene_index(k_scenes[i].id) != i)
+        if (k_catalog[i].id == id)
+        {
+            return i;
+        }
+    }
+    return std::nullopt;
+}
+
+constexpr auto catalog_is_consistent() noexcept -> bool
+{
+    for (usize i{0zu}; i < k_catalog.size(); ++i)
+    {
+        if (k_setup_fns[i] == nullptr)
         {
             return false;
         }
-        if (k_scenes[i].setup == nullptr)
+        for (usize j{i + 1zu}; j < k_catalog.size(); ++j)
         {
-            return false;
+            if (k_catalog[i].id == k_catalog[j].id)
+            {
+                return false;
+            }
         }
     }
     return true;
 }
-static_assert(scenes_are_consistent(), "Scene table order or ids are inconsistent.");
-
-constexpr auto scene_ptr(SceneId id) noexcept -> const Scene*
-{
-    const usize idx = scene_index(id);
-    if (idx >= k_scenes.size())
-    {
-        return nullptr;
-    }
-    return &k_scenes[idx];
-}
+static_assert(catalog_is_consistent(), "Scene catalog contains invalid or duplicate entries.");
 }  // namespace
 
-auto scene_name(SceneId id) noexcept -> std::string
+auto scene_count() noexcept -> usize
 {
-    const Scene* s = scene_ptr(id);
-    return s ? s->name : "(invalid scene)";
+    return k_catalog.size();
 }
 
-auto scene_description(SceneId id) noexcept -> std::string
+auto scene_index(SceneId id) noexcept -> std::optional<usize>
 {
-    const Scene* s = scene_ptr(id);
-    return s ? s->desc : "(invalid scene)";
+    return index_of_scene_id(id);
 }
 
-void setup_scene_by_id(SimulationContext& e, SceneId id) noexcept
+auto scene_id_from_index(usize index) noexcept -> std::optional<SceneId>
 {
-    const Scene* s = scene_ptr(id);
-    if (s && s->setup)
+    if (index >= k_catalog.size())
     {
-        s->setup(e);
+        return std::nullopt;
+    }
+    return k_catalog[index].id;
+}
+
+auto scene_metadata(SceneId id) noexcept -> std::optional<SceneMetadata>
+{
+    const auto idx = index_of_scene_id(id);
+    if (!idx.has_value())
+    {
+        return std::nullopt;
+    }
+    return k_catalog[*idx];
+}
+
+auto scene_catalog() noexcept -> std::span<const SceneMetadata>
+{
+    return std::span<const SceneMetadata>{k_catalog.data(), k_catalog.size()};
+}
+
+auto scene_name(SceneId id) noexcept -> std::string_view
+{
+    const auto meta = scene_metadata(id);
+    return meta.has_value() ? meta->name : "(invalid scene)";
+}
+
+auto scene_description(SceneId id) noexcept -> std::string_view
+{
+    const auto meta = scene_metadata(id);
+    return meta.has_value() ? meta->description : "(invalid scene)";
+}
+
+void setup_scene_by_id(SimulationContext& sim, SceneId id) noexcept
+{
+    const auto idx = scene_index(id);
+    if (!idx.has_value())
+    {
+        return;
+    }
+
+    const auto setup_fn = k_setup_fns[*idx];
+    Expects(setup_fn != nullptr);
+    if (setup_fn)
+    {
+        setup_fn(sim);
     }
 }
 
