@@ -91,12 +91,12 @@
         <div class="equation">
           \[
           h = |R|e,\qquad
-          a_{\text{min}}=c-h,\qquad
-          a_{\text{max}}=c+h
+          a_{\min}=c-h,\qquad
+          a_{\max}=c+h
           \]
         </div>
         <p>
-          Sweep-and-prune sorts by \(a_{\text{min},x}\), maintains an active set, and rejects pairs
+          Sweep-and-prune sorts by \(a_{\min,x}\), maintains an active set, and rejects pairs
           that fail \(y/z\) overlap before SAT.
         </p>
         <p>
@@ -107,7 +107,7 @@
           \[
           \text{overlap}
           =
-          \min(a_{\text{max}}, b_{\text{max}}) - \max(a_{\text{min}}, b_{\text{min}})
+          \min(a_{\max}, b_{\max}) - \max(a_{\min}, b_{\min})
           \]
         </div>
       </section>
