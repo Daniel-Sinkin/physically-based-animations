@@ -17,7 +17,6 @@
 //
 #include <imgui.h>
 #include <optional>
-#include <print>
 //
 #include <GLFW/glfw3.h>
 #include <glm/ext/matrix_float4x4.hpp>
@@ -50,13 +49,15 @@ namespace
         Expects(width > 0);
         Expects(height > 0);
     }
+    const auto width_f = static_cast<f32>(width);
+    const auto height_f = static_cast<f32>(height);
 
     ImageRGBA8 img{};
     img.width = width;
     img.height = height;
     img.channels = 4;
 
-    const auto pixel_count = static_cast<usize>(width) * static_cast<usize>(height);
+    const auto pixel_count = width_f * height_f;
     img.pixels.resize(pixel_count * 4zu);
 
     constexpr Color3 sky_zenith{0.08f, 0.22f, 0.45f};
@@ -66,14 +67,15 @@ namespace
 
     for (int y{0}; y < height; ++y)
     {
-        const auto v = (static_cast<f32>(y) + 0.5f) / static_cast<f32>(height);
+        const f32 y_f = static_cast<f32>(y);
+        const auto v = (y_f + 0.5f) / height_f;
         const auto theta = v * k_pi;
         const auto sin_theta = std::sin(theta);
         const auto cos_theta = std::cos(theta);
 
         for (int x{0}; x < width; ++x)
         {
-            const auto u = (static_cast<f32>(x) + 0.5f) / static_cast<f32>(width);
+            const auto u = (x_f + 0.5f) / width_f;
             const auto phi = (u - 0.5f) * k_two_pi;
 
             const auto dir = Dir3{
