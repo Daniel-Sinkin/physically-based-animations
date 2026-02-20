@@ -81,7 +81,7 @@ namespace
     return sim.physics.try_body(*ent.body);
 }
 
-[[nodiscard]] auto compute_entity_color(GfxContext& gfx, const Entity& ent) noexcept -> Color3
+[[nodiscard]] auto compute_entity_color(const GfxContext& gfx, const Entity& ent) noexcept -> Color3
 {
     Expects(gfx.engine_context);
     Color3 color{ent.color};
@@ -276,7 +276,7 @@ auto GfxContext::render_to_viewport_objects(
         {
             continue;
         }
-        prog.set_uColor(compute_entity_color(*const_cast<GfxContext*>(this), ent));
+        prog.set_uColor(compute_entity_color(*this, ent));
 
         glDrawArrays(GL_TRIANGLES, 0, meshes.cube.vertex_count);
     }

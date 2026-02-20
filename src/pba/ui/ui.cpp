@@ -20,6 +20,107 @@ namespace ds_pba
 {
 namespace
 {
+struct RollingFrameStats
+{
+    static constexpr usize k_window_samples{512zu};
+
+    struct Snapshot
+    {
+        usize sample_count{};
+        f64 window_seconds{};
+        f64 avg_frame_ms{};
+        f64 fps{};
+        f64 p50_frame_ms{};
+        f64 p95_frame_ms{};
+        f64 p99_frame_ms{};
+        f64 max_frame_ms{};
+        bool valid{false};
+    };
+
+    std::array<f32, k_window_samples> samples_ms{};
+    usize next_write{0zu};
+    usize sample_count{0zu};
+    TimePoint last_frame_time{};
+    bool has_last_frame_time{false};
+
+    auto tick(TimePoint now) noexcept -> void
+    {
+        if (!has_last_frame_time)
+        {
+            last_frame_time = now;
+            has_last_frame_time = true;
+            return;
+        }
+
+        const auto dt_ms = std::chrono::duration<f64, std::milli>(now - last_frame_time).count();
+        last_frame_time = now;
+
+        if (!std::isfinite(dt_ms) || dt_ms <= 0.0)
+        {
+            return;
+        }
+
+        samples_ms[next_write] = static_cast<f32>(dt_ms);
+        next_write = (next_write + 1zu) % k_window_samples;
+        sample_count = std::min(sample_count + 1zu, k_window_samples);
+    }
+
+    [[nodiscard]] auto snapshot() const -> Snapshot
+    {
+        Snapshot out{};
+        out.sample_count = sample_count;
+        if (sample_count == 0zu)
+        {
+            return out;
+        }
+
+        auto ordered = std::vector<f32>{};
+        ordered.reserve(sample_count);
+
+        const auto oldest = (next_write + k_window_samples - sample_count) % k_window_samples;
+        for (auto i = 0zu; i < sample_count; ++i)
+        {
+            const auto idx = (oldest + i) % k_window_samples;
+            ordered.push_back(samples_ms[idx]);
+        }
+
+        auto sum_ms = 0.0;
+        for (const auto frame_ms : ordered)
+        {
+            sum_ms += static_cast<f64>(frame_ms);
+        }
+
+        out.window_seconds = sum_ms / 1000.0;
+        out.avg_frame_ms = sum_ms / static_cast<f64>(sample_count);
+        out.fps = (out.avg_frame_ms > 0.0) ? (1000.0 / out.avg_frame_ms) : 0.0;
+
+        std::sort(ordered.begin(), ordered.end());
+
+        auto percentile = [&](f64 p) -> f64
+        {
+            Expects(!ordered.empty());
+            const auto n = static_cast<f64>(ordered.size());
+            const auto rank = std::ceil(p * n);
+            const auto rank_1 = std::max(1.0, rank);
+            const auto idx = static_cast<usize>(rank_1 - 1.0);
+            return static_cast<f64>(ordered[std::min(idx, ordered.size() - 1zu)]);
+        };
+
+        out.p50_frame_ms = percentile(0.50);
+        out.p95_frame_ms = percentile(0.95);
+        out.p99_frame_ms = percentile(0.99);
+        out.max_frame_ms = static_cast<f64>(ordered.back());
+        out.valid = true;
+        return out;
+    }
+};
+
+auto rolling_frame_stats() -> RollingFrameStats&
+{
+    static RollingFrameStats stats{};
+    return stats;
+}
+
 auto reload_scene_for_engine(EngineContext& engine_context, SceneId id) -> void
 {
     auto& simulation = engine_context.simulation;
@@ -519,15 +620,39 @@ auto render_imgui_windows(EngineContext& engine_context) -> void
 
         ImGui::Text("Frame Counter: %d", gfx_context.frame_count);
 
-        const auto dur = Clock::now() - gfx_context.run_start;
+        const auto now = Clock::now();
+        auto& stats = rolling_frame_stats();
+        stats.tick(now);
+        const auto snapshot = stats.snapshot();
 
-        const auto seconds = std::chrono::duration<f64>(dur).count();
+        const auto runtime_s = std::chrono::duration<f64>(now - gfx_context.run_start).count();
+        ImGui::Text("Total Runtime: %.2f s", runtime_s);
 
-        const auto frame_count_d = static_cast<f64>(gfx_context.frame_count);
-        const auto fps = (seconds > 0.0) ? frame_count_d / seconds : 0.0;
+        if (snapshot.valid)
+        {
+            const auto one_percent_low_fps =
+                (snapshot.p99_frame_ms > 0.0) ? (1000.0 / snapshot.p99_frame_ms) : 0.0;
 
-        ImGui::Text("Total Runtime: %.2f s", seconds);
-        ImGui::Text("Average FPS: %.2f", fps);
+            ImGui::Text(
+                "Rolling FPS: %.2f (1%% low %.2f) | window %.2fs / %zu frames",
+                snapshot.fps,
+                one_percent_low_fps,
+                snapshot.window_seconds,
+                snapshot.sample_count
+            );
+            ImGui::Text(
+                "Frame Time (ms): avg %.2f | p50 %.2f | p95 %.2f | p99 %.2f | max %.2f",
+                snapshot.avg_frame_ms,
+                snapshot.p50_frame_ms,
+                snapshot.p95_frame_ms,
+                snapshot.p99_frame_ms,
+                snapshot.max_frame_ms
+            );
+        }
+        else
+        {
+            ImGui::TextUnformatted("Rolling FPS: collecting...");
+        }
 
         ImGui::End();
     }

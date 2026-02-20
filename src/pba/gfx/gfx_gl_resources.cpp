@@ -57,7 +57,7 @@ namespace
     img.height = height;
     img.channels = 4;
 
-    const auto pixel_count = width_f * height_f;
+    const auto pixel_count = static_cast<usize>(width) * static_cast<usize>(height);
     img.pixels.resize(pixel_count * 4zu);
 
     constexpr Color3 sky_zenith{0.08f, 0.22f, 0.45f};
@@ -75,6 +75,7 @@ namespace
 
         for (int x{0}; x < width; ++x)
         {
+            const f32 x_f = static_cast<f32>(x);
             const auto u = (x_f + 0.5f) / width_f;
             const auto phi = (u - 0.5f) * k_two_pi;
 
