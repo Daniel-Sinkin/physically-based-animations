@@ -23,6 +23,9 @@
  @licend  The above is the entire license notice for the JavaScript code in this file
  */
 
+document.documentElement.classList.add("doxy-loading");
+window.addEventListener("load", function() { document.documentElement.classList.remove("doxy-loading"); }, { once: true });
+
 function initNavTree(toroot,relpath,allMembersFile) {
   let navTreeSubIndices = [];
   const ARROW_DOWN = '<span class="arrowhead opened"></span>';
@@ -893,7 +896,7 @@ function initNavTree(toroot,relpath,allMembersFile) {
       navtree_trampoline.updateContentTop();
     },200);
   }
-  $(document).ready(function() { initPageToc(); initResizable(); });
+  $(document).ready(function() { initPageToc(); initResizable(); document.documentElement.classList.remove("doxy-loading"); });
 
 }
 /* @license-end */

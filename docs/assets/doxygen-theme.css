@@ -35,6 +35,11 @@ body {
     monospace;
 }
 
+/* Hide transient uninitialized layout state until navtree initialization completes. */
+html.doxy-loading body {
+  visibility: hidden;
+}
+
 /* Doxygen sets fonts on many element selectors; force Krypton consistently. */
 body,
 table,
@@ -321,6 +326,40 @@ table.doxtable th {
 .icon {
   color: #cddcff;
   background: rgba(61, 89, 161, 0.65);
+}
+
+/* Class index pages (classes.html / annotated listings) */
+div.classindex {
+  color: var(--text);
+}
+
+.classindex dl {
+  background: rgba(22, 22, 30, 0.92);
+  border: 1px solid var(--border-soft);
+}
+
+.classindex dl.even {
+  background: rgba(26, 29, 43, 0.95);
+}
+
+.classindex dl.odd {
+  background: rgba(22, 24, 37, 0.95);
+}
+
+.classindex dt.alphachar {
+  color: #dbe6ff;
+}
+
+.classindex dd {
+  color: var(--text);
+}
+
+.classindex dd a {
+  color: var(--accent);
+}
+
+.classindex dd a:hover {
+  color: #dbe6ff;
 }
 
 /* Member list + member detail blocks */
