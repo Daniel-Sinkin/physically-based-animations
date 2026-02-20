@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Rendering and UI - Technical Implementation</title>
     <link rel="stylesheet" href="../assets/styles.css" />
+    <script>
+      window.MathJax = {
+        tex: {
+          inlineMath: [['\\(', '\\)']],
+          displayMath: [['\\[', '\\]']]
+        }
+      };
+    </script>
+    <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
   </head>
   <body>
     <main class="page">
@@ -30,6 +39,128 @@
           <li>Editor pivot marker</li>
         </ol>
         <p>Implemented in <code>src/pba/gfx/gfx_viewport.cpp</code>.</p>
+        <pre><code>// render entrypoint shape
+const auto aspect = viewport_fbo.aspect_ratio();
+const auto& cam = engine_context->simulation.world.editor_state().camera();
+const auto view_matrix = cam.view_matrix();
+const auto proj_matrix = cam.proj_matrix(aspect);</code></pre>
+      </section>
+
+      <section class="section">
+        <h2>Camera Transform Model</h2>
+        <p>
+          The editor camera is orbit-style and stored as pivot + spherical angles + distance.
+          Position is derived each frame from
+          \((\text{yaw}, \text{pitch}, \text{distance})\):
+        </p>
+        <div class="equation">
+          \[
+          \mathbf{p}_{\text{cam}}
+          =
+          \mathbf{p}_{\text{pivot}}
+          +
+          \begin{pmatrix}
+          d\cos(\text{pitch})\cos(\text{yaw}) \\
+          d\cos(\text{pitch})\sin(\text{yaw}) \\
+          d\sin(\text{pitch})
+          \end{pmatrix}
+          \]
+        </div>
+        <p>
+          View/projection transforms are then:
+        </p>
+        <div class="equation">
+          \[
+          \mathbf{V}
+          =
+          \operatorname{lookAt}
+          \left(
+            \mathbf{p}_{\text{cam}},
+            \mathbf{p}_{\text{pivot}},
+            \mathbf{\hat{z}}
+          \right),
+          \qquad
+          \mathbf{P}
+          =
+          \operatorname{perspective}
+          \left(
+            \text{fov}_y,\,
+            \text{aspect},\,
+            z_{\text{near}},\,
+            z_{\text{far}}
+          \right)
+          \]
+        </div>
+        <p>
+          Source mapping:
+        </p>
+        <ul class="list">
+          <li><code>src/pba/scene/camera.cpp</code>: <code>position()</code>, <code>view_matrix()</code>, <code>proj_matrix()</code></li>
+          <li><code>src/pba/core/constants.hpp</code>: camera defaults and limits</li>
+        </ul>
+        <pre><code>// camera state to matrices (conceptual shape)
+Pos3 pos = cam.position();
+ViewMatrix V = cam.view_matrix();
+ProjMatrix P = cam.proj_matrix(aspect);</code></pre>
+      </section>
+
+      <section class="section">
+        <h2>Picking and Unprojection</h2>
+        <p>
+          Mouse coordinates inside the viewport are converted to NDC, then unprojected through
+          inverse clip transform to produce a world-space ray:
+        </p>
+        <div class="equation">
+          \[
+          (x_{\text{ndc}}, y_{\text{ndc}})
+          =
+          \left(
+            2\frac{x_{\text{local}}}{w}-1,\;
+            1-2\frac{y_{\text{local}}}{h}
+          \right)
+          \]
+        </div>
+        <div class="equation">
+          \[
+          \mathbf{C2W} = (\mathbf{P}\mathbf{V})^{-1},\qquad
+          \mathbf{p}_{\text{near}}=\mathbf{C2W}(x_{\text{ndc}},y_{\text{ndc}},-1,1),\qquad
+          \mathbf{p}_{\text{far}}=\mathbf{C2W}(x_{\text{ndc}},y_{\text{ndc}},1,1)
+          \]
+        </div>
+        <p>
+          The normalized ray direction is
+          \(\mathbf{\hat{d}}=\operatorname{normalize}(\mathbf{p}_{\text{far}}-\mathbf{p}_{\text{near}})\).
+        </p>
+        <ul class="list">
+          <li><code>src/pba/gfx/raycast.cpp</code>: <code>ray_from_imgui_rect()</code></li>
+          <li><code>src/pba/core/geometry.cpp</code>: <code>clip_to_world()</code></li>
+        </ul>
+        <pre><code>// unprojection path (conceptual shape)
+const auto c2w = clip_to_world(camera_proj_matrix, camera_view_matrix);
+const auto near_w = c2w.unproject_ndc(x_ndc, y_ndc, -1.0f);
+const auto far_w  = c2w.unproject_ndc(x_ndc, y_ndc, +1.0f);
+Ray ray{near_w, normalize(far_w - near_w)};</code></pre>
+      </section>
+
+      <section class="section">
+        <h2>Camera Interaction Dynamics</h2>
+        <p>
+          Orbit, pan, and zoom are mapped directly to camera parameters:
+        </p>
+        <ul class="list">
+          <li>Zoom: exponential distance scaling with wheel input and clamped range</li>
+          <li>Orbit: yaw/pitch deltas from pointer motion with pitch clamp</li>
+          <li>Pan: pixel delta converted to world offset from camera right/up basis</li>
+        </ul>
+        <ul class="list">
+          <li><code>src/pba/gfx/gfx_interaction.cpp</code></li>
+          <li><code>src/pba/scene/camera.cpp</code>: <code>pan_offset_world()</code>, <code>right()</code>, <code>up()</code></li>
+        </ul>
+        <pre><code>// interaction update shape
+cam.distance *= exp(-wheel * zoom_speed);
+cam.yaw += -dx * sensitivity;
+cam.pitch = clamp(cam.pitch + dy * sensitivity, -pitch_limit, pitch_limit);
+cam.pivot += cam.pan_offset_world(dx, dy, viewport_height_px) * pan_sensitivity;</code></pre>
       </section>
 
       <section class="section">

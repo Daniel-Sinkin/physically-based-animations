@@ -31,12 +31,12 @@
         <h2>Normal Impulse Solve</h2>
         <p>
           The solver computes contact impulses iteratively. For each contact, relative normal
-          velocity \(v_{rel}\) and effective mass \(k\) are used to solve the incremental normal
+          velocity \(v_{\text{rel}}\) and effective mass \(k\) are used to solve the incremental normal
           impulse:
         </p>
         <div class="equation">
           \[
-          \Delta\lambda_n = -\frac{(1+\epsilon)\,v_{rel} + b}{k}
+          \Delta\lambda_n = -\frac{(1+\epsilon)\,v_{\text{rel}} + b}{k}
           \]
         </div>
         <p>
@@ -70,10 +70,13 @@
           \[
           \mathbf{c}
           =
-          \frac{\beta\,\max(0, p - p_{tol})}{m_a^{-1}+m_b^{-1}}\,\mathbf{n}
+          \frac{\beta\,\max(0, p - p_{\text{tol}})}{m_a^{-1}+m_b^{-1}}\,\mathbf{n}
           \]
         </div>
-        <p>with \(p\) penetration depth, \(p_{tol}\) tolerance, and \(\beta\) correction factor.</p>
+        <p>
+          with \(p\) penetration depth, \(p_{\text{tol}}\) tolerance, and \(\beta\) correction
+          factor.
+        </p>
       </section>
 
       <section class="section">
@@ -99,6 +102,14 @@
           Contact data is transient and lives in <code>contact_arena</code>, cleared once per
           physics step before regeneration.
         </p>
+        <pre><code>// sequential impulses (conceptual shape)
+warm_start_contact(contact, bodies, dt);
+for (int iter = 0; iter < velocity_iterations; ++iter) {
+  solve_velocity_constraints(contact_span, bodies, dt);
+}
+for (int iter = 0; iter < position_iterations; ++iter) {
+  solve_position_constraints(contact_span, bodies, dt);
+}</code></pre>
       </section>
 
       <section class="section">

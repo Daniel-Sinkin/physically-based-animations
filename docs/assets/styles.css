@@ -173,6 +173,11 @@ pre code {
   border-radius: 10px;
 }
 
+/* Make MathJax one step larger than body text for readability. */
+mjx-container {
+  font-size: 1.1em !important;
+}
+
 .table-wrap {
   margin: 12px 0;
   overflow-x: auto;

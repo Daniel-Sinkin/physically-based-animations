@@ -149,6 +149,8 @@
           <li><code>src/pba/scene/world_types.hpp</code> (<code>Transform::model_matrix()</code>)</li>
           <li><code>src/pba/physics/solver.cpp</code> (orientation/inertia updates)</li>
         </ul>
+        <pre><code>// transform composition shape used in rendering path
+Mat4 M = translate(position) * mat4_cast(rotation_quat) * scale(scale_xyz);</code></pre>
       </section>
     </main>
   </body>

@@ -157,6 +157,9 @@
           See <a href="../physics/rigid-body-dynamics.html">Physics: Rigid Body Dynamics</a> for
           the step-level equations that use this representation.
         </p>
+        <pre><code>// quaternion orientation update shape
+Quat dq = 0.5f * omega_quat(angular_velocity) * q;
+q = normalize(q + dt * dq);</code></pre>
       </section>
     </main>
   </body>

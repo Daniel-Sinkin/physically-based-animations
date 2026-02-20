@@ -118,3 +118,27 @@ You can also run headless mode through the GUI binary:
     - Source download used: https://dl.polyhaven.org/file/ph-assets/HDRIs/extra/Tonemapped%20JPG/studio_small_09.jpg
 - Monaspace:
   - https://monaspace.githubnext.com
+- UI Themes (`assets/ui/themes.json`):
+  - `Nord Frost` (Nord) — MIT: https://github.com/nordtheme/nord
+  - `Gruvbox Coal` (Gruvbox) — MIT: https://github.com/morhetz/gruvbox
+  - `Solar Deep` (Solarized) — MIT: https://github.com/altercation/solarized
+  - `One Dark Steel` (Atom One Dark) — MIT:
+    - https://github.com/atom/one-dark-syntax
+    - https://github.com/atom/one-dark-ui
+  - `Kickstart Night` (Kickstart/Tokyo Night derived) — MIT + Apache-2.0:
+    - https://github.com/nvim-lua/kickstart.nvim
+    - https://github.com/folke/tokyonight.nvim
+  - `Catppuccin Mocha`, `Catppuccin Latte` — MIT: https://github.com/catppuccin/catppuccin
+  - `Dracula` — MIT: https://github.com/dracula/dracula-theme
+  - `Ayu Mirage` (Ayu) — MIT: https://github.com/ayu-theme/ayu-colors
+  - `Everforest Dark` — MIT: https://github.com/sainnhe/everforest
+  - `Rose Pine Moon` (Rose Pine) — MIT: https://github.com/rose-pine/neovim
+  - `Kanagawa Wave` — MIT: https://github.com/rebelot/kanagawa.nvim
+  - `GitHub Light` (GitHub VS Code Theme Defaults) — MIT:
+    https://github.com/github/vscode-theme-defaults
+  - `Mocha Rose`, `Terminal Green` — original project palettes.
+
+### Theme Licensing Notes
+- Removed from `assets/ui/themes.json` due unclear/undesired licensing provenance:
+  - `Blender Dark`, `Blender Light` (Blender upstream is GPL-licensed)
+  - `Monokai Classic` (no clear upstream OSS license provenance for the original palette)

@@ -92,7 +92,9 @@
         <h2>Velocity at a Contact Point</h2>
         <div class="equation">
           \[
-          \mathbf{v}_a = \mathbf{v}_{cm} + \boldsymbol{\omega}\times(\mathbf{p}-\mathbf{x}_{cm})
+          \mathbf{v}_a
+          =
+          \mathbf{v}_{\text{cm}} + \boldsymbol{\omega}\times(\mathbf{p}-\mathbf{x}_{\text{cm}})
           \]
         </div>
       </section>
@@ -113,6 +115,12 @@
           in <code>src/pba/physics/physics_types.hpp</code>, enabling contiguous scans over
           positions, velocities, masses, and flags.
         </p>
+        <pre><code>// fixed-step integration slice (conceptual shape)
+parallel_for_index(body_count, [&](usize i) {
+  integrate_forces(bodies, i, dt);
+  integrate_velocities(bodies, i, dt);
+  inv_inertia_world_from_body(bodies, i);
+});</code></pre>
       </section>
     </main>
   </body>

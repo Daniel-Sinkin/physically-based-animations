@@ -46,7 +46,9 @@
         </p>
         <div class="equation">
           \[
-          \text{overlap} = \min(a_{max}, b_{max}) - \max(a_{min}, b_{min})
+          \text{overlap}
+          =
+          \min(a_{\max}, b_{\max}) - \max(a_{\min}, b_{\min})
           \]
         </div>
         <p>
@@ -64,7 +66,15 @@
         </p>
         <div class="equation">
           \[
-          \text{key} = (\min(id_a,id_b), \max(id_a,id_b), q_x, q_y, q_z)
+          \text{key}
+          =
+          \left(
+            \min(\operatorname{id}_a,\operatorname{id}_b),
+            \max(\operatorname{id}_a,\operatorname{id}_b),
+            q_x,\,
+            q_y,\,
+            q_z
+          \right)
           \]
         </div>
       </section>
@@ -85,6 +95,14 @@
           The collision pass reads from <code>RigidBodySOA</code> and writes contacts into a
           per-step <code>ArenaAllocator</code>.
         </p>
+        <pre><code>// broadphase + SAT + contact emit (conceptual shape)
+build_collision_soa(bodies, collision_soa);
+generate_broadphase_candidates(collision_soa, candidates);
+for (auto pair : candidates) {
+  if (obb_obb_overlap(pair, manifolds)) {
+    emit_contacts_for_pair(pair, manifolds, contact_arena);
+  }
+}</code></pre>
       </section>
     </main>
   </body>
