@@ -1,0 +1,196 @@
+@font-face {
+  font-family: "Monaspace Krypton";
+  src: url("../../assets/fonts/MonaspaceKrypton-Regular.otf") format("opentype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+:root {
+  --bg: #1a1b26;
+  --panel: #16161e;
+  --panel-2: #1f2335;
+  --panel-soft: #24283b;
+  --text: #c0caf5;
+  --muted: #565f89;
+  --accent: #7aa2f7;
+  --accent-2: #3d59a1;
+  --border: #0f0f14;
+  --border-soft: #2a2e45;
+}
+
+html,
+body {
+  background: radial-gradient(circle at top right, #2a3c6b 0%, var(--bg) 52%) fixed;
+  color: var(--text);
+  font-family:
+    "Monaspace Krypton",
+    ui-monospace,
+    "SFMono-Regular",
+    Menlo,
+    Monaco,
+    Consolas,
+    "Liberation Mono",
+    "Courier New",
+    monospace;
+}
+
+a,
+a:visited {
+  color: var(--accent);
+}
+
+a:hover,
+a:focus {
+  color: #c9d9ff;
+}
+
+#titlearea,
+#projectalign,
+#projectname,
+#projectbrief,
+#top,
+.header,
+.contents,
+#nav-path ul,
+#side-nav,
+#nav-tree,
+.memproto,
+.memdoc,
+table.memberdecls,
+.directory,
+.fragment,
+div.line,
+div.textblock {
+  color: var(--text);
+}
+
+#titlearea {
+  background: linear-gradient(135deg, var(--panel) 0%, var(--panel-2) 100%);
+  border-bottom: 1px solid var(--border-soft);
+}
+
+#projectname {
+  color: var(--text);
+}
+
+#projectbrief {
+  color: var(--muted);
+}
+
+#main-nav,
+.navpath ul,
+#nav-path ul {
+  background: rgba(22, 22, 30, 0.95);
+  border-top: 1px solid var(--border-soft);
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.tablist li.current a {
+  background: var(--accent-2);
+  color: #dbe6ff;
+}
+
+.tablist a {
+  background: rgba(22, 22, 30, 0.92);
+  color: var(--accent);
+}
+
+.tablist a:hover {
+  background: rgba(36, 40, 59, 0.95);
+  color: #dbe6ff;
+}
+
+#doc-content,
+.contents {
+  background: transparent;
+}
+
+div.header,
+.contents {
+  background: rgba(22, 22, 30, 0.9);
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+}
+
+.contents {
+  padding: 16px;
+}
+
+#side-nav,
+#nav-tree {
+  background: rgba(22, 22, 30, 0.88);
+  border-right: 1px solid var(--border-soft);
+}
+
+#nav-tree .selected {
+  background: var(--accent-2);
+}
+
+#nav-tree .item a,
+#nav-tree .label {
+  color: var(--text);
+}
+
+div.memitem,
+div.memproto,
+div.memdoc,
+table.memberdecls,
+table.directory,
+table.doxtable {
+  background: rgba(22, 22, 30, 0.9);
+  border: 1px solid var(--border-soft);
+  color: var(--text);
+}
+
+table.memberdecls td,
+table.memberdecls th,
+table.directory td,
+table.directory th,
+table.doxtable td,
+table.doxtable th {
+  border-color: var(--border-soft);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.title {
+  color: var(--text);
+}
+
+div.fragment {
+  background: rgba(16, 16, 20, 0.95);
+  border: 1px solid rgba(42, 46, 69, 0.95);
+  border-radius: 10px;
+}
+
+span.keyword,
+span.keywordtype,
+span.keywordflow,
+span.keywordnamespace,
+span.keywordoperator {
+  color: #89ddff;
+}
+
+span.stringliteral,
+span.charliteral {
+  color: #9ece6a;
+}
+
+span.comment,
+span.preprocessor {
+  color: #7a88b6;
+}
+
+span.lineno,
+.line {
+  color: #7982a9;
+}
+
+hr {
+  border-color: var(--border-soft);
+}
