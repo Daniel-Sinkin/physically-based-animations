@@ -14,12 +14,21 @@
       };
     </script>
     <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css" />
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        if (window.hljs) {
+          window.hljs.highlightAll();
+        }
+      });
+    </script>
   </head>
   <body>
     <main class="page">
       <div class="topnav">
         <a href="../index.html">Docs Home</a> /
-        <a href="./index.html">Technical Implementation</a> / Rendering and UI
+        Technical Implementation / Rendering and UI
       </div>
 
       <p class="footer">Code can be found here: <a href="https://github.com/Daniel-Sinkin/physically-based-animations">GitHub repository</a>.</p>
@@ -41,7 +50,7 @@
           <li>Editor pivot marker</li>
         </ol>
         <p>Implemented in <code>src/pba/gfx/gfx_viewport.cpp</code>.</p>
-        <pre><code>// render entrypoint shape
+        <pre><code class="language-cpp">// render entrypoint
 const auto aspect = viewport_fbo.aspect_ratio();
 const auto& cam = engine_context->simulation.world.editor_state().camera();
 const auto view_matrix = cam.view_matrix();
@@ -100,7 +109,7 @@ const auto proj_matrix = cam.proj_matrix(aspect);</code></pre>
           <li><code>src/pba/scene/camera.cpp</code>: <code>position()</code>, <code>view_matrix()</code>, <code>proj_matrix()</code></li>
           <li><code>src/pba/core/constants.hpp</code>: camera defaults and limits</li>
         </ul>
-        <pre><code>// camera state to matrices (conceptual shape)
+        <pre><code class="language-cpp">// camera state to matrices
 Pos3 pos = cam.position();
 ViewMatrix V = cam.view_matrix();
 ProjMatrix P = cam.proj_matrix(aspect);</code></pre>
@@ -137,7 +146,7 @@ ProjMatrix P = cam.proj_matrix(aspect);</code></pre>
           <li><code>src/pba/gfx/raycast.cpp</code>: <code>ray_from_imgui_rect()</code></li>
           <li><code>src/pba/core/geometry.cpp</code>: <code>clip_to_world()</code></li>
         </ul>
-        <pre><code>// unprojection path (conceptual shape)
+        <pre><code class="language-cpp">// unprojection path
 const auto c2w = clip_to_world(camera_proj_matrix, camera_view_matrix);
 const auto near_w = c2w.unproject_ndc(x_ndc, y_ndc, -1.0f);
 const auto far_w  = c2w.unproject_ndc(x_ndc, y_ndc, +1.0f);
@@ -158,7 +167,7 @@ Ray ray{near_w, normalize(far_w - near_w)};</code></pre>
           <li><code>src/pba/gfx/gfx_interaction.cpp</code></li>
           <li><code>src/pba/scene/camera.cpp</code>: <code>pan_offset_world()</code>, <code>right()</code>, <code>up()</code></li>
         </ul>
-        <pre><code>// interaction update shape
+        <pre><code class="language-cpp">// interaction update
 cam.distance *= exp(-wheel * zoom_speed);
 cam.yaw += -dx * sensitivity;
 cam.pitch = clamp(cam.pitch + dy * sensitivity, -pitch_limit, pitch_limit);

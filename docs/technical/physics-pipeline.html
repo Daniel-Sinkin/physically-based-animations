@@ -5,12 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Physics Pipeline - Technical Implementation</title>
     <link rel="stylesheet" href="../assets/styles.css" />
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css" />
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        if (window.hljs) {
+          window.hljs.highlightAll();
+        }
+      });
+    </script>
   </head>
   <body>
     <main class="page">
       <div class="topnav">
         <a href="../index.html">Docs Home</a> /
-        <a href="./index.html">Technical Implementation</a> / Physics Pipeline
+        Technical Implementation / Physics Pipeline
       </div>
 
       <p class="footer">Code can be found here: <a href="https://github.com/Daniel-Sinkin/physically-based-animations">GitHub repository</a>.</p>
@@ -61,7 +70,7 @@
           <code>ArenaAllocator</code> region (<code>contact_arena</code>). The solve passes iterate
           over this contiguous span repeatedly:
         </p>
-        <pre><code>for (auto&amp; contact : contact_arena.as_span&lt;Contact&gt;()) {
+        <pre><code class="language-cpp">for (auto&amp; contact : contact_arena.as_span&lt;Contact&gt;()) {
     // warm start / velocity iterations / position iterations
 }</code></pre>
         <p>

@@ -14,11 +14,20 @@
       };
     </script>
     <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css" />
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        if (window.hljs) {
+          window.hljs.highlightAll();
+        }
+      });
+    </script>
   </head>
   <body>
     <main class="page">
       <div class="topnav">
-        <a href="../index.html">Docs Home</a> / <a href="./index.html">Math Background</a> /
+        <a href="../index.html">Docs Home</a> / Math Background /
         Linear Algebra and Transforms
       </div>
 
@@ -140,19 +149,10 @@
           quaternions to avoid singularities and provide stable composition.
         </p>
         <ul class="list">
-          <li><a href="./quaternions.html">Quaternions and Rotation Algebra</a></li>
+          <li>Quaternions and Rotation Algebra</li>
         </ul>
       </section>
 
-      <section class="section">
-        <h2>Code Mapping</h2>
-        <ul class="list">
-          <li><code>src/pba/scene/world_types.hpp</code> (<code>Transform::model_matrix()</code>)</li>
-          <li><code>src/pba/physics/solver.cpp</code> (orientation/inertia updates)</li>
-        </ul>
-        <pre><code>// transform composition shape used in rendering path
-Mat4 M = translate(position) * mat4_cast(rotation_quat) * scale(scale_xyz);</code></pre>
-      </section>
     </main>
   </body>
 </html>

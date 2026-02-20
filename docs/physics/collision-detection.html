@@ -14,11 +14,20 @@
       };
     </script>
     <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css" />
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        if (window.hljs) {
+          window.hljs.highlightAll();
+        }
+      });
+    </script>
   </head>
   <body>
     <main class="page">
       <div class="topnav">
-        <a href="../index.html">Docs Home</a> / <a href="./index.html">Physics Background</a> /
+        <a href="../index.html">Docs Home</a> / Physics Background /
         Collision Detection
       </div>
 
@@ -81,31 +90,6 @@
         </div>
       </section>
 
-      <section class="section">
-        <h2>Code Mapping</h2>
-        <ul class="list">
-          <li><code>src/pba/physics/collision.cpp</code>: <code>build_collision_soa</code></li>
-          <li>
-            <code>src/pba/physics/collision.cpp</code>:
-            <code>generate_broadphase_candidates</code>
-          </li>
-          <li><code>src/pba/physics/collision.cpp</code>: <code>obb_obb_overlap</code></li>
-          <li><code>src/pba/physics/collision.cpp</code>: <code>emit_contacts_for_pair</code></li>
-          <li><code>src/pba/physics/collision.cpp</code>: <code>make_contact_key</code></li>
-        </ul>
-        <p>
-          The collision pass reads from <code>RigidBodySOA</code> and writes contacts into a
-          per-step <code>ArenaAllocator</code>.
-        </p>
-        <pre><code>// broadphase + SAT + contact emit (conceptual shape)
-build_collision_soa(bodies, collision_soa);
-generate_broadphase_candidates(collision_soa, candidates);
-for (auto pair : candidates) {
-  if (obb_obb_overlap(pair, manifolds)) {
-    emit_contacts_for_pair(pair, manifolds, contact_arena);
-  }
-}</code></pre>
-      </section>
     </main>
   </body>
 </html>

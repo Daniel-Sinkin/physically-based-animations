@@ -5,12 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Performance and Tooling - Technical Implementation</title>
     <link rel="stylesheet" href="../assets/styles.css" />
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css" />
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        if (window.hljs) {
+          window.hljs.highlightAll();
+        }
+      });
+    </script>
   </head>
   <body>
     <main class="page">
       <div class="topnav">
         <a href="../index.html">Docs Home</a> /
-        <a href="./index.html">Technical Implementation</a> / Performance and Tooling
+        Technical Implementation / Performance and Tooling
       </div>
 
       <p class="footer">Code can be found here: <a href="https://github.com/Daniel-Sinkin/physically-based-animations">GitHub repository</a>.</p>
@@ -28,7 +37,7 @@
           The physics step iterates contiguous arrays (SoA) instead of arrays of structs. This
           improves cache locality when a stage only touches a subset of fields.
         </p>
-        <pre><code>// Example access pattern in integration stages
+        <pre><code class="language-cpp">// Example access pattern in integration stages
 for each i in [0, N):
   v[i] += (force[i] * inv_mass[i]) * dt
   x[i] += v[i] * dt</code></pre>

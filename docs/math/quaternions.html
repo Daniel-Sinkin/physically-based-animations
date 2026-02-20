@@ -14,11 +14,20 @@
       };
     </script>
     <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css" />
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        if (window.hljs) {
+          window.hljs.highlightAll();
+        }
+      });
+    </script>
   </head>
   <body>
     <main class="page">
       <div class="topnav">
-        <a href="../index.html">Docs Home</a> / <a href="./index.html">Math Background</a> /
+        <a href="../index.html">Docs Home</a> / Math Background /
         Quaternions and Rotation Algebra
       </div>
 
@@ -143,25 +152,15 @@
       </section>
 
       <section class="section">
-        <h2>Where This Appears in the Engine</h2>
+        <h2>References</h2>
         <ul class="list">
-          <li>Orientation storage: <code>glm::quat</code> in body state</li>
           <li>
-            Integration update and normalization:
-            <code>src/pba/physics/solver.cpp</code>
-          </li>
-          <li>
-            Transform composition for rendering:
-            <code>src/pba/scene/world_types.hpp</code>
+            <a href="https://www.3dgep.com/understanding-quaternions/">Understanding Quaternions</a>,
+            3D Game Engine Programming.
           </li>
         </ul>
-        <p>
-          This representation is used directly in the runtime orientation update path.
-        </p>
-        <pre><code>// quaternion orientation update shape
-Quat dq = 0.5f * omega_quat(angular_velocity) * q;
-q = normalize(q + dt * dq);</code></pre>
       </section>
+
     </main>
   </body>
 </html>
