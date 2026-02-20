@@ -48,8 +48,8 @@
         <ul class="list">
           <li>Position \(\mathbf{x}\), velocity \(\mathbf{v}\), inverse mass \(m^{-1}\)</li>
           <li>Orientation quaternion \(q\), angular velocity \(\boldsymbol{\omega}\)</li>
-          <li>Body-space inverse inertia \(\mathbf{I}_{body}^{-1}\)</li>
-          <li>World-space inverse inertia \(\mathbf{I}_{world}^{-1}\)</li>
+          <li>Body-space inverse inertia \(\mathbf{I}_{\text{body}}^{-1}\)</li>
+          <li>World-space inverse inertia \(\mathbf{I}_{\text{world}}^{-1}\)</li>
           <li>Force and torque accumulators</li>
         </ul>
 
@@ -62,7 +62,7 @@
         </div>
         <div class="equation">
           \[
-          \boldsymbol{\alpha} = \mathbf{I}_{world}^{-1}\,\boldsymbol{\tau}, \qquad
+          \boldsymbol{\alpha} = \mathbf{I}_{\text{world}}^{-1}\,\boldsymbol{\tau}, \qquad
           \boldsymbol{\omega}_{t+\Delta t} =
           \boldsymbol{\omega}_{t} + \boldsymbol{\alpha}\,\Delta t
           \]
@@ -94,9 +94,9 @@
         <h2>Inertia Tensor Mapping</h2>
         <div class="equation">
           \[
-          \mathbf{I}_{world}^{-1}
+          \mathbf{I}_{\text{world}}^{-1}
           =
-          \mathbf{R}(q)\,\mathbf{I}_{body}^{-1}\,\mathbf{R}(q)^T
+          \mathbf{R}(q)\,\mathbf{I}_{\text{body}}^{-1}\,\mathbf{R}(q)^T
           \]
         </div>
 
