@@ -2,6 +2,10 @@
 
 Resume/portfolio project focused on real-time rigid-body simulation, interactive tooling, and engine architecture in modern C++.
 
+## Documentation
+- GitHub Pages: https://daniel-sinkin.github.io/physically-based-animations/
+- In-repo docs entry: [docs/index.html](docs/index.html)
+
 ## What It Does
 - Simulates oriented rigid boxes with linear and angular motion, collisions, friction, restitution, damping, and sleeping.
 - Ships with 12 built-in demo/stress scenes (including dense-contact cases like `Cube Cloud (1200)`).
