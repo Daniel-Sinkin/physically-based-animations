@@ -7,12 +7,10 @@ Resume/portfolio project focused on real-time rigid-body simulation, interactive
 - In-repo docs entry: [docs/index.html](docs/index.html)
 - C++ technical/API docs are generated with Doxygen into `docs/technical/api`.
 
-### Generate Technical API Docs
-```bash
-./scripts/generate_technical_docs.sh
-# or, if build files are configured:
-cmake --build build --target docs_technical
-```
+## Videos
+- https://www.youtube.com/watch?v=1fZnTQ-wU24
+- https://www.youtube.com/watch?v=uKSDHguqzIE
+- https://www.youtube.com/watch?v=C_mCMDn9qz0
 
 ## What It Does
 - Simulates oriented rigid boxes with linear and angular motion, collisions, friction, restitution, damping, and sleeping.
@@ -97,14 +95,14 @@ You can also run headless mode through the GUI binary:
 ./build/main --headless --scene 2 --steps 5000 --progress
 ```
 
+### Regenerate Technical API Docs
+```bash
+./scripts/generate_technical_docs.sh
+```
+
 ## Scope Notes
 - Current simulation primitive is rigid cubes/boxes.
 - Scene save/load and undo/redo menu entries are placeholders.
-
-## Videos
-- https://www.youtube.com/watch?v=1fZnTQ-wU24
-- https://www.youtube.com/watch?v=uKSDHguqzIE
-- https://www.youtube.com/watch?v=C_mCMDn9qz0
 
 ## References
 - [PBRT4] Physically Based Rendering, 4th Edition: https://pbr-book.org/4ed/
