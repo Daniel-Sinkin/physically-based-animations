@@ -189,6 +189,11 @@ pre code.hljs {
   border-radius: 10px;
 }
 
+/* Avoid raw TeX flash before KaTeX auto-render runs. */
+body.math-pending .page {
+  visibility: hidden;
+}
+
 /* Keep rendered math one step larger for readability. */
 .katex {
   font-size: 1.25em;
