@@ -48,9 +48,14 @@ struct RigidBody
 
     bool grabbed{false};
 
+    [[nodiscard]] static inline auto is_static_inv_mass(f32 inv_mass) noexcept -> bool
+    {
+        return inv_mass <= k_static_mass;
+    }
+
     [[nodiscard]] bool is_static() const noexcept
     {
-        return inv_mass == k_static_mass;
+        return is_static_inv_mass(inv_mass);
     }
 };
 
@@ -127,7 +132,7 @@ struct RigidBodySOA
 
     [[nodiscard]] auto is_static(usize i) const noexcept -> bool
     {
-        return inv_masses[i] == k_static_mass;
+        return RigidBody::is_static_inv_mass(inv_masses[i]);
     }
 
     [[nodiscard]] auto is_asleep(usize i) const noexcept -> bool

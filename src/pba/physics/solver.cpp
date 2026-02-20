@@ -62,7 +62,7 @@ struct BodyRef
 
     [[nodiscard]] auto is_static() const noexcept -> bool
     {
-        return inv_mass == k_static_mass;
+        return inv_mass <= k_static_mass;
     }
 };
 
@@ -91,7 +91,7 @@ struct BodyConstRef
 
     [[nodiscard]] auto is_static() const noexcept -> bool
     {
-        return inv_mass == k_static_mass;
+        return inv_mass <= k_static_mass;
     }
 };
 
@@ -269,7 +269,7 @@ auto apply_impulse_contact(
     {
         Expects(!a.is_static() || !b.is_static());
         Expects(!a.asleep || !b.asleep);
-        Expects(restitution > 0.0f && restitution <= 1.0f);
+        Expects(restitution >= 0.0f && restitution <= 1.0f);
         Expects(std::abs(glm::length(contact.n) - 1.0f) < 1e-5f);
     }
     // This is based on [Baraff97]

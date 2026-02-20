@@ -90,7 +90,7 @@ struct PhysicsContext
 
         [[nodiscard]] auto is_static() const noexcept -> bool
         {
-            return inv_mass == k_static_mass;
+            return inv_mass <= k_static_mass;
         }
     };
 
@@ -113,7 +113,7 @@ struct PhysicsContext
 
         [[nodiscard]] auto is_static() const noexcept -> bool
         {
-            return inv_mass == k_static_mass;
+            return inv_mass <= k_static_mass;
         }
     };
 

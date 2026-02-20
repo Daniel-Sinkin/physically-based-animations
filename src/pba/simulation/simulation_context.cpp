@@ -12,7 +12,7 @@ namespace
 [[nodiscard]] auto inv_inertia_body_box(f32 inv_mass, const Dir3& half_extents) noexcept
     -> glm::mat3
 {
-    if (inv_mass == k_static_mass)
+    if (inv_mass <= k_static_mass)
     {
         return glm::mat3(0.0f);
     }
