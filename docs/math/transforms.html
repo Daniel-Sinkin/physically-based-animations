@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Linear Algebra and Transforms - Math Background</title>
+    <link rel="stylesheet" href="../assets/styles.css" />
+    <script>
+      window.MathJax = {
+        tex: {
+          inlineMath: [['\\(', '\\)']],
+          displayMath: [['\\[', '\\]']]
+        }
+      };
+    </script>
+    <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  </head>
+  <body>
+    <main class="page">
+      <div class="topnav">
+        <a href="../index.html">Docs Home</a> / <a href="./index.html">Math Background</a> /
+        Linear Algebra and Transforms
+      </div>
+
+      <section class="hero">
+        <h1>Linear Algebra and Transforms</h1>
+        <p>Homogeneous coordinates and rigid-transform composition in 3D.</p>
+      </section>
+
+      <section class="section">
+        <h2>Homogeneous Embedding</h2>
+        <p>A point in \(\mathbb{R}^3\) is embedded in homogeneous coordinates as:</p>
+        <div class="equation">
+          \[
+          \mathbf{p} = \begin{pmatrix} x \\ y \\ z \end{pmatrix}
+          \hookrightarrow
+          \tilde{\mathbf{p}} = \begin{pmatrix} x \\ y \\ z \\ 1 \end{pmatrix}
+          \]
+        </div>
+
+        <h2>Scale, Translation, and Axis Rotations</h2>
+        <div class="equation">
+          \[
+          \mathbf{S} =
+          \begin{pmatrix}
+          s_x & 0   & 0   & 0 \\
+          0   & s_y & 0   & 0 \\
+          0   & 0   & s_z & 0 \\
+          0   & 0   & 0   & 1
+          \end{pmatrix},
+          \quad
+          \mathbf{T} =
+          \begin{pmatrix}
+          1 & 0 & 0 & t_x \\
+          0 & 1 & 0 & t_y \\
+          0 & 0 & 1 & t_z \\
+          0 & 0 & 0 & 1
+          \end{pmatrix}
+          \]
+        </div>
+
+        <div class="equation">
+          \[
+          \mathbf{R}_x(\alpha)=
+          \begin{pmatrix}
+          1 & 0          & 0           & 0 \\
+          0 & \cos\alpha & -\sin\alpha & 0 \\
+          0 & \sin\alpha &  \cos\alpha & 0 \\
+          0 & 0          & 0           & 1
+          \end{pmatrix}
+          \]
+        </div>
+        <div class="equation">
+          \[
+          \mathbf{R}_y(\beta)=
+          \begin{pmatrix}
+           \cos\beta & 0 & \sin\beta & 0 \\
+           0         & 1 & 0         & 0 \\
+          -\sin\beta & 0 & \cos\beta & 0 \\
+           0         & 0 & 0         & 1
+          \end{pmatrix}
+          \]
+        </div>
+        <div class="equation">
+          \[
+          \mathbf{R}_z(\gamma)=
+          \begin{pmatrix}
+          \cos\gamma & -\sin\gamma & 0 & 0 \\
+          \sin\gamma &  \cos\gamma & 0 & 0 \\
+          0          & 0           & 1 & 0 \\
+          0          & 0           & 0 & 1
+          \end{pmatrix}
+          \]
+        </div>
+
+        <h2>Composite Transform</h2>
+        <div class="equation">
+          \[
+          \mathbf{R} = \mathbf{R}_z(\gamma)\,\mathbf{R}_y(\beta)\,\mathbf{R}_x(\alpha), \qquad
+          \mathbf{M} = \mathbf{T}\,\mathbf{R}\,\mathbf{S}
+          \]
+        </div>
+        <div class="equation">
+          \[
+          \mathbf{M} =
+          \begin{pmatrix}
+          s_x r_{11} & s_y r_{12} & s_z r_{13} & t_x \\
+          s_x r_{21} & s_y r_{22} & s_z r_{23} & t_y \\
+          s_x r_{31} & s_y r_{32} & s_z r_{33} & t_z \\
+          0          & 0          & 0          & 1
+          \end{pmatrix}
+          \]
+        </div>
+
+        <h2>Rigid Body Special Case</h2>
+        <p>For rigid transforms (\(\mathbf{S}=\mathbf{I}\)):</p>
+        <div class="equation">
+          \[
+          \mathbf{p}_{\text{world}} = \mathbf{R}\,\mathbf{p}_{\text{local}} + \mathbf{t},
+          \qquad
+          \mathbf{R}^{T}=\mathbf{R}^{-1},\quad \det(\mathbf{R})=+1
+          \]
+        </div>
+
+        <p>Velocity of a world point on a rigid body:</p>
+        <div class="equation">
+          \[
+          \mathbf{v}_a = \mathbf{v}_{\text{cm}} + \boldsymbol{\omega}\times\mathbf{r}_a, \qquad
+          \mathbf{r}_a = \mathbf{a}_{\text{world}} - \mathbf{t}
+          \]
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Quaternion Bridge</h2>
+        <p>
+          Euler-angle parameterizations are useful for presentation, but simulation state uses
+          quaternions to avoid singularities and provide stable composition.
+        </p>
+        <ul class="list">
+          <li><a href="./quaternions.html">Quaternions and Rotation Algebra</a></li>
+          <li><a href="../physics/rigid-body-dynamics.html">Physics: Rigid Body Dynamics</a></li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>Code Mapping</h2>
+        <ul class="list">
+          <li><code>src/pba/scene/world_types.hpp</code> (<code>Transform::model_matrix()</code>)</li>
+          <li><code>src/pba/physics/solver.cpp</code> (orientation/inertia updates)</li>
+        </ul>
+      </section>
+    </main>
+  </body>
+</html>

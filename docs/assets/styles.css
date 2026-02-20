@@ -1,0 +1,197 @@
+@font-face {
+  font-family: "Monaspace Krypton";
+  src: url("./fonts/MonaspaceKrypton-Regular.otf") format("opentype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+:root {
+  /* Kickstart Night palette from assets/ui/themes.json */
+  --bg: #1a1b26;
+  --panel: #16161e;
+  --panel-2: #1f2335;
+  --panel-soft: #24283b;
+  --text: #c0caf5;
+  --muted: #565f89;
+  --accent: #7aa2f7;
+  --accent-2: #3d59a1;
+  --border: #0f0f14;
+  --border-soft: #2a2e45;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: radial-gradient(circle at top right, #2a3c6b 0%, var(--bg) 52%);
+  color: var(--text);
+  font-family:
+    "Monaspace Krypton",
+    ui-monospace,
+    "SFMono-Regular",
+    Menlo,
+    Monaco,
+    Consolas,
+    "Liberation Mono",
+    "Courier New",
+    monospace;
+  line-height: 1.5;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  color: #c9d9ff;
+  text-decoration: underline;
+}
+
+.page {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 32px 20px 64px;
+}
+
+.hero {
+  background: linear-gradient(135deg, var(--panel) 0%, var(--panel-2) 100%);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 24px;
+  box-shadow: inset 0 1px 0 rgba(192, 202, 245, 0.04);
+}
+
+.hero h1 {
+  margin: 0 0 8px;
+  font-size: 2rem;
+}
+
+.hero p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.card {
+  background: rgba(22, 22, 30, 0.9);
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.card h2 {
+  margin: 0 0 8px;
+  font-size: 1.2rem;
+}
+
+.card p {
+  margin: 0 0 10px;
+  color: var(--muted);
+}
+
+.list {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.list li {
+  margin: 6px 0;
+}
+
+.topnav {
+  margin: 10px 0 20px;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.topnav a {
+  color: var(--accent);
+}
+
+.section {
+  margin-top: 20px;
+  background: rgba(22, 22, 30, 0.9);
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  padding: 18px;
+}
+
+.section h2 {
+  margin-top: 0;
+}
+
+.section p {
+  color: var(--muted);
+}
+
+.footer {
+  margin-top: 20px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+code {
+  background: rgba(16, 16, 20, 0.95);
+  border: 1px solid rgba(42, 46, 69, 0.95);
+  border-radius: 6px;
+  padding: 0.1rem 0.35rem;
+  font-size: 0.9em;
+  color: #c0caf5;
+}
+
+pre {
+  background: rgba(16, 16, 20, 0.95);
+  border: 1px solid rgba(42, 46, 69, 0.95);
+  border-radius: 10px;
+  padding: 12px 14px;
+  overflow-x: auto;
+}
+
+pre code {
+  background: none;
+  border: 0;
+  padding: 0;
+}
+
+.equation {
+  margin: 12px 0;
+  padding: 10px;
+  background: rgba(36, 40, 59, 0.5);
+  border: 1px solid rgba(42, 46, 69, 0.95);
+  border-radius: 10px;
+}
+
+.table-wrap {
+  margin: 12px 0;
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid rgba(42, 46, 69, 0.95);
+  background: rgba(16, 16, 20, 0.95);
+}
+
+th,
+td {
+  border: 1px solid rgba(42, 46, 69, 0.95);
+  padding: 8px 10px;
+  text-align: center;
+}
+
+th {
+  background: rgba(36, 40, 59, 0.7);
+}

@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Architecture Overview - Technical Implementation</title>
+    <link rel="stylesheet" href="../assets/styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <div class="topnav">
+        <a href="../index.html">Docs Home</a> /
+        <a href="./index.html">Technical Implementation</a> / Architecture Overview
+      </div>
+
+      <section class="hero">
+        <h1>Architecture Overview</h1>
+        <p>Top-level module boundaries, ownership model, and update control flow.</p>
+      </section>
+
+      <section class="section">
+        <h2>Top-Level Composition</h2>
+        <p>
+          The runtime is coordinated by <code>EngineContext</code>, which owns both simulation and
+          rendering/editor systems:
+        </p>
+        <ul class="list">
+          <li><code>SimulationContext</code>: world state + physics state</li>
+          <li><code>GfxContext</code>: OpenGL resources, viewport, and ImGui tools</li>
+          <li>Input and fixed-step loop orchestration</li>
+        </ul>
+        <p>Primary source files:</p>
+        <ul class="list">
+          <li><code>src/pba/engine/engine_context.hpp</code></li>
+          <li><code>src/pba/engine/engine_context.cpp</code></li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>World and Entity Ownership</h2>
+        <p>
+          <code>World</code> keeps entity metadata and a transform SoA, with an <code>id → index</code>
+          map for direct lookup. Entity removal uses swap-erase to keep storage dense.
+        </p>
+        <ul class="list">
+          <li><code>src/pba/scene/world.cpp</code></li>
+          <li><code>src/pba/scene/world_types.hpp</code> (<code>TransformSOA</code>)</li>
+        </ul>
+        <p>
+          Transform data is split into contiguous arrays (<code>pos_x</code>, <code>pos_y</code>,
+          <code>pos_z</code>, <code>scale_x</code>, ...), backed by a local arena allocation.
+        </p>
+      </section>
+
+      <section class="section">
+        <h2>Clocking and Deterministic Step Schedule</h2>
+        <p>
+          Simulation advances in fixed increments (<code>time_step</code>) via an accumulator loop:
+        </p>
+        <pre><code>accumulator += frame_dt;
+while (accumulator >= fixed_dt) {
+    simulation.physics.step();
+    accumulator -= fixed_dt;
+}
+simulation.sync_physics_to_world();</code></pre>
+        <p>
+          This keeps physics update cadence stable even when render frame times vary.
+        </p>
+      </section>
+
+      <section class="section">
+        <h2>Scene Organization</h2>
+        <p>
+          Scene metadata and setup functions are registered in a catalog/table split:
+        </p>
+        <ul class="list">
+          <li><code>src/pba/simulation/scenes.hpp</code></li>
+          <li><code>src/pba/simulation/scenes_table.cpp</code></li>
+          <li><code>src/pba/simulation/scenes_setup.cpp</code></li>
+        </ul>
+      </section>
+    </main>
+  </body>
+</html>

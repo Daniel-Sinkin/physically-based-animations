@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Rendering and UI - Technical Implementation</title>
+    <link rel="stylesheet" href="../assets/styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <div class="topnav">
+        <a href="../index.html">Docs Home</a> /
+        <a href="./index.html">Technical Implementation</a> / Rendering and UI
+      </div>
+
+      <section class="hero">
+        <h1>Rendering and UI</h1>
+        <p>Viewport render passes, shader/resource setup, and editor interaction workflows.</p>
+      </section>
+
+      <section class="section">
+        <h2>Viewport Render Passes</h2>
+        <p>The viewport render path is executed in ordered passes:</p>
+        <ol class="list">
+          <li>Environment dome</li>
+          <li>Grid</li>
+          <li>Scene objects</li>
+          <li>Selection outline via stencil</li>
+          <li>Physics debug overlays (optional)</li>
+          <li>Editor pivot marker</li>
+        </ol>
+        <p>Implemented in <code>src/pba/gfx/gfx_viewport.cpp</code>.</p>
+      </section>
+
+      <section class="section">
+        <h2>Environment Lighting</h2>
+        <p>
+          The renderer samples an equirectangular environment texture for diffuse/specular lighting.
+          If no HDRI/JPG asset is present, a procedural fallback map is generated at startup.
+        </p>
+        <ul class="list">
+          <li><code>src/pba/gfx/gfx_gl_resources.cpp</code></li>
+          <li><code>assets/shaders/environment.*</code></li>
+          <li><code>assets/shaders/object*.frag</code></li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>UI Tooling</h2>
+        <p>
+          Tool windows are built with ImGui and include Scene selection, Render controls,
+          Physics Debug, Inspector, and Terminal panels.
+        </p>
+        <ul class="list">
+          <li><code>src/pba/ui/ui.cpp</code></li>
+          <li><code>src/pba/gfx/gfx_context.cpp</code></li>
+        </ul>
+        <p>
+          The runtime supports hot scene reload, pause/step controls, and debug window reveal.
+        </p>
+      </section>
+
+      <section class="section">
+        <h2>Interaction Model</h2>
+        <ul class="list">
+          <li>Single and additive selection (click and shift-click)</li>
+          <li>Viewport box-select with optional through-depth mode</li>
+          <li>Multi-object grab/move with axis constraints</li>
+          <li>Camera orbit, pan, and zoom controls</li>
+        </ul>
+        <p>
+          Interaction code paths:
+        </p>
+        <ul class="list">
+          <li><code>src/pba/gfx/gfx_interaction.cpp</code></li>
+          <li><code>src/pba/gfx/gfx_grab_tool.cpp</code></li>
+        </ul>
+      </section>
+    </main>
+  </body>
+</html>

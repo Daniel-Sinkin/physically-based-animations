@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Contact Resolution - Physics Background</title>
+    <link rel="stylesheet" href="../assets/styles.css" />
+    <script>
+      window.MathJax = {
+        tex: {
+          inlineMath: [['\\(', '\\)']],
+          displayMath: [['\\[', '\\]']]
+        }
+      };
+    </script>
+    <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  </head>
+  <body>
+    <main class="page">
+      <div class="topnav">
+        <a href="../index.html">Docs Home</a> / <a href="./index.html">Physics Background</a> /
+        Contact Resolution
+      </div>
+
+      <section class="hero">
+        <h1>Contact Resolution</h1>
+        <p>Sequential impulses with friction, warm-starting, and position correction.</p>
+      </section>
+
+      <section class="section">
+        <h2>Normal Impulse Solve</h2>
+        <p>
+          The solver computes contact impulses iteratively. For each contact, relative normal
+          velocity \(v_{rel}\) and effective mass \(k\) are used to solve the incremental normal
+          impulse:
+        </p>
+        <div class="equation">
+          \[
+          \Delta\lambda_n = -\frac{(1+\epsilon)\,v_{rel} + b}{k}
+          \]
+        </div>
+        <p>
+          \(\lambda_n\) is accumulated and clamped non-negative, then impulse
+          \(\mathbf{J}_n = \Delta\lambda_n\,\mathbf{n}\) is applied to linear and angular
+          velocities.
+        </p>
+
+        <h2>Friction Impulse</h2>
+        <p>
+          Tangential slip is projected from relative contact velocity. The tangent impulse
+          accumulator is clamped with a Coulomb bound:
+        </p>
+        <div class="equation">
+          \[
+          |\lambda_t| \le \mu\,\lambda_n
+          \]
+        </div>
+        <p>
+          This produces \(\mathbf{J}_t = \Delta\lambda_t\,\hat{\mathbf{t}}\), applied with the same
+          angular coupling terms as normal impulses.
+        </p>
+
+        <h2>Warm Starting and Position Solve</h2>
+        <p>
+          Cached \((\lambda_n,\lambda_t,\hat{\mathbf{t}})\) values are pulled at frame start to
+          accelerate convergence. After the velocity loop, positional correction runs for a small
+          number of iterations to reduce residual penetration.
+        </p>
+        <div class="equation">
+          \[
+          \mathbf{c}
+          =
+          \frac{\beta\,\max(0, p - p_{tol})}{m_a^{-1}+m_b^{-1}}\,\mathbf{n}
+          \]
+        </div>
+        <p>with \(p\) penetration depth, \(p_{tol}\) tolerance, and \(\beta\) correction factor.</p>
+      </section>
+
+      <section class="section">
+        <h2>Code Mapping</h2>
+        <ul class="list">
+          <li>
+            <code>src/pba/physics/solver.cpp</code>:
+            <code>apply_impulse_contact</code>,
+            <code>apply_impulse_contact_friction</code>
+          </li>
+          <li>
+            <code>src/pba/physics/solver.cpp</code>:
+            <code>warm_start_contact</code>,
+            <code>solve_velocity_constraints</code>,
+            <code>solve_position_constraints</code>
+          </li>
+          <li>
+            <code>src/pba/physics/physics_context.cpp</code>:
+            warm-start cache transfer and update
+          </li>
+        </ul>
+        <p>
+          Contact data is transient and lives in <code>contact_arena</code>, cleared once per
+          physics step before regeneration.
+        </p>
+      </section>
+
+      <section class="section">
+        <h2>Validation and Diagnostics</h2>
+        <ul class="list">
+          <li>
+            Broadphase and contact counts are exposed in the Physics Debug UI.
+          </li>
+          <li>
+            Kinetic energy history can be tracked over time for stability inspection.
+          </li>
+          <li>
+            Headless runs provide average/max step-time summaries for tuning solver iterations.
+          </li>
+        </ul>
+      </section>
+    </main>
+  </body>
+</html>

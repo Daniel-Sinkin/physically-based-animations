@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Quaternions and Rotation Algebra - Math Background</title>
+    <link rel="stylesheet" href="../assets/styles.css" />
+    <script>
+      window.MathJax = {
+        tex: {
+          inlineMath: [['\\(', '\\)']],
+          displayMath: [['\\[', '\\]']]
+        }
+      };
+    </script>
+    <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  </head>
+  <body>
+    <main class="page">
+      <div class="topnav">
+        <a href="../index.html">Docs Home</a> / <a href="./index.html">Math Background</a> /
+        Quaternions and Rotation Algebra
+      </div>
+
+      <section class="hero">
+        <h1>Quaternions and Rotation Algebra</h1>
+        <p>
+          Quaternion algebra for orientation state, stable rotation composition, and vector rotation.
+        </p>
+      </section>
+
+      <section class="section">
+        <h2>From Complex Numbers to Quaternions</h2>
+        <p>
+          A quaternion is
+          \[
+          q = w + x\mathbf{i} + y\mathbf{j} + z\mathbf{k}
+          \]
+          with one real part and three imaginary components.
+        </p>
+        <p>
+          The dimension chain of normed division algebras is:
+          \[
+          \mathbb{R} \;\subset\; \mathbb{C} \;\subset\; \mathbb{H} \;\subset\; \mathbb{O}
+          \]
+        </p>
+        <ul class="list">
+          <li>\(\mathbb{R}\): ordered, commutative, associative field</li>
+          <li>\(\mathbb{C}\) (2D): still commutative/associative, but no order compatible with multiplication</li>
+          <li>\(\mathbb{H}\) (4D): associative, but multiplication is non-commutative</li>
+          <li>\(\mathbb{O}\) (8D octonions): non-associative (but alternative)</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>Quaternion Basis Rules</h2>
+        <div class="equation">
+          \[
+          \mathbf{i}^2 = \mathbf{j}^2 = \mathbf{k}^2 = \mathbf{i}\mathbf{j}\mathbf{k} = -1
+          \]
+        </div>
+        <div class="equation">
+          \[
+          \mathbf{i}\mathbf{j}=\mathbf{k},\;
+          \mathbf{j}\mathbf{k}=\mathbf{i},\;
+          \mathbf{k}\mathbf{i}=\mathbf{j},\;
+          \mathbf{j}\mathbf{i}=-\mathbf{k},\;
+          \mathbf{k}\mathbf{j}=-\mathbf{i},\;
+          \mathbf{i}\mathbf{k}=-\mathbf{j}
+          \]
+        </div>
+
+        <h2>Quaternion Multiplication Table</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>*</th>
+                <th>1</th>
+                <th>i</th>
+                <th>j</th>
+                <th>k</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th>1</th>
+                <td>1</td>
+                <td>i</td>
+                <td>j</td>
+                <td>k</td>
+              </tr>
+              <tr>
+                <th>i</th>
+                <td>i</td>
+                <td>-1</td>
+                <td>k</td>
+                <td>-j</td>
+              </tr>
+              <tr>
+                <th>j</th>
+                <td>j</td>
+                <td>-k</td>
+                <td>-1</td>
+                <td>i</td>
+              </tr>
+              <tr>
+                <th>k</th>
+                <td>k</td>
+                <td>j</td>
+                <td>-i</td>
+                <td>-1</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Rotations With Unit Quaternions</h2>
+        <p>For rotation angle \(\theta\) about unit axis \(\hat{\mathbf{n}}\):</p>
+        <div class="equation">
+          \[
+          q = \left(\cos\frac{\theta}{2},\; \hat{\mathbf{n}}\sin\frac{\theta}{2}\right), \qquad
+          \|q\|=1
+          \]
+        </div>
+        <p>Rotate vector \(\mathbf{v}\) by treating it as a pure quaternion \((0,\mathbf{v})\):</p>
+        <div class="equation">
+          \[
+          \mathbf{v}' = q\,\mathbf{v}\,q^{-1}
+          \]
+        </div>
+        <p>
+          Composition follows multiplication order:
+          \[
+          q_{total}=q_2 q_1
+          \]
+          so applying \(q_1\) then \(q_2\) is not the same as swapping them.
+        </p>
+      </section>
+
+      <section class="section">
+        <h2>Where This Appears in the Engine</h2>
+        <ul class="list">
+          <li>Orientation storage: <code>glm::quat</code> in body state</li>
+          <li>
+            Integration update and normalization:
+            <code>src/pba/physics/solver.cpp</code>
+          </li>
+          <li>
+            Transform composition for rendering:
+            <code>src/pba/scene/world_types.hpp</code>
+          </li>
+        </ul>
+        <p>
+          See <a href="../physics/rigid-body-dynamics.html">Physics: Rigid Body Dynamics</a> for
+          the step-level equations that use this representation.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Rigid Body Dynamics - Physics Background</title>
+    <link rel="stylesheet" href="../assets/styles.css" />
+    <script>
+      window.MathJax = {
+        tex: {
+          inlineMath: [['\\(', '\\)']],
+          displayMath: [['\\[', '\\]']]
+        }
+      };
+    </script>
+    <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  </head>
+  <body>
+    <main class="page">
+      <div class="topnav">
+        <a href="../index.html">Docs Home</a> / <a href="./index.html">Physics Background</a> /
+        Rigid Body Dynamics
+      </div>
+
+      <section class="hero">
+        <h1>Rigid Body Dynamics</h1>
+        <p>Linear and angular update model used in the fixed-step simulation loop.</p>
+      </section>
+
+      <section class="section">
+        <h2>State Variables</h2>
+        <p>For each body, the solver tracks:</p>
+        <ul class="list">
+          <li>Position \(\mathbf{x}\), velocity \(\mathbf{v}\), inverse mass \(m^{-1}\)</li>
+          <li>Orientation quaternion \(q\), angular velocity \(\boldsymbol{\omega}\)</li>
+          <li>Body-space inverse inertia \(\mathbf{I}_{body}^{-1}\)</li>
+          <li>World-space inverse inertia \(\mathbf{I}_{world}^{-1}\)</li>
+          <li>Force and torque accumulators</li>
+        </ul>
+
+        <h2>Linear and Angular Integration</h2>
+        <div class="equation">
+          \[
+          \mathbf{a} = \mathbf{F}\,m^{-1}, \qquad
+          \mathbf{v}_{t+\Delta t} = \mathbf{v}_{t} + \mathbf{a}\,\Delta t
+          \]
+        </div>
+        <div class="equation">
+          \[
+          \boldsymbol{\alpha} = \mathbf{I}_{world}^{-1}\,\boldsymbol{\tau}, \qquad
+          \boldsymbol{\omega}_{t+\Delta t} =
+          \boldsymbol{\omega}_{t} + \boldsymbol{\alpha}\,\Delta t
+          \]
+        </div>
+        <div class="equation">
+          \[
+          \mathbf{x}_{t+\Delta t} = \mathbf{x}_{t} + \mathbf{v}_{t+\Delta t}\,\Delta t
+          \]
+        </div>
+
+        <p>Orientation update is quaternion-based:</p>
+        <div class="equation">
+          \[
+          q_{t+\Delta t}
+          =
+          \operatorname{normalize}\left(q_t + \frac{\Delta t}{2}\,\Omega(\boldsymbol{\omega})\,q_t\right)
+          \]
+        </div>
+        <p>
+          Quaternion composition is order-dependent (non-commutative), so composed rotations use
+          an explicit order:
+        </p>
+        <div class="equation">
+          \[
+          q_{total} = q_2 q_1 \neq q_1 q_2
+          \]
+        </div>
+        <p>
+          See <a href="../math/quaternions.html">Math Background / Quaternions</a> for the
+          multiplication table and algebra details.
+        </p>
+
+        <h2>Inertia Tensor Mapping</h2>
+        <div class="equation">
+          \[
+          \mathbf{I}_{world}^{-1}
+          =
+          \mathbf{R}(q)\,\mathbf{I}_{body}^{-1}\,\mathbf{R}(q)^T
+          \]
+        </div>
+
+        <h2>Velocity at a Contact Point</h2>
+        <div class="equation">
+          \[
+          \mathbf{v}_a = \mathbf{v}_{cm} + \boldsymbol{\omega}\times(\mathbf{p}-\mathbf{x}_{cm})
+          \]
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Code Mapping</h2>
+        <ul class="list">
+          <li><code>src/pba/physics/solver.cpp</code>: <code>integrate_forces</code></li>
+          <li><code>src/pba/physics/solver.cpp</code>: <code>integrate_velocities</code></li>
+          <li>
+            <code>src/pba/physics/solver.cpp</code>:
+            <code>inv_inertia_world_from_body</code>, <code>get_velocity_at_world_point</code>
+          </li>
+          <li><code>src/pba/physics/physics_context.cpp</code>: per-step orchestration</li>
+        </ul>
+        <p>
+          The body storage backing these updates is structure-of-arrays (<code>RigidBodySOA</code>)
+          in <code>src/pba/physics/physics_types.hpp</code>, enabling contiguous scans over
+          positions, velocities, masses, and flags.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>
