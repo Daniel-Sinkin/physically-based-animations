@@ -13,8 +13,9 @@ namespace ds_pba
 auto load_scene(SimulationContext& e, SceneId id) -> void
 {
     e.clear();
-    e.active_scene = id;
-    setup_scene_by_id(e, id);
+    const auto selected = scene_metadata(id).has_value() ? id : k_default_scene;
+    e.active_scene = selected;
+    setup_scene_by_id(e, selected);
 }
 
 auto setup_active_scene(SimulationContext& e) -> void

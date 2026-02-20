@@ -12,6 +12,7 @@
 #include "pba/simulation/simulation_context.hpp"
 
 #include <gsl/assert>
+#include <vector>
 
 namespace ds_pba
 {
@@ -32,6 +33,25 @@ struct EngineContext
     TimePoint frame_time = Clock::now();
     Duration accumulator{};
     bool paused{true};
+
+    struct SpitCubePending
+    {
+        BodyHandle body{};
+        TimePoint reenable_time{};
+    };
+
+    struct SpitCubeState
+    {
+        std::vector<SpitCubePending> pending{};
+        TimePoint last_emit{};
+        bool has_last_emit{false};
+    };
+    SpitCubeState spit_cube{};
+
+    auto reset_simulation_clock() noexcept -> void;
+    auto set_paused(bool is_paused) noexcept -> void;
+    auto maybe_emit_cube(const TimePoint& now) -> void;
+    auto update_pending_spit_cubes(const TimePoint& now, Duration frame_dt) -> void;
 
     auto run() -> void;
     auto is_active() const -> bool

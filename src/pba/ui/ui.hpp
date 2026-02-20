@@ -12,5 +12,5 @@ struct EngineContext;
 auto apply_blender_style() -> void;
 auto ui_log(std::string_view msg) -> void;
 auto render_imgui_windows(EngineContext& engine_context) -> void;
-auto render_menu_bar(GfxContext& render_context) -> void;
+auto render_menu_bar(EngineContext& engine_context) -> void;
 }  // namespace ds_pba

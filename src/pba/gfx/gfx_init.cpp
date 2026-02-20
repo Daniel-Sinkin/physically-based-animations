@@ -4,6 +4,18 @@
 
 namespace ds_pba
 {
+namespace
+{
+[[nodiscard]] auto default_imgui_ini_path() -> std::string
+{
+    if (const auto* home = std::getenv("HOME"); home != nullptr && home[0] != '\0')
+    {
+        return std::format("{}/.pba_imgui.ini", home);
+    }
+    return "imgui.ini";
+}
+}  // namespace
+
 [[nodiscard]] auto GfxContext::setup() -> bool
 {
     using namespace ds_pba;
@@ -85,6 +97,8 @@ namespace ds_pba
     initialised_imgui = true;
 
     ImGuiIO& io = ImGui::GetIO();
+    imgui_ini_path = default_imgui_ini_path();
+    io.IniFilename = imgui_ini_path.c_str();
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
     {  // Load Fonts

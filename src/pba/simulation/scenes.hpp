@@ -3,18 +3,29 @@
 
 #include "pba/core/core_types.hpp"
 #include "pba/simulation/scene_id.hpp"
+//
+#include <optional>
+#include <span>
+#include <string_view>
 
 namespace ds_pba
 {
 struct SimulationContext;
-
-[[nodiscard]] constexpr auto scene_count() noexcept -> usize
+struct SceneMetadata
 {
-    return static_cast<usize>(SceneId::Count);
-}
+    SceneId id{k_default_scene};
+    std::string_view name{};
+    std::string_view description{};
+};
 
-[[nodiscard]] auto scene_name(SceneId id) noexcept -> std::string;
-[[nodiscard]] auto scene_description(SceneId id) noexcept -> std::string;
+[[nodiscard]] auto scene_count() noexcept -> usize;
+[[nodiscard]] auto scene_index(SceneId id) noexcept -> std::optional<usize>;
+[[nodiscard]] auto scene_id_from_index(usize index) noexcept -> std::optional<SceneId>;
+[[nodiscard]] auto scene_metadata(SceneId id) noexcept -> std::optional<SceneMetadata>;
+[[nodiscard]] auto scene_catalog() noexcept -> std::span<const SceneMetadata>;
+
+[[nodiscard]] auto scene_name(SceneId id) noexcept -> std::string_view;
+[[nodiscard]] auto scene_description(SceneId id) noexcept -> std::string_view;
 
 auto setup_scene_by_id(SimulationContext& e, SceneId id) noexcept -> void;
 
