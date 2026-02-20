@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AOS vs SOA - Technical Reference</title>
+    <link rel="stylesheet" href="../assets/styles.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css"
+    />
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        if (window.hljs) {
+          window.hljs.highlightAll();
+        }
+      });
+    </script>
+  </head>
+  <body>
+    <main class="page">
+      <div class="topnav">
+        <a href="../index.html">Docs Home</a> / Technical Reference / AOS vs SOA
+      </div>
+
+      <p class="footer">
+        Code can be found here:
+        <a href="https://github.com/Daniel-Sinkin/physically-based-animations">GitHub repository</a>.
+      </p>
+
+      <section class="hero">
+        <h1>AOS vs SOA</h1>
+        <p>Data layout choices used to balance ownership clarity and cache-friendly updates.</p>
+      </section>
+
+      <section class="section">
+        <p>
+          The codebase uses both layouts with explicit roles. Entity metadata is kept in AOS form
+          (<code>std::vector&lt;Entity&gt;</code>), while frequently updated transform and physics state are
+          organized in SOA form for tighter field-wise scans.
+        </p>
+        <p>
+          This split keeps ownership and editor-facing data simple, while letting physics and
+          transform-heavy code iterate through contiguous columns such as position, velocity, and
+          inverse mass.
+        </p>
+        <pre><code class="language-cpp">// src/pba/scene/world.hpp
+std::vector<Entity> entities_{};
+TransformSOA transforms_{k_max_number_objects};
+
+// src/pba/physics/physics_types.hpp
+std::vector<Pos3> positions{};
+std::vector<Dir3> velocities{};
+std::vector<f32> inv_masses{};
+std::vector<Quaternion> orientations{};
+std::vector<glm::mat3> inv_inertia_worlds{};</code></pre>
+        <p>
+          Relevant files: <code>src/pba/scene/world_types.hpp</code>,
+          <code>src/pba/physics/physics_types.hpp</code>,
+          <code>src/pba/scene/world.cpp</code>.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>

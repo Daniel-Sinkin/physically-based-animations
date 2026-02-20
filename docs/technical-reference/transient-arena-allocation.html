@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Transient Arena Allocation - Technical Reference</title>
+    <link rel="stylesheet" href="../assets/styles.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css"
+    />
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        if (window.hljs) {
+          window.hljs.highlightAll();
+        }
+      });
+    </script>
+  </head>
+  <body>
+    <main class="page">
+      <div class="topnav">
+        <a href="../index.html">Docs Home</a> / Technical Reference / Transient Arena Allocation
+      </div>
+
+      <p class="footer">
+        Code can be found here:
+        <a href="https://github.com/Daniel-Sinkin/physically-based-animations">GitHub repository</a>.
+      </p>
+
+      <section class="hero">
+        <h1>Transient Arena Allocation</h1>
+        <p>Step-local allocation pattern for collision/contact data.</p>
+      </section>
+
+      <section class="section">
+        <p>
+          Per-step collision contacts are written into a linear arena
+          (<code>ArenaAllocator</code>) and reset at the beginning of each physics step. This
+          avoids frequent heap allocations in the hot simulation loop and keeps contact data in one
+          contiguous region for solver passes.
+        </p>
+        <pre><code class="language-cpp">// src/pba/physics/physics_context.hpp
+ArenaAllocator contact_arena{k_physics_step_arena_bytes};
+
+// src/pba/physics/physics_context.cpp
+contact_arena.clear();
+debug_collision_stats = generate_obb_contacts(bodies_soa, contact_arena, collision_scratch, true);
+for (auto& contact : contact_arena.as_span&lt;Contact&gt;()) {
+    // warm start + solve passes
+}</code></pre>
+        <p>
+          Arena capacity is configured with
+          <code>k_physics_step_arena_bytes = 256 MiB</code> in
+          <code>src/pba/core/constants.hpp</code>.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>

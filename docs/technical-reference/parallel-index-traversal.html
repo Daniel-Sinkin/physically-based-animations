@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Parallel Index Traversal - Technical Reference</title>
+    <link rel="stylesheet" href="../assets/styles.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css"
+    />
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        if (window.hljs) {
+          window.hljs.highlightAll();
+        }
+      });
+    </script>
+  </head>
+  <body>
+    <main class="page">
+      <div class="topnav">
+        <a href="../index.html">Docs Home</a> / Technical Reference / Parallel Index Traversal
+      </div>
+
+      <p class="footer">
+        Code can be found here:
+        <a href="https://github.com/Daniel-Sinkin/physically-based-animations">GitHub repository</a>.
+      </p>
+
+      <section class="hero">
+        <h1>Parallel Index Traversal</h1>
+        <p>Shared wrapper for parallel/serial index kernels.</p>
+      </section>
+
+      <section class="section">
+        <p>
+          A thin <code>parallel_for_index</code> wrapper is used for index-based loops in physics
+          build/update stages. It keeps call sites uniform and falls back to a serial loop when
+          OpenMP is not enabled.
+        </p>
+        <pre><code class="language-cpp">// src/pba/core/parallel_for.hpp
+template &lt;class Fn&gt;
+inline auto parallel_for_index(usize count, Fn&& fn) -&gt; void {
+#if defined(DS_PBA_USE_OPENMP)
+  #pragma omp parallel for schedule(static)
+  for (i64 i = 0; i &lt; static_cast&lt;i64&gt;(count); ++i) fn(static_cast&lt;usize&gt;(i));
+#else
+  for (auto i = 0zu; i &lt; count; ++i) fn(i);
+#endif
+}</code></pre>
+        <p>
+          Used in <code>src/pba/physics/collision.cpp</code>,
+          <code>src/pba/physics/solver.cpp</code>, and
+          <code>src/pba/physics/physics_context.cpp</code>.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>

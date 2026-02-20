@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Broadphase and Cache Behavior - Technical Reference</title>
+    <link rel="stylesheet" href="../assets/styles.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css"
+    />
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        if (window.hljs) {
+          window.hljs.highlightAll();
+        }
+      });
+    </script>
+  </head>
+  <body>
+    <main class="page">
+      <div class="topnav">
+        <a href="../index.html">Docs Home</a> / Technical Reference / Broadphase and Cache Behavior
+      </div>
+
+      <p class="footer">
+        Code can be found here:
+        <a href="https://github.com/Daniel-Sinkin/physically-based-animations">GitHub repository</a>.
+      </p>
+
+      <section class="hero">
+        <h1>Broadphase and Cache Behavior</h1>
+        <p>Memory layout and candidate-pruning strategy in collision broadphase.</p>
+      </section>
+
+      <section class="section">
+        <p>
+          Broadphase uses separate scalar arrays for AABB bounds in
+          <code>CollisionScratch</code>, then performs sweep-and-prune over sorted min-x values.
+          Candidate rejection on y/z overlap is done before narrowphase SAT work.
+        </p>
+        <p>
+          The layout is intentionally columnar (<code>aabb_min_x</code>, <code>aabb_max_x</code>,
+          etc.) to make the pruning phase a compact streaming pass with low branch and memory
+          overhead per candidate.
+        </p>
+        <pre><code class="language-cpp">// src/pba/physics/collision.hpp
+std::vector<f32> aabb_min_x{}, aabb_min_y{}, aabb_min_z{};
+std::vector<f32> aabb_max_x{}, aabb_max_y{}, aabb_max_z{};
+std::vector<usize> sort_order{};
+std::vector<usize> active{};
+std::vector<CollisionPair> candidate_pairs{};
+
+// src/pba/physics/collision.cpp
+std::sort(sort_order.begin(), sort_order.end(), by_min_x);
+for (usize idx : sort_order) {
+    prune_active_on_x(idx);
+    test_yz_overlap_and_emit_candidates(idx);
+}</code></pre>
+      </section>
+    </main>
+  </body>
+</html>
