@@ -35,6 +35,44 @@ body {
     monospace;
 }
 
+/* Doxygen sets fonts on many element selectors; force Krypton consistently. */
+body,
+table,
+div,
+p,
+dl,
+li,
+span,
+input,
+select,
+textarea,
+button,
+.title,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+#projectname,
+#projectbrief,
+#MSearchField,
+#nav-tree .label,
+ul.page-outline div.item,
+.sm-dox a,
+.sm-dox ul a {
+  font-family:
+    "Monaspace Krypton",
+    ui-monospace,
+    "SFMono-Regular",
+    Menlo,
+    Monaco,
+    Consolas,
+    "Liberation Mono",
+    "Courier New",
+    monospace !important;
+}
+
 a,
 a:visited {
   color: var(--accent);
@@ -86,6 +124,81 @@ div.textblock {
   border-bottom: 1px solid var(--border-soft);
 }
 
+.sm-dox,
+#main-menu.sm-dox {
+  background: rgba(22, 22, 30, 0.95);
+}
+
+.sm-dox a,
+.sm-dox a:focus,
+.sm-dox a:active,
+.sm-dox a:hover {
+  color: var(--accent);
+  background: transparent;
+}
+
+.sm-dox a.current {
+  color: #dbe6ff;
+  background: var(--accent-2);
+  border-radius: 5px;
+}
+
+.sm-dox li {
+  background: transparent;
+}
+
+.sm-dox a:hover,
+.sm-dox a.highlighted {
+  background: rgba(36, 40, 59, 0.95) !important;
+  color: #dbe6ff;
+}
+
+.sm-dox ul {
+  background: rgba(22, 22, 30, 0.98);
+  border: 1px solid var(--border-soft);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+}
+
+.sm-dox ul a,
+.sm-dox ul a:focus,
+.sm-dox ul a:active,
+.sm-dox ul a:hover,
+.sm-dox ul a.highlighted {
+  color: var(--text);
+  background: transparent !important;
+}
+
+.sm-dox ul a:hover,
+.sm-dox ul a.highlighted {
+  background: rgba(36, 40, 59, 0.95) !important;
+}
+
+.sm-dox > li > ul:before {
+  border-color: transparent transparent var(--border-soft) transparent;
+}
+
+.sm-dox > li > ul:after {
+  border-color: transparent transparent rgba(22, 22, 30, 0.98) transparent;
+}
+
+.sm-dox a span.sub-arrow {
+  background: transparent;
+  border-right-color: #8aa7f5;
+  border-bottom-color: #8aa7f5;
+}
+
+.sm-dox a:hover span.sub-arrow,
+.sm-dox a.highlighted span.sub-arrow {
+  background: transparent;
+  border-right-color: #dbe6ff;
+  border-bottom-color: #dbe6ff;
+}
+
+.sm-dox span.scroll-up,
+.sm-dox span.scroll-down {
+  background: rgba(22, 22, 30, 0.98);
+}
+
 .tablist li.current a {
   background: var(--accent-2);
   color: #dbe6ff;
@@ -115,6 +228,25 @@ div.header,
 
 .contents {
   padding: 16px;
+}
+
+/* Override Doxygen light-mode section bars that add white side bands. */
+h2.groupheader,
+td h2.groupheader {
+  color: #a9c2ff;
+  box-shadow:
+    12px 0 rgba(22, 22, 30, 0.9),
+    -12px 0 rgba(22, 22, 30, 0.9),
+    12px 1px var(--border-soft),
+    -12px 1px var(--border-soft);
+}
+
+hr {
+  box-shadow:
+    12px 0 rgba(22, 22, 30, 0.9),
+    -12px 0 rgba(22, 22, 30, 0.9),
+    12px 1px var(--border-soft),
+    -12px 1px var(--border-soft);
 }
 
 #side-nav,
@@ -152,6 +284,120 @@ table.doxtable th {
   border-color: var(--border-soft);
 }
 
+.directory table {
+  width: 100%;
+  border: 1px solid var(--border-soft);
+}
+
+.directory td.entry,
+.directory td.desc {
+  color: var(--text);
+}
+
+.directory td.desc {
+  border-left: 1px solid rgba(122, 162, 247, 0.16);
+}
+
+.directory tr.odd {
+  background: rgba(28, 31, 47, 0.95);
+}
+
+.directory tr.even {
+  background: rgba(23, 26, 40, 0.95);
+}
+
+.directory tr:hover {
+  background: rgba(45, 55, 84, 0.95);
+}
+
+.directory .levels {
+  color: var(--muted);
+}
+
+.directory .levels span {
+  color: var(--accent);
+}
+
+.icon {
+  color: #cddcff;
+  background: rgba(61, 89, 161, 0.65);
+}
+
+/* Member list + member detail blocks */
+.memItemLeft,
+.memItemRight,
+.memTemplParams,
+.mdescLeft,
+.mdescRight,
+td.ititle {
+  background: rgba(22, 22, 30, 0.92);
+  color: var(--text);
+  border-color: var(--border-soft);
+}
+
+.memtitle {
+  background: rgba(36, 40, 59, 0.9);
+  color: #cddcff;
+  border-color: var(--border-soft);
+  box-shadow:
+    0 10px 0 -1px rgba(36, 40, 59, 0.9),
+    0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.memtitle:after {
+  background: rgba(36, 40, 59, 0.9);
+}
+
+.memproto,
+.memdoc,
+dl.reflist dt,
+dl.reflist dd {
+  color: var(--text);
+  border-color: var(--border-soft);
+}
+
+.memproto,
+dl.reflist dt {
+  background: rgba(22, 22, 30, 0.94);
+}
+
+.memdoc,
+dl.reflist dd {
+  background: rgba(22, 22, 30, 0.9);
+}
+
+/* Right-side in-page outline panel */
+#page-nav,
+#page-nav-tree,
+#page-nav-contents {
+  background: rgba(22, 22, 30, 0.92);
+  border-left-color: var(--border-soft);
+}
+
+#page-nav-resize-handle {
+  background: rgba(122, 162, 247, 0.2);
+}
+
+#page-nav-resize-handle:after {
+  border-left-color: #8aa7f5;
+  border-right-color: #8aa7f5;
+}
+
+ul.page-outline li.vis {
+  background: rgba(61, 89, 161, 0.55);
+  border-radius: 0 6px 6px 0;
+}
+
+ul.page-outline div.item,
+ul.page-outline a {
+  color: var(--text);
+}
+
+ul.page-outline a:hover,
+ul.page-outline a:focus {
+  color: #dbe6ff;
+}
+
 h1,
 h2,
 h3,
@@ -168,12 +414,41 @@ div.fragment {
   border-radius: 10px;
 }
 
+span.lineno {
+  color: #8d98c7;
+  background: rgba(26, 29, 43, 0.95);
+  border-right: 2px solid rgba(122, 162, 247, 0.5);
+}
+
+span.lineno a,
+span.lineno a:visited {
+  color: #8fb0ff;
+  background: rgba(30, 34, 49, 0.95);
+}
+
+span.lineno a:hover {
+  color: #dbe6ff;
+  background: rgba(45, 55, 84, 0.95);
+}
+
+span.fold.plus,
+span.fold.minus {
+  background: rgba(30, 34, 49, 0.95);
+  border: 1px solid rgba(122, 162, 247, 0.45);
+}
+
+span.fold.plus::before,
+span.fold.plus::after,
+span.fold.minus::before {
+  background: #a9c2ff;
+}
+
 span.keyword,
 span.keywordtype,
 span.keywordflow,
 span.keywordnamespace,
 span.keywordoperator {
-  color: #89ddff;
+  color: #7aa2f7;
 }
 
 span.stringliteral,
@@ -183,10 +458,33 @@ span.charliteral {
 
 span.comment,
 span.preprocessor {
-  color: #7a88b6;
+  color: #565f89;
 }
 
-span.lineno,
+span.keywordtype {
+  color: #2ac3de;
+}
+
+span.keywordnamespace {
+  color: #bb9af7;
+}
+
+/* Doxygen parameter names default to brown/red; keep them in the Kickstart palette. */
+.paramname,
+.params .paramname,
+.retval .paramname,
+.tparams .paramname,
+.exception .paramname,
+.paramname em {
+  color: #7dcfff;
+}
+
+.paramtype,
+.params .paramtype,
+.tparams .paramtype {
+  color: #a9b8ff;
+}
+
 .line {
   color: #7982a9;
 }

@@ -134,7 +134,7 @@ function initNavTree(toroot,relpath,allMembersFile) {
 
   let animationInProgress = false;
 
-  const gotoAnchor = function(anchor,aname) {
+  const gotoAnchor = function(anchor,aname,instantJump=false) {
     let pos, docContent = $('#doc-content');
     let ancParent = $(anchor.parent());
     if (ancParent.hasClass('memItemLeft') || ancParent.hasClass('memtitle')  ||
@@ -151,9 +151,9 @@ function initNavTree(toroot,relpath,allMembersFile) {
       const dcScrTop    = docContent.scrollTop();
       let dist = Math.abs(Math.min(pos-dcOffset,dcScrHeight-dcHeight-dcScrTop));
       animationInProgress = true;
-      docContent.animate({
+      docContent.stop(true,true).animate({
         scrollTop: pos + dcScrTop - dcOffset
-      },Math.max(50,Math.min(500,dist)),function() {
+      },instantJump ? 0 : Math.max(50,Math.min(500,dist)),function() {
         animationInProgress=false;
         if (anchor.parent().attr('class')=='memItemLeft') {
           let rows = $('.memberdecls tr[class$="'+hashValue()+'"]');
@@ -829,7 +829,7 @@ function initNavTree(toroot,relpath,allMembersFile) {
     $(".page-outline a[href]:not(.noscroll)").click(function(e) {
       e.preventDefault();
       const aname = $(this).attr("href");
-      gotoAnchor($(aname),aname);
+      gotoAnchor($(aname),aname,true);
     });
 
     let lastScrollSourceOffset = -1;
