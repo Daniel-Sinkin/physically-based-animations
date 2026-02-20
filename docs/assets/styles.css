@@ -18,6 +18,10 @@
   --accent-2: #3d59a1;
   --border: #0f0f14;
   --border-soft: #2a2e45;
+  --scrollbar-track: #141721;
+  --scrollbar-thumb: #324268;
+  --scrollbar-thumb-hover: #415789;
+  --scrollbar-thumb-active: #4a66a3;
 }
 
 * {
@@ -50,6 +54,41 @@ body {
     "Courier New",
     monospace;
   line-height: 1.5;
+}
+
+html,
+body,
+pre,
+.table-wrap {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border: 2px solid var(--scrollbar-track);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: var(--scrollbar-thumb-active);
 }
 
 a {
@@ -202,6 +241,72 @@ body.math-pending .page {
 .table-wrap {
   margin: 12px 0;
   overflow-x: auto;
+}
+
+.visual-grid {
+  margin: 12px 0 20px;
+  display: grid;
+  gap: 14px;
+}
+
+.visual-grid--three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.visual-grid--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.visual-grid--one {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.figure-card {
+  margin: 0;
+  background: rgba(22, 22, 30, 0.92);
+  border: 1px solid rgba(42, 46, 69, 0.95);
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.figure-card__frame {
+  overflow: hidden;
+  border-radius: 8px;
+  border: 1px solid rgba(61, 89, 161, 0.45);
+  background:
+    linear-gradient(160deg, rgba(36, 40, 59, 0.7), rgba(16, 16, 20, 0.85)),
+    repeating-linear-gradient(
+      45deg,
+      rgba(192, 202, 245, 0.055) 0 12px,
+      rgba(15, 15, 20, 0.26) 12px 24px
+    );
+}
+
+.figure-card img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  object-fit: contain;
+}
+
+.figure-card figcaption {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 980px) {
+  .visual-grid--three {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .visual-grid--three,
+  .visual-grid--two {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 table {

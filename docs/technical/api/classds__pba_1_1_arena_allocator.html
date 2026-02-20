@@ -108,34 +108,51 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 
+<p>Linear bump allocator for transient simulation/render data.  
+ <a href="#details">More...</a></p>
+
 <p><code>#include &lt;<a class="el" href="arena__allocator_8hpp_source.html">arena_allocator.hpp</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-methods" class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a65717c94bc96c8d73653af5c1616c6a2" id="r_a65717c94bc96c8d73653af5c1616c6a2"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a65717c94bc96c8d73653af5c1616c6a2">ArenaAllocator</a> (<a class="el" href="namespaceds__pba.html#ab2ec31ee121dc024bcc7c60f6908bcfa">usize</a> n_bytes)</td></tr>
+<tr class="memdesc:a65717c94bc96c8d73653af5c1616c6a2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct an arena with fixed capacity.  <br /></td></tr>
 <tr class="memitem:a50e56580c2515ab60ba3dd5e7be25bcc" id="r_a50e56580c2515ab60ba3dd5e7be25bcc"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a50e56580c2515ab60ba3dd5e7be25bcc">~ArenaAllocator</a> ()=default</td></tr>
 <tr class="memitem:acb49d070316903886a1ddff42f26cf76" id="r_acb49d070316903886a1ddff42f26cf76"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#acb49d070316903886a1ddff42f26cf76">ArenaAllocator</a> (const <a class="el" href="classds__pba_1_1_arena_allocator.html">ArenaAllocator</a> &amp;)=delete</td></tr>
 <tr class="memitem:a02d62b348f08885f885ba15887ccf97a" id="r_a02d62b348f08885f885ba15887ccf97a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classds__pba_1_1_arena_allocator.html">ArenaAllocator</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a02d62b348f08885f885ba15887ccf97a">operator=</a> (const <a class="el" href="classds__pba_1_1_arena_allocator.html">ArenaAllocator</a> &amp;)=delete</td></tr>
 <tr class="memitem:a5b87e1fd184eb8a775ac07af9db45aad" id="r_a5b87e1fd184eb8a775ac07af9db45aad"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a5b87e1fd184eb8a775ac07af9db45aad">ArenaAllocator</a> (<a class="el" href="classds__pba_1_1_arena_allocator.html">ArenaAllocator</a> &amp;&amp;)=delete</td></tr>
 <tr class="memitem:ae4b879ec2a566662334029e909889850" id="r_ae4b879ec2a566662334029e909889850"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classds__pba_1_1_arena_allocator.html">ArenaAllocator</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ae4b879ec2a566662334029e909889850">operator=</a> (<a class="el" href="classds__pba_1_1_arena_allocator.html">ArenaAllocator</a> &amp;&amp;)=delete</td></tr>
 <tr class="memitem:a629d22aec92d6847deb5ce3c6529e45a" id="r_a629d22aec92d6847deb5ce3c6529e45a"><td class="memItemLeft" align="right" valign="top">auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a629d22aec92d6847deb5ce3c6529e45a">data</a> () const noexcept -&gt; const <a class="el" href="namespaceds__pba.html#a6dc777ee2ac09e89b735f4bf6aa248af">Byte</a> *</td></tr>
+<tr class="memdesc:a629d22aec92d6847deb5ce3c6529e45a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Access the raw backing buffer.  <br /></td></tr>
 <tr class="memitem:a2ba01d647f44c4bced59370b43fba177" id="r_a2ba01d647f44c4bced59370b43fba177"><td class="memItemLeft" align="right" valign="top">auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a2ba01d647f44c4bced59370b43fba177">data</a> () noexcept -&gt; <a class="el" href="namespaceds__pba.html#a6dc777ee2ac09e89b735f4bf6aa248af">Byte</a> *</td></tr>
+<tr class="memdesc:a2ba01d647f44c4bced59370b43fba177"><td class="mdescLeft">&#160;</td><td class="mdescRight">Access the raw backing buffer.  <br /></td></tr>
 <tr class="memitem:a73437bc89d358bf118c53a704316ec85" id="r_a73437bc89d358bf118c53a704316ec85"><td class="memItemLeft" align="right" valign="top">auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a73437bc89d358bf118c53a704316ec85">capacity</a> () const noexcept -&gt; <a class="el" href="namespaceds__pba.html#ab2ec31ee121dc024bcc7c60f6908bcfa">usize</a></td></tr>
+<tr class="memdesc:a73437bc89d358bf118c53a704316ec85"><td class="mdescLeft">&#160;</td><td class="mdescRight">Total byte capacity of the arena.  <br /></td></tr>
 <tr class="memitem:a8e977439905847980216a6f43e755ad7" id="r_a8e977439905847980216a6f43e755ad7"><td class="memItemLeft" align="right" valign="top">auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a8e977439905847980216a6f43e755ad7">used</a> () const noexcept -&gt; <a class="el" href="namespaceds__pba.html#ab2ec31ee121dc024bcc7c60f6908bcfa">usize</a></td></tr>
+<tr class="memdesc:a8e977439905847980216a6f43e755ad7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Number of bytes consumed by allocations.  <br /></td></tr>
 <tr class="memitem:af78589a6dc6a213a8cc70f4cb9c50a81" id="r_af78589a6dc6a213a8cc70f4cb9c50a81"><td class="memItemLeft" align="right" valign="top">auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#af78589a6dc6a213a8cc70f4cb9c50a81">remaining</a> () const noexcept -&gt; <a class="el" href="namespaceds__pba.html#ab2ec31ee121dc024bcc7c60f6908bcfa">usize</a></td></tr>
+<tr class="memdesc:af78589a6dc6a213a8cc70f4cb9c50a81"><td class="mdescLeft">&#160;</td><td class="mdescRight">Number of bytes still available for allocation.  <br /></td></tr>
 <tr class="memitem:a928ce0b85821e0022df846f7988c53a5" id="r_a928ce0b85821e0022df846f7988c53a5"><td class="memItemLeft" align="right" valign="top">auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a928ce0b85821e0022df846f7988c53a5">clear</a> () noexcept -&gt; void</td></tr>
+<tr class="memdesc:a928ce0b85821e0022df846f7988c53a5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset allocation state to the start of the buffer.  <br /></td></tr>
 <tr class="memitem:a847126d2f379dc11d5a774320d10f48c" id="r_a847126d2f379dc11d5a774320d10f48c"><td class="memItemLeft" align="right" valign="top">auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a847126d2f379dc11d5a774320d10f48c">allocate</a> (<a class="el" href="namespaceds__pba.html#ab2ec31ee121dc024bcc7c60f6908bcfa">usize</a> n_bytes, <a class="el" href="namespaceds__pba.html#ab2ec31ee121dc024bcc7c60f6908bcfa">usize</a> align) noexcept -&gt; void *</td></tr>
+<tr class="memdesc:a847126d2f379dc11d5a774320d10f48c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocate an aligned byte range from the arena.  <br /></td></tr>
 <tr class="memitem:a7808052d9f4d0cba9dd5cbccda494a44" id="r_a7808052d9f4d0cba9dd5cbccda494a44"><td class="memItemLeft" align="right" valign="top">auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a7808052d9f4d0cba9dd5cbccda494a44">allocate_array</a> (<a class="el" href="namespaceds__pba.html#ab2ec31ee121dc024bcc7c60f6908bcfa">usize</a> elem_size, <a class="el" href="namespaceds__pba.html#ab2ec31ee121dc024bcc7c60f6908bcfa">usize</a> n_elems, <a class="el" href="namespaceds__pba.html#ab2ec31ee121dc024bcc7c60f6908bcfa">usize</a> align) noexcept -&gt; void *</td></tr>
+<tr class="memdesc:a7808052d9f4d0cba9dd5cbccda494a44"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocate an aligned array payload from the arena.  <br /></td></tr>
 <tr class="memitem:a514629b22229d982fb09bdb5512cf03a" id="r_a514629b22229d982fb09bdb5512cf03a"><td class="memTemplParams" colspan="2">template&lt;class <a class="el" href="namespaceds__pba.html#aa6b8a9b6ae7a32fd68137ca431e99b1dab9ece18c950afbfa6b0fdbfa4ff731d3">T</a>&gt; <br />
 requires (std::is_trivially_copyable_v&lt;<a class="el" href="namespaceds__pba.html#aa6b8a9b6ae7a32fd68137ca431e99b1dab9ece18c950afbfa6b0fdbfa4ff731d3">T</a>&gt; &amp;&amp; std::is_trivially_destructible_v&lt;<a class="el" href="namespaceds__pba.html#aa6b8a9b6ae7a32fd68137ca431e99b1dab9ece18c950afbfa6b0fdbfa4ff731d3">T</a>&gt;)</td></tr>
 <tr class="memitem:a514629b22229d982fb09bdb5512cf03a template"><td class="memItemLeft" align="right" valign="top">auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a514629b22229d982fb09bdb5512cf03a">push_back</a> (const <a class="el" href="namespaceds__pba.html#aa6b8a9b6ae7a32fd68137ca431e99b1dab9ece18c950afbfa6b0fdbfa4ff731d3">T</a> &amp;value) noexcept -&gt; <a class="el" href="namespaceds__pba.html#aa6b8a9b6ae7a32fd68137ca431e99b1dab9ece18c950afbfa6b0fdbfa4ff731d3">T</a> *</td></tr>
+<tr class="memdesc:a514629b22229d982fb09bdb5512cf03a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocate storage for one value and copy it into the arena.  <br /></td></tr>
 <tr class="memitem:ac5db8721839ff7d9ac2e320c1b854be5" id="r_ac5db8721839ff7d9ac2e320c1b854be5"><td class="memItemLeft" align="right" valign="top">auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ac5db8721839ff7d9ac2e320c1b854be5">is_valid</a> () const noexcept -&gt; bool</td></tr>
+<tr class="memdesc:ac5db8721839ff7d9ac2e320c1b854be5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check whether used bytes stay within arena capacity.  <br /></td></tr>
 <tr class="memitem:a5acdeb19548dc6b5fb43f6247cfca700" id="r_a5acdeb19548dc6b5fb43f6247cfca700"><td class="memTemplParams" colspan="2">template&lt;typename <a class="el" href="namespaceds__pba.html#aa6b8a9b6ae7a32fd68137ca431e99b1dab9ece18c950afbfa6b0fdbfa4ff731d3">T</a>&gt; </td></tr>
 <tr class="memitem:a5acdeb19548dc6b5fb43f6247cfca700 template"><td class="memItemLeft" align="right" valign="top">auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a5acdeb19548dc6b5fb43f6247cfca700">as_span</a> () noexcept -&gt; std::span&lt; <a class="el" href="namespaceds__pba.html#aa6b8a9b6ae7a32fd68137ca431e99b1dab9ece18c950afbfa6b0fdbfa4ff731d3">T</a> &gt;</td></tr>
+<tr class="memdesc:a5acdeb19548dc6b5fb43f6247cfca700"><td class="mdescLeft">&#160;</td><td class="mdescRight">View the used prefix of arena memory as a span of T.  <br /></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
-<div class="textblock">
-<p class="definition">Definition at line <a class="el" href="arena__allocator_8hpp_source.html#l00016">16</a> of file <a class="el" href="arena__allocator_8hpp_source.html">arena_allocator.hpp</a>.</p>
+<div class="textblock"><p>Linear bump allocator for transient simulation/render data. </p>
+<p>Allocations are served from a single contiguous byte buffer. Individual allocations are not freed; call <a class="el" href="#a928ce0b85821e0022df846f7988c53a5" title="Reset allocation state to the start of the buffer.">clear()</a> to rewind the arena. </p>
+
+<p class="definition">Definition at line <a class="el" href="arena__allocator_8hpp_source.html#l00022">22</a> of file <a class="el" href="arena__allocator_8hpp_source.html">arena_allocator.hpp</a>.</p>
 </div><a name="doc-constructors" id="doc-constructors"></a><h2 id="header-doc-constructors" class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a65717c94bc96c8d73653af5c1616c6a2" name="a65717c94bc96c8d73653af5c1616c6a2"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a65717c94bc96c8d73653af5c1616c6a2">&#9670;&#160;</a></span>ArenaAllocator() <span class="overload">[1/3]</span></h2>
@@ -159,6 +176,14 @@ requires (std::is_trivially_copyable_v&lt;<a class="el" href="namespaceds__pba.h
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Construct an arena with fixed capacity. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">n_bytes</td><td>Total storage in bytes. Must be greater than zero. </td></tr>
+  </table>
+  </dd>
+</dl>
 
 <p class="definition">Definition at line <a class="el" href="arena__allocator_8cpp_source.html#l00013">13</a> of file <a class="el" href="arena__allocator_8cpp_source.html">arena_allocator.cpp</a>.</p>
 
@@ -273,11 +298,21 @@ requires (std::is_trivially_copyable_v&lt;<a class="el" href="namespaceds__pba.h
 </table>
 </div><div class="memdoc">
 
+<p>Allocate an aligned byte range from the arena. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">n_bytes</td><td>Requested allocation size in bytes. </td></tr>
+    <tr><td class="paramname">align</td><td>Required alignment in bytes (power of two). </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Pointer to the allocated range, or nullptr on overflow. </dd></dl>
+
 <p class="definition">Definition at line <a class="el" href="arena__allocator_8cpp_source.html#l00049">49</a> of file <a class="el" href="arena__allocator_8cpp_source.html">arena_allocator.cpp</a>.</p>
 
 <p class="reference">References <a class="el" href="core__types_8hpp_source.html#l00087">ds_pba::is_power_of_two()</a>, and <a class="el" href="core__types_8hpp_source.html#l00057">ds_pba::round_up_aligned()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="arena__allocator_8cpp_source.html#l00073">allocate_array()</a>, <a class="el" href="#ae4b879ec2a566662334029e909889850">operator=()</a>, and <a class="el" href="arena__allocator_8hpp_source.html#l00043">push_back()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="arena__allocator_8cpp_source.html#l00073">allocate_array()</a>, <a class="el" href="#ae4b879ec2a566662334029e909889850">operator=()</a>, and <a class="el" href="arena__allocator_8hpp_source.html#l00094">push_back()</a>.</p>
 
 </div>
 </div>
@@ -313,6 +348,17 @@ requires (std::is_trivially_copyable_v&lt;<a class="el" href="namespaceds__pba.h
 </table>
 </div><div class="memdoc">
 
+<p>Allocate an aligned array payload from the arena. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">elem_size</td><td>Size of one element in bytes. </td></tr>
+    <tr><td class="paramname">n_elems</td><td>Number of elements to allocate. </td></tr>
+    <tr><td class="paramname">align</td><td>Required alignment in bytes (power of two). </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Pointer to the allocated range, or nullptr on overflow. </dd></dl>
+
 <p class="definition">Definition at line <a class="el" href="arena__allocator_8cpp_source.html#l00073">73</a> of file <a class="el" href="arena__allocator_8cpp_source.html">arena_allocator.cpp</a>.</p>
 
 <p class="reference">References <a class="el" href="arena__allocator_8cpp_source.html#l00049">allocate()</a>.</p>
@@ -347,11 +393,21 @@ template&lt;typename <a class="el" href="namespaceds__pba.html#aa6b8a9b6ae7a32fd
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="arena__allocator_8hpp_source.html#l00057">57</a> of file <a class="el" href="arena__allocator_8hpp_source.html">arena_allocator.hpp</a>.</p>
+<p>View the used prefix of arena memory as a span of T. </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">T</td><td>Element type of the returned view. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Span over used bytes reinterpreted as T elements. </dd></dl>
+<dl class="section warning"><dt>Warning</dt><dd>Caller must ensure <a class="el" href="#a8e977439905847980216a6f43e755ad7" title="Number of bytes consumed by allocations.">used()</a> is compatible with sizeof(T) and alignment of T. </dd></dl>
 
-<p class="reference">References <a class="el" href="arena__allocator_8hpp_source.html#l00057">as_span()</a>, and <a class="el" href="editor__input_8hpp_source.html#l00021">ds_pba::T</a>.</p>
+<p class="definition">Definition at line <a class="el" href="arena__allocator_8hpp_source.html#l00118">118</a> of file <a class="el" href="arena__allocator_8hpp_source.html">arena_allocator.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="arena__allocator_8hpp_source.html#l00057">as_span()</a>.</p>
+<p class="reference">References <a class="el" href="arena__allocator_8hpp_source.html#l00118">as_span()</a>, and <a class="el" href="editor__input_8hpp_source.html#l00021">ds_pba::T</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="arena__allocator_8hpp_source.html#l00118">as_span()</a>.</p>
 
 </div>
 </div>
@@ -377,6 +433,8 @@ template&lt;typename <a class="el" href="namespaceds__pba.html#aa6b8a9b6ae7a32fd
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Total byte capacity of the arena. </p>
 
 <p class="definition">Definition at line <a class="el" href="arena__allocator_8cpp_source.html#l00029">29</a> of file <a class="el" href="arena__allocator_8cpp_source.html">arena_allocator.cpp</a>.</p>
 
@@ -407,6 +465,9 @@ template&lt;typename <a class="el" href="namespaceds__pba.html#aa6b8a9b6ae7a32fd
 </table>
 </div><div class="memdoc">
 
+<p>Reset allocation state to the start of the buffer. </p>
+<dl class="section note"><dt>Note</dt><dd>This does not clear old bytes; it only rewinds the write offset. </dd></dl>
+
 <p class="definition">Definition at line <a class="el" href="arena__allocator_8cpp_source.html#l00044">44</a> of file <a class="el" href="arena__allocator_8cpp_source.html">arena_allocator.cpp</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="#ae4b879ec2a566662334029e909889850">operator=()</a>.</p>
@@ -435,6 +496,9 @@ template&lt;typename <a class="el" href="namespaceds__pba.html#aa6b8a9b6ae7a32fd
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Access the raw backing buffer. </p>
+<dl class="section return"><dt>Returns</dt><dd>Pointer to the start of the arena storage. </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="arena__allocator_8cpp_source.html#l00019">19</a> of file <a class="el" href="arena__allocator_8cpp_source.html">arena_allocator.cpp</a>.</p>
 
@@ -465,6 +529,9 @@ template&lt;typename <a class="el" href="namespaceds__pba.html#aa6b8a9b6ae7a32fd
 </table>
 </div><div class="memdoc">
 
+<p>Access the raw backing buffer. </p>
+<dl class="section return"><dt>Returns</dt><dd>Mutable pointer to the start of the arena storage. </dd></dl>
+
 <p class="definition">Definition at line <a class="el" href="arena__allocator_8cpp_source.html#l00024">24</a> of file <a class="el" href="arena__allocator_8cpp_source.html">arena_allocator.cpp</a>.</p>
 
 </div>
@@ -491,6 +558,9 @@ template&lt;typename <a class="el" href="namespaceds__pba.html#aa6b8a9b6ae7a32fd
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Check whether used bytes stay within arena capacity. </p>
+<dl class="section return"><dt>Returns</dt><dd>True when used bytes do not exceed capacity. </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="arena__allocator_8cpp_source.html#l00082">82</a> of file <a class="el" href="arena__allocator_8cpp_source.html">arena_allocator.cpp</a>.</p>
 
@@ -577,11 +647,26 @@ requires (std::is_trivially_copyable_v&lt;<a class="el" href="namespaceds__pba.h
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="arena__allocator_8hpp_source.html#l00043">43</a> of file <a class="el" href="arena__allocator_8hpp_source.html">arena_allocator.hpp</a>.</p>
+<p>Allocate storage for one value and copy it into the arena. </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">T</td><td>Element type. Must be trivially copyable and trivially destructible. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">value</td><td>Value copied into freshly allocated storage. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Pointer to copied value in arena memory, or nullptr on overflow. </dd></dl>
 
-<p class="reference">References <a class="el" href="arena__allocator_8cpp_source.html#l00049">allocate()</a>, <a class="el" href="arena__allocator_8hpp_source.html#l00043">push_back()</a>, and <a class="el" href="editor__input_8hpp_source.html#l00021">ds_pba::T</a>.</p>
+<p class="definition">Definition at line <a class="el" href="arena__allocator_8hpp_source.html#l00094">94</a> of file <a class="el" href="arena__allocator_8hpp_source.html">arena_allocator.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="arena__allocator_8hpp_source.html#l00043">push_back()</a>.</p>
+<p class="reference">References <a class="el" href="arena__allocator_8cpp_source.html#l00049">allocate()</a>, <a class="el" href="arena__allocator_8hpp_source.html#l00094">push_back()</a>, and <a class="el" href="editor__input_8hpp_source.html#l00021">ds_pba::T</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="arena__allocator_8hpp_source.html#l00094">push_back()</a>.</p>
 
 </div>
 </div>
@@ -607,6 +692,8 @@ requires (std::is_trivially_copyable_v&lt;<a class="el" href="namespaceds__pba.h
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Number of bytes still available for allocation. </p>
 
 <p class="definition">Definition at line <a class="el" href="arena__allocator_8cpp_source.html#l00039">39</a> of file <a class="el" href="arena__allocator_8cpp_source.html">arena_allocator.cpp</a>.</p>
 
@@ -636,6 +723,8 @@ requires (std::is_trivially_copyable_v&lt;<a class="el" href="namespaceds__pba.h
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Number of bytes consumed by allocations. </p>
 
 <p class="definition">Definition at line <a class="el" href="arena__allocator_8cpp_source.html#l00034">34</a> of file <a class="el" href="arena__allocator_8cpp_source.html">arena_allocator.cpp</a>.</p>
 

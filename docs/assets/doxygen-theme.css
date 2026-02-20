@@ -17,6 +17,10 @@
   --accent-2: #3d59a1;
   --border: #0f0f14;
   --border-soft: #2a2e45;
+  --scrollbar-track: #141721;
+  --scrollbar-thumb: #324268;
+  --scrollbar-thumb-hover: #415789;
+  --scrollbar-thumb-active: #4a66a3;
 }
 
 html,
@@ -33,6 +37,47 @@ body {
     "Liberation Mono",
     "Courier New",
     monospace;
+}
+
+html,
+body,
+#side-nav,
+#nav-tree,
+#nav-tree-contents,
+#doc-content,
+#page-nav,
+#page-nav-contents,
+.contents,
+div.fragment {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border: 2px solid var(--scrollbar-track);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: var(--scrollbar-thumb-active);
 }
 
 /* Hide transient uninitialized layout state until navtree initialization completes. */
@@ -289,6 +334,38 @@ table.doxtable th {
   border-color: var(--border-soft);
 }
 
+/* Enum "Enumerator" tables (fieldtable) */
+table.fieldtable {
+  background: rgba(22, 22, 30, 0.92);
+  border: 1px solid var(--border-soft);
+  box-shadow: none;
+}
+
+.fieldtable td,
+.fieldtable th {
+  border-color: var(--border-soft);
+}
+
+.fieldtable th {
+  background: rgba(36, 40, 59, 0.9);
+  color: #cddcff;
+}
+
+.fieldtable td.fieldtype,
+.fieldtable td.fieldname,
+.fieldtable td.fieldinit {
+  background: rgba(22, 22, 30, 0.92);
+  color: var(--text);
+  border-right: 1px solid var(--border-soft);
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.fieldtable td.fielddoc {
+  background: rgba(22, 22, 30, 0.9);
+  color: var(--text);
+  border-bottom: 1px solid var(--border-soft);
+}
+
 .directory table {
   width: 100%;
   border: 1px solid var(--border-soft);
@@ -403,6 +480,106 @@ dl.reflist dt {
 .memdoc,
 dl.reflist dd {
   background: rgba(22, 22, 30, 0.9);
+}
+
+/* Tone down Doxygen callout boxes to match Kickstart's muted contrast. */
+dl.warning,
+dl.attention,
+dl.important,
+dl.note,
+dl.remark,
+dl.todo,
+dl.bug,
+dl.deprecated,
+dl.invariant,
+dl.pre,
+dl.post,
+dl.test {
+  background: rgba(26, 29, 43, 0.9);
+  border: 1px solid var(--border-soft);
+  border-left-width: 4px;
+  color: var(--text);
+}
+
+dl.warning,
+dl.attention,
+dl.important {
+  border-left-color: #e0af68;
+}
+
+dl.warning dt,
+dl.attention dt,
+dl.important dt,
+dl.warning dt a,
+dl.attention dt a,
+dl.important dt a {
+  color: #e0af68 !important;
+}
+
+dl.note,
+dl.remark,
+dl.todo {
+  border-left-color: #7aa2f7;
+}
+
+dl.note dt,
+dl.remark dt,
+dl.todo dt,
+dl.note dt a,
+dl.remark dt a,
+dl.todo dt a {
+  color: #7aa2f7 !important;
+}
+
+dl.bug {
+  border-left-color: #f7768e;
+}
+
+dl.bug dt,
+dl.bug dt a {
+  color: #f7768e !important;
+}
+
+dl.deprecated {
+  border-left-color: #9aa5ce;
+}
+
+dl.deprecated dt,
+dl.deprecated dt a {
+  color: #9aa5ce !important;
+}
+
+dl.invariant,
+dl.pre,
+dl.post,
+dl.test {
+  border-left-color: #9ece6a;
+}
+
+dl.invariant dt,
+dl.pre dt,
+dl.post dt,
+dl.test dt,
+dl.invariant dt a,
+dl.pre dt a,
+dl.post dt a,
+dl.test dt a {
+  color: #9ece6a !important;
+}
+
+dl.note dd,
+dl.warning dd,
+dl.pre dd,
+dl.post dd,
+dl.remark dd,
+dl.attention dd,
+dl.important dd,
+dl.invariant dd,
+dl.bug dd,
+dl.deprecated dd,
+dl.todo dd,
+dl.test dd {
+  color: var(--text);
 }
 
 /* Right-side in-page outline panel */

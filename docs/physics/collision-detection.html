@@ -31,7 +31,7 @@
   <body class="math-pending">
     <main class="page">
       <div class="topnav">
-        <a href="../index.html">Docs Home</a> / Physics Background /
+        <a href="../index.html">Docs Home</a> / <a href="index.html">Physics Background</a> /
         Collision Detection
       </div>
 
@@ -43,11 +43,213 @@
       </section>
 
       <section class="section">
+        <h2>Intersection Checking Progression</h2>
+        <p>
+          The collision pipeline starts from a single unit cube, applies transforms, then scales up
+          to pair-wise checks with AABB broadphase and SAT narrowphase.
+        </p>
+
+        <div class="visual-grid visual-grid--one">
+          <figure class="figure-card">
+            <div class="figure-card__frame">
+              <img
+                src="../assets/images/physics/AxisAlignedStandardBox.png"
+                alt="Axis-aligned standard box with center and half-extents"
+                loading="lazy"
+              />
+            </div>
+            <figcaption>Axis-aligned standard box notation used for center and half-extents.</figcaption>
+          </figure>
+        </div>
+
+        <div class="visual-grid visual-grid--three">
+          <figure class="figure-card">
+            <div class="figure-card__frame">
+              <img
+                src="../../IntersectionChecks/CubeBase.png"
+                alt="Base local-space cube"
+                loading="lazy"
+              />
+            </div>
+            <figcaption>1. Base cube in local space.</figcaption>
+          </figure>
+          <figure class="figure-card">
+            <div class="figure-card__frame">
+              <img
+                src="../../IntersectionChecks/CubeScaled.png"
+                alt="Scaled cube"
+                loading="lazy"
+              />
+            </div>
+            <figcaption>2. Apply non-uniform scaling.</figcaption>
+          </figure>
+          <figure class="figure-card">
+            <div class="figure-card__frame">
+              <img
+                src="../../IntersectionChecks/CubeFinal.png"
+                alt="Scaled and rotated cube"
+                loading="lazy"
+              />
+            </div>
+            <figcaption>3. Rotate to obtain the final OBB pose.</figcaption>
+          </figure>
+        </div>
+
+        <div class="visual-grid visual-grid--one">
+          <figure class="figure-card">
+            <div class="figure-card__frame">
+              <img
+                src="../../IntersectionChecks/CubeFinalAABB.png"
+                alt="AABB around transformed cube"
+                loading="lazy"
+              />
+            </div>
+            <figcaption>4. Build a conservative world-space AABB around the transformed OBB.</figcaption>
+          </figure>
+        </div>
+
+        <div class="visual-grid visual-grid--two">
+          <figure class="figure-card">
+            <div class="figure-card__frame">
+              <img
+                src="../../IntersectionChecks/2Cube.png"
+                alt="Two transformed cubes"
+                loading="lazy"
+              />
+            </div>
+            <figcaption>5. Two transformed boxes become a potential pair.</figcaption>
+          </figure>
+          <figure class="figure-card">
+            <div class="figure-card__frame">
+              <img
+                src="../../IntersectionChecks/2CubeAABB.png"
+                alt="Two cubes with AABB overlays"
+                loading="lazy"
+              />
+            </div>
+            <figcaption>6. Per-body AABBs are used for broadphase overlap tests.</figcaption>
+          </figure>
+        </div>
+
+        <div class="visual-grid visual-grid--three">
+          <figure class="figure-card">
+            <div class="figure-card__frame">
+              <img
+                src="../../IntersectionChecks/2CubeAABBIntersection.png"
+                alt="AABB intersection volume"
+                loading="lazy"
+              />
+            </div>
+            <figcaption>7. AABB overlap volume marks a broadphase candidate.</figcaption>
+          </figure>
+          <figure class="figure-card">
+            <div class="figure-card__frame">
+              <img
+                src="../../IntersectionChecks/2CubeAABBIntersectionCloseup.png"
+                alt="AABB intersection closeup"
+                loading="lazy"
+              />
+            </div>
+            <figcaption>8. Close-up of overlap region used for candidate reasoning.</figcaption>
+          </figure>
+          <figure class="figure-card">
+            <div class="figure-card__frame">
+              <img
+                src="../../IntersectionChecks/2CubeAABBIntersectionCloseupSide.png"
+                alt="AABB intersection closeup side"
+                loading="lazy"
+              />
+            </div>
+            <figcaption>9. Side view to verify overlap depth.</figcaption>
+          </figure>
+        </div>
+
+        <div class="visual-grid visual-grid--one">
+          <figure class="figure-card">
+            <div class="figure-card__frame">
+              <img
+                src="../../IntersectionChecks/2CubeAABBIntersectionCloseupTopdown.png"
+                alt="AABB intersection top-down view"
+                loading="lazy"
+              />
+            </div>
+            <figcaption>10. Top-down view of the same AABB overlap volume.</figcaption>
+          </figure>
+        </div>
+
+        <div class="visual-grid visual-grid--one">
+          <figure class="figure-card">
+            <div class="figure-card__frame">
+              <img
+                src="../../IntersectionChecks/2CubeIntersectionSAT_Seperator.png"
+                alt="Separating axis example for SAT"
+                loading="lazy"
+              />
+            </div>
+            <figcaption>11. SAT finds a separating axis, so the pair is rejected.</figcaption>
+          </figure>
+        </div>
+
+        <p>
+          Images are shown inside framed panels to keep transparent PNG edges readable on all
+          backgrounds.
+        </p>
+
+        <h2>Worked Example: Two Cubes to AABB Overlap</h2>
+        <p>
+          Using the exact setup from this scene:
+          green cube at \(c_g=(0,0,0)\), rotation \((-35^\circ,40^\circ,0^\circ)\),
+          scale \((1,2,1)\);
+          blue cube at \(c_b=(1.5,2.4,2.5)\), rotation \((-60^\circ,180^\circ,-22.5^\circ)\),
+          scale \((1,2,1)\).
+          Here we interpret Blender-style unit scale as half-extents \(e=(1,2,1)\).
+        </p>
+        <p>
+          For each OBB, we compute world AABB half-extents exactly as in the collision code:
+        </p>
+        <div class="equation">
+          \[
+          h = |R|\,e,\quad
+          a_{\min} = c - h,\quad
+          a_{\max} = c + h
+          \]
+        </div>
+        <p>
+          with \(R = R_z(\gamma)R_y(\beta)R_x(\alpha)\), matching the Euler composition used in
+          the math notes.
+        </p>
+        <pre>Green (c = [0.000, 0.000, 0.000])
+  h      = [2.030, 2.212, 2.149]
+  a_min  = [-2.030, -2.212, -2.149]
+  a_max  = [ 2.030,  2.212,  2.149]
+
+Blue (c = [1.500, 2.400, 2.500])
+  h      = [1.638, 2.107, 2.232]
+  a_min  = [-0.138,  0.293,  0.268]
+  a_max  = [ 3.138,  4.507,  4.732]</pre>
+        <p>
+          The broadphase overlap interval is:
+        </p>
+        <div class="equation">
+          \[
+          i_{\min}=\max(a_{\min}^g,a_{\min}^b),\quad
+          i_{\max}=\min(a_{\max}^g,a_{\max}^b),\quad
+          \Delta = i_{\max} - i_{\min}
+          \]
+        </div>
+        <pre>i_min   = [-0.138, 0.293, 0.268]
+i_max   = [ 2.030, 2.212, 2.149]
+Delta   = [ 2.168, 1.919, 1.881]   // all > 0</pre>
+        <p>
+          Since all components of \(\Delta\) are positive, the AABBs overlap and this pair proceeds
+          to SAT narrowphase.
+        </p>
+
         <h2>Broadphase: Sweep and Prune on AABB</h2>
         <p>
           Each OBB is conservatively projected to a world AABB. Candidate pairs are generated by
-          sorting on min-\(x\), maintaining an active set, and rejecting pairs that do not overlap
-          on \(y\) and \(z\).
+          sorting by minimum x-bound \(a_{\min,x}\), maintaining an active set, and rejecting pairs
+          that do not overlap on \(y\) and \(z\).
         </p>
         <ul class="list">
           <li>Static-static pairs are skipped early.</li>
