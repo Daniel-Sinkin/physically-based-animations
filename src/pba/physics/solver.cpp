@@ -7,6 +7,7 @@
 #include "pba/core/constants.hpp"
 #include "pba/core/core_types.hpp"
 #include "pba/core/math_types.hpp"
+#include "pba/core/parallel_for.hpp"
 #include "pba/physics/physics_types.hpp"
 //
 #include <algorithm>
@@ -20,7 +21,121 @@ namespace ds_pba
 namespace
 {
 
-inline auto wake_up(RigidBody& b) noexcept -> bool
+struct BodyRef
+{
+    struct BoolRef
+    {
+        u8& value;
+
+        [[nodiscard]] explicit operator bool() const noexcept
+        {
+            return value != 0u;
+        }
+
+        auto operator=(bool rhs) noexcept -> BoolRef&
+        {
+            value = rhs ? 1u : 0u;
+            return *this;
+        }
+    };
+
+    EntityId& id;
+
+    Dir3& half_extents;
+
+    Pos3& position;
+    Dir3& velocity;
+    Dir3& force_accum;
+    f32& inv_mass;
+
+    Quaternion& orientation;
+    Dir3& angular_velocity;
+    Dir3& torque_accum;
+
+    glm::mat3& inv_inertia_body;
+    glm::mat3& inv_inertia_world;
+
+    BoolRef asleep;
+    int& sleep_frames;
+
+    BoolRef grabbed;
+
+    [[nodiscard]] auto is_static() const noexcept -> bool
+    {
+        return inv_mass == k_static_mass;
+    }
+};
+
+struct BodyConstRef
+{
+    const EntityId& id;
+
+    const Dir3& half_extents;
+
+    const Pos3& position;
+    const Dir3& velocity;
+    const Dir3& force_accum;
+    const f32& inv_mass;
+
+    const Quaternion& orientation;
+    const Dir3& angular_velocity;
+    const Dir3& torque_accum;
+
+    const glm::mat3& inv_inertia_body;
+    const glm::mat3& inv_inertia_world;
+
+    bool asleep;
+    const int& sleep_frames;
+
+    bool grabbed;
+
+    [[nodiscard]] auto is_static() const noexcept -> bool
+    {
+        return inv_mass == k_static_mass;
+    }
+};
+
+[[nodiscard]] auto body_ref(RigidBodySOA& bodies, usize idx) noexcept -> BodyRef
+{
+    return BodyRef{
+        .id = bodies.ids[idx],
+        .half_extents = bodies.half_extents[idx],
+        .position = bodies.positions[idx],
+        .velocity = bodies.velocities[idx],
+        .force_accum = bodies.force_accums[idx],
+        .inv_mass = bodies.inv_masses[idx],
+        .orientation = bodies.orientations[idx],
+        .angular_velocity = bodies.angular_velocities[idx],
+        .torque_accum = bodies.torque_accums[idx],
+        .inv_inertia_body = bodies.inv_inertia_bodies[idx],
+        .inv_inertia_world = bodies.inv_inertia_worlds[idx],
+        .asleep = BodyRef::BoolRef{bodies.asleep_flags[idx]},
+        .sleep_frames = bodies.sleep_frame_counts[idx],
+        .grabbed = BodyRef::BoolRef{bodies.grabbed_flags[idx]},
+    };
+}
+
+[[nodiscard]] auto body_cref(const RigidBodySOA& bodies, usize idx) noexcept -> BodyConstRef
+{
+    return BodyConstRef{
+        .id = bodies.ids[idx],
+        .half_extents = bodies.half_extents[idx],
+        .position = bodies.positions[idx],
+        .velocity = bodies.velocities[idx],
+        .force_accum = bodies.force_accums[idx],
+        .inv_mass = bodies.inv_masses[idx],
+        .orientation = bodies.orientations[idx],
+        .angular_velocity = bodies.angular_velocities[idx],
+        .torque_accum = bodies.torque_accums[idx],
+        .inv_inertia_body = bodies.inv_inertia_bodies[idx],
+        .inv_inertia_world = bodies.inv_inertia_worlds[idx],
+        .asleep = bodies.asleep_flags[idx] != 0u,
+        .sleep_frames = bodies.sleep_frame_counts[idx],
+        .grabbed = bodies.grabbed_flags[idx] != 0u,
+    };
+}
+
+inline auto wake_up(BodyRef b) noexcept -> bool
 {  // Returns true if we woke the model up
     if (!b.is_static() && b.asleep)
     {
@@ -46,9 +161,12 @@ auto inv_inertia_world_from_body(const Quaternion& q, const glm::mat3& inv_inert
 }
 
 auto apply_impulse_contact_friction(
-    RigidBody& a, RigidBody& b, Contact& contact, Dir3 r_a, Dir3 r_b, Dir3 n
+    RigidBodySOA& bodies, usize a_idx, usize b_idx, Contact& contact, Dir3 r_a, Dir3 r_b, Dir3 n
 ) noexcept -> void
 {
+    auto a = body_ref(bodies, a_idx);
+    auto b = body_ref(bodies, b_idx);
+
     {
         Expects(!a.is_static() || !b.is_static());
         Expects(!a.asleep || !b.asleep);
@@ -142,9 +260,12 @@ auto apply_impulse_contact_friction(
 }
 
 auto apply_impulse_contact(
-    RigidBody& a, RigidBody& b, Contact& contact, f32 restitution, f32 dt_s
+    RigidBodySOA& bodies, usize a_idx, usize b_idx, Contact& contact, f32 restitution, f32 dt_s
 ) noexcept -> void
 {
+    auto a = body_ref(bodies, a_idx);
+    auto b = body_ref(bodies, b_idx);
+
     {
         Expects(!a.is_static() || !b.is_static());
         Expects(!a.asleep || !b.asleep);
@@ -246,63 +367,75 @@ auto apply_impulse_contact(
             b.angular_velocity -= b.inv_inertia_world * tau_b_impulse;
         }
     }
-    apply_impulse_contact_friction(a, b, contact, r_a, r_b, n);
+    apply_impulse_contact_friction(bodies, a_idx, b_idx, contact, r_a, r_b, n);
 }
 
 }  // namespace
 
-auto update_inv_inertia_world(std::span<RigidBody> bodies) noexcept -> void
+auto update_inv_inertia_world(RigidBodySOA& bodies) noexcept -> void
 {
-    for (auto& b : bodies)
-    {
-        if (b.is_static())
+    parallel_for_index(
+        bodies.size(),
+        [&](usize i) -> void
         {
-            b.inv_inertia_world = glm::mat3(0.0f);
-            continue;
+            auto b = body_ref(bodies, i);
+            if (b.is_static())
+            {
+                b.inv_inertia_world = glm::mat3(0.0f);
+                return;
+            }
+            b.inv_inertia_world = inv_inertia_world_from_body(b.orientation, b.inv_inertia_body);
         }
-        b.inv_inertia_world = inv_inertia_world_from_body(b.orientation, b.inv_inertia_body);
-    }
+    );
 }
 
-auto integrate_forces(std::span<RigidBody> bodies, f32 dt_s) noexcept -> void
+auto integrate_forces(RigidBodySOA& bodies, f32 dt_s) noexcept -> void
 {
-    for (auto& b : bodies)
-    {
-        if (b.is_static() || b.asleep || b.grabbed)
+    parallel_for_index(
+        bodies.size(),
+        [&](usize i) -> void
         {
-            continue;
-        }
-        // (linear) velocity' = F / m
-        const auto a = b.force_accum * b.inv_mass;
-        b.velocity += a * dt_s;
+            auto b = body_ref(bodies, i);
+            if (b.is_static() || b.asleep || b.grabbed)
+            {
+                return;
+            }
+            // (linear) velocity' = F / m
+            const auto a = b.force_accum * b.inv_mass;
+            b.velocity += a * dt_s;
 
-        // omega' = angular velocity' = I^-1 * torque
-        const auto alpha = b.inv_inertia_world * b.torque_accum;
-        b.angular_velocity += alpha * dt_s;
-    }
+            // omega' = angular velocity' = I^-1 * torque
+            const auto alpha = b.inv_inertia_world * b.torque_accum;
+            b.angular_velocity += alpha * dt_s;
+        }
+    );
 }
 
-auto integrate_velocities(std::span<RigidBody> bodies, f32 dt_s) noexcept -> void
+auto integrate_velocities(RigidBodySOA& bodies, f32 dt_s) noexcept -> void
 {
-    for (auto& b : bodies)
-    {
-        if (b.is_static() || b.asleep || b.grabbed)
+    parallel_for_index(
+        bodies.size(),
+        [&](usize i) -> void
         {
-            continue;
+            auto b = body_ref(bodies, i);
+            if (b.is_static() || b.asleep || b.grabbed)
+            {
+                return;
+            }
+
+            b.position += b.velocity * dt_s;
+            b.orientation = integrate_orientation(b.orientation, b.angular_velocity, dt_s);
+
+            b.inv_inertia_world = inv_inertia_world_from_body(b.orientation, b.inv_inertia_body);
         }
-
-        b.position += b.velocity * dt_s;
-        b.orientation = integrate_orientation(b.orientation, b.angular_velocity, dt_s);
-
-        b.inv_inertia_world = inv_inertia_world_from_body(b.orientation, b.inv_inertia_body);
-    }
+    );
 }
 
-auto warm_start_contact(std::span<RigidBody> bodies, Contact& contact) noexcept -> void
+auto warm_start_contact(RigidBodySOA& bodies, Contact& contact) noexcept -> void
 {
 
-    auto& a = bodies[contact.a_idx];
-    auto& b = bodies[contact.b_idx];
+    auto a = body_ref(bodies, contact.a_idx);
+    auto b = body_ref(bodies, contact.b_idx);
 
     if (a.is_static() && b.is_static())
     {
@@ -354,28 +487,28 @@ auto warm_start_contact(std::span<RigidBody> bodies, Contact& contact) noexcept 
 }
 
 [[nodiscard]] inline auto
-get_velocity_at_world_point(const RigidBody& b, const Pos3& world_p) noexcept -> Dir3
+get_velocity_at_world_point(const BodyConstRef& b, const Pos3& world_p) noexcept -> Dir3
 {
     return b.velocity + glm::cross(b.angular_velocity, world_p - b.position);
 }
 
 [[nodiscard]] inline auto get_relative_velocity_at_world_point(
-    const RigidBody& a, const RigidBody& b, const Pos3& world_p
+    const BodyConstRef& a, const BodyConstRef& b, const Pos3& world_p
 ) noexcept -> Dir3
 {
     return get_velocity_at_world_point(a, world_p) - get_velocity_at_world_point(b, world_p);
 }
 
 auto solve_velocity_constraints(
-    std::span<RigidBody> bodies, ArenaAllocator& contact_arena, f32 dt_s
+    RigidBodySOA& bodies, ArenaAllocator& contact_arena, f32 dt_s
 ) noexcept -> void
 {
     for (auto& contact : contact_arena.as_span<Contact>())
     {
-        auto& a = bodies[contact.a_idx];
-        auto& b = bodies[contact.b_idx];
+        auto a = body_ref(bodies, contact.a_idx);
+        auto b = body_ref(bodies, contact.b_idx);
 
-        auto can_wake_up = [](RigidBody& rb) -> bool { return rb.is_static() || !rb.asleep; };
+        auto can_wake_up = [](const auto& rb) -> bool { return rb.is_static() || !rb.asleep; };
         if (can_wake_up(a) && can_wake_up(b))
         {
             continue;
@@ -387,10 +520,15 @@ auto solve_velocity_constraints(
             {
                 return true;
             }
-            const auto v_rel = get_relative_velocity_at_world_point(a, b, contact.p);
+            const auto v_rel = get_relative_velocity_at_world_point(
+                body_cref(bodies, contact.a_idx), body_cref(bodies, contact.b_idx), contact.p
+            );
             return glm::dot(contact.n, v_rel) < -0.05f;
         }();
-        if (should_wake && (wake_up(a) || wake_up(b)))
+        if (
+            should_wake
+            && (wake_up(body_ref(bodies, contact.a_idx)) || wake_up(body_ref(bodies, contact.b_idx)))
+        )
         {
             contact.lambda_n = 0.0f;
             contact.lambda_t = 0.0f;
@@ -402,8 +540,8 @@ auto solve_velocity_constraints(
     {
         for (auto& contact : contact_arena.as_span<Contact>())
         {
-            auto& a{bodies[contact.a_idx]};
-            auto& b{bodies[contact.b_idx]};
+            auto a = body_ref(bodies, contact.a_idx);
+            auto b = body_ref(bodies, contact.b_idx);
             if (a.is_static() && b.is_static())
             {
                 continue;
@@ -419,20 +557,21 @@ auto solve_velocity_constraints(
             {
                 continue;
             }
-            apply_impulse_contact(a, b, contact, k_restitution, dt_s);
+            apply_impulse_contact(
+                bodies, contact.a_idx, contact.b_idx, contact, k_restitution, dt_s
+            );
         }
     }
 }
 
-auto solve_position_constraints(std::span<RigidBody> bodies, ArenaAllocator& contact_arena) noexcept
-    -> void
+auto solve_position_constraints(RigidBodySOA& bodies, ArenaAllocator& contact_arena) noexcept -> void
 {
     for (auto i = 0; i < k_position_iterations; ++i)
     {
         for (auto& contact : contact_arena.as_span<Contact>())
         {
-            auto& a = bodies[contact.a_idx];
-            auto& b = bodies[contact.b_idx];
+            auto a = body_ref(bodies, contact.a_idx);
+            auto b = body_ref(bodies, contact.b_idx);
 
             if ((a.is_static() && b.is_static()) || contact.penetration <= k_pen_tolerance)
             {
@@ -463,57 +602,65 @@ auto solve_position_constraints(std::span<RigidBody> bodies, ArenaAllocator& con
     }
 }
 
-auto apply_sleep_and_damping(std::span<RigidBody> bodies, f32 dt_s) noexcept -> void
+auto apply_sleep_and_damping(RigidBodySOA& bodies, f32 dt_s) noexcept -> void
 {
-    for (auto& b : bodies)
-    {
-        if (b.grabbed)
+    parallel_for_index(
+        bodies.size(),
+        [&](usize i) -> void
         {
-            b.velocity = Dir3{};
-            b.angular_velocity = Dir3{};
-            continue;
-        }
-        if (b.is_static() || b.asleep)
-        {
-            continue;
-        }
-
-        const auto v2 = glm::dot(b.velocity, b.velocity);
-        const auto w2 = glm::dot(b.angular_velocity, b.angular_velocity);
-
-        auto v_lim = k_linear_sleep_speed_threshold;
-        auto w_lim = k_angular_sleep_speed_threshold;
-        const auto velo_slow = v2 < v_lim * v_lim;
-        const auto angular_velo_slow = w2 < w_lim * w_lim;
-
-        if (velo_slow && angular_velo_slow)
-        {
-            ++b.sleep_frames;
-            if (b.sleep_frames > 60)
+            auto b = body_ref(bodies, i);
+            if (b.grabbed)
             {
-                b.asleep = true;
                 b.velocity = Dir3{};
                 b.angular_velocity = Dir3{};
-                b.force_accum = Dir3{};
-                b.torque_accum = Dir3{};
+                return;
             }
+            if (b.is_static() || b.asleep)
+            {
+                return;
+            }
+
+            const auto v2 = glm::dot(b.velocity, b.velocity);
+            const auto w2 = glm::dot(b.angular_velocity, b.angular_velocity);
+
+            auto v_lim = k_linear_sleep_speed_threshold;
+            auto w_lim = k_angular_sleep_speed_threshold;
+            const auto velo_slow = v2 < v_lim * v_lim;
+            const auto angular_velo_slow = w2 < w_lim * w_lim;
+
+            if (velo_slow && angular_velo_slow)
+            {
+                ++b.sleep_frames;
+                if (b.sleep_frames > 60)
+                {
+                    b.asleep = true;
+                    b.velocity = Dir3{};
+                    b.angular_velocity = Dir3{};
+                    b.force_accum = Dir3{};
+                    b.torque_accum = Dir3{};
+                }
+            }
+            else
+            {
+                b.sleep_frames = 0;
+            }
+            b.velocity *= std::exp(-k_linear_damping * dt_s);
+            b.angular_velocity *= std::exp(-k_angular_damping * dt_s);
         }
-        else
-        {
-            b.sleep_frames = 0;
-        }
-        b.velocity *= std::exp(-k_linear_damping * dt_s);
-        b.angular_velocity *= std::exp(-k_angular_damping * dt_s);
-    }
+    );
 }
 
-auto clear_accumulators(std::span<RigidBody> bodies) noexcept -> void
+auto clear_accumulators(RigidBodySOA& bodies) noexcept -> void
 {
-    for (auto& b : bodies)
-    {
-        b.force_accum = Dir3{};
-        b.torque_accum = Dir3{};
-    }
+    parallel_for_index(
+        bodies.size(),
+        [&](usize i) -> void
+        {
+            auto b = body_ref(bodies, i);
+            b.force_accum = Dir3{};
+            b.torque_accum = Dir3{};
+        }
+    );
 }
 
 }  // namespace ds_pba
