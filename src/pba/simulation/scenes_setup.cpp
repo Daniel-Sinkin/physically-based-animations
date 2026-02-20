@@ -30,7 +30,7 @@ namespace
     std::string_view name = {}
 ) noexcept -> EntityId
 {
-    Entity& ent = sim.spawn_cube(pos, half_extents, inv_mass, vel, ori, ang_vel, color, name);
+    const Entity& ent = sim.spawn_cube(pos, half_extents, inv_mass, vel, ori, ang_vel, color, name);
     return ent.id;
 }
 
@@ -234,23 +234,30 @@ auto setup_scene_stable_pyramid_2d_3d(SimulationContext& sim) noexcept -> void
 {
     sim.physics.simple_forces.push_back(SimpleForce{GravityForce{.accel = k_gravity}});
 
+    // Keep original layout but shift the entire scene so the ground top is exactly z = 0.
+    constexpr f32 k_old_ground_center_z = -4.0f;
+    constexpr f32 k_ground_half_z = 0.6f;
+    constexpr f32 k_ground_top_target_z = 0.0f;
+    constexpr f32 k_new_ground_center_z = k_ground_top_target_z - k_ground_half_z;  // -0.6
+    constexpr f32 k_scene_z_shift = k_new_ground_center_z - k_old_ground_center_z;   // +3.4
+
     spawn_static_ground(
         sim,
-        Pos3{0.0f, 0.0f, -4.0f},
-        Dir3{55.0f, 55.0f, 0.6f},
+        Pos3{0.0f, 0.0f, k_new_ground_center_z},
+        Dir3{55.0f, 55.0f, k_ground_half_z},
         Color3{0.09f, 0.09f, 0.09f},
         "Ground"
     );
 
     spawn_static_box(
         sim,
-        Pos3{0.0f, 0.0f, 0.5f},
+        Pos3{0.0f, 0.0f, 0.5f + k_scene_z_shift},
         Dir3{0.45f, 20.0f, 4.5f},
         Color3{0.14f, 0.14f, 0.14f},
         "Center Divider"
     );
 
-    constexpr f32 base_z = -2.9f;
+    constexpr f32 base_z = -2.9f + k_scene_z_shift;
     constexpr f32 step = 1.02f;
 
     spawn_pyramid_2d(
