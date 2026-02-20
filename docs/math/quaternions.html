@@ -22,6 +22,8 @@
         Quaternions and Rotation Algebra
       </div>
 
+      <p class="footer">Code can be found here: <a href="https://github.com/Daniel-Sinkin/physically-based-animations">GitHub repository</a>.</p>
+
       <section class="hero">
         <h1>Quaternions and Rotation Algebra</h1>
         <p>
@@ -154,8 +156,7 @@
           </li>
         </ul>
         <p>
-          See <a href="../physics/rigid-body-dynamics.html">Physics: Rigid Body Dynamics</a> for
-          the step-level equations that use this representation.
+          This representation is used directly in the runtime orientation update path.
         </p>
         <pre><code>// quaternion orientation update shape
 Quat dq = 0.5f * omega_quat(angular_velocity) * q;
