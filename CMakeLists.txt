@@ -290,10 +290,7 @@ configure_pba_target(headless)
 find_package(Doxygen QUIET)
 if(DOXYGEN_FOUND)
   add_custom_target(docs_technical
-    COMMAND ${CMAKE_COMMAND} -E chdir
-            ${CMAKE_CURRENT_SOURCE_DIR}
-            ${DOXYGEN_EXECUTABLE}
-            ${CMAKE_CURRENT_SOURCE_DIR}/docs/Doxyfile
+    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/generate_technical_docs.sh
     COMMENT "Generating technical API docs with Doxygen"
     VERBATIM
   )

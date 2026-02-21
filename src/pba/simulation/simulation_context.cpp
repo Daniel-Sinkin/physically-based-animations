@@ -9,7 +9,7 @@ namespace ds_pba
 namespace
 {
 
-[[nodiscard]] auto inv_inertia_body_box(f32 inv_mass, const Dir3& half_extents) noexcept
+[[nodiscard]] auto inertia_body_box(f32 inv_mass, const Dir3& half_extents) noexcept
     -> glm::mat3
 {
     if (inv_mass <= k_static_mass)
@@ -32,11 +32,27 @@ namespace
     const auto Iyy = (m / 12.0f) * (x * x + z * z);
     const auto Izz = (m / 12.0f) * (x * x + y * y);
 
+    glm::mat3 I{0.0f};
+    I[0][0] = Ixx;
+    I[1][1] = Iyy;
+    I[2][2] = Izz;
+    return I;
+}
+
+[[nodiscard]] auto inv_inertia_body_from_body(const glm::mat3& inertia_body) noexcept -> glm::mat3
+{
     glm::mat3 invI{0.0f};
-    invI[0][0] = (Ixx > 0.0f) ? (1.0f / Ixx) : 0.0f;
-    invI[1][1] = (Iyy > 0.0f) ? (1.0f / Iyy) : 0.0f;
-    invI[2][2] = (Izz > 0.0f) ? (1.0f / Izz) : 0.0f;
+    invI[0][0] = (inertia_body[0][0] > 0.0f) ? (1.0f / inertia_body[0][0]) : 0.0f;
+    invI[1][1] = (inertia_body[1][1] > 0.0f) ? (1.0f / inertia_body[1][1]) : 0.0f;
+    invI[2][2] = (inertia_body[2][2] > 0.0f) ? (1.0f / inertia_body[2][2]) : 0.0f;
     return invI;
+}
+
+[[nodiscard]] auto inertia_world_from_body(const Quaternion& q, const glm::mat3& inertia_body) noexcept
+    -> glm::mat3
+{
+    const glm::mat3 R{glm::mat3_cast(q)};
+    return R * inertia_body * glm::transpose(R);
 }
 
 [[nodiscard]] auto
@@ -49,7 +65,9 @@ inv_inertia_world_from_body(const Quaternion& q, const glm::mat3& inv_inertia_bo
 
 auto init_box_inertia(RigidBody& b) noexcept -> void
 {
-    b.inv_inertia_body = inv_inertia_body_box(b.inv_mass, b.half_extents);
+    b.inertia_body = inertia_body_box(b.inv_mass, b.half_extents);
+    b.inv_inertia_body = inv_inertia_body_from_body(b.inertia_body);
+    b.inertia_world = inertia_world_from_body(b.orientation, b.inertia_body);
     b.inv_inertia_world = inv_inertia_world_from_body(b.orientation, b.inv_inertia_body);
 }
 

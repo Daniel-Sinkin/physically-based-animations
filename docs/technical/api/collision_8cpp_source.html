@@ -174,7 +174,7 @@ $(function() {
 <div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span> </div>
 <div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>    [[nodiscard]] <span class="keyword">auto</span> is_static() const noexcept -&gt; <span class="keywordtype">bool</span></div>
 <div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>    {</div>
-<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>        <span class="keywordflow">return</span> inv_mass == <a class="code hl_variable" href="namespaceds__pba.html#ab003c07d139eef8c373fbb1daedfc225">k_static_mass</a>;</div>
+<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>        <span class="keywordflow">return</span> inv_mass &lt;= <a class="code hl_variable" href="namespaceds__pba.html#ab003c07d139eef8c373fbb1daedfc225">k_static_mass</a>;</div>
 <div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>    }</div>
 <div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>};</div>
 <div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span> </div>
@@ -700,7 +700,7 @@ $(function() {
 <div class="ttc" id="acore_2constants_8hpp_html"><div class="ttname"><a href="core_2constants_8hpp.html">constants.hpp</a></div></div>
 <div class="ttc" id="acore__types_8hpp_html"><div class="ttname"><a href="core__types_8hpp.html">core_types.hpp</a></div></div>
 <div class="ttc" id="amath__types_8hpp_html"><div class="ttname"><a href="math__types_8hpp.html">math_types.hpp</a></div></div>
-<div class="ttc" id="anamespaceds__pba_html"><div class="ttname"><a href="namespaceds__pba.html">ds_pba</a></div><div class="ttdef"><b>Definition</b> <a href="gltf__mesh_8cpp_source.html#l00021">gltf_mesh.cpp:22</a></div></div>
+<div class="ttc" id="anamespaceds__pba_html"><div class="ttname"><a href="namespaceds__pba.html">ds_pba</a></div><div class="ttdef"><b>Definition</b> <a href="gltf__mesh_8cpp_source.html#l00019">gltf_mesh.cpp:20</a></div></div>
 <div class="ttc" id="anamespaceds__pba_html_a13b91c08badf3c10896e3a3ff5c38ce5"><div class="ttname"><a href="namespaceds__pba.html#a13b91c08badf3c10896e3a3ff5c38ce5">ds_pba::k_invalid_id</a></div><div class="ttdeci">constexpr EntityId k_invalid_id</div><div class="ttdef"><b>Definition</b> <a href="entity__id_8hpp_source.html#l00009">entity_id.hpp:9</a></div></div>
 <div class="ttc" id="anamespaceds__pba_html_a2e8203d0b2a90d2e6878210fb7ff00da"><div class="ttname"><a href="namespaceds__pba.html#a2e8203d0b2a90d2e6878210fb7ff00da">ds_pba::Dir3</a></div><div class="ttdeci">glm::vec3 Dir3</div><div class="ttdef"><b>Definition</b> <a href="math__types_8hpp_source.html#l00014">math_types.hpp:14</a></div></div>
 <div class="ttc" id="anamespaceds__pba_html_a4998fa289e08376ddcd18ab3f8daa9dc"><div class="ttname"><a href="namespaceds__pba.html#a4998fa289e08376ddcd18ab3f8daa9dc">ds_pba::f32</a></div><div class="ttdeci">float f32</div><div class="ttdef"><b>Definition</b> <a href="core__types_8hpp_source.html#l00034">core_types.hpp:34</a></div></div>
@@ -734,9 +734,9 @@ $(function() {
 <div class="ttc" id="astructds__pba_1_1_collision_scratch_html_afea8884c7bbd17fb21ec0226233501d7"><div class="ttname"><a href="structds__pba_1_1_collision_scratch.html#afea8884c7bbd17fb21ec0226233501d7">ds_pba::CollisionScratch::aabb_max_z</a></div><div class="ttdeci">std::vector&lt; f32 &gt; aabb_max_z</div><div class="ttdef"><b>Definition</b> <a href="collision_8hpp_source.html#l00025">collision.hpp:25</a></div></div>
 <div class="ttc" id="astructds__pba_1_1_collision_scratch_html_aff56baaa3cdf9b43379bbc80b4f4a37d"><div class="ttname"><a href="structds__pba_1_1_collision_scratch.html#aff56baaa3cdf9b43379bbc80b4f4a37d">ds_pba::CollisionScratch::axes</a></div><div class="ttdeci">std::vector&lt; std::array&lt; Dir3, 3 &gt; &gt; axes</div><div class="ttdef"><b>Definition</b> <a href="collision_8hpp_source.html#l00028">collision.hpp:28</a></div></div>
 <div class="ttc" id="astructds__pba_1_1_collision_stats_html"><div class="ttname"><a href="structds__pba_1_1_collision_stats.html">ds_pba::CollisionStats</a></div><div class="ttdef"><b>Definition</b> <a href="collision_8hpp_source.html#l00037">collision.hpp:38</a></div></div>
-<div class="ttc" id="astructds__pba_1_1_contact_html"><div class="ttname"><a href="structds__pba_1_1_contact.html">ds_pba::Contact</a></div><div class="ttdef"><b>Definition</b> <a href="physics__types_8hpp_source.html#l00276">physics_types.hpp:277</a></div></div>
-<div class="ttc" id="astructds__pba_1_1_contact_key_html"><div class="ttname"><a href="structds__pba_1_1_contact_key.html">ds_pba::ContactKey</a></div><div class="ttdef"><b>Definition</b> <a href="physics__types_8hpp_source.html#l00404">physics_types.hpp:405</a></div></div>
-<div class="ttc" id="astructds__pba_1_1_rigid_body_s_o_a_html"><div class="ttname"><a href="structds__pba_1_1_rigid_body_s_o_a.html">ds_pba::RigidBodySOA</a></div><div class="ttdef"><b>Definition</b> <a href="physics__types_8hpp_source.html#l00057">physics_types.hpp:58</a></div></div>
+<div class="ttc" id="astructds__pba_1_1_contact_html"><div class="ttname"><a href="structds__pba_1_1_contact.html">ds_pba::Contact</a></div><div class="ttdef"><b>Definition</b> <a href="physics__types_8hpp_source.html#l00297">physics_types.hpp:298</a></div></div>
+<div class="ttc" id="astructds__pba_1_1_contact_key_html"><div class="ttname"><a href="structds__pba_1_1_contact_key.html">ds_pba::ContactKey</a></div><div class="ttdef"><b>Definition</b> <a href="physics__types_8hpp_source.html#l00425">physics_types.hpp:426</a></div></div>
+<div class="ttc" id="astructds__pba_1_1_rigid_body_s_o_a_html"><div class="ttname"><a href="structds__pba_1_1_rigid_body_s_o_a.html">ds_pba::RigidBodySOA</a></div><div class="ttdef"><b>Definition</b> <a href="physics__types_8hpp_source.html#l00064">physics_types.hpp:65</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 </div><!-- container -->

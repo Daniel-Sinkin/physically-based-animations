@@ -7,6 +7,8 @@ var structds__pba_1_1_physics_context_1_1_body_const_ref =
     [ "grabbed", "structds__pba_1_1_physics_context_1_1_body_const_ref.html#a8f7c0565f9224e08f296f04fc66cde61", null ],
     [ "half_extents", "structds__pba_1_1_physics_context_1_1_body_const_ref.html#a3929c784e1e86dd74239806ae33dce03", null ],
     [ "id", "structds__pba_1_1_physics_context_1_1_body_const_ref.html#ab9ba7432f4663cc8b00f368e681fa9a0", null ],
+    [ "inertia_body", "structds__pba_1_1_physics_context_1_1_body_const_ref.html#a02d856ba41ff746f317d95bf186bb6d3", null ],
+    [ "inertia_world", "structds__pba_1_1_physics_context_1_1_body_const_ref.html#a6777dd068b26096dc457ee64a9f1e226", null ],
     [ "inv_inertia_body", "structds__pba_1_1_physics_context_1_1_body_const_ref.html#a9fe3895a34745053a0faddc6f9d9cb56", null ],
     [ "inv_inertia_world", "structds__pba_1_1_physics_context_1_1_body_const_ref.html#a9ffdbd7d376a69c708e6c4c22df6126d", null ],
     [ "inv_mass", "structds__pba_1_1_physics_context_1_1_body_const_ref.html#a210980f92340e5425702bce9233836ae", null ],

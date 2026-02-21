@@ -82,6 +82,8 @@ struct PhysicsContext
         Quaternion& orientation;
         Dir3& angular_velocity;
         Dir3& torque_accum;
+        glm::mat3& inertia_body;
+        glm::mat3& inertia_world;
         glm::mat3& inv_inertia_body;
         glm::mat3& inv_inertia_world;
         BoolRef asleep;
@@ -105,6 +107,8 @@ struct PhysicsContext
         const Quaternion& orientation;
         const Dir3& angular_velocity;
         const Dir3& torque_accum;
+        const glm::mat3& inertia_body;
+        const glm::mat3& inertia_world;
         const glm::mat3& inv_inertia_body;
         const glm::mat3& inv_inertia_world;
         bool asleep;

@@ -40,6 +40,8 @@ struct RigidBody
     Dir3 angular_velocity{};
     Dir3 torque_accum{};
 
+    glm::mat3 inertia_body{0.0f};
+    glm::mat3 inertia_world{0.0f};
     glm::mat3 inv_inertia_body{0.0f};
     glm::mat3 inv_inertia_world{0.0f};
 
@@ -77,6 +79,8 @@ struct RigidBodySOA
         orientations.reserve(count);
         angular_velocities.reserve(count);
         torque_accums.reserve(count);
+        inertia_bodies.reserve(count);
+        inertia_worlds.reserve(count);
         inv_inertia_bodies.reserve(count);
         inv_inertia_worlds.reserve(count);
         asleep_flags.reserve(count);
@@ -95,6 +99,8 @@ struct RigidBodySOA
         orientations.clear();
         angular_velocities.clear();
         torque_accums.clear();
+        inertia_bodies.clear();
+        inertia_worlds.clear();
         inv_inertia_bodies.clear();
         inv_inertia_worlds.clear();
         asleep_flags.clear();
@@ -113,6 +119,8 @@ struct RigidBodySOA
         orientations.resize(count);
         angular_velocities.resize(count);
         torque_accums.resize(count);
+        inertia_bodies.resize(count);
+        inertia_worlds.resize(count);
         inv_inertia_bodies.resize(count);
         inv_inertia_worlds.resize(count);
         asleep_flags.resize(count);
@@ -166,6 +174,8 @@ struct RigidBodySOA
         orientations.push_back(b.orientation);
         angular_velocities.push_back(b.angular_velocity);
         torque_accums.push_back(b.torque_accum);
+        inertia_bodies.push_back(b.inertia_body);
+        inertia_worlds.push_back(b.inertia_world);
         inv_inertia_bodies.push_back(b.inv_inertia_body);
         inv_inertia_worlds.push_back(b.inv_inertia_world);
         asleep_flags.push_back(b.asleep ? 1u : 0u);
@@ -188,6 +198,8 @@ struct RigidBodySOA
             orientations[i] = b.orientation;
             angular_velocities[i] = b.angular_velocity;
             torque_accums[i] = b.torque_accum;
+            inertia_bodies[i] = b.inertia_body;
+            inertia_worlds[i] = b.inertia_world;
             inv_inertia_bodies[i] = b.inv_inertia_body;
             inv_inertia_worlds[i] = b.inv_inertia_world;
             asleep_flags[i] = b.asleep ? 1u : 0u;
@@ -210,6 +222,8 @@ struct RigidBodySOA
             dst[i].orientation = orientations[i];
             dst[i].angular_velocity = angular_velocities[i];
             dst[i].torque_accum = torque_accums[i];
+            dst[i].inertia_body = inertia_bodies[i];
+            dst[i].inertia_world = inertia_worlds[i];
             dst[i].inv_inertia_body = inv_inertia_bodies[i];
             dst[i].inv_inertia_world = inv_inertia_worlds[i];
             dst[i].asleep = asleep_flags[i] != 0u;
@@ -231,6 +245,8 @@ struct RigidBodySOA
     std::vector<Dir3> angular_velocities{};
     std::vector<Dir3> torque_accums{};
 
+    std::vector<glm::mat3> inertia_bodies{};
+    std::vector<glm::mat3> inertia_worlds{};
     std::vector<glm::mat3> inv_inertia_bodies{};
     std::vector<glm::mat3> inv_inertia_worlds{};
 

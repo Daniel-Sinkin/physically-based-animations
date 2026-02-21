@@ -16,8 +16,6 @@
 #include <glm/gtc/quaternion.hpp>
 #include <tiny_gltf.h>
 
-// TODO: Rewrite this, this whole file is a mess
-
 namespace ds_pba
 {
 namespace
@@ -450,40 +448,74 @@ static auto load_tinygltf_model(const std::string& path) -> std::optional<tinygl
     return model;
 }
 
-}  // namespace
-
-auto load_gltf_mesh(const std::string& path, const Transform& preprocess)
-    -> std::optional<MeshDataPN>
+struct ParsedPrimitive
 {
-    const ScopeTimer timer{path};
+    tinygltf::Model model{};
+    usize mesh_index{0zu};
+    usize primitive_index{0zu};
 
+    [[nodiscard]] auto primitive() const noexcept -> const tinygltf::Primitive&
+    {
+        return model.meshes[mesh_index].primitives[primitive_index];
+    }
+};
+
+struct PrimitiveViews
+{
+    AccessorView positions{};
+    bool has_normals{false};
+    AccessorView normals{};
+    bool has_uv{false};
+    Vec2AccessorView uv{};
+    std::vector<u32> indices{};
+};
+
+[[nodiscard]] static auto parse_first_triangle_primitive(const std::string& path)
+    -> std::optional<ParsedPrimitive>
+{
     auto model_opt = load_tinygltf_model(path);
     if (!model_opt)
     {
         return std::nullopt;
     }
-    const tinygltf::Model& model = *model_opt;
 
-    if (model.meshes.empty())
+    ParsedPrimitive parsed{
+        .model = std::move(*model_opt),
+        .mesh_index = 0zu,
+        .primitive_index = 0zu,
+    };
+
+    if (parsed.model.meshes.empty())
     {
         std::println(stderr, "glTF '{}' has no meshes", path);
         return std::nullopt;
     }
 
-    const tinygltf::Mesh& mesh0{model.meshes[0]};
+    const tinygltf::Mesh& mesh0{parsed.model.meshes[parsed.mesh_index]};
     if (mesh0.primitives.empty())
     {
         std::println(stderr, "glTF '{}' first mesh has no primitives", path);
         return std::nullopt;
     }
 
-    const tinygltf::Primitive& prim{mesh0.primitives[0]};
-
+    const tinygltf::Primitive& prim{mesh0.primitives[parsed.primitive_index]};
     if (prim.mode != -1 && prim.mode != TINYGLTF_MODE_TRIANGLES)
     {
         std::println(stderr, "glTF '{}' primitive mode unsupported: {}", path, prim.mode);
         return std::nullopt;
     }
+
+    return parsed;
+}
+
+[[nodiscard]] static auto validate_primitive_views(
+    const tinygltf::Model& model,
+    const tinygltf::Primitive& prim,
+    std::string_view path,
+    bool require_uv
+) -> std::optional<PrimitiveViews>
+{
+    PrimitiveViews views{};
 
     const auto it_pos = prim.attributes.find("POSITION");
     if (it_pos == prim.attributes.end())
@@ -505,15 +537,8 @@ auto load_gltf_mesh(const std::string& path, const Transform& preprocess)
         std::println(stderr, "glTF '{}' failed to read POSITION accessor", path);
         return std::nullopt;
     }
-    const AccessorView pos_view{*pos_view_opt};
+    views.positions = *pos_view_opt;
 
-    const std::byte* pos_base{pos_view.base};
-    const auto pos_stride = pos_view.stride;
-    const auto vertex_count = pos_view.count;
-
-    auto has_normals = false;
-    const std::byte* nrm_base{};
-    usize nrm_stride{0zu};
     if (auto it_n = prim.attributes.find("NORMAL"); it_n != prim.attributes.end())
     {
         const int nrm_accessor_index{it_n->second};
@@ -522,14 +547,51 @@ auto load_gltf_mesh(const std::string& path, const Transform& preprocess)
             if (auto nrm_view_opt = get_vec3_f32_view(model, nrm_accessor_index))
             {
                 const AccessorView nrm_view{*nrm_view_opt};
-                if (nrm_view.count == vertex_count)
+                if (nrm_view.count == views.positions.count)
                 {
-                    has_normals = true;
-                    nrm_base = nrm_view.base;
-                    nrm_stride = nrm_view.stride;
+                    views.has_normals = true;
+                    views.normals = nrm_view;
                 }
             }
         }
+    }
+
+    if (auto it_uv = prim.attributes.find("TEXCOORD_0"); it_uv != prim.attributes.end())
+    {
+        const int uv_accessor_index{it_uv->second};
+        if (uv_accessor_index < 0)
+        {
+            std::println(stderr, "glTF '{}' TEXCOORD_0 accessor must be non-negative", path);
+            return std::nullopt;
+        }
+
+        auto uv_view_opt = get_vec2_view(model, uv_accessor_index);
+        if (!uv_view_opt)
+        {
+            std::println(stderr, "glTF '{}' failed to read TEXCOORD_0 accessor", path);
+            return std::nullopt;
+        }
+
+        const Vec2AccessorView uv_view{*uv_view_opt};
+        if (uv_view.count != views.positions.count)
+        {
+            std::println(
+                stderr,
+                "glTF '{}' TEXCOORD_0 count mismatch (uv_count={}, pos_count={})",
+                path,
+                uv_view.count,
+                views.positions.count
+            );
+            return std::nullopt;
+        }
+
+        views.has_uv = true;
+        views.uv = uv_view;
+    }
+    else if (require_uv)
+    {
+        std::println(stderr, "glTF '{}' missing TEXCOORD_0 attribute", path);
+        return std::nullopt;
     }
 
     auto idx_opt = read_indices_u32(model, prim.indices);
@@ -538,117 +600,159 @@ auto load_gltf_mesh(const std::string& path, const Transform& preprocess)
         std::println(stderr, "glTF '{}' failed to read indices", path);
         return std::nullopt;
     }
-    const std::vector<u32>& idx{*idx_opt};
+    views.indices = std::move(*idx_opt);
 
+    return views;
+}
+
+template <class EmitVertexFn>
+static auto convert_primitive_to_triangles(
+    const PrimitiveViews& views,
+    const Transform& preprocess,
+    std::string_view path,
+    EmitVertexFn&& emit_vertex
+) -> bool
+{
     const auto model_matrix = preprocess.model_matrix();
     const auto normal_matrix = model_matrix.normal_matrix();
 
-    auto normalized = [&](const glm::vec3& n) -> glm::vec3
-    { return safe_normalize(normal_matrix.m * n); };
-
     auto read_pos = [&](u32 i) -> Pos3
     {
-        const glm::vec3 p{read_vec3_f32_strided(pos_base, pos_stride, static_cast<usize>(i))};
+        const glm::vec3 p{
+            read_vec3_f32_strided(views.positions.base, views.positions.stride, static_cast<usize>(i))
+        };
         return model_matrix.transform_position(p);
     };
 
-    auto read_nrm = [&](u32 i) -> glm::vec3
+    auto read_nrm = [&](u32 i) -> Dir3
     {
-        Expects(has_normals);
+        Expects(views.has_normals);
         const glm::vec3 n{
-            safe_normalize(read_vec3_f32_strided(nrm_base, nrm_stride, static_cast<usize>(i)))
+            safe_normalize(
+                read_vec3_f32_strided(views.normals.base, views.normals.stride, static_cast<usize>(i))
+            )
         };
-        return normalized(n);
+        return safe_normalize(normal_matrix.m * n);
     };
 
-    std::vector<MeshV_PN> verts{};
-    if (!idx.empty())
+    const auto vertex_count = views.positions.count;
+    if (!views.indices.empty())
     {
-        if ((idx.size() % 3zu) != 0zu)
+        if ((views.indices.size() % 3zu) != 0zu)
         {
             std::println(
-                stderr, "glTF '{}' indices are not triangles (count={})", path, idx.size()
+                stderr, "glTF '{}' indices are not triangles (count={})", path, views.indices.size()
             );
-            return std::nullopt;
+            return false;
         }
 
-        verts.reserve(idx.size());
-
-        for (usize t{0zu}; t < idx.size(); t += 3)
+        for (usize t{0zu}; t < views.indices.size(); t += 3zu)
         {
-            const auto i0 = idx[t + 0];
-            const auto i1 = idx[t + 1];
-            const auto i2 = idx[t + 2];
+            const auto i0 = views.indices[t + 0zu];
+            const auto i1 = views.indices[t + 1zu];
+            const auto i2 = views.indices[t + 2zu];
 
             if (i0 >= vertex_count || i1 >= vertex_count || i2 >= vertex_count)
             {
                 std::println(stderr, "glTF '{}' invalid index in primitive", path);
-                return std::nullopt;
+                return false;
             }
 
             const Pos3 p0{read_pos(i0)};
             const Pos3 p1{read_pos(i1)};
             const Pos3 p2{read_pos(i2)};
 
-            if (has_normals)
+            if (views.has_normals)
             {
-                auto emit = [&](u32 i, const glm::vec3& p) -> void
-                {
-                    const Dir3 n{read_nrm(i)};
-                    verts.emplace_back(p.x, p.y, p.z, n.x, n.y, n.z);
-                };
-                emit(i0, p0);
-                emit(i1, p1);
-                emit(i2, p2);
+                emit_vertex(i0, p0, read_nrm(i0));
+                emit_vertex(i1, p1, read_nrm(i1));
+                emit_vertex(i2, p2, read_nrm(i2));
             }
             else
             {
                 const Dir3 fn{face_normal(p0, p1, p2)};
-                auto emit = [&](const glm::vec3& p, const glm::vec3& n) -> void
-                { verts.emplace_back(p.x, p.y, p.z, n.x, n.y, n.z); };
-
-                emit(p0, fn);
-                emit(p1, fn);
-                emit(p2, fn);
+                emit_vertex(i0, p0, fn);
+                emit_vertex(i1, p1, fn);
+                emit_vertex(i2, p2, fn);
             }
         }
+        return true;
     }
-    else
+
+    if ((vertex_count % 3zu) != 0zu)
     {
-        if ((vertex_count % 3u) != 0u)
+        std::println(stderr, "glTF '{}' non-indexed primitive not triangles", path);
+        return false;
+    }
+
+    for (u32 i = 0u; i < static_cast<u32>(vertex_count); i += 3u)
+    {
+        const auto i0 = i + 0u;
+        const auto i1 = i + 1u;
+        const auto i2 = i + 2u;
+
+        const Pos3 p0{read_pos(i0)};
+        const Pos3 p1{read_pos(i1)};
+        const Pos3 p2{read_pos(i2)};
+
+        if (views.has_normals)
         {
-            std::println(stderr, "glTF '{}' non-indexed primitive not triangles", path);
-            return std::nullopt;
+            emit_vertex(i0, p0, read_nrm(i0));
+            emit_vertex(i1, p1, read_nrm(i1));
+            emit_vertex(i2, p2, read_nrm(i2));
         }
-
-        verts.reserve(vertex_count);
-
-        u32 vertex_idx{0};
-        while (vertex_idx < vertex_count)
+        else
         {
-            const auto i0 = vertex_idx++;
-            const auto i1 = vertex_idx++;
-            const auto i2 = vertex_idx++;
-
-            const Pos3 p0{read_pos(i0)};
-            const Pos3 p1{read_pos(i1)};
-            const Pos3 p2{read_pos(i2)};
-
-            const Dir3 fn{has_normals ? glm::vec3{} : face_normal(p0, p1, p2)};
-
-            auto emit = [&](u32 i, const glm::vec3& p) -> void
-            {
-                const Dir3 n{has_normals ? read_nrm(i) : fn};
-                verts.push_back(MeshV_PN{p.x, p.y, p.z, n.x, n.y, n.z});
-            };
-
-            emit(i0, p0);
-            emit(i1, p1);
-            emit(i2, p2);
+            const Dir3 fn{face_normal(p0, p1, p2)};
+            emit_vertex(i0, p0, fn);
+            emit_vertex(i1, p1, fn);
+            emit_vertex(i2, p2, fn);
         }
     }
 
-    return MeshDataPN{.vertices = verts};
+    return true;
+}
+
+}  // namespace
+
+auto load_gltf_mesh(const std::string& path, const Transform& preprocess)
+    -> std::optional<MeshDataPN>
+{
+    const ScopeTimer timer{path};
+
+    auto parsed_opt = parse_first_triangle_primitive(path);
+    if (!parsed_opt)
+    {
+        return std::nullopt;
+    }
+    const auto views_opt =
+        validate_primitive_views(parsed_opt->model, parsed_opt->primitive(), path, false);
+    if (!views_opt)
+    {
+        return std::nullopt;
+    }
+    const PrimitiveViews& views{*views_opt};
+
+    std::vector<MeshV_PN> vertices{};
+    const auto reserve_count = views.indices.empty() ? views.positions.count : views.indices.size();
+    vertices.reserve(reserve_count);
+
+    const auto ok = convert_primitive_to_triangles(
+        views,
+        preprocess,
+        path,
+        [&](u32 i, const Pos3& p, const Dir3& n) -> void
+        {
+            (void) i;
+            vertices.emplace_back(p.x, p.y, p.z, n.x, n.y, n.z);
+        }
+    );
+    if (!ok)
+    {
+        return std::nullopt;
+    }
+
+    return MeshDataPN{.vertices = std::move(vertices)};
 }
 
 auto load_model_mesh(std::string_view model_name) -> std::optional<MeshDataPN>
@@ -679,241 +783,41 @@ auto load_gltf_mesh_pnt(const std::string& path, const Transform& preprocess)
 {
     const ScopeTimer timer{path};
 
-    auto model_opt = load_tinygltf_model(path);
-    if (!model_opt)
+    auto parsed_opt = parse_first_triangle_primitive(path);
+    if (!parsed_opt)
     {
         return std::nullopt;
     }
-    const tinygltf::Model& model = *model_opt;
 
-    if (model.meshes.empty())
+    const auto views_opt =
+        validate_primitive_views(parsed_opt->model, parsed_opt->primitive(), path, true);
+    if (!views_opt)
     {
-        std::println(stderr, "glTF '{}' has no meshes", path);
         return std::nullopt;
     }
+    const PrimitiveViews& views{*views_opt};
+    Expects(views.has_uv);
 
-    const tinygltf::Mesh& mesh0{model.meshes[0]};
-    if (mesh0.primitives.empty())
-    {
-        std::println(stderr, "glTF '{}' first mesh has no primitives", path);
-        return std::nullopt;
-    }
+    std::vector<MeshV_PNT> vertices{};
+    const auto reserve_count = views.indices.empty() ? views.positions.count : views.indices.size();
+    vertices.reserve(reserve_count);
 
-    const tinygltf::Primitive& prim{mesh0.primitives[0]};
-
-    if (prim.mode != -1 && prim.mode != TINYGLTF_MODE_TRIANGLES)
-    {
-        std::println(stderr, "glTF '{}' primitive mode unsupported: {}", path, prim.mode);
-        return std::nullopt;
-    }
-
-    // Position
-    const auto it_pos = prim.attributes.find("POSITION");
-    if (it_pos == prim.attributes.end())
-    {
-        std::println(stderr, "glTF '{}' missing POSITION attribute", path);
-        return std::nullopt;
-    }
-
-    const int pos_accessor_index{it_pos->second};
-    if (pos_accessor_index < 0)
-    {
-        std::println(stderr, "glTF '{}' POSITION accessor must be non-negative", path);
-        return std::nullopt;
-    }
-
-    auto pos_view_opt = get_vec3_f32_view(model, pos_accessor_index);
-    if (!pos_view_opt)
-    {
-        std::println(stderr, "glTF '{}' failed to read POSITION accessor", path);
-        return std::nullopt;
-    }
-    const AccessorView pos_view{*pos_view_opt};
-
-    const std::byte* pos_base{pos_view.base};
-    const usize pos_stride{pos_view.stride};
-    const usize vertex_count{pos_view.count};
-
-    auto has_normals = false;
-    const std::byte* nrm_base{};
-    usize nrm_stride{0};
-    if (auto it_n = prim.attributes.find("NORMAL"); it_n != prim.attributes.end())
-    {
-        const int nrm_accessor_index{it_n->second};
-        if (nrm_accessor_index >= 0)
+    const auto ok = convert_primitive_to_triangles(
+        views,
+        preprocess,
+        path,
+        [&](u32 i, const Pos3& p, const Dir3& n) -> void
         {
-            if (auto nrm_view_opt = get_vec3_f32_view(model, nrm_accessor_index))
-            {
-                const AccessorView nrm_view{*nrm_view_opt};
-                if (nrm_view.count == vertex_count)
-                {
-                    has_normals = true;
-                    nrm_base = nrm_view.base;
-                    nrm_stride = nrm_view.stride;
-                }
-            }
+            const auto uv = read_vec2_as_f32(views.uv, static_cast<usize>(i));
+            vertices.emplace_back(p.x, p.y, p.z, n.x, n.y, n.z, uv.x, uv.y);
         }
-    }
-
-    // TexCoord_0
-    const auto it_uv = prim.attributes.find("TEXCOORD_0");
-    if (it_uv == prim.attributes.end())
+    );
+    if (!ok)
     {
-        std::println(stderr, "glTF '{}' missing TEXCOORD_0 attribute", path);
         return std::nullopt;
     }
 
-    const int uv_accessor_index{it_uv->second};
-    if (uv_accessor_index < 0)
-    {
-        std::println(stderr, "glTF '{}' TEXCOORD_0 accessor must be non-negative", path);
-        return std::nullopt;
-    }
-
-    auto uv_view_opt = get_vec2_view(model, uv_accessor_index);
-    if (!uv_view_opt)
-    {
-        std::println(stderr, "glTF '{}' failed to read TEXCOORD_0 accessor", path);
-        return std::nullopt;
-    }
-    const Vec2AccessorView uv_view = *uv_view_opt;
-
-    if (uv_view.count != vertex_count)
-    {
-        std::println(
-            stderr,
-            "glTF '{}' TEXCOORD_0 count mismatch (uv_count={}, pos_count={})",
-            path,
-            uv_view.count,
-            vertex_count
-        );
-        return std::nullopt;
-    }
-
-    // Indices
-    auto idx_opt = read_indices_u32(model, prim.indices);
-    if (!idx_opt)
-    {
-        std::println(stderr, "glTF '{}' failed to read indices", path);
-        return std::nullopt;
-    }
-    const std::vector<u32>& idx{*idx_opt};
-
-    const auto model_matrix = preprocess.model_matrix();
-    const auto normal_matrix = model_matrix.normal_matrix();
-
-    auto read_pos = [&](u32 i) -> glm::vec3
-    {
-        const glm::vec3 p{read_vec3_f32_strided(pos_base, pos_stride, static_cast<usize>(i))};
-        return model_matrix.transform_position(p);
-    };
-
-    auto read_nrm = [&](u32 i) -> glm::vec3
-    {
-        Expects(has_normals);
-        const glm::vec3 n{
-            safe_normalize(read_vec3_f32_strided(nrm_base, nrm_stride, static_cast<usize>(i)))
-        };
-        return safe_normalize(normal_matrix.m * n);
-    };
-
-    auto read_uv = [&](u32 i) -> glm::vec2
-    { return read_vec2_as_f32(uv_view, static_cast<usize>(i)); };
-
-    std::vector<MeshV_PNT> verts;
-
-    if (!idx.empty())
-    {
-        if ((idx.size() % 3u) != 0u)
-        {
-            std::println(
-                stderr, "glTF '{}' indices are not triangles (count={})", path, idx.size()
-            );
-            return std::nullopt;
-        }
-
-        verts.reserve(idx.size());
-
-        for (usize t{0zu}; t < idx.size(); t += 3)
-        {
-            const auto i0 = idx[t + 0];
-            const auto i1 = idx[t + 1];
-            const auto i2 = idx[t + 2];
-
-            if (i0 >= vertex_count || i1 >= vertex_count || i2 >= vertex_count)
-            {
-                std::println(stderr, "glTF '{}' invalid index in primitive", path);
-                return std::nullopt;
-            }
-
-            const Pos3 p0{read_pos(i0)};
-            const Pos3 p1{read_pos(i1)};
-            const Pos3 p2{read_pos(i2)};
-
-            if (has_normals)
-            {
-                auto emit = [&](u32 i, const glm::vec3& p) -> void
-                {
-                    const Dir3 n{read_nrm(i)};
-                    const glm::vec2 uv = read_uv(i);
-                    verts.push_back(MeshV_PNT{p.x, p.y, p.z, n.x, n.y, n.z, uv.x, uv.y});
-                };
-                emit(i0, p0);
-                emit(i1, p1);
-                emit(i2, p2);
-            }
-            else
-            {
-                const Dir3 fn{face_normal(p0, p1, p2)};
-                auto emit = [&](u32 i, const glm::vec3& p, const glm::vec3& n) -> void
-                {
-                    const glm::vec2 uv = read_uv(i);
-                    verts.push_back(MeshV_PNT{p.x, p.y, p.z, n.x, n.y, n.z, uv.x, uv.y});
-                };
-
-                emit(i0, p0, fn);
-                emit(i1, p1, fn);
-                emit(i2, p2, fn);
-            }
-        }
-    }
-    else
-    {
-        if ((vertex_count % 3u) != 0u)
-        {
-            std::println(stderr, "glTF '{}' non-indexed primitive not triangles", path);
-            return std::nullopt;
-        }
-
-        verts.reserve(vertex_count);
-
-        u32 vertex_idx{0};
-        while (vertex_idx < vertex_count)
-        {
-            const auto i0 = vertex_idx++;
-            const auto i1 = vertex_idx++;
-            const auto i2 = vertex_idx++;
-
-            const Pos3 p0{read_pos(i0)};
-            const Pos3 p1{read_pos(i1)};
-            const Pos3 p2{read_pos(i2)};
-
-            const Dir3 fn{has_normals ? glm::vec3{} : face_normal(p0, p1, p2)};
-
-            auto emit = [&](u32 i, const glm::vec3& p) -> void
-            {
-                const Dir3 n{has_normals ? read_nrm(i) : fn};
-                const glm::vec2 uv = read_uv(i);
-                verts.push_back(MeshV_PNT{p.x, p.y, p.z, n.x, n.y, n.z, uv.x, uv.y});
-            };
-
-            emit(i0, p0);
-            emit(i1, p1);
-            emit(i2, p2);
-        }
-    }
-
-    return MeshDataPNT{.vertices = verts};
+    return MeshDataPNT{.vertices = std::move(vertices)};
 }
 
 auto load_model_mesh_pnt(std::string_view model_name) -> std::optional<MeshDataPNT>

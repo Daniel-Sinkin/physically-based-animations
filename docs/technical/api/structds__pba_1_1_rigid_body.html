@@ -114,6 +114,10 @@ $(function() {
 Public Member Functions</h2></td></tr>
 <tr class="memitem:acef6870272ad16ea0df6c2f82950bfd6" id="r_acef6870272ad16ea0df6c2f82950bfd6"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#acef6870272ad16ea0df6c2f82950bfd6">is_static</a> () const noexcept</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-pub-static-methods" class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
+Static Public Member Functions</h2></td></tr>
+<tr class="memitem:a3c0723b9589638b52c6fe8f37731695d" id="r_a3c0723b9589638b52c6fe8f37731695d"><td class="memItemLeft" align="right" valign="top">static auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a3c0723b9589638b52c6fe8f37731695d">is_static_inv_mass</a> (<a class="el" href="namespaceds__pba.html#a4998fa289e08376ddcd18ab3f8daa9dc">f32</a> <a class="el" href="#a64be0e1062b0746e450dca43beb8af3c">inv_mass</a>) noexcept -&gt; bool</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-attribs" class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
 <tr class="memitem:a5fe5413ba813d2b48afb89ef00e07ec1" id="r_a5fe5413ba813d2b48afb89ef00e07ec1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceds__pba.html#abd5d56271e15e102d42983ceba3baef3">EntityId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a5fe5413ba813d2b48afb89ef00e07ec1">id</a> {<a class="el" href="namespaceds__pba.html#a13b91c08badf3c10896e3a3ff5c38ce5">k_invalid_id</a>}</td></tr>
@@ -125,6 +129,8 @@ Public Attributes</h2></td></tr>
 <tr class="memitem:aa24ecf56b24bcbee29e0669137a615e8" id="r_aa24ecf56b24bcbee29e0669137a615e8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceds__pba.html#a93f017dff4103e6b9e5c9e3480392990">Quaternion</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#aa24ecf56b24bcbee29e0669137a615e8">orientation</a> {<a class="el" href="namespaceds__pba.html#ae232035c4f7b6464b2eca35aedce7617">k_quaternion_identity</a>}</td></tr>
 <tr class="memitem:a7d488fefdb3fb4d7109a20e7d8e8320a" id="r_a7d488fefdb3fb4d7109a20e7d8e8320a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceds__pba.html#a2e8203d0b2a90d2e6878210fb7ff00da">Dir3</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a7d488fefdb3fb4d7109a20e7d8e8320a">angular_velocity</a> {}</td></tr>
 <tr class="memitem:aab43c92ac903951e467b7bf8880df49d" id="r_aab43c92ac903951e467b7bf8880df49d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceds__pba.html#a2e8203d0b2a90d2e6878210fb7ff00da">Dir3</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#aab43c92ac903951e467b7bf8880df49d">torque_accum</a> {}</td></tr>
+<tr class="memitem:a1cf0f4151e9cda1c5fccfb5cbe89e399" id="r_a1cf0f4151e9cda1c5fccfb5cbe89e399"><td class="memItemLeft" align="right" valign="top">glm::mat3&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a1cf0f4151e9cda1c5fccfb5cbe89e399">inertia_body</a> {0.0f}</td></tr>
+<tr class="memitem:ae2c04706b3f2edffdb6921f2602901fd" id="r_ae2c04706b3f2edffdb6921f2602901fd"><td class="memItemLeft" align="right" valign="top">glm::mat3&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ae2c04706b3f2edffdb6921f2602901fd">inertia_world</a> {0.0f}</td></tr>
 <tr class="memitem:ae0ae0dcec4d327777e4f89d8aa2c7558" id="r_ae0ae0dcec4d327777e4f89d8aa2c7558"><td class="memItemLeft" align="right" valign="top">glm::mat3&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ae0ae0dcec4d327777e4f89d8aa2c7558">inv_inertia_body</a> {0.0f}</td></tr>
 <tr class="memitem:a13d39bd07aca60d167cf783a05328664" id="r_a13d39bd07aca60d167cf783a05328664"><td class="memItemLeft" align="right" valign="top">glm::mat3&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a13d39bd07aca60d167cf783a05328664">inv_inertia_world</a> {0.0f}</td></tr>
 <tr class="memitem:a6171b24ff7ecb653b3b21a6244686585" id="r_a6171b24ff7ecb653b3b21a6244686585"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a6171b24ff7ecb653b3b21a6244686585">asleep</a> {false}</td></tr>
@@ -158,9 +164,41 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00051">51</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00058">58</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
+
+<p class="reference">References <a class="el" href="physics__types_8hpp_source.html#l00037">inv_mass</a>, and <a class="el" href="physics__types_8hpp_source.html#l00053">is_static_inv_mass()</a>.</p>
+
+</div>
+</div>
+<a id="a3c0723b9589638b52c6fe8f37731695d" name="a3c0723b9589638b52c6fe8f37731695d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3c0723b9589638b52c6fe8f37731695d">&#9670;&#160;</a></span>is_static_inv_mass()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">auto ds_pba::RigidBody::is_static_inv_mass </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceds__pba.html#a4998fa289e08376ddcd18ab3f8daa9dc">f32</a></td>          <td class="paramname"><span class="paramname"><em>inv_mass</em></span></td><td>)</td>
+          <td> -&gt; bool
+    </td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span><span class="mlabel nodiscard">nodiscard</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00053">53</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
 
 <p class="reference">References <a class="el" href="physics__types_8hpp_source.html#l00037">inv_mass</a>, and <a class="el" href="physics__types_8hpp_source.html#l00026">ds_pba::k_static_mass</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="physics__types_8hpp_source.html#l00058">is_static()</a>, and <a class="el" href="physics__types_8hpp_source.html#l00141">ds_pba::RigidBodySOA::is_static()</a>.</p>
 
 </div>
 </div>
@@ -193,7 +231,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00046">46</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00048">48</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
 
 </div>
 </div>
@@ -225,7 +263,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00049">49</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00051">51</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
 
 </div>
 </div>
@@ -261,6 +299,38 @@ Public Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="a1cf0f4151e9cda1c5fccfb5cbe89e399" name="a1cf0f4151e9cda1c5fccfb5cbe89e399"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1cf0f4151e9cda1c5fccfb5cbe89e399">&#9670;&#160;</a></span>inertia_body</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">glm::mat3 ds_pba::RigidBody::inertia_body {0.0f}</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00043">43</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
+
+</div>
+</div>
+<a id="ae2c04706b3f2edffdb6921f2602901fd" name="ae2c04706b3f2edffdb6921f2602901fd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae2c04706b3f2edffdb6921f2602901fd">&#9670;&#160;</a></span>inertia_world</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">glm::mat3 ds_pba::RigidBody::inertia_world {0.0f}</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00044">44</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
+
+</div>
+</div>
 <a id="ae0ae0dcec4d327777e4f89d8aa2c7558" name="ae0ae0dcec4d327777e4f89d8aa2c7558"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae0ae0dcec4d327777e4f89d8aa2c7558">&#9670;&#160;</a></span>inv_inertia_body</h2>
 
@@ -273,7 +343,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00043">43</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00045">45</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
 
 </div>
 </div>
@@ -289,7 +359,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00044">44</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00046">46</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
 
 </div>
 </div>
@@ -307,7 +377,7 @@ Public Attributes</h2></td></tr>
 
 <p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00037">37</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="physics__types_8hpp_source.html#l00051">is_static()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="physics__types_8hpp_source.html#l00058">is_static()</a>, and <a class="el" href="physics__types_8hpp_source.html#l00053">is_static_inv_mass()</a>.</p>
 
 </div>
 </div>
@@ -355,7 +425,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00047">47</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00049">49</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
 
 </div>
 </div>

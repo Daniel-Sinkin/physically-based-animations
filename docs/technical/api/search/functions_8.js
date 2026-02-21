@@ -18,5 +18,6 @@ var searchData=
   ['is_5frecording_15',['is_recording',['../structds__pba_1_1_video_recorder.html#a6313ceb02c04157105644c855bed8c9c',1,'ds_pba::VideoRecorder']]],
   ['is_5fselected_16',['is_selected',['../classds__pba_1_1_editor_state.html#a9f590352b8577fc8fb36b40eb03a8809',1,'ds_pba::EditorState']]],
   ['is_5fstatic_17',['is_static',['../structds__pba_1_1_physics_context_1_1_body_ref.html#a834a7ccb60668dfedf9c9723b294893b',1,'ds_pba::PhysicsContext::BodyRef::is_static()'],['../structds__pba_1_1_physics_context_1_1_body_const_ref.html#a6c624b248172aa90a4f9063a01dff0d7',1,'ds_pba::PhysicsContext::BodyConstRef::is_static()'],['../structds__pba_1_1_rigid_body.html#acef6870272ad16ea0df6c2f82950bfd6',1,'ds_pba::RigidBody::is_static()'],['../structds__pba_1_1_rigid_body_s_o_a.html#a8e71d59cc623108580c281f248d11d81',1,'ds_pba::RigidBodySOA::is_static()']]],
-  ['is_5fvalid_18',['is_valid',['../classds__pba_1_1_arena_allocator.html#ac5db8721839ff7d9ac2e320c1b854be5',1,'ds_pba::ArenaAllocator']]]
+  ['is_5fstatic_5finv_5fmass_18',['is_static_inv_mass',['../structds__pba_1_1_rigid_body.html#a3c0723b9589638b52c6fe8f37731695d',1,'ds_pba::RigidBody']]],
+  ['is_5fvalid_19',['is_valid',['../classds__pba_1_1_arena_allocator.html#ac5db8721839ff7d9ac2e320c1b854be5',1,'ds_pba::ArenaAllocator']]]
 ];

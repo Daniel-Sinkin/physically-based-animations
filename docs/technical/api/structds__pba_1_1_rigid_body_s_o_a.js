@@ -20,6 +20,8 @@ var structds__pba_1_1_rigid_body_s_o_a =
     [ "grabbed_flags", "structds__pba_1_1_rigid_body_s_o_a.html#a4a6958213c6e49db97af5420c301937a", null ],
     [ "half_extents", "structds__pba_1_1_rigid_body_s_o_a.html#ad42bbe399fa600a2d8875eac0b3c0b4a", null ],
     [ "ids", "structds__pba_1_1_rigid_body_s_o_a.html#aa3450feb9e074e648c6fff6067d06435", null ],
+    [ "inertia_bodies", "structds__pba_1_1_rigid_body_s_o_a.html#ab91439559ec9afad2a07d4dea8a48033", null ],
+    [ "inertia_worlds", "structds__pba_1_1_rigid_body_s_o_a.html#a28fce64f32494137d8e5f0c5a5503b9b", null ],
     [ "inv_inertia_bodies", "structds__pba_1_1_rigid_body_s_o_a.html#a0925e2cdd4e3a75ca4877dbfd2428930", null ],
     [ "inv_inertia_worlds", "structds__pba_1_1_rigid_body_s_o_a.html#a0990b2e72348911eb3675f3aa974af35", null ],
     [ "inv_masses", "structds__pba_1_1_rigid_body_s_o_a.html#a1d16e4b23560d1e53a75e00addd1bee2", null ],

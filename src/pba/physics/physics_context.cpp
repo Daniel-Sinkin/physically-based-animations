@@ -42,10 +42,8 @@ compute_total_kinetic_energy(const RigidBodySOA& bodies, bool include_angular) n
         E += 0.5f * glm::dot(bodies.velocities[i], bodies.velocities[i]) / bodies.inv_masses[i];
         if (include_angular)
         {
-            // TODO: Cache this directly instead of re-inverting every time
-            const glm::mat3 I_world = glm::inverse(bodies.inv_inertia_worlds[i]);
             E += 0.5f * glm::dot(
-                bodies.angular_velocities[i], I_world * bodies.angular_velocities[i]
+                bodies.angular_velocities[i], bodies.inertia_worlds[i] * bodies.angular_velocities[i]
             );
         }
     }
@@ -95,6 +93,8 @@ auto PhysicsContext::body(usize i) noexcept -> BodyRef
         .orientation = bodies_soa.orientations[i],
         .angular_velocity = bodies_soa.angular_velocities[i],
         .torque_accum = bodies_soa.torque_accums[i],
+        .inertia_body = bodies_soa.inertia_bodies[i],
+        .inertia_world = bodies_soa.inertia_worlds[i],
         .inv_inertia_body = bodies_soa.inv_inertia_bodies[i],
         .inv_inertia_world = bodies_soa.inv_inertia_worlds[i],
         .asleep = BoolRef{bodies_soa.asleep_flags[i]},
@@ -116,6 +116,8 @@ auto PhysicsContext::body(usize i) const noexcept -> BodyConstRef
         .orientation = bodies_soa.orientations[i],
         .angular_velocity = bodies_soa.angular_velocities[i],
         .torque_accum = bodies_soa.torque_accums[i],
+        .inertia_body = bodies_soa.inertia_bodies[i],
+        .inertia_world = bodies_soa.inertia_worlds[i],
         .inv_inertia_body = bodies_soa.inv_inertia_bodies[i],
         .inv_inertia_world = bodies_soa.inv_inertia_worlds[i],
         .asleep = bodies_soa.asleep_flags[i] != 0u,

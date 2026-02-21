@@ -138,6 +138,8 @@ Public Attributes</h2></td></tr>
 <tr class="memitem:a7f95ce827a42452655738e2808d35180" id="r_a7f95ce827a42452655738e2808d35180"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="namespaceds__pba.html#a93f017dff4103e6b9e5c9e3480392990">Quaternion</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a7f95ce827a42452655738e2808d35180">orientations</a> {}</td></tr>
 <tr class="memitem:a0e6adf293a97fe67873ce27c79c03c70" id="r_a0e6adf293a97fe67873ce27c79c03c70"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="namespaceds__pba.html#a2e8203d0b2a90d2e6878210fb7ff00da">Dir3</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a0e6adf293a97fe67873ce27c79c03c70">angular_velocities</a> {}</td></tr>
 <tr class="memitem:a2c983affe75efd7a80a065d9c9a424a0" id="r_a2c983affe75efd7a80a065d9c9a424a0"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="namespaceds__pba.html#a2e8203d0b2a90d2e6878210fb7ff00da">Dir3</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a2c983affe75efd7a80a065d9c9a424a0">torque_accums</a> {}</td></tr>
+<tr class="memitem:ab91439559ec9afad2a07d4dea8a48033" id="r_ab91439559ec9afad2a07d4dea8a48033"><td class="memItemLeft" align="right" valign="top">std::vector&lt; glm::mat3 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ab91439559ec9afad2a07d4dea8a48033">inertia_bodies</a> {}</td></tr>
+<tr class="memitem:a28fce64f32494137d8e5f0c5a5503b9b" id="r_a28fce64f32494137d8e5f0c5a5503b9b"><td class="memItemLeft" align="right" valign="top">std::vector&lt; glm::mat3 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a28fce64f32494137d8e5f0c5a5503b9b">inertia_worlds</a> {}</td></tr>
 <tr class="memitem:a0925e2cdd4e3a75ca4877dbfd2428930" id="r_a0925e2cdd4e3a75ca4877dbfd2428930"><td class="memItemLeft" align="right" valign="top">std::vector&lt; glm::mat3 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a0925e2cdd4e3a75ca4877dbfd2428930">inv_inertia_bodies</a> {}</td></tr>
 <tr class="memitem:a0990b2e72348911eb3675f3aa974af35" id="r_a0990b2e72348911eb3675f3aa974af35"><td class="memItemLeft" align="right" valign="top">std::vector&lt; glm::mat3 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a0990b2e72348911eb3675f3aa974af35">inv_inertia_worlds</a> {}</td></tr>
 <tr class="memitem:a7009b725d22748c1d6c5888388c4f074" id="r_a7009b725d22748c1d6c5888388c4f074"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="namespaceds__pba.html#a1788ee5a3fa0b43f86fcf6c617e3fb5e">u8</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a7009b725d22748c1d6c5888388c4f074">asleep_flags</a> {}</td></tr>
@@ -146,7 +148,7 @@ Public Attributes</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00057">57</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00064">64</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
 </div><a name="doc-constructors" id="doc-constructors"></a><h2 id="header-doc-constructors" class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a68462ca94146cdf99842906d12a4010c" name="a68462ca94146cdf99842906d12a4010c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a68462ca94146cdf99842906d12a4010c">&#9670;&#160;</a></span>RigidBodySOA()</h2>
@@ -171,9 +173,9 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00059">59</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00066">66</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="physics__types_8hpp_source.html#l00064">reserve()</a>.</p>
+<p class="reference">References <a class="el" href="physics__types_8hpp_source.html#l00071">reserve()</a>.</p>
 
 </div>
 </div>
@@ -202,9 +204,9 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00082">82</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00091">91</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="physics__types_8hpp_source.html#l00226">angular_velocities</a>, <a class="el" href="physics__types_8hpp_source.html#l00232">asleep_flags</a>, <a class="el" href="physics__types_8hpp_source.html#l00222">force_accums</a>, <a class="el" href="physics__types_8hpp_source.html#l00234">grabbed_flags</a>, <a class="el" href="physics__types_8hpp_source.html#l00218">half_extents</a>, <a class="el" href="physics__types_8hpp_source.html#l00216">ids</a>, <a class="el" href="physics__types_8hpp_source.html#l00229">inv_inertia_bodies</a>, <a class="el" href="physics__types_8hpp_source.html#l00230">inv_inertia_worlds</a>, <a class="el" href="physics__types_8hpp_source.html#l00223">inv_masses</a>, <a class="el" href="physics__types_8hpp_source.html#l00225">orientations</a>, <a class="el" href="physics__types_8hpp_source.html#l00220">positions</a>, <a class="el" href="physics__types_8hpp_source.html#l00233">sleep_frame_counts</a>, <a class="el" href="physics__types_8hpp_source.html#l00227">torque_accums</a>, and <a class="el" href="physics__types_8hpp_source.html#l00221">velocities</a>.</p>
+<p class="reference">References <a class="el" href="physics__types_8hpp_source.html#l00245">angular_velocities</a>, <a class="el" href="physics__types_8hpp_source.html#l00253">asleep_flags</a>, <a class="el" href="physics__types_8hpp_source.html#l00241">force_accums</a>, <a class="el" href="physics__types_8hpp_source.html#l00255">grabbed_flags</a>, <a class="el" href="physics__types_8hpp_source.html#l00237">half_extents</a>, <a class="el" href="physics__types_8hpp_source.html#l00235">ids</a>, <a class="el" href="physics__types_8hpp_source.html#l00248">inertia_bodies</a>, <a class="el" href="physics__types_8hpp_source.html#l00249">inertia_worlds</a>, <a class="el" href="physics__types_8hpp_source.html#l00250">inv_inertia_bodies</a>, <a class="el" href="physics__types_8hpp_source.html#l00251">inv_inertia_worlds</a>, <a class="el" href="physics__types_8hpp_source.html#l00242">inv_masses</a>, <a class="el" href="physics__types_8hpp_source.html#l00244">orientations</a>, <a class="el" href="physics__types_8hpp_source.html#l00239">positions</a>, <a class="el" href="physics__types_8hpp_source.html#l00254">sleep_frame_counts</a>, <a class="el" href="physics__types_8hpp_source.html#l00246">torque_accums</a>, and <a class="el" href="physics__types_8hpp_source.html#l00240">velocities</a>.</p>
 
 </div>
 </div>
@@ -232,9 +234,9 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00123">123</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00136">136</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="physics__types_8hpp_source.html#l00216">ids</a>.</p>
+<p class="reference">References <a class="el" href="physics__types_8hpp_source.html#l00235">ids</a>.</p>
 
 </div>
 </div>
@@ -262,9 +264,9 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00133">133</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00146">146</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="physics__types_8hpp_source.html#l00232">asleep_flags</a>.</p>
+<p class="reference">References <a class="el" href="physics__types_8hpp_source.html#l00253">asleep_flags</a>.</p>
 
 </div>
 </div>
@@ -292,9 +294,9 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00138">138</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00151">151</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="physics__types_8hpp_source.html#l00234">grabbed_flags</a>.</p>
+<p class="reference">References <a class="el" href="physics__types_8hpp_source.html#l00255">grabbed_flags</a>.</p>
 
 </div>
 </div>
@@ -322,9 +324,9 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00128">128</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00141">141</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="physics__types_8hpp_source.html#l00223">inv_masses</a>, and <a class="el" href="physics__types_8hpp_source.html#l00026">ds_pba::k_static_mass</a>.</p>
+<p class="reference">References <a class="el" href="physics__types_8hpp_source.html#l00242">inv_masses</a>, and <a class="el" href="physics__types_8hpp_source.html#l00053">ds_pba::RigidBody::is_static_inv_mass()</a>.</p>
 
 </div>
 </div>
@@ -352,9 +354,9 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00153">153</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00166">166</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="physics__types_8hpp_source.html#l00226">angular_velocities</a>, <a class="el" href="physics__types_8hpp_source.html#l00232">asleep_flags</a>, <a class="el" href="physics__types_8hpp_source.html#l00222">force_accums</a>, <a class="el" href="physics__types_8hpp_source.html#l00234">grabbed_flags</a>, <a class="el" href="physics__types_8hpp_source.html#l00218">half_extents</a>, <a class="el" href="physics__types_8hpp_source.html#l00216">ids</a>, <a class="el" href="physics__types_8hpp_source.html#l00229">inv_inertia_bodies</a>, <a class="el" href="physics__types_8hpp_source.html#l00230">inv_inertia_worlds</a>, <a class="el" href="physics__types_8hpp_source.html#l00223">inv_masses</a>, <a class="el" href="physics__types_8hpp_source.html#l00225">orientations</a>, <a class="el" href="physics__types_8hpp_source.html#l00220">positions</a>, <a class="el" href="physics__types_8hpp_source.html#l00233">sleep_frame_counts</a>, <a class="el" href="physics__types_8hpp_source.html#l00227">torque_accums</a>, and <a class="el" href="physics__types_8hpp_source.html#l00221">velocities</a>.</p>
+<p class="reference">References <a class="el" href="physics__types_8hpp_source.html#l00245">angular_velocities</a>, <a class="el" href="physics__types_8hpp_source.html#l00253">asleep_flags</a>, <a class="el" href="physics__types_8hpp_source.html#l00241">force_accums</a>, <a class="el" href="physics__types_8hpp_source.html#l00255">grabbed_flags</a>, <a class="el" href="physics__types_8hpp_source.html#l00237">half_extents</a>, <a class="el" href="physics__types_8hpp_source.html#l00235">ids</a>, <a class="el" href="physics__types_8hpp_source.html#l00248">inertia_bodies</a>, <a class="el" href="physics__types_8hpp_source.html#l00249">inertia_worlds</a>, <a class="el" href="physics__types_8hpp_source.html#l00250">inv_inertia_bodies</a>, <a class="el" href="physics__types_8hpp_source.html#l00251">inv_inertia_worlds</a>, <a class="el" href="physics__types_8hpp_source.html#l00242">inv_masses</a>, <a class="el" href="physics__types_8hpp_source.html#l00244">orientations</a>, <a class="el" href="physics__types_8hpp_source.html#l00239">positions</a>, <a class="el" href="physics__types_8hpp_source.html#l00254">sleep_frame_counts</a>, <a class="el" href="physics__types_8hpp_source.html#l00246">torque_accums</a>, and <a class="el" href="physics__types_8hpp_source.html#l00240">velocities</a>.</p>
 
 </div>
 </div>
@@ -382,11 +384,11 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00064">64</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00071">71</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="physics__types_8hpp_source.html#l00226">angular_velocities</a>, <a class="el" href="physics__types_8hpp_source.html#l00232">asleep_flags</a>, <a class="el" href="physics__types_8hpp_source.html#l00222">force_accums</a>, <a class="el" href="physics__types_8hpp_source.html#l00234">grabbed_flags</a>, <a class="el" href="physics__types_8hpp_source.html#l00218">half_extents</a>, <a class="el" href="physics__types_8hpp_source.html#l00216">ids</a>, <a class="el" href="physics__types_8hpp_source.html#l00229">inv_inertia_bodies</a>, <a class="el" href="physics__types_8hpp_source.html#l00230">inv_inertia_worlds</a>, <a class="el" href="physics__types_8hpp_source.html#l00223">inv_masses</a>, <a class="el" href="physics__types_8hpp_source.html#l00225">orientations</a>, <a class="el" href="physics__types_8hpp_source.html#l00220">positions</a>, <a class="el" href="physics__types_8hpp_source.html#l00233">sleep_frame_counts</a>, <a class="el" href="physics__types_8hpp_source.html#l00227">torque_accums</a>, and <a class="el" href="physics__types_8hpp_source.html#l00221">velocities</a>.</p>
+<p class="reference">References <a class="el" href="physics__types_8hpp_source.html#l00245">angular_velocities</a>, <a class="el" href="physics__types_8hpp_source.html#l00253">asleep_flags</a>, <a class="el" href="physics__types_8hpp_source.html#l00241">force_accums</a>, <a class="el" href="physics__types_8hpp_source.html#l00255">grabbed_flags</a>, <a class="el" href="physics__types_8hpp_source.html#l00237">half_extents</a>, <a class="el" href="physics__types_8hpp_source.html#l00235">ids</a>, <a class="el" href="physics__types_8hpp_source.html#l00248">inertia_bodies</a>, <a class="el" href="physics__types_8hpp_source.html#l00249">inertia_worlds</a>, <a class="el" href="physics__types_8hpp_source.html#l00250">inv_inertia_bodies</a>, <a class="el" href="physics__types_8hpp_source.html#l00251">inv_inertia_worlds</a>, <a class="el" href="physics__types_8hpp_source.html#l00242">inv_masses</a>, <a class="el" href="physics__types_8hpp_source.html#l00244">orientations</a>, <a class="el" href="physics__types_8hpp_source.html#l00239">positions</a>, <a class="el" href="physics__types_8hpp_source.html#l00254">sleep_frame_counts</a>, <a class="el" href="physics__types_8hpp_source.html#l00246">torque_accums</a>, and <a class="el" href="physics__types_8hpp_source.html#l00240">velocities</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="physics__types_8hpp_source.html#l00059">RigidBodySOA()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="physics__types_8hpp_source.html#l00066">RigidBodySOA()</a>.</p>
 
 </div>
 </div>
@@ -414,11 +416,11 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00100">100</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00111">111</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="physics__types_8hpp_source.html#l00226">angular_velocities</a>, <a class="el" href="physics__types_8hpp_source.html#l00232">asleep_flags</a>, <a class="el" href="physics__types_8hpp_source.html#l00222">force_accums</a>, <a class="el" href="physics__types_8hpp_source.html#l00234">grabbed_flags</a>, <a class="el" href="physics__types_8hpp_source.html#l00218">half_extents</a>, <a class="el" href="physics__types_8hpp_source.html#l00216">ids</a>, <a class="el" href="physics__types_8hpp_source.html#l00229">inv_inertia_bodies</a>, <a class="el" href="physics__types_8hpp_source.html#l00230">inv_inertia_worlds</a>, <a class="el" href="physics__types_8hpp_source.html#l00223">inv_masses</a>, <a class="el" href="physics__types_8hpp_source.html#l00225">orientations</a>, <a class="el" href="physics__types_8hpp_source.html#l00220">positions</a>, <a class="el" href="physics__types_8hpp_source.html#l00233">sleep_frame_counts</a>, <a class="el" href="physics__types_8hpp_source.html#l00227">torque_accums</a>, and <a class="el" href="physics__types_8hpp_source.html#l00221">velocities</a>.</p>
+<p class="reference">References <a class="el" href="physics__types_8hpp_source.html#l00245">angular_velocities</a>, <a class="el" href="physics__types_8hpp_source.html#l00253">asleep_flags</a>, <a class="el" href="physics__types_8hpp_source.html#l00241">force_accums</a>, <a class="el" href="physics__types_8hpp_source.html#l00255">grabbed_flags</a>, <a class="el" href="physics__types_8hpp_source.html#l00237">half_extents</a>, <a class="el" href="physics__types_8hpp_source.html#l00235">ids</a>, <a class="el" href="physics__types_8hpp_source.html#l00248">inertia_bodies</a>, <a class="el" href="physics__types_8hpp_source.html#l00249">inertia_worlds</a>, <a class="el" href="physics__types_8hpp_source.html#l00250">inv_inertia_bodies</a>, <a class="el" href="physics__types_8hpp_source.html#l00251">inv_inertia_worlds</a>, <a class="el" href="physics__types_8hpp_source.html#l00242">inv_masses</a>, <a class="el" href="physics__types_8hpp_source.html#l00244">orientations</a>, <a class="el" href="physics__types_8hpp_source.html#l00239">positions</a>, <a class="el" href="physics__types_8hpp_source.html#l00254">sleep_frame_counts</a>, <a class="el" href="physics__types_8hpp_source.html#l00246">torque_accums</a>, and <a class="el" href="physics__types_8hpp_source.html#l00240">velocities</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="physics__types_8hpp_source.html#l00171">sync_from_aos()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="physics__types_8hpp_source.html#l00186">sync_from_aos()</a>.</p>
 
 </div>
 </div>
@@ -450,9 +452,9 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00143">143</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00156">156</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="physics__types_8hpp_source.html#l00232">asleep_flags</a>.</p>
+<p class="reference">References <a class="el" href="physics__types_8hpp_source.html#l00253">asleep_flags</a>.</p>
 
 </div>
 </div>
@@ -484,9 +486,9 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00148">148</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00161">161</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="physics__types_8hpp_source.html#l00234">grabbed_flags</a>.</p>
+<p class="reference">References <a class="el" href="physics__types_8hpp_source.html#l00255">grabbed_flags</a>.</p>
 
 </div>
 </div>
@@ -514,11 +516,11 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00118">118</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00131">131</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="physics__types_8hpp_source.html#l00216">ids</a>.</p>
+<p class="reference">References <a class="el" href="physics__types_8hpp_source.html#l00235">ids</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="physics__types_8hpp_source.html#l00194">sync_to_aos()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="physics__types_8hpp_source.html#l00211">sync_to_aos()</a>.</p>
 
 </div>
 </div>
@@ -546,9 +548,9 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00171">171</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00186">186</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="physics__types_8hpp_source.html#l00226">angular_velocities</a>, <a class="el" href="physics__types_8hpp_source.html#l00232">asleep_flags</a>, <a class="el" href="physics__types_8hpp_source.html#l00222">force_accums</a>, <a class="el" href="physics__types_8hpp_source.html#l00234">grabbed_flags</a>, <a class="el" href="physics__types_8hpp_source.html#l00218">half_extents</a>, <a class="el" href="physics__types_8hpp_source.html#l00216">ids</a>, <a class="el" href="physics__types_8hpp_source.html#l00229">inv_inertia_bodies</a>, <a class="el" href="physics__types_8hpp_source.html#l00230">inv_inertia_worlds</a>, <a class="el" href="physics__types_8hpp_source.html#l00223">inv_masses</a>, <a class="el" href="physics__types_8hpp_source.html#l00225">orientations</a>, <a class="el" href="physics__types_8hpp_source.html#l00220">positions</a>, <a class="el" href="physics__types_8hpp_source.html#l00100">resize()</a>, <a class="el" href="physics__types_8hpp_source.html#l00233">sleep_frame_counts</a>, <a class="el" href="physics__types_8hpp_source.html#l00227">torque_accums</a>, and <a class="el" href="physics__types_8hpp_source.html#l00221">velocities</a>.</p>
+<p class="reference">References <a class="el" href="physics__types_8hpp_source.html#l00245">angular_velocities</a>, <a class="el" href="physics__types_8hpp_source.html#l00253">asleep_flags</a>, <a class="el" href="physics__types_8hpp_source.html#l00241">force_accums</a>, <a class="el" href="physics__types_8hpp_source.html#l00255">grabbed_flags</a>, <a class="el" href="physics__types_8hpp_source.html#l00237">half_extents</a>, <a class="el" href="physics__types_8hpp_source.html#l00235">ids</a>, <a class="el" href="physics__types_8hpp_source.html#l00248">inertia_bodies</a>, <a class="el" href="physics__types_8hpp_source.html#l00249">inertia_worlds</a>, <a class="el" href="physics__types_8hpp_source.html#l00250">inv_inertia_bodies</a>, <a class="el" href="physics__types_8hpp_source.html#l00251">inv_inertia_worlds</a>, <a class="el" href="physics__types_8hpp_source.html#l00242">inv_masses</a>, <a class="el" href="physics__types_8hpp_source.html#l00244">orientations</a>, <a class="el" href="physics__types_8hpp_source.html#l00239">positions</a>, <a class="el" href="physics__types_8hpp_source.html#l00111">resize()</a>, <a class="el" href="physics__types_8hpp_source.html#l00254">sleep_frame_counts</a>, <a class="el" href="physics__types_8hpp_source.html#l00246">torque_accums</a>, and <a class="el" href="physics__types_8hpp_source.html#l00240">velocities</a>.</p>
 
 </div>
 </div>
@@ -576,9 +578,9 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00194">194</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00211">211</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="physics__types_8hpp_source.html#l00226">angular_velocities</a>, <a class="el" href="physics__types_8hpp_source.html#l00232">asleep_flags</a>, <a class="el" href="physics__types_8hpp_source.html#l00222">force_accums</a>, <a class="el" href="physics__types_8hpp_source.html#l00234">grabbed_flags</a>, <a class="el" href="physics__types_8hpp_source.html#l00218">half_extents</a>, <a class="el" href="physics__types_8hpp_source.html#l00216">ids</a>, <a class="el" href="physics__types_8hpp_source.html#l00229">inv_inertia_bodies</a>, <a class="el" href="physics__types_8hpp_source.html#l00230">inv_inertia_worlds</a>, <a class="el" href="physics__types_8hpp_source.html#l00223">inv_masses</a>, <a class="el" href="physics__types_8hpp_source.html#l00225">orientations</a>, <a class="el" href="physics__types_8hpp_source.html#l00220">positions</a>, <a class="el" href="physics__types_8hpp_source.html#l00118">size()</a>, <a class="el" href="physics__types_8hpp_source.html#l00233">sleep_frame_counts</a>, <a class="el" href="physics__types_8hpp_source.html#l00227">torque_accums</a>, and <a class="el" href="physics__types_8hpp_source.html#l00221">velocities</a>.</p>
+<p class="reference">References <a class="el" href="physics__types_8hpp_source.html#l00245">angular_velocities</a>, <a class="el" href="physics__types_8hpp_source.html#l00253">asleep_flags</a>, <a class="el" href="physics__types_8hpp_source.html#l00241">force_accums</a>, <a class="el" href="physics__types_8hpp_source.html#l00255">grabbed_flags</a>, <a class="el" href="physics__types_8hpp_source.html#l00237">half_extents</a>, <a class="el" href="physics__types_8hpp_source.html#l00235">ids</a>, <a class="el" href="physics__types_8hpp_source.html#l00248">inertia_bodies</a>, <a class="el" href="physics__types_8hpp_source.html#l00249">inertia_worlds</a>, <a class="el" href="physics__types_8hpp_source.html#l00250">inv_inertia_bodies</a>, <a class="el" href="physics__types_8hpp_source.html#l00251">inv_inertia_worlds</a>, <a class="el" href="physics__types_8hpp_source.html#l00242">inv_masses</a>, <a class="el" href="physics__types_8hpp_source.html#l00244">orientations</a>, <a class="el" href="physics__types_8hpp_source.html#l00239">positions</a>, <a class="el" href="physics__types_8hpp_source.html#l00131">size()</a>, <a class="el" href="physics__types_8hpp_source.html#l00254">sleep_frame_counts</a>, <a class="el" href="physics__types_8hpp_source.html#l00246">torque_accums</a>, and <a class="el" href="physics__types_8hpp_source.html#l00240">velocities</a>.</p>
 
 </div>
 </div>
@@ -595,9 +597,9 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00226">226</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00245">245</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="physics__types_8hpp_source.html#l00082">clear()</a>, <a class="el" href="physics__types_8hpp_source.html#l00153">push_back()</a>, <a class="el" href="physics__types_8hpp_source.html#l00064">reserve()</a>, <a class="el" href="physics__types_8hpp_source.html#l00100">resize()</a>, <a class="el" href="physics__types_8hpp_source.html#l00171">sync_from_aos()</a>, and <a class="el" href="physics__types_8hpp_source.html#l00194">sync_to_aos()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="physics__types_8hpp_source.html#l00091">clear()</a>, <a class="el" href="physics__types_8hpp_source.html#l00166">push_back()</a>, <a class="el" href="physics__types_8hpp_source.html#l00071">reserve()</a>, <a class="el" href="physics__types_8hpp_source.html#l00111">resize()</a>, <a class="el" href="physics__types_8hpp_source.html#l00186">sync_from_aos()</a>, and <a class="el" href="physics__types_8hpp_source.html#l00211">sync_to_aos()</a>.</p>
 
 </div>
 </div>
@@ -613,9 +615,9 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00232">232</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00253">253</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="physics__types_8hpp_source.html#l00082">clear()</a>, <a class="el" href="physics__types_8hpp_source.html#l00133">is_asleep()</a>, <a class="el" href="physics__types_8hpp_source.html#l00153">push_back()</a>, <a class="el" href="physics__types_8hpp_source.html#l00064">reserve()</a>, <a class="el" href="physics__types_8hpp_source.html#l00100">resize()</a>, <a class="el" href="physics__types_8hpp_source.html#l00143">set_asleep()</a>, <a class="el" href="physics__types_8hpp_source.html#l00171">sync_from_aos()</a>, and <a class="el" href="physics__types_8hpp_source.html#l00194">sync_to_aos()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="physics__types_8hpp_source.html#l00091">clear()</a>, <a class="el" href="physics__types_8hpp_source.html#l00146">is_asleep()</a>, <a class="el" href="physics__types_8hpp_source.html#l00166">push_back()</a>, <a class="el" href="physics__types_8hpp_source.html#l00071">reserve()</a>, <a class="el" href="physics__types_8hpp_source.html#l00111">resize()</a>, <a class="el" href="physics__types_8hpp_source.html#l00156">set_asleep()</a>, <a class="el" href="physics__types_8hpp_source.html#l00186">sync_from_aos()</a>, and <a class="el" href="physics__types_8hpp_source.html#l00211">sync_to_aos()</a>.</p>
 
 </div>
 </div>
@@ -631,9 +633,9 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00222">222</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00241">241</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="physics__types_8hpp_source.html#l00082">clear()</a>, <a class="el" href="physics__types_8hpp_source.html#l00153">push_back()</a>, <a class="el" href="physics__types_8hpp_source.html#l00064">reserve()</a>, <a class="el" href="physics__types_8hpp_source.html#l00100">resize()</a>, <a class="el" href="physics__types_8hpp_source.html#l00171">sync_from_aos()</a>, and <a class="el" href="physics__types_8hpp_source.html#l00194">sync_to_aos()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="physics__types_8hpp_source.html#l00091">clear()</a>, <a class="el" href="physics__types_8hpp_source.html#l00166">push_back()</a>, <a class="el" href="physics__types_8hpp_source.html#l00071">reserve()</a>, <a class="el" href="physics__types_8hpp_source.html#l00111">resize()</a>, <a class="el" href="physics__types_8hpp_source.html#l00186">sync_from_aos()</a>, and <a class="el" href="physics__types_8hpp_source.html#l00211">sync_to_aos()</a>.</p>
 
 </div>
 </div>
@@ -649,9 +651,9 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00234">234</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00255">255</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="physics__types_8hpp_source.html#l00082">clear()</a>, <a class="el" href="physics__types_8hpp_source.html#l00138">is_grabbed()</a>, <a class="el" href="physics__types_8hpp_source.html#l00153">push_back()</a>, <a class="el" href="physics__types_8hpp_source.html#l00064">reserve()</a>, <a class="el" href="physics__types_8hpp_source.html#l00100">resize()</a>, <a class="el" href="physics__types_8hpp_source.html#l00148">set_grabbed()</a>, <a class="el" href="physics__types_8hpp_source.html#l00171">sync_from_aos()</a>, and <a class="el" href="physics__types_8hpp_source.html#l00194">sync_to_aos()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="physics__types_8hpp_source.html#l00091">clear()</a>, <a class="el" href="physics__types_8hpp_source.html#l00151">is_grabbed()</a>, <a class="el" href="physics__types_8hpp_source.html#l00166">push_back()</a>, <a class="el" href="physics__types_8hpp_source.html#l00071">reserve()</a>, <a class="el" href="physics__types_8hpp_source.html#l00111">resize()</a>, <a class="el" href="physics__types_8hpp_source.html#l00161">set_grabbed()</a>, <a class="el" href="physics__types_8hpp_source.html#l00186">sync_from_aos()</a>, and <a class="el" href="physics__types_8hpp_source.html#l00211">sync_to_aos()</a>.</p>
 
 </div>
 </div>
@@ -667,9 +669,9 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00218">218</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00237">237</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="physics__types_8hpp_source.html#l00082">clear()</a>, <a class="el" href="physics__types_8hpp_source.html#l00153">push_back()</a>, <a class="el" href="physics__types_8hpp_source.html#l00064">reserve()</a>, <a class="el" href="physics__types_8hpp_source.html#l00100">resize()</a>, <a class="el" href="physics__types_8hpp_source.html#l00171">sync_from_aos()</a>, and <a class="el" href="physics__types_8hpp_source.html#l00194">sync_to_aos()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="physics__types_8hpp_source.html#l00091">clear()</a>, <a class="el" href="physics__types_8hpp_source.html#l00166">push_back()</a>, <a class="el" href="physics__types_8hpp_source.html#l00071">reserve()</a>, <a class="el" href="physics__types_8hpp_source.html#l00111">resize()</a>, <a class="el" href="physics__types_8hpp_source.html#l00186">sync_from_aos()</a>, and <a class="el" href="physics__types_8hpp_source.html#l00211">sync_to_aos()</a>.</p>
 
 </div>
 </div>
@@ -685,9 +687,45 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00216">216</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00235">235</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="physics__types_8hpp_source.html#l00082">clear()</a>, <a class="el" href="physics__types_8hpp_source.html#l00123">empty()</a>, <a class="el" href="physics__types_8hpp_source.html#l00153">push_back()</a>, <a class="el" href="physics__types_8hpp_source.html#l00064">reserve()</a>, <a class="el" href="physics__types_8hpp_source.html#l00100">resize()</a>, <a class="el" href="physics__types_8hpp_source.html#l00118">size()</a>, <a class="el" href="physics__types_8hpp_source.html#l00171">sync_from_aos()</a>, and <a class="el" href="physics__types_8hpp_source.html#l00194">sync_to_aos()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="physics__types_8hpp_source.html#l00091">clear()</a>, <a class="el" href="physics__types_8hpp_source.html#l00136">empty()</a>, <a class="el" href="physics__types_8hpp_source.html#l00166">push_back()</a>, <a class="el" href="physics__types_8hpp_source.html#l00071">reserve()</a>, <a class="el" href="physics__types_8hpp_source.html#l00111">resize()</a>, <a class="el" href="physics__types_8hpp_source.html#l00131">size()</a>, <a class="el" href="physics__types_8hpp_source.html#l00186">sync_from_aos()</a>, and <a class="el" href="physics__types_8hpp_source.html#l00211">sync_to_aos()</a>.</p>
+
+</div>
+</div>
+<a id="ab91439559ec9afad2a07d4dea8a48033" name="ab91439559ec9afad2a07d4dea8a48033"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab91439559ec9afad2a07d4dea8a48033">&#9670;&#160;</a></span>inertia_bodies</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;glm::mat3&gt; ds_pba::RigidBodySOA::inertia_bodies {}</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00248">248</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="physics__types_8hpp_source.html#l00091">clear()</a>, <a class="el" href="physics__types_8hpp_source.html#l00166">push_back()</a>, <a class="el" href="physics__types_8hpp_source.html#l00071">reserve()</a>, <a class="el" href="physics__types_8hpp_source.html#l00111">resize()</a>, <a class="el" href="physics__types_8hpp_source.html#l00186">sync_from_aos()</a>, and <a class="el" href="physics__types_8hpp_source.html#l00211">sync_to_aos()</a>.</p>
+
+</div>
+</div>
+<a id="a28fce64f32494137d8e5f0c5a5503b9b" name="a28fce64f32494137d8e5f0c5a5503b9b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a28fce64f32494137d8e5f0c5a5503b9b">&#9670;&#160;</a></span>inertia_worlds</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;glm::mat3&gt; ds_pba::RigidBodySOA::inertia_worlds {}</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00249">249</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="physics__types_8hpp_source.html#l00091">clear()</a>, <a class="el" href="physics__types_8hpp_source.html#l00166">push_back()</a>, <a class="el" href="physics__types_8hpp_source.html#l00071">reserve()</a>, <a class="el" href="physics__types_8hpp_source.html#l00111">resize()</a>, <a class="el" href="physics__types_8hpp_source.html#l00186">sync_from_aos()</a>, and <a class="el" href="physics__types_8hpp_source.html#l00211">sync_to_aos()</a>.</p>
 
 </div>
 </div>
@@ -703,9 +741,9 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00229">229</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00250">250</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="physics__types_8hpp_source.html#l00082">clear()</a>, <a class="el" href="physics__types_8hpp_source.html#l00153">push_back()</a>, <a class="el" href="physics__types_8hpp_source.html#l00064">reserve()</a>, <a class="el" href="physics__types_8hpp_source.html#l00100">resize()</a>, <a class="el" href="physics__types_8hpp_source.html#l00171">sync_from_aos()</a>, and <a class="el" href="physics__types_8hpp_source.html#l00194">sync_to_aos()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="physics__types_8hpp_source.html#l00091">clear()</a>, <a class="el" href="physics__types_8hpp_source.html#l00166">push_back()</a>, <a class="el" href="physics__types_8hpp_source.html#l00071">reserve()</a>, <a class="el" href="physics__types_8hpp_source.html#l00111">resize()</a>, <a class="el" href="physics__types_8hpp_source.html#l00186">sync_from_aos()</a>, and <a class="el" href="physics__types_8hpp_source.html#l00211">sync_to_aos()</a>.</p>
 
 </div>
 </div>
@@ -721,9 +759,9 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00230">230</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00251">251</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="physics__types_8hpp_source.html#l00082">clear()</a>, <a class="el" href="physics__types_8hpp_source.html#l00153">push_back()</a>, <a class="el" href="physics__types_8hpp_source.html#l00064">reserve()</a>, <a class="el" href="physics__types_8hpp_source.html#l00100">resize()</a>, <a class="el" href="physics__types_8hpp_source.html#l00171">sync_from_aos()</a>, and <a class="el" href="physics__types_8hpp_source.html#l00194">sync_to_aos()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="physics__types_8hpp_source.html#l00091">clear()</a>, <a class="el" href="physics__types_8hpp_source.html#l00166">push_back()</a>, <a class="el" href="physics__types_8hpp_source.html#l00071">reserve()</a>, <a class="el" href="physics__types_8hpp_source.html#l00111">resize()</a>, <a class="el" href="physics__types_8hpp_source.html#l00186">sync_from_aos()</a>, and <a class="el" href="physics__types_8hpp_source.html#l00211">sync_to_aos()</a>.</p>
 
 </div>
 </div>
@@ -739,9 +777,9 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00223">223</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00242">242</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="physics__types_8hpp_source.html#l00082">clear()</a>, <a class="el" href="physics__types_8hpp_source.html#l00128">is_static()</a>, <a class="el" href="physics__types_8hpp_source.html#l00153">push_back()</a>, <a class="el" href="physics__types_8hpp_source.html#l00064">reserve()</a>, <a class="el" href="physics__types_8hpp_source.html#l00100">resize()</a>, <a class="el" href="physics__types_8hpp_source.html#l00171">sync_from_aos()</a>, and <a class="el" href="physics__types_8hpp_source.html#l00194">sync_to_aos()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="physics__types_8hpp_source.html#l00091">clear()</a>, <a class="el" href="physics__types_8hpp_source.html#l00141">is_static()</a>, <a class="el" href="physics__types_8hpp_source.html#l00166">push_back()</a>, <a class="el" href="physics__types_8hpp_source.html#l00071">reserve()</a>, <a class="el" href="physics__types_8hpp_source.html#l00111">resize()</a>, <a class="el" href="physics__types_8hpp_source.html#l00186">sync_from_aos()</a>, and <a class="el" href="physics__types_8hpp_source.html#l00211">sync_to_aos()</a>.</p>
 
 </div>
 </div>
@@ -757,9 +795,9 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00225">225</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00244">244</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="physics__types_8hpp_source.html#l00082">clear()</a>, <a class="el" href="physics__types_8hpp_source.html#l00153">push_back()</a>, <a class="el" href="physics__types_8hpp_source.html#l00064">reserve()</a>, <a class="el" href="physics__types_8hpp_source.html#l00100">resize()</a>, <a class="el" href="physics__types_8hpp_source.html#l00171">sync_from_aos()</a>, and <a class="el" href="physics__types_8hpp_source.html#l00194">sync_to_aos()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="physics__types_8hpp_source.html#l00091">clear()</a>, <a class="el" href="physics__types_8hpp_source.html#l00166">push_back()</a>, <a class="el" href="physics__types_8hpp_source.html#l00071">reserve()</a>, <a class="el" href="physics__types_8hpp_source.html#l00111">resize()</a>, <a class="el" href="physics__types_8hpp_source.html#l00186">sync_from_aos()</a>, and <a class="el" href="physics__types_8hpp_source.html#l00211">sync_to_aos()</a>.</p>
 
 </div>
 </div>
@@ -775,9 +813,9 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00220">220</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00239">239</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="physics__types_8hpp_source.html#l00082">clear()</a>, <a class="el" href="physics__types_8hpp_source.html#l00153">push_back()</a>, <a class="el" href="physics__types_8hpp_source.html#l00064">reserve()</a>, <a class="el" href="physics__types_8hpp_source.html#l00100">resize()</a>, <a class="el" href="physics__types_8hpp_source.html#l00171">sync_from_aos()</a>, and <a class="el" href="physics__types_8hpp_source.html#l00194">sync_to_aos()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="physics__types_8hpp_source.html#l00091">clear()</a>, <a class="el" href="physics__types_8hpp_source.html#l00166">push_back()</a>, <a class="el" href="physics__types_8hpp_source.html#l00071">reserve()</a>, <a class="el" href="physics__types_8hpp_source.html#l00111">resize()</a>, <a class="el" href="physics__types_8hpp_source.html#l00186">sync_from_aos()</a>, and <a class="el" href="physics__types_8hpp_source.html#l00211">sync_to_aos()</a>.</p>
 
 </div>
 </div>
@@ -793,9 +831,9 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00233">233</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00254">254</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="physics__types_8hpp_source.html#l00082">clear()</a>, <a class="el" href="physics__types_8hpp_source.html#l00153">push_back()</a>, <a class="el" href="physics__types_8hpp_source.html#l00064">reserve()</a>, <a class="el" href="physics__types_8hpp_source.html#l00100">resize()</a>, <a class="el" href="physics__types_8hpp_source.html#l00171">sync_from_aos()</a>, and <a class="el" href="physics__types_8hpp_source.html#l00194">sync_to_aos()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="physics__types_8hpp_source.html#l00091">clear()</a>, <a class="el" href="physics__types_8hpp_source.html#l00166">push_back()</a>, <a class="el" href="physics__types_8hpp_source.html#l00071">reserve()</a>, <a class="el" href="physics__types_8hpp_source.html#l00111">resize()</a>, <a class="el" href="physics__types_8hpp_source.html#l00186">sync_from_aos()</a>, and <a class="el" href="physics__types_8hpp_source.html#l00211">sync_to_aos()</a>.</p>
 
 </div>
 </div>
@@ -811,9 +849,9 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00227">227</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00246">246</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="physics__types_8hpp_source.html#l00082">clear()</a>, <a class="el" href="physics__types_8hpp_source.html#l00153">push_back()</a>, <a class="el" href="physics__types_8hpp_source.html#l00064">reserve()</a>, <a class="el" href="physics__types_8hpp_source.html#l00100">resize()</a>, <a class="el" href="physics__types_8hpp_source.html#l00171">sync_from_aos()</a>, and <a class="el" href="physics__types_8hpp_source.html#l00194">sync_to_aos()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="physics__types_8hpp_source.html#l00091">clear()</a>, <a class="el" href="physics__types_8hpp_source.html#l00166">push_back()</a>, <a class="el" href="physics__types_8hpp_source.html#l00071">reserve()</a>, <a class="el" href="physics__types_8hpp_source.html#l00111">resize()</a>, <a class="el" href="physics__types_8hpp_source.html#l00186">sync_from_aos()</a>, and <a class="el" href="physics__types_8hpp_source.html#l00211">sync_to_aos()</a>.</p>
 
 </div>
 </div>
@@ -829,9 +867,9 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00221">221</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="physics__types_8hpp_source.html#l00240">240</a> of file <a class="el" href="physics__types_8hpp_source.html">physics_types.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="physics__types_8hpp_source.html#l00082">clear()</a>, <a class="el" href="physics__types_8hpp_source.html#l00153">push_back()</a>, <a class="el" href="physics__types_8hpp_source.html#l00064">reserve()</a>, <a class="el" href="physics__types_8hpp_source.html#l00100">resize()</a>, <a class="el" href="physics__types_8hpp_source.html#l00171">sync_from_aos()</a>, and <a class="el" href="physics__types_8hpp_source.html#l00194">sync_to_aos()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="physics__types_8hpp_source.html#l00091">clear()</a>, <a class="el" href="physics__types_8hpp_source.html#l00166">push_back()</a>, <a class="el" href="physics__types_8hpp_source.html#l00071">reserve()</a>, <a class="el" href="physics__types_8hpp_source.html#l00111">resize()</a>, <a class="el" href="physics__types_8hpp_source.html#l00186">sync_from_aos()</a>, and <a class="el" href="physics__types_8hpp_source.html#l00211">sync_to_aos()</a>.</p>
 
 </div>
 </div>

@@ -125,6 +125,8 @@ Public Attributes</h2></td></tr>
 <tr class="memitem:ab33971a6b97aa16d7228763ab7f26348" id="r_ab33971a6b97aa16d7228763ab7f26348"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceds__pba.html#a93f017dff4103e6b9e5c9e3480392990">Quaternion</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ab33971a6b97aa16d7228763ab7f26348">orientation</a></td></tr>
 <tr class="memitem:a485dafeea3c88ae9af23699e18e8017e" id="r_a485dafeea3c88ae9af23699e18e8017e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceds__pba.html#a2e8203d0b2a90d2e6878210fb7ff00da">Dir3</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a485dafeea3c88ae9af23699e18e8017e">angular_velocity</a></td></tr>
 <tr class="memitem:ab38fd635d32875b485531183799d3590" id="r_ab38fd635d32875b485531183799d3590"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceds__pba.html#a2e8203d0b2a90d2e6878210fb7ff00da">Dir3</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ab38fd635d32875b485531183799d3590">torque_accum</a></td></tr>
+<tr class="memitem:af901a21b57d6935587557b87057eed13" id="r_af901a21b57d6935587557b87057eed13"><td class="memItemLeft" align="right" valign="top">glm::mat3 &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#af901a21b57d6935587557b87057eed13">inertia_body</a></td></tr>
+<tr class="memitem:a9c94d0cb40a837cc8901405d786f22f4" id="r_a9c94d0cb40a837cc8901405d786f22f4"><td class="memItemLeft" align="right" valign="top">glm::mat3 &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a9c94d0cb40a837cc8901405d786f22f4">inertia_world</a></td></tr>
 <tr class="memitem:adced15affd9bf38540987a5ba61b2f13" id="r_adced15affd9bf38540987a5ba61b2f13"><td class="memItemLeft" align="right" valign="top">glm::mat3 &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#adced15affd9bf38540987a5ba61b2f13">inv_inertia_body</a></td></tr>
 <tr class="memitem:a6f6ffc647a193f797395f5f79e9453a3" id="r_a6f6ffc647a193f797395f5f79e9453a3"><td class="memItemLeft" align="right" valign="top">glm::mat3 &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a6f6ffc647a193f797395f5f79e9453a3">inv_inertia_world</a></td></tr>
 <tr class="memitem:abe47e8087a4fc733fd74b0bfbec0fe1e" id="r_abe47e8087a4fc733fd74b0bfbec0fe1e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structds__pba_1_1_physics_context_1_1_bool_ref.html">BoolRef</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#abe47e8087a4fc733fd74b0bfbec0fe1e">asleep</a></td></tr>
@@ -159,7 +161,7 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="physics__context_8hpp_source.html#l00091">91</a> of file <a class="el" href="physics__context_8hpp_source.html">physics_context.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="physics__context_8hpp_source.html#l00093">93</a> of file <a class="el" href="physics__context_8hpp_source.html">physics_context.hpp</a>.</p>
 
 <p class="reference">References <a class="el" href="physics__context_8hpp_source.html#l00081">inv_mass</a>, and <a class="el" href="physics__types_8hpp_source.html#l00026">ds_pba::k_static_mass</a>.</p>
 
@@ -194,7 +196,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="physics__context_8hpp_source.html#l00087">87</a> of file <a class="el" href="physics__context_8hpp_source.html">physics_context.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="physics__context_8hpp_source.html#l00089">89</a> of file <a class="el" href="physics__context_8hpp_source.html">physics_context.hpp</a>.</p>
 
 </div>
 </div>
@@ -226,7 +228,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="physics__context_8hpp_source.html#l00089">89</a> of file <a class="el" href="physics__context_8hpp_source.html">physics_context.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="physics__context_8hpp_source.html#l00091">91</a> of file <a class="el" href="physics__context_8hpp_source.html">physics_context.hpp</a>.</p>
 
 </div>
 </div>
@@ -262,6 +264,38 @@ Public Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="af901a21b57d6935587557b87057eed13" name="af901a21b57d6935587557b87057eed13"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af901a21b57d6935587557b87057eed13">&#9670;&#160;</a></span>inertia_body</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">glm::mat3&amp; ds_pba::PhysicsContext::BodyRef::inertia_body</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="physics__context_8hpp_source.html#l00085">85</a> of file <a class="el" href="physics__context_8hpp_source.html">physics_context.hpp</a>.</p>
+
+</div>
+</div>
+<a id="a9c94d0cb40a837cc8901405d786f22f4" name="a9c94d0cb40a837cc8901405d786f22f4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9c94d0cb40a837cc8901405d786f22f4">&#9670;&#160;</a></span>inertia_world</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">glm::mat3&amp; ds_pba::PhysicsContext::BodyRef::inertia_world</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="physics__context_8hpp_source.html#l00086">86</a> of file <a class="el" href="physics__context_8hpp_source.html">physics_context.hpp</a>.</p>
+
+</div>
+</div>
 <a id="adced15affd9bf38540987a5ba61b2f13" name="adced15affd9bf38540987a5ba61b2f13"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#adced15affd9bf38540987a5ba61b2f13">&#9670;&#160;</a></span>inv_inertia_body</h2>
 
@@ -274,7 +308,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="physics__context_8hpp_source.html#l00085">85</a> of file <a class="el" href="physics__context_8hpp_source.html">physics_context.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="physics__context_8hpp_source.html#l00087">87</a> of file <a class="el" href="physics__context_8hpp_source.html">physics_context.hpp</a>.</p>
 
 </div>
 </div>
@@ -290,7 +324,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="physics__context_8hpp_source.html#l00086">86</a> of file <a class="el" href="physics__context_8hpp_source.html">physics_context.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="physics__context_8hpp_source.html#l00088">88</a> of file <a class="el" href="physics__context_8hpp_source.html">physics_context.hpp</a>.</p>
 
 </div>
 </div>
@@ -308,7 +342,7 @@ Public Attributes</h2></td></tr>
 
 <p class="definition">Definition at line <a class="el" href="physics__context_8hpp_source.html#l00081">81</a> of file <a class="el" href="physics__context_8hpp_source.html">physics_context.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="physics__context_8hpp_source.html#l00091">is_static()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="physics__context_8hpp_source.html#l00093">is_static()</a>.</p>
 
 </div>
 </div>
@@ -356,7 +390,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="physics__context_8hpp_source.html#l00088">88</a> of file <a class="el" href="physics__context_8hpp_source.html">physics_context.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="physics__context_8hpp_source.html#l00090">90</a> of file <a class="el" href="physics__context_8hpp_source.html">physics_context.hpp</a>.</p>
 
 </div>
 </div>

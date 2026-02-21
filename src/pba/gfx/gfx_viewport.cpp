@@ -122,9 +122,7 @@ namespace
                 auto E = 0.5f * m * glm::dot(rb->velocity, rb->velocity);
                 if (gfx.phys_debug.ke_include_angular)
                 {
-                    // TODO: Should cache this
-                    const glm::mat3 I_world = glm::inverse(rb->inv_inertia_world);
-                    E += 0.5f * glm::dot(rb->angular_velocity, I_world * rb->angular_velocity);
+                    E += 0.5f * glm::dot(rb->angular_velocity, rb->inertia_world * rb->angular_velocity);
                 }
 
                 const auto denom = std::max(1e-6f, gfx.phys_debug.ke_max);

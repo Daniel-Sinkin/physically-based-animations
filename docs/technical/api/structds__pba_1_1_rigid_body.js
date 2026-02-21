@@ -1,12 +1,15 @@
 var structds__pba_1_1_rigid_body =
 [
     [ "is_static", "structds__pba_1_1_rigid_body.html#acef6870272ad16ea0df6c2f82950bfd6", null ],
+    [ "is_static_inv_mass", "structds__pba_1_1_rigid_body.html#a3c0723b9589638b52c6fe8f37731695d", null ],
     [ "angular_velocity", "structds__pba_1_1_rigid_body.html#a7d488fefdb3fb4d7109a20e7d8e8320a", null ],
     [ "asleep", "structds__pba_1_1_rigid_body.html#a6171b24ff7ecb653b3b21a6244686585", null ],
     [ "force_accum", "structds__pba_1_1_rigid_body.html#a6716af11b7f847bf09b41aebd2292f84", null ],
     [ "grabbed", "structds__pba_1_1_rigid_body.html#a85dd6a35fab3ad5270fd9486e6e4f1f4", null ],
     [ "half_extents", "structds__pba_1_1_rigid_body.html#a2ab3bc1ebdbf78a122d31df09902063a", null ],
     [ "id", "structds__pba_1_1_rigid_body.html#a5fe5413ba813d2b48afb89ef00e07ec1", null ],
+    [ "inertia_body", "structds__pba_1_1_rigid_body.html#a1cf0f4151e9cda1c5fccfb5cbe89e399", null ],
+    [ "inertia_world", "structds__pba_1_1_rigid_body.html#ae2c04706b3f2edffdb6921f2602901fd", null ],
     [ "inv_inertia_body", "structds__pba_1_1_rigid_body.html#ae0ae0dcec4d327777e4f89d8aa2c7558", null ],
     [ "inv_inertia_world", "structds__pba_1_1_rigid_body.html#a13d39bd07aca60d167cf783a05328664", null ],
     [ "inv_mass", "structds__pba_1_1_rigid_body.html#a64be0e1062b0746e450dca43beb8af3c", null ],

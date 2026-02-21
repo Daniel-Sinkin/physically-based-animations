@@ -52,6 +52,8 @@ struct BodyRef
     Dir3& angular_velocity;
     Dir3& torque_accum;
 
+    glm::mat3& inertia_body;
+    glm::mat3& inertia_world;
     glm::mat3& inv_inertia_body;
     glm::mat3& inv_inertia_world;
 
@@ -81,6 +83,8 @@ struct BodyConstRef
     const Dir3& angular_velocity;
     const Dir3& torque_accum;
 
+    const glm::mat3& inertia_body;
+    const glm::mat3& inertia_world;
     const glm::mat3& inv_inertia_body;
     const glm::mat3& inv_inertia_world;
 
@@ -107,6 +111,8 @@ struct BodyConstRef
         .orientation = bodies.orientations[idx],
         .angular_velocity = bodies.angular_velocities[idx],
         .torque_accum = bodies.torque_accums[idx],
+        .inertia_body = bodies.inertia_bodies[idx],
+        .inertia_world = bodies.inertia_worlds[idx],
         .inv_inertia_body = bodies.inv_inertia_bodies[idx],
         .inv_inertia_world = bodies.inv_inertia_worlds[idx],
         .asleep = BodyRef::BoolRef{bodies.asleep_flags[idx]},
@@ -127,6 +133,8 @@ struct BodyConstRef
         .orientation = bodies.orientations[idx],
         .angular_velocity = bodies.angular_velocities[idx],
         .torque_accum = bodies.torque_accums[idx],
+        .inertia_body = bodies.inertia_bodies[idx],
+        .inertia_world = bodies.inertia_worlds[idx],
         .inv_inertia_body = bodies.inv_inertia_bodies[idx],
         .inv_inertia_world = bodies.inv_inertia_worlds[idx],
         .asleep = bodies.asleep_flags[idx] != 0u,
@@ -158,6 +166,12 @@ auto inv_inertia_world_from_body(const Quaternion& q, const glm::mat3& inv_inert
 {
     const auto R = glm::mat3_cast(q);
     return R * inv_inertia_body * glm::transpose(R);
+}
+
+auto inertia_world_from_body(const Quaternion& q, const glm::mat3& inertia_body) noexcept -> glm::mat3
+{
+    const auto R = glm::mat3_cast(q);
+    return R * inertia_body * glm::transpose(R);
 }
 
 auto apply_impulse_contact_friction(
@@ -381,9 +395,11 @@ auto update_inv_inertia_world(RigidBodySOA& bodies) noexcept -> void
             auto b = body_ref(bodies, i);
             if (b.is_static())
             {
+                b.inertia_world = glm::mat3(0.0f);
                 b.inv_inertia_world = glm::mat3(0.0f);
                 return;
             }
+            b.inertia_world = inertia_world_from_body(b.orientation, b.inertia_body);
             b.inv_inertia_world = inv_inertia_world_from_body(b.orientation, b.inv_inertia_body);
         }
     );
@@ -426,6 +442,7 @@ auto integrate_velocities(RigidBodySOA& bodies, f32 dt_s) noexcept -> void
             b.position += b.velocity * dt_s;
             b.orientation = integrate_orientation(b.orientation, b.angular_velocity, dt_s);
 
+            b.inertia_world = inertia_world_from_body(b.orientation, b.inertia_body);
             b.inv_inertia_world = inv_inertia_world_from_body(b.orientation, b.inv_inertia_body);
         }
     );
