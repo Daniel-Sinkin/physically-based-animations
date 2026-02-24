@@ -60,6 +60,24 @@ std::vector<glm::mat3> inv_inertia_worlds{};</code></pre>
           <code>src/pba/physics/physics_types.hpp</code>,
           <code>src/pba/scene/world.cpp</code>.
         </p>
+
+        <h2>Practical Notes from CppCon 2025</h2>
+        <p>
+          Following the practical DoD guidance from &quot;More Speed &amp; Simplicity&quot;, relationships in
+          hot data paths are modeled as compact handles/indices instead of owning pointers.
+        </p>
+        <pre><code class="language-cpp">// src/pba/scene/world.hpp
+std::unordered_map<EntityId, usize> id_to_index_{};
+
+// src/pba/physics/physics_types.hpp
+struct BodyHandle {
+    u32 index{};
+};</code></pre>
+        <p>
+          This keeps state relocatable and layout control explicit, while higher-level systems can
+          still expose object-style APIs at module boundaries.
+        </p>
+
       </section>
     </main>
   </body>

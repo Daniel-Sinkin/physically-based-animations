@@ -35,6 +35,51 @@
           Implementation notes focused on data layout, memory lifetime, and CPU-friendly iteration
           patterns used by the engine.
         </p>
+        <p class="link-line">
+          <a href="#dod-lessons">DoD Lessons Applied</a>
+          <span class="sep">|</span>
+          <a href="#data-layout">AOS vs SOA</a>
+          <span class="sep">|</span>
+          <a href="#memory-lifetime">Transient Arena Allocation</a>
+          <span class="sep">|</span>
+          <a href="#broadphase-layout">Broadphase and Cache Behavior</a>
+          <span class="sep">|</span>
+          <a href="#parallel-execution">Parallel Index Traversal</a>
+        </p>
+      </section>
+
+      <section id="dod-lessons" class="section">
+        <h2>Practical DoD Lessons Applied</h2>
+        <p>
+          This codebase already follows several patterns discussed in Vittorio Romeo&apos;s CppCon 2025
+          keynote on practical data-oriented design.
+        </p>
+        <ul class="list">
+          <li>
+            Data-first hot loops: physics state is stored as SOA columns for stream-friendly
+            iteration in solver and collision passes.
+          </li>
+          <li>
+            Group by usage, not by type hierarchy: broadphase scratch data is split into scalar
+            columns (<code>aabb_min_x</code>, <code>aabb_max_x</code>, etc.) to keep pruning passes tight.
+          </li>
+          <li>
+            Reduce allocation churn in frame-critical paths: contacts are written into a transient
+            arena and reused every step.
+          </li>
+          <li>
+            Keep abstraction at coarse boundaries: world/editor APIs remain object-friendly, while
+            throughput-critical internals stay data-oriented.
+          </li>
+          <li>
+            Standardize parallel traversal entry points: <code>parallel_for_index</code> keeps index
+            kernels portable across serial and OpenMP builds.
+          </li>
+        </ul>
+        <p>
+          Related references:
+          <a href="../references/index.html#refs-performance">C++ Performance Talks</a>.
+        </p>
       </section>
 
       <section id="data-layout" class="section">
